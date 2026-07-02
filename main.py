@@ -66,7 +66,7 @@ def main():
 
     signals = sorted(signals, key=lambda x: x["score"], reverse=True)
 
-    if signals:
+if signals:
     strong_signals = signals[:3]
 
     send_message(f"✅ OKX taraması tamamlandı.\nEn güçlü sinyal sayısı: {len(strong_signals)}")
