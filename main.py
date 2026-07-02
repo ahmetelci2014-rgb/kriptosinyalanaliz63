@@ -91,12 +91,12 @@ def main():
 
     signals = []
 
-    for symbol in pairs:
-        try:
-            df = get_okx_candles(symbol)
-            result = analyze_signal(symbol, df)
+for symbol in pairs:
+    try:
+        df = get_okx_candles(symbol)
+        result = analyze_signal(symbol, df)
 
-            if result:
+        if result:
             key = f"{result['symbol']}_{result['direction']}"
             last_time = last_signals.get(key)
 
@@ -108,8 +108,8 @@ def main():
 
             signals.append(result)
 
-        except Exception as e:
-            print(f"{symbol} hata: {e}")
+    except Exception as e:
+        print(f"{symbol} hata: {e}")
 
     signals = sorted(signals, key=lambda x: x["score"], reverse=True)
 
