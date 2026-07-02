@@ -1,83 +1,65 @@
 import requests
 import pandas as pd
 from datetime import datetime
-from config import INTERVAL, LIMIT, TOP_COINS
+
+from config import TOP_COINS, VS_CURRENCY, DAYS
 from telegram import send_message
 from strategy import analyze_signal
 
 
-BINANCE_BASE = "https://fapi.binance.com"
+COINS = {
+    "BTC": "bitcoin",
+    "ETH": "ethereum",
+    "BNB": "binancecoin",
+    "SOL": "solana",
+    "XRP": "ripple",
+    "DOGE": "dogecoin",
+    "ADA": "cardano",
+    "AVAX": "avalanche-2",
+    "LINK": "chainlink",
+    "DOT": "polkadot",
+    "TRX": "tron",
+    "LTC": "litecoin",
+    "BCH": "bitcoin-cash",
+    "UNI": "uniswap",
+    "ATOM": "cosmos"
+}
 
 
-def get_top_symbols():
-    url = f"{BINANCE_BASE}/fapi/v1/ticker/24hr"
+def get_data(coin_id):
+    url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
+    params = {
+        "vs_currency": VS_CURRENCY,
+        "days": DAYS
+    }
 
-    response = requests.get(url, timeout=20)
+    response = requests.get(url, params=params, timeout=20)
 
     if response.status_code != 200:
-        raise Exception(f"HTTP {response.status_code}")
+        print(f"CoinGecko HTTP hata: {response.status_code}")
+        return None
 
     data = response.json()
 
-    if not isinstance(data, list):
-        raise Exception(f"Binance cevabı: {data}")
-
-    symbols = []
-
-    for item in data:
-        if not isinstance(item, dict):
-            continue
-
-        symbol = item.get("symbol")
-
-        if symbol and symbol.endswith("USDT"):
-            volume = float(item.get("quoteVolume", 0))
-            symbols.append((symbol, volume))
-
-    symbols.sort(key=lambda x: x[1], reverse=True)
-
-    return [s[0] for s in symbols[:TOP_COINS]]
-
-
-def get_klines(symbol):
-    url = f"{BINANCE_BASE}/fapi/v1/klines"
-    params = {
-        "symbol": symbol,
-        "interval": INTERVAL,
-        "limit": LIMIT
-    }
-
-    data = requests.get(url, params=params, timeout=20).json()
-
-    if not isinstance(data, list) or len(data) < LIMIT:
+    if "prices" not in data or len(data["prices"]) < 60:
         return None
 
-    df = pd.DataFrame(data, columns=[
-        "time", "open", "high", "low", "close", "volume",
-        "close_time", "quote_volume", "trades",
-        "taker_buy_base", "taker_buy_quote", "ignore"
-    ])
-
-    for col in ["open", "high", "low", "close", "volume"]:
-        df[col] = df[col].astype(float)
+    df = pd.DataFrame(data["prices"], columns=["time", "close"])
+    df["close"] = df["close"].astype(float)
 
     return df
 
 
 def main():
-    send_message(f"🤖 Bot çalıştı.\n⏰ {datetime.now().strftime('%d.%m.%Y %H:%M')}")
+    send_message(f"🤖 CoinGecko bot çalıştı.\n⏰ {datetime.now().strftime('%d.%m.%Y %H:%M')}")
 
     signals = []
 
-    try:
-        symbols = get_top_symbols()
-    except Exception as e:
-        send_message(f"❌ Coin listesi alınamadı:\n{e}")
-        return
+    selected = list(COINS.items())[:TOP_COINS]
 
-    for symbol in symbols:
+    for symbol, coin_id in selected:
         try:
-            df = get_klines(symbol)
+            df = get_data(coin_id)
             result = analyze_signal(symbol, df)
 
             if result:
@@ -89,12 +71,12 @@ def main():
     signals = sorted(signals, key=lambda x: x["score"], reverse=True)
 
     if signals:
-        send_message(f"✅ Tarama tamamlandı.\nGüçlü sinyal sayısı: {len(signals)}")
+        send_message(f"✅ CoinGecko taraması tamamlandı.\nGüçlü sinyal sayısı: {len(signals)}")
 
         for signal in signals[:5]:
             send_message(signal["message"])
     else:
-        send_message("📊 Tarama tamamlandı.\nŞu an güçlü sinyal yok.")
+        send_message("📊 CoinGecko taraması tamamlandı.\nŞu an güçlü sinyal yok.")
 
 
 if __name__ == "__main__":
