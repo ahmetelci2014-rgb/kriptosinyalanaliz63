@@ -2,23 +2,25 @@ import requests
 import pandas as pd
 from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD
-from ta.volatility import AverageTrueRange
 from datetime import datetime
 
 TOKEN = "8619346423:AAHyaf5nk3IQYvMzEcNAYQFQH8eALdz6220"
 CHAT_ID = "8439391876"
 
-INTERVAL = "15m"
-LIMIT = 200
-MIN_SCORE = 75
+MIN_SCORE = 70
 
-COINS = [
-    "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT",
-    "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "DOTUSDT",
-    "LTCUSDT", "TRXUSDT", "ATOMUSDT", "UNIUSDT", "APTUSDT",
-    "ARBUSDT", "OPUSDT", "NEARUSDT", "INJUSDT", "SUIUSDT",
-    "FILUSDT", "ETCUSDT", "AAVEUSDT", "SEIUSDT", "TIAUSDT"
-]
+COINS = {
+    "BTC": "bitcoin",
+    "ETH": "ethereum",
+    "BNB": "binancecoin",
+    "SOL": "solana",
+    "XRP": "ripple",
+    "DOGE": "dogecoin",
+    "ADA": "cardano",
+    "AVAX": "avalanche-2",
+    "LINK": "chainlink",
+    "DOT": "polkadot"
+}
 
 
 def send_telegram(text):
@@ -26,25 +28,32 @@ def send_telegram(text):
     requests.post(url, data={"chat_id": CHAT_ID, "text": text}, timeout=15)
 
 
-def get_klines(symbol):
-    url = "https://fapi.binance.com/fapi/v1/klines"
-    params = {"symbol": symbol, "interval": INTERVAL, "limit": LIMIT}
+def get_data(coin_id):
+    url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
+    params = {
+        "vs_currency": "usd",
+        "days": "7"
+    }
+
     data = requests.get(url, params=params, timeout=20).json()
 
-    df = pd.DataFrame(data, columns=[
-        "time", "open", "high", "low", "close", "volume",
-        "close_time", "quote_asset_volume", "trades",
-        "taker_buy_base", "taker_buy_quote", "ignore"
-    ])
+    if "prices" not in data or len(data["prices"]) < 60:
+        return None
 
-    for col in ["open", "high", "low", "close", "volume"]:
-        df[col] = df[col].astype(float)
+    df = pd.DataFrame(data["prices"], columns=["time", "close"])
+    df["volume"] = [v[1] for v in data.get("total_volumes", [])[:len(df)]]
+
+    df["close"] = df["close"].astype(float)
+    df["volume"] = df["volume"].astype(float)
 
     return df
 
 
-def analyze(symbol):
-    df = get_klines(symbol)
+def analyze(symbol, coin_id):
+    df = get_data(coin_id)
+
+    if df is None or df.empty:
+        return None
 
     df["rsi"] = RSIIndicator(df["close"], window=14).rsi()
     df["ema20"] = EMAIndicator(df["close"], window=20).ema_indicator()
@@ -54,11 +63,9 @@ def analyze(symbol):
     df["macd"] = macd.macd()
     df["macd_signal"] = macd.macd_signal()
 
-    atr = AverageTrueRange(df["high"], df["low"], df["close"], window=14)
-    df["atr"] = atr.average_true_range()
+    df["volatility"] = df["close"].pct_change().rolling(20).std()
 
     last = df.iloc[-1]
-    prev = df.iloc[-2]
 
     price = last["close"]
     rsi = last["rsi"]
@@ -66,28 +73,28 @@ def analyze(symbol):
     ema50 = last["ema50"]
     macd_now = last["macd"]
     macd_signal = last["macd_signal"]
-    atr_now = last["atr"]
+    volatility = last["volatility"]
 
-    volume_avg = df["volume"].rolling(20).mean().iloc[-1]
-    volume_strong = last["volume"] > volume_avg
+    if pd.isna(rsi) or pd.isna(ema20) or pd.isna(ema50) or pd.isna(macd_now):
+        return None
 
     long_score = 0
     short_score = 0
 
     if ema20 > ema50:
-        long_score += 25
+        long_score += 30
     else:
-        short_score += 25
+        short_score += 30
 
     if price > ema20:
-        long_score += 15
-    else:
-        short_score += 15
-
-    if macd_now > macd_signal:
         long_score += 20
     else:
         short_score += 20
+
+    if macd_now > macd_signal:
+        long_score += 25
+    else:
+        short_score += 25
 
     if rsi < 35:
         long_score += 20
@@ -95,67 +102,50 @@ def analyze(symbol):
     if rsi > 65:
         short_score += 20
 
-    if 45 <= rsi <= 60 and ema20 > ema50:
-        long_score += 10
-
-    if 40 <= rsi <= 55 and ema20 < ema50:
-        short_score += 10
-
-    if volume_strong:
-        long_score += 10
-        short_score += 10
-
     if long_score >= short_score:
         direction = "LONG"
         score = long_score
+        icon = "🟢"
     else:
         direction = "SHORT"
         score = short_score
+        icon = "🔴"
 
     if score < MIN_SCORE:
         return None
 
-    if direction == "LONG":
-        sl = price - (atr_now * 1.5)
-        tp1 = price + (atr_now * 2)
-        tp2 = price + (atr_now * 3)
-        icon = "🟢"
-    else:
-        sl = price + (atr_now * 1.5)
-        tp1 = price - (atr_now * 2)
-        tp2 = price - (atr_now * 3)
-        icon = "🔴"
+    risk_percent = max(volatility * 100, 1.2)
 
-    risk = abs(price - sl)
-    reward = abs(tp1 - price)
-    rr = reward / risk if risk > 0 else 0
+    if direction == "LONG":
+        sl = price * (1 - risk_percent / 100)
+        tp1 = price * (1 + risk_percent * 1.5 / 100)
+        tp2 = price * (1 + risk_percent * 2.5 / 100)
+    else:
+        sl = price * (1 + risk_percent / 100)
+        tp1 = price * (1 - risk_percent * 1.5 / 100)
+        tp2 = price * (1 - risk_percent * 2.5 / 100)
 
     return {
-        "symbol": symbol,
         "score": score,
         "message": f"""
 🚀 KRİPTO FUTURES SİNYALİ
 
 {icon} {direction}
-🪙 Coin: {symbol}
-⏱️ Zaman: {INTERVAL}
+🪙 Coin: {symbol}/USDT
 
-💰 Giriş: {round(price, 5)}
-🎯 TP1: {round(tp1, 5)}
-🎯 TP2: {round(tp2, 5)}
-🛑 SL: {round(sl, 5)}
+💰 Giriş: ${round(price, 5)}
+🎯 TP1: ${round(tp1, 5)}
+🎯 TP2: ${round(tp2, 5)}
+🛑 SL: ${round(sl, 5)}
 
 📊 RSI: {round(rsi, 2)}
 📈 EMA20: {round(ema20, 5)}
 📉 EMA50: {round(ema50, 5)}
 📌 MACD: {round(macd_now, 5)}
-📦 Hacim: {"Güçlü" if volume_strong else "Normal"}
 
 🔥 Güven Puanı: %{score}
-⚖️ Risk/Ödül: 1:{round(rr, 2)}
-
+⏱ Tarama: CoinGecko
 ⚠️ Finansal tavsiye değildir.
-⚠️ Düşük kaldıraç kullan.
 ⏰ {datetime.now().strftime("%d.%m.%Y %H:%M")}
 """
     }
@@ -164,22 +154,22 @@ def analyze(symbol):
 def main():
     signals = []
 
-    for coin in COINS:
+    for symbol, coin_id in COINS.items():
         try:
-            result = analyze(coin)
+            result = analyze(symbol, coin_id)
             if result:
                 signals.append(result)
         except Exception as e:
-            print(f"{coin} hata: {e}")
+            print(f"{symbol} hata: {e}")
 
     signals = sorted(signals, key=lambda x: x["score"], reverse=True)
 
     if signals:
-        send_telegram(f"✅ Tarama tamamlandı.\nBulunan güçlü sinyal sayısı: {len(signals)}")
-        for item in signals[:5]:
-            send_telegram(item["message"])
+        send_telegram(f"✅ Tarama tamamlandı.\nGüçlü sinyal sayısı: {len(signals)}")
+        for s in signals[:5]:
+            send_telegram(s["message"])
     else:
-        send_telegram("📊 Tarama tamamlandı.\nŞu an güçlü sinyal yok.")
+        send_telegram("📊 CoinGecko taraması tamamlandı.\nŞu an güçlü sinyal yok.")
 
 
 main()
