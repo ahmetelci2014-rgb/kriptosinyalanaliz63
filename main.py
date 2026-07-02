@@ -1,16 +1,17 @@
 import requests
 
-TOKEN = "8619346423:AAGAXRkFwUD7Qy3l0MoggiKpOJzKOFtDZUY"
+TOKEN = "8619346423:AAFKQN6x6c1IreXc007VXvSB0gtemEwqhXg"
 CHAT_ID = "8439391876"
 
-mesaj = "✅ TEST MESAJI\nGitHub Actions başarılı çalıştı."
+url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
-r = requests.post(
-    f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+response = requests.post(
+    url,
     data={
         "chat_id": CHAT_ID,
-        "text": mesaj
+        "text": "🚀 TEST BAŞARILI! GitHub Actions Telegram'a bağlandı."
     }
 )
 
-print(r.text)
+print(response.status_code)
+print(response.text)
