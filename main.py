@@ -2,23 +2,40 @@ import requests
 import pandas as pd
 from datetime import datetime
 
-from config import OKX_BASE_URL, INTERVAL, LIMIT, TOP_COINS
+from config import OKX_BASE_URL, INTERVAL, LIMIT
 from telegram import send_message
 from strategy import analyze_signal
 
 
-COINS = [
-    "BTC-USDT", "ETH-USDT", "SOL-USDT", "XRP-USDT", "BNB-USDT",
-    "DOGE-USDT", "ADA-USDT", "AVAX-USDT", "LINK-USDT", "DOT-USDT",
-    "TRX-USDT", "LTC-USDT", "BCH-USDT", "UNI-USDT", "ATOM-USDT",
-    "APT-USDT", "OP-USDT", "ARB-USDT", "NEAR-USDT", "FIL-USDT"
-]
+def get_okx_usdt_futures_pairs():
+    url = f"{OKX_BASE_URL}/api/v5/public/instruments"
+    params = {"instType": "SWAP"}
+
+    response = requests.get(url, params=params, timeout=20)
+    data = response.json()
+
+    if data.get("code") != "0":
+        print(f"OKX parite hatası: {data}")
+        return []
+
+    pairs = []
+
+    for item in data.get("data", []):
+        inst_id = item.get("instId", "")
+
+        if inst_id.endswith("-USDT-SWAP"):
+            symbol = inst_id.replace("-SWAP", "")
+            pairs.append(symbol)
+
+    return pairs
 
 
 def get_okx_candles(symbol):
+    okx_symbol = f"{symbol}-SWAP"
     url = f"{OKX_BASE_URL}/api/v5/market/candles"
+
     params = {
-        "instId": symbol,
+        "instId": okx_symbol,
         "bar": INTERVAL,
         "limit": LIMIT
     }
@@ -49,9 +66,17 @@ def get_okx_candles(symbol):
 
 
 def main():
+    pairs = get_okx_usdt_futures_pairs()
+
+    if not pairs:
+        send_message("⚠️ OKX USDT futures pariteleri alınamadı.")
+        return
+
+    print(f"Toplam taranan parite: {len(pairs)}")
+
     signals = []
 
-    for symbol in COINS[:TOP_COINS]:
+    for symbol in pairs:
         try:
             df = get_okx_candles(symbol)
             result = analyze_signal(symbol, df)
@@ -67,7 +92,11 @@ def main():
     if signals:
         strong_signals = signals[:3]
 
-        send_message(f"✅ OKX taraması tamamlandı.\nEn güçlü sinyal sayısı: {len(strong_signals)}")
+        send_message(
+            f"✅ OKX futures taraması tamamlandı.\n"
+            f"Taranan parite: {len(pairs)}\n"
+            f"En güçlü sinyal sayısı: {len(strong_signals)}"
+        )
 
         for signal in strong_signals:
             send_message(signal["message"])
