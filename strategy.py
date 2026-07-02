@@ -81,7 +81,7 @@ def analyze_signal(symbol, df):
         icon = "🔴"
 
     if score < MIN_SCORE:
-    return None
+        return None
 
 # RSI filtresi
 if direction == "LONG" and last["rsi"] > 75:
