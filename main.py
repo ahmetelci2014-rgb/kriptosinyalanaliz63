@@ -11,17 +11,31 @@ BINANCE_BASE = "https://fapi.binance.com"
 
 def get_top_symbols():
     url = f"{BINANCE_BASE}/fapi/v1/ticker/24hr"
-    data = requests.get(url, timeout=20).json()
+
+    response = requests.get(url, timeout=20)
+
+    if response.status_code != 200:
+        raise Exception(f"HTTP {response.status_code}")
+
+    data = response.json()
+
+    if not isinstance(data, list):
+        raise Exception(f"Binance cevabı: {data}")
 
     symbols = []
 
     for item in data:
-        symbol = item.get("symbol", "")
-        if symbol.endswith("USDT") and "_" not in symbol:
+        if not isinstance(item, dict):
+            continue
+
+        symbol = item.get("symbol")
+
+        if symbol and symbol.endswith("USDT"):
             volume = float(item.get("quoteVolume", 0))
             symbols.append((symbol, volume))
 
-    symbols = sorted(symbols, key=lambda x: x[1], reverse=True)
+    symbols.sort(key=lambda x: x[1], reverse=True)
+
     return [s[0] for s in symbols[:TOP_COINS]]
 
 
