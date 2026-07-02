@@ -10,3 +10,9 @@ MIN_SCORE = 60
 # CoinGecko
 VS_CURRENCY = "usd"
 DAYS = 7
+
+OKX_BASE_URL = "https://www.okx.com"
+INTERVAL = "30m"
+LIMIT = 200
+MIN_SCORE = 60
+TOP_COINS = 20
