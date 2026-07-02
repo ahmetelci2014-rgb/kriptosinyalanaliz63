@@ -67,12 +67,14 @@ def main():
     signals = sorted(signals, key=lambda x: x["score"], reverse=True)
 
     if signals:
-        send_message(f"✅ OKX taraması tamamlandı.\nGüçlü sinyal sayısı: {len(signals)}")
+    strong_signals = signals[:3]
 
-        for signal in signals[:3]:
-            send_message(signal["message"])
-    else:
-        send_message("📊 OKX taraması tamamlandı.\nŞu an güçlü sinyal yok.")
+    send_message(f"✅ OKX taraması tamamlandı.\nEn güçlü sinyal sayısı: {len(strong_signals)}")
+
+    for signal in strong_signals:
+        send_message(signal["message"])
+else:
+    print("Şu an güçlü sinyal yok.")
 
 
 if __name__ == "__main__":
