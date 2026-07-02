@@ -3,31 +3,48 @@ import requests
 TOKEN = "8619346423:AAFKQN6x6c1IreXc007VXvSB0gtemEwqhXg"
 CHAT_ID = "8439391876"
 
+coins = {
+    "BTC": "bitcoin",
+    "ETH": "ethereum",
+    "SOL": "solana",
+    "XRP": "ripple",
+    "BNB": "binancecoin"
+}
+
+mesaj = "🚀 KRİPTO SİNYAL BOTU\n\n"
+
 try:
-    btc = requests.get(
-        "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
-    ).json()
+    for sembol, coin in coins.items():
 
-    fiyat = btc["bitcoin"]["usd"]
+        veri = requests.get(
+            f"https://api.coingecko.com/api/v3/simple/price?ids={coin}&vs_currencies=usd"
+        ).json()
 
-    if fiyat > 60000:
-        sinyal = "📈 LONG"
-    else:
-        sinyal = "📉 SHORT"
+        fiyat = veri[coin]["usd"]
 
-    mesaj = f"""
-🚀 KRİPTO SİNYAL BOTU
+        # Basit test stratejisi
+        if fiyat % 2 == 0:
+            sinyal = "📈 LONG"
+            tp = round(fiyat * 1.02, 2)
+            sl = round(fiyat * 0.98, 2)
+        else:
+            sinyal = "📉 SHORT"
+            tp = round(fiyat * 0.98, 2)
+            sl = round(fiyat * 1.02, 2)
 
-Coin: BTC
-Fiyat: ${fiyat}
+        mesaj += f"""
+{sembol}
+{sinyal}
 
-Sinyal: {sinyal}
+Giriş: ${fiyat}
+TP: ${tp}
+SL: ${sl}
 
-⚠️ Test sinyalidir.
+----------------
 """
 
 except Exception as e:
-    mesaj = f"❌ Hata: {e}"
+    mesaj = f"❌ Hata:\n{e}"
 
 requests.post(
     f"https://api.telegram.org/bot{TOKEN}/sendMessage",
