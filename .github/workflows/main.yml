@@ -1,9 +1,9 @@
 name: Kripto Sinyal Botu
 
 on:
-  workflow_dispatch:
   schedule:
-  - cron: "*/30 * * * *"
+    - cron: "0,30 * * * *"
+  workflow_dispatch:
 
 jobs:
   bot:
@@ -16,7 +16,7 @@ jobs:
       - name: Python kur
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Paketleri yükle
         run: |
