@@ -2,64 +2,60 @@ import requests
 import pandas as pd
 from datetime import datetime
 
-from config import TOP_COINS, VS_CURRENCY, DAYS
+from config import OKX_BASE_URL, INTERVAL, LIMIT, TOP_COINS
 from telegram import send_message
 from strategy import analyze_signal
 
 
-COINS = {
-    "BTC": "bitcoin",
-    "ETH": "ethereum",
-    "BNB": "binancecoin",
-    "SOL": "solana",
-    "XRP": "ripple",
-    "DOGE": "dogecoin",
-    "ADA": "cardano",
-    "AVAX": "avalanche-2",
-    "LINK": "chainlink",
-    "DOT": "polkadot",
-    "TRX": "tron",
-    "LTC": "litecoin",
-    "BCH": "bitcoin-cash",
-    "UNI": "uniswap",
-    "ATOM": "cosmos"
-}
+COINS = [
+    "BTC-USDT", "ETH-USDT", "SOL-USDT", "XRP-USDT", "BNB-USDT",
+    "DOGE-USDT", "ADA-USDT", "AVAX-USDT", "LINK-USDT", "DOT-USDT",
+    "TRX-USDT", "LTC-USDT", "BCH-USDT", "UNI-USDT", "ATOM-USDT",
+    "APT-USDT", "OP-USDT", "ARB-USDT", "NEAR-USDT", "FIL-USDT"
+]
 
 
-def get_data(coin_id):
-    url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
+def get_okx_candles(symbol):
+    url = f"{OKX_BASE_URL}/api/v5/market/candles"
     params = {
-        "vs_currency": VS_CURRENCY,
-        "days": DAYS
+        "instId": symbol,
+        "bar": INTERVAL,
+        "limit": LIMIT
     }
 
     response = requests.get(url, params=params, timeout=20)
-
-    if response.status_code != 200:
-        print(f"CoinGecko HTTP hata: {response.status_code}")
-        return None
-
     data = response.json()
 
-    if "prices" not in data or len(data["prices"]) < 60:
+    if data.get("code") != "0":
+        print(f"{symbol} OKX hata: {data}")
         return None
 
-    df = pd.DataFrame(data["prices"], columns=["time", "close"])
-    df["close"] = df["close"].astype(float)
+    candles = data.get("data", [])
+
+    if len(candles) < 200:
+        return None
+
+    df = pd.DataFrame(candles, columns=[
+        "time", "open", "high", "low", "close",
+        "volume", "vol_ccy", "vol_ccy_quote", "confirm"
+    ])
+
+    df = df.iloc[::-1].reset_index(drop=True)
+
+    for col in ["open", "high", "low", "close", "volume"]:
+        df[col] = df[col].astype(float)
 
     return df
 
 
 def main():
-    send_message(f"🤖 CoinGecko bot çalıştı.\n⏰ {datetime.now().strftime('%d.%m.%Y %H:%M')}")
+    send_message(f"🤖 OKX bot çalıştı.\n⏰ {datetime.now().strftime('%d.%m.%Y %H:%M')}")
 
     signals = []
 
-    selected = list(COINS.items())[:TOP_COINS]
-
-    for symbol, coin_id in selected:
+    for symbol in COINS[:TOP_COINS]:
         try:
-            df = get_data(coin_id)
+            df = get_okx_candles(symbol)
             result = analyze_signal(symbol, df)
 
             if result:
@@ -71,12 +67,12 @@ def main():
     signals = sorted(signals, key=lambda x: x["score"], reverse=True)
 
     if signals:
-        send_message(f"✅ CoinGecko taraması tamamlandı.\nGüçlü sinyal sayısı: {len(signals)}")
+        send_message(f"✅ OKX taraması tamamlandı.\nGüçlü sinyal sayısı: {len(signals)}")
 
         for signal in signals[:5]:
             send_message(signal["message"])
     else:
-        send_message("📊 CoinGecko taraması tamamlandı.\nŞu an güçlü sinyal yok.")
+        send_message("📊 OKX taraması tamamlandı.\nŞu an güçlü sinyal yok.")
 
 
 if __name__ == "__main__":
