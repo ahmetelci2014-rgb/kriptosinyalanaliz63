@@ -2,10 +2,11 @@
 TOKEN = "8619346423:AAHyaf5nk3IQYvMzEcNAYQFQH8eALdz6220"
 CHAT_ID = "8439391876"
 
-# Binance
-INTERVAL = "15m"
-LIMIT = 200
+# Tarama Ayarları
+SCAN_INTERVAL = "30m"
+TOP_COINS = 30
+MIN_SCORE = 70
 
-# Filtreler
-MIN_SCORE = 80
-TOP_COINS = 50
+# CoinGecko
+VS_CURRENCY = "usd"
+DAYS = 7
