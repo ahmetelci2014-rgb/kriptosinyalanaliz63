@@ -1,0 +1,11 @@
+# Telegram
+TOKEN = "8619346423:AAHyaf5nk3IQYvMzEcNAYQFQH8eALdz6220"
+CHAT_ID = "8439391876"
+
+# Binance
+INTERVAL = "15m"
+LIMIT = 200
+
+# Filtreler
+MIN_SCORE = 80
+TOP_COINS = 50
