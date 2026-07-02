@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Kodu indir
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
       - name: Python kur
         uses: actions/setup-python@v5
@@ -32,3 +34,11 @@ jobs:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python main.py
+
+      - name: Sinyal geçmişini kaydet
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add last_signals.json
+          git commit -m "Update last signals" || echo "Değişiklik yok"
+          git push
