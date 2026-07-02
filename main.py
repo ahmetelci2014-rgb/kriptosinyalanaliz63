@@ -10,29 +10,26 @@ CHAT_ID = "8439391876"
 
 INTERVAL = "15m"
 LIMIT = 200
+MIN_SCORE = 75
 
 COINS = [
     "BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "XRPUSDT",
     "DOGEUSDT", "ADAUSDT", "AVAXUSDT", "LINKUSDT", "DOTUSDT",
-    "TRXUSDT", "MATICUSDT", "LTCUSDT", "ATOMUSDT", "UNIUSDT",
-    "APTUSDT", "ARBUSDT", "OPUSDT", "NEARUSDT", "INJUSDT"
+    "LTCUSDT", "TRXUSDT", "ATOMUSDT", "UNIUSDT", "APTUSDT",
+    "ARBUSDT", "OPUSDT", "NEARUSDT", "INJUSDT", "SUIUSDT",
+    "FILUSDT", "ETCUSDT", "AAVEUSDT", "SEIUSDT", "TIAUSDT"
 ]
 
 
-def send_telegram(message):
+def send_telegram(text):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    requests.post(url, data={"chat_id": CHAT_ID, "text": message})
+    requests.post(url, data={"chat_id": CHAT_ID, "text": text}, timeout=15)
 
 
 def get_klines(symbol):
     url = "https://fapi.binance.com/fapi/v1/klines"
-    params = {
-        "symbol": symbol,
-        "interval": INTERVAL,
-        "limit": LIMIT
-    }
-
-    data = requests.get(url, params=params, timeout=15).json()
+    params = {"symbol": symbol, "interval": INTERVAL, "limit": LIMIT}
+    data = requests.get(url, params=params, timeout=20).json()
 
     df = pd.DataFrame(data, columns=[
         "time", "open", "high", "low", "close", "volume",
@@ -40,11 +37,8 @@ def get_klines(symbol):
         "taker_buy_base", "taker_buy_quote", "ignore"
     ])
 
-    df["open"] = df["open"].astype(float)
-    df["high"] = df["high"].astype(float)
-    df["low"] = df["low"].astype(float)
-    df["close"] = df["close"].astype(float)
-    df["volume"] = df["volume"].astype(float)
+    for col in ["open", "high", "low", "close", "volume"]:
+        df[col] = df[col].astype(float)
 
     return df
 
@@ -60,12 +54,7 @@ def analyze(symbol):
     df["macd"] = macd.macd()
     df["macd_signal"] = macd.macd_signal()
 
-    atr = AverageTrueRange(
-        high=df["high"],
-        low=df["low"],
-        close=df["close"],
-        window=14
-    )
+    atr = AverageTrueRange(df["high"], df["low"], df["close"], window=14)
     df["atr"] = atr.average_true_range()
 
     last = df.iloc[-1]
@@ -75,71 +64,101 @@ def analyze(symbol):
     rsi = last["rsi"]
     ema20 = last["ema20"]
     ema50 = last["ema50"]
-    macd_val = last["macd"]
+    macd_now = last["macd"]
     macd_signal = last["macd_signal"]
-    atr_val = last["atr"]
+    atr_now = last["atr"]
 
-    score = 0
-    direction = None
+    volume_avg = df["volume"].rolling(20).mean().iloc[-1]
+    volume_strong = last["volume"] > volume_avg
+
+    long_score = 0
+    short_score = 0
 
     if ema20 > ema50:
-        score += 25
+        long_score += 25
+    else:
+        short_score += 25
+
+    if price > ema20:
+        long_score += 15
+    else:
+        short_score += 15
+
+    if macd_now > macd_signal:
+        long_score += 20
+    else:
+        short_score += 20
+
+    if rsi < 35:
+        long_score += 20
+
+    if rsi > 65:
+        short_score += 20
+
+    if 45 <= rsi <= 60 and ema20 > ema50:
+        long_score += 10
+
+    if 40 <= rsi <= 55 and ema20 < ema50:
+        short_score += 10
+
+    if volume_strong:
+        long_score += 10
+        short_score += 10
+
+    if long_score >= short_score:
         direction = "LONG"
-
-    if ema20 < ema50:
-        score += 25
+        score = long_score
+    else:
         direction = "SHORT"
+        score = short_score
 
-    if macd_val > macd_signal and direction == "LONG":
-        score += 25
-
-    if macd_val < macd_signal and direction == "SHORT":
-        score += 25
-
-    if rsi < 35 and direction == "LONG":
-        score += 25
-
-    if rsi > 65 and direction == "SHORT":
-        score += 25
-
-    if last["volume"] > df["volume"].rolling(20).mean().iloc[-1]:
-        score += 15
-
-    if score < 70 or direction is None:
+    if score < MIN_SCORE:
         return None
 
     if direction == "LONG":
-        sl = price - (atr_val * 1.5)
-        tp1 = price + (atr_val * 2)
-        tp2 = price + (atr_val * 3)
+        sl = price - (atr_now * 1.5)
+        tp1 = price + (atr_now * 2)
+        tp2 = price + (atr_now * 3)
         icon = "🟢"
     else:
-        sl = price + (atr_val * 1.5)
-        tp1 = price - (atr_val * 2)
-        tp2 = price - (atr_val * 3)
+        sl = price + (atr_now * 1.5)
+        tp1 = price - (atr_now * 2)
+        tp2 = price - (atr_now * 3)
         icon = "🔴"
 
-    return f"""
+    risk = abs(price - sl)
+    reward = abs(tp1 - price)
+    rr = reward / risk if risk > 0 else 0
+
+    return {
+        "symbol": symbol,
+        "score": score,
+        "message": f"""
 🚀 KRİPTO FUTURES SİNYALİ
 
 {icon} {direction}
-Coin: {symbol}
-Zaman: {INTERVAL}
+🪙 Coin: {symbol}
+⏱️ Zaman: {INTERVAL}
 
-💰 Giriş: {round(price, 4)}
-🎯 TP1: {round(tp1, 4)}
-🎯 TP2: {round(tp2, 4)}
-🛑 SL: {round(sl, 4)}
+💰 Giriş: {round(price, 5)}
+🎯 TP1: {round(tp1, 5)}
+🎯 TP2: {round(tp2, 5)}
+🛑 SL: {round(sl, 5)}
 
 📊 RSI: {round(rsi, 2)}
-📈 EMA20: {round(ema20, 4)}
-📉 EMA50: {round(ema50, 4)}
-📌 MACD: {round(macd_val, 4)}
-🔥 Güven Puanı: %{score}
+📈 EMA20: {round(ema20, 5)}
+📉 EMA50: {round(ema50, 5)}
+📌 MACD: {round(macd_now, 5)}
+📦 Hacim: {"Güçlü" if volume_strong else "Normal"}
 
-⚠️ Kaldıraç düşük tutulmalı.
+🔥 Güven Puanı: %{score}
+⚖️ Risk/Ödül: 1:{round(rr, 2)}
+
+⚠️ Finansal tavsiye değildir.
+⚠️ Düşük kaldıraç kullan.
 ⏰ {datetime.now().strftime("%d.%m.%Y %H:%M")}
 """
+    }
 
 
 def main():
@@ -147,15 +166,18 @@ def main():
 
     for coin in COINS:
         try:
-            signal = analyze(coin)
-            if signal:
-                signals.append(signal)
+            result = analyze(coin)
+            if result:
+                signals.append(result)
         except Exception as e:
             print(f"{coin} hata: {e}")
 
+    signals = sorted(signals, key=lambda x: x["score"], reverse=True)
+
     if signals:
-        for signal in signals[:5]:
-            send_telegram(signal)
+        send_telegram(f"✅ Tarama tamamlandı.\nBulunan güçlü sinyal sayısı: {len(signals)}")
+        for item in signals[:5]:
+            send_telegram(item["message"])
     else:
         send_telegram("📊 Tarama tamamlandı.\nŞu an güçlü sinyal yok.")
 
