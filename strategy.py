@@ -89,7 +89,7 @@ def analyze_signal(symbol, df):
     return {
         "score": score,
         "message": f"""
-🚀 OKX FUTURES SİNYALİ
+🚀 KRİPTO SİNYAL ANALİZ BOTU FUTURES SİNYALİ
 
 {icon} {direction}
 🪙 Coin: {symbol}
