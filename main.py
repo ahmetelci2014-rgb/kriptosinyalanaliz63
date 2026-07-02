@@ -49,8 +49,6 @@ def get_okx_candles(symbol):
 
 
 def main():
-    send_message(f"🤖 OKX bot çalıştı.\n⏰ {datetime.now().strftime('%d.%m.%Y %H:%M')}")
-
     signals = []
 
     for symbol in COINS[:TOP_COINS]:
@@ -66,15 +64,15 @@ def main():
 
     signals = sorted(signals, key=lambda x: x["score"], reverse=True)
 
-if signals:
-    strong_signals = signals[:3]
+    if signals:
+        strong_signals = signals[:3]
 
-    send_message(f"✅ OKX taraması tamamlandı.\nEn güçlü sinyal sayısı: {len(strong_signals)}")
+        send_message(f"✅ OKX taraması tamamlandı.\nEn güçlü sinyal sayısı: {len(strong_signals)}")
 
-    for signal in strong_signals:
-        send_message(signal["message"])
-else:
-    print("Şu an güçlü sinyal yok.")
+        for signal in strong_signals:
+            send_message(signal["message"])
+    else:
+        print("Şu an güçlü sinyal yok.")
 
 
 if __name__ == "__main__":
