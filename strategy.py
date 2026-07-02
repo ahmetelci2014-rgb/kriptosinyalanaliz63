@@ -65,7 +65,7 @@ def analyze_signal(symbol, df):
         short_score += 15
 
     # Hacim onayı
-    if last["volume"] > last["volume_avg"] * 1.2:
+    if last["volume"] > last["volume_avg"] * 1.5:
         long_score += 15
         short_score += 15
     else:
@@ -89,7 +89,11 @@ def analyze_signal(symbol, df):
 
     if direction == "SHORT" and last["rsi"] < 25:
         return None
+    # Volatilite filtresi
+    atr_percent = (last["atr"] / price) * 100
 
+    if atr_percent < 1.2:
+        return None
     atr = last["atr"]
 
     if direction == "LONG":
