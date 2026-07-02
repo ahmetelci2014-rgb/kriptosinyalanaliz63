@@ -81,6 +81,7 @@ def get_okx_candles(symbol):
 
 def main():
     pairs = get_okx_usdt_futures_pairs()
+    last_signals = load_last_signals()
 
     if not pairs:
         send_message("⚠️ OKX USDT futures pariteleri alınamadı.")
