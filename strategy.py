@@ -83,14 +83,14 @@ def analyze_signal(symbol, df):
     if score < MIN_SCORE:
         return None
 
-# RSI filtresi
-if direction == "LONG" and last["rsi"] > 75:
-    return None
+    # RSI filtresi
+    if direction == "LONG" and last["rsi"] > 75:
+        return None
 
-if direction == "SHORT" and last["rsi"] < 25:
-    return None
+    if direction == "SHORT" and last["rsi"] < 25:
+        return None
 
-atr = last["atr"]
+    atr = last["atr"]
 
     if direction == "LONG":
         sl = price - atr * 1.3
