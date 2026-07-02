@@ -107,7 +107,7 @@ def analyze_signal(symbol, df):
     if score >= 90 and last["adx"] >= 30:
         leverage = "5x - 10x"
 
-    score = min(score, 100)
+                score = min(score, 100)
 
 return {
     "symbol": symbol,
