@@ -69,7 +69,7 @@ def main():
     if signals:
         send_message(f"✅ OKX taraması tamamlandı.\nGüçlü sinyal sayısı: {len(signals)}")
 
-        for signal in signals[:5]:
+        for signal in signals[:3]:
             send_message(signal["message"])
     else:
         send_message("📊 OKX taraması tamamlandı.\nŞu an güçlü sinyal yok.")
