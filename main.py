@@ -1,28 +1,34 @@
+import os
 import requests
-import time
 
-TOKEN = "8619346423:AAGAXRkFwUD7Qy3l0MoggiKpOJzKOFtDZUY"
-CHAT_ID = "8439391876"
+TOKEN = os.getenv("TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
-def telegram_gonder(mesaj):
-    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-    requests.post(url, data={
+try:
+    response = requests.get(
+        "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT"
+    )
+
+    data = response.json()
+
+    if "price" in data:
+        mesaj = f"""🚀 KRİPTO SİNYAL BOTU
+
+Coin: BTCUSDT
+Fiyat: {data['price']}
+
+✅ Bot başarıyla çalışıyor.
+"""
+    else:
+        mesaj = f"❌ Binance API Hatası:\n{data}"
+
+except Exception as e:
+    mesaj = f"❌ Hata oluştu:\n{e}"
+
+requests.post(
+    f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+    data={
         "chat_id": CHAT_ID,
         "text": mesaj
-    })
-
-def btc_fiyat():
-    url = "https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT"
-    r = requests.get(url).json()
-    return r["price"]
-
-telegram_gonder("🚀 Kripto Sinyal Botu Başlatıldı!")
-
-while True:
-    try:
-        fiyat = btc_fiyat()
-        telegram_gonder(f"📊 BTCUSDT Güncel Fiyat: {fiyat}")
-        time.sleep(3600)
-    except Exception as e:
-        telegram_gonder(f"❌ Hata: {e}")
-        time.sleep(60)
+    }
+)
