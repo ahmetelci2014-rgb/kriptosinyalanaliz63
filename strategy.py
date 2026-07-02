@@ -107,9 +107,13 @@ def analyze_signal(symbol, df):
     if score >= 90 and last["adx"] >= 30:
         leverage = "5x - 10x"
 
-    return {
-        "score": score,
-        "message": f"""
+    score = min(score, 100)
+
+return {
+    "symbol": symbol,
+    "direction": direction,
+    "score": score,
+    "message": f"""
 🚀 KRİPTO SİNYAL ANALİZ BOTU FUTURES SİNYALİ
 
 {icon} {direction}
