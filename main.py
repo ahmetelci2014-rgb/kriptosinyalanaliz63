@@ -97,7 +97,16 @@ def main():
             result = analyze_signal(symbol, df)
 
             if result:
-                signals.append(result)
+                key = f"{result['symbol']}_{result['direction']}"
+                last_time = last_signals.get(key)
+
+            if last_time:
+                last_dt = datetime.fromisoformat(last_time)
+                if datetime.utcnow() - last_dt < timedelta(hours=6):
+                    print(f"{key} tekrar sinyal, atlandı.")
+                    continue
+
+            signals.append(result)
 
         except Exception as e:
             print(f"{symbol} hata: {e}")
@@ -115,6 +124,11 @@ def main():
 
         for signal in strong_signals:
             send_message(signal["message"])
+            key = f"{signal['symbol']}_{signal['direction']}"
+            last_signals[key] = datetime.utcnow().isoformat()
+
+        save_last_signals(last_signals)
+
     else:
         print("Şu an güçlü sinyal yok.")
 
