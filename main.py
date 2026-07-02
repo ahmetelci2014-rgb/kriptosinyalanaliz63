@@ -91,25 +91,25 @@ def main():
 
     signals = []
 
-for symbol in pairs:
-    try:
-        df = get_okx_candles(symbol)
-        result = analyze_signal(symbol, df)
+    for symbol in pairs:
+        try:
+            df = get_okx_candles(symbol)
+            result = analyze_signal(symbol, df)
 
-        if result:
-            key = f"{result['symbol']}_{result['direction']}"
-            last_time = last_signals.get(key)
+            if result:
+                key = f"{result['symbol']}_{result['direction']}"
+                last_time = last_signals.get(key)
 
-            if last_time:
-                last_dt = datetime.fromisoformat(last_time)
-                if datetime.utcnow() - last_dt < timedelta(hours=6):
-                    print(f"{key} tekrar sinyal, atlandı.")
-                    continue
+                if last_time:
+                    last_dt = datetime.fromisoformat(last_time)
+                    if datetime.utcnow() - last_dt < timedelta(hours=6):
+                        print(f"{key} tekrar sinyal, atlandı.")
+                        continue
 
-            signals.append(result)
+                signals.append(result)
 
-    except Exception as e:
-        print(f"{symbol} hata: {e}")
+        except Exception as e:
+            print(f"{symbol} hata: {e}")
 
     signals = sorted(signals, key=lambda x: x["score"], reverse=True)
 
@@ -117,7 +117,7 @@ for symbol in pairs:
         strong_signals = signals[:3]
 
         send_message(
-            f"✅ OKX futures taraması tamamlandı.\n"
+            f"✅ OKX Futures taraması tamamlandı.\n"
             f"Taranan parite: {len(pairs)}\n"
             f"En güçlü sinyal sayısı: {len(strong_signals)}"
         )
