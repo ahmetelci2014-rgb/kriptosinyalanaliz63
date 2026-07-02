@@ -8,21 +8,26 @@ try:
         "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd"
     ).json()
 
-    eth = requests.get(
-        "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
-    ).json()
+    fiyat = btc["bitcoin"]["usd"]
+
+    if fiyat > 60000:
+        sinyal = "📈 LONG"
+    else:
+        sinyal = "📉 SHORT"
 
     mesaj = f"""
 🚀 KRİPTO SİNYAL BOTU
 
-BTC: ${btc['bitcoin']['usd']}
-ETH: ${eth['ethereum']['usd']}
+Coin: BTC
+Fiyat: ${fiyat}
 
-✅ CoinGecko bağlantısı başarılı.
+Sinyal: {sinyal}
+
+⚠️ Test sinyalidir.
 """
 
 except Exception as e:
-    mesaj = f"❌ Hata:\n{e}"
+    mesaj = f"❌ Hata: {e}"
 
 requests.post(
     f"https://api.telegram.org/bot{TOKEN}/sendMessage",
