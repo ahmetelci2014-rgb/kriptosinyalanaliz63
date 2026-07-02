@@ -1,8 +1,8 @@
 import os
 import requests
 
-TOKEN = os.getenv("TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
+TOKEN = os.getenv("8619346423:AAGAXRkFwUD7Qy3l0MoggiKpOJzKOFtDZUY")
+CHAT_ID = os.getenv("8439391876")
 
 try:
     response = requests.get(
