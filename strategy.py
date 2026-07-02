@@ -1,13 +1,22 @@
 import pandas as pd
-from indicators import add_indicators
+from ta.momentum import RSIIndicator
+from ta.trend import EMAIndicator, MACD
 from config import MIN_SCORE
 
 def analyze_signal(symbol, df):
-    if df is None or df.empty or len(df) < 200:
+    if df is None or df.empty or len(df) < 60:
         return None
 
-    df = add_indicators(df).dropna()
+    df["rsi"] = RSIIndicator(df["close"], window=14).rsi()
+    df["ema20"] = EMAIndicator(df["close"], window=20).ema_indicator()
+    df["ema50"] = EMAIndicator(df["close"], window=50).ema_indicator()
 
+    macd = MACD(df["close"])
+    df["macd"] = macd.macd()
+    df["macd_signal"] = macd.macd_signal()
+    df["volatility"] = df["close"].pct_change().rolling(20).std()
+
+    df = df.dropna()
     if df.empty:
         return None
 
@@ -17,100 +26,77 @@ def analyze_signal(symbol, df):
     rsi = last["rsi"]
     ema20 = last["ema20"]
     ema50 = last["ema50"]
-    ema200 = last["ema200"]
-    macd = last["macd"]
+    macd_now = last["macd"]
     macd_signal = last["macd_signal"]
-    atr = last["atr"]
-    adx = last["adx"]
+    volatility = last["volatility"]
 
     long_score = 0
     short_score = 0
 
-    if price > ema200:
-        long_score += 20
-    else:
-        short_score += 20
-
     if ema20 > ema50:
+        long_score += 30
+    else:
+        short_score += 30
+
+    if price > ema20:
         long_score += 20
     else:
         short_score += 20
 
-    if macd > macd_signal:
-        long_score += 20
+    if macd_now > macd_signal:
+        long_score += 25
     else:
+        short_score += 25
+
+    if rsi < 35:
+        long_score += 20
+
+    if rsi > 65:
         short_score += 20
-
-    if adx > 20:
-        long_score += 15
-        short_score += 15
-
-    if 40 <= rsi <= 65:
-        long_score += 15
-
-    if 35 <= rsi <= 60:
-        short_score += 15
-
-    volume_avg = df["volume"].rolling(20).mean().iloc[-1]
-    if last["volume"] > volume_avg:
-        long_score += 10
-        short_score += 10
 
     if long_score >= short_score:
         direction = "LONG"
         score = long_score
+        icon = "🟢"
     else:
         direction = "SHORT"
         score = short_score
+        icon = "🔴"
 
     if score < MIN_SCORE:
         return None
 
+    risk_percent = max(volatility * 100, 1.2)
+
     if direction == "LONG":
-        sl = price - atr * 1.5
-        tp1 = price + atr * 2
-        tp2 = price + atr * 3
-        tp3 = price + atr * 4
-        icon = "🟢"
+        sl = price * (1 - risk_percent / 100)
+        tp1 = price * (1 + risk_percent * 1.5 / 100)
+        tp2 = price * (1 + risk_percent * 2.5 / 100)
     else:
-        sl = price + atr * 1.5
-        tp1 = price - atr * 2
-        tp2 = price - atr * 3
-        tp3 = price - atr * 4
-        icon = "🔴"
-
-    risk = abs(price - sl)
-    reward = abs(tp1 - price)
-    rr = reward / risk if risk > 0 else 0
-
-    if rr < 1.2:
-        return None
+        sl = price * (1 + risk_percent / 100)
+        tp1 = price * (1 - risk_percent * 1.5 / 100)
+        tp2 = price * (1 - risk_percent * 2.5 / 100)
 
     return {
-        "symbol": symbol,
-        "direction": direction,
         "score": score,
         "message": f"""
-🚀 PROFESYONEL FUTURES SİNYALİ
+🚀 KRİPTO SİNYALİ
 
 {icon} {direction}
-🪙 Coin: {symbol}
-⏱ Periyot: 15m
+🪙 Coin: {symbol}/USDT
 
-💰 Giriş: {round(price, 5)}
-🎯 TP1: {round(tp1, 5)}
-🎯 TP2: {round(tp2, 5)}
-🎯 TP3: {round(tp3, 5)}
-🛑 SL: {round(sl, 5)}
+💰 Giriş: ${round(price, 5)}
+🎯 TP1: ${round(tp1, 5)}
+🎯 TP2: ${round(tp2, 5)}
+🛑 SL: ${round(sl, 5)}
 
 📊 RSI: {round(rsi, 2)}
 📈 EMA20: {round(ema20, 5)}
 📉 EMA50: {round(ema50, 5)}
-📌 EMA200: {round(ema200, 5)}
-💪 ADX: {round(adx, 2)}
+📌 MACD: {round(macd_now, 5)}
 
 🔥 Güven Puanı: %{score}
-⚖️ Risk/Ödül: 1:{round(rr, 2)}
+⏱ Veri: CoinGecko / 30dk tarama
 
 ⚠️ Finansal tavsiye değildir.
 ⚠️ Düşük kaldıraç kullan.
