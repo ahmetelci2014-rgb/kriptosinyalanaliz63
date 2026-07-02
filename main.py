@@ -117,7 +117,7 @@ def main():
         strong_signals = signals[:3]
 
         send_message(
-            f"✅ OKX Futures taraması tamamlandı.\n"
+            f"✅ KSA Futures taraması tamamlandı.\n"
             f"Taranan parite: {len(pairs)}\n"
             f"En güçlü sinyal sayısı: {len(strong_signals)}"
         )
