@@ -97,8 +97,8 @@ def main():
             result = analyze_signal(symbol, df)
 
             if result:
-                key = f"{result['symbol']}_{result['direction']}"
-                last_time = last_signals.get(key)
+            key = f"{result['symbol']}_{result['direction']}"
+            last_time = last_signals.get(key)
 
             if last_time:
                 last_dt = datetime.fromisoformat(last_time)
