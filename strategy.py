@@ -90,7 +90,7 @@ def analyze_signal(symbol, df):
         short_score += 15
 
     # Hacim onayı
-    if last["volume"] > last["volume_avg"] * 1.15:
+    if last["volume"] > last["volume_avg"] * 1.05:
         long_score += 15
         short_score += 15
     else:
@@ -126,7 +126,7 @@ def analyze_signal(symbol, df):
     ema_distance_percent = abs(price - last["ema20"]) / price * 100
     atr_percent = (atr / price) * 100
 
-    if ema_distance_percent > atr_percent * 0.9:
+    if ema_distance_percent > atr_percent * 1.1:
         return None
     if direction == "LONG":
         sl = price - atr * 1.3
