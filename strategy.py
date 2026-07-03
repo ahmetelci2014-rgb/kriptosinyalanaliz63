@@ -106,7 +106,7 @@ def analyze_signal(symbol, df):
         icon = "🔴"
     # Premium coin önceliği
     if symbol in PREMIUM_COINS:
-        score += 5
+        score += 10
     if score < MIN_SCORE:
         return None
 
@@ -126,7 +126,7 @@ def analyze_signal(symbol, df):
     ema_distance_percent = abs(price - last["ema20"]) / price * 100
     atr_percent = (atr / price) * 100
 
-    if ema_distance_percent > atr_percent * 1.5:
+    if ema_distance_percent > atr_percent * 1.2:
         return None
     if direction == "LONG":
         sl = price - atr * 1.3
