@@ -126,7 +126,7 @@ for symbol in pairs:
         except Exception as e:
             print(f"{symbol} hata: {e}")
 
-    signals = sorted(signals, key=lambda x: x["score"], reverse=True)
+                signals = sorted(signals, key=lambda x: x["score"], reverse=True)
 
     if signals:
         strong_signals = signals[:5]
