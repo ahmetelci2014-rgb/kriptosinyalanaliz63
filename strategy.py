@@ -14,7 +14,22 @@ PREMIUM_COINS = [
     "SUI-USDT",
     "DOGE-USDT"
 ]
+def get_trend_direction(df):
+    if df is None or df.empty or len(df) < 200:
+        return None
 
+    df["ema50"] = EMAIndicator(df["close"], window=50).ema_indicator()
+    df["ema200"] = EMAIndicator(df["close"], window=200).ema_indicator()
+
+    last = df.iloc[-1]
+
+    if last["close"] > last["ema50"] > last["ema200"]:
+        return "LONG"
+
+    if last["close"] < last["ema50"] < last["ema200"]:
+        return "SHORT"
+
+    return None
 def analyze_signal(symbol, df):
     if df is None or df.empty or len(df) < 200:
         return None
