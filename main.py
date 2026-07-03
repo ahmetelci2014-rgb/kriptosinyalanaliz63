@@ -9,9 +9,14 @@ from telegram import send_message
 from strategy import analyze_signal, get_trend_direction
 
 SIGNAL_FILE = "last_signals.json"
+OPEN_SIGNALS_FILE = "open_signals.json"
 
 if not os.path.exists(SIGNAL_FILE):
     with open(SIGNAL_FILE, "w") as f:
+        json.dump({}, f)
+
+if not os.path.exists(OPEN_SIGNALS_FILE):
+    with open(OPEN_SIGNALS_FILE, "w") as f:
         json.dump({}, f)
 def load_last_signals():
     with open(SIGNAL_FILE, "r") as f:
@@ -21,6 +26,17 @@ def load_last_signals():
 def save_last_signals(data):
     with open(SIGNAL_FILE, "w") as f:
         json.dump(data, f)
+
+
+def load_open_signals():
+    with open(OPEN_SIGNALS_FILE, "r") as f:
+        return json.load(f)
+
+
+def save_open_signals(data):
+    with open(OPEN_SIGNALS_FILE, "w") as f:
+        json.dump(data, f)
+        
 def get_okx_usdt_futures_pairs():
     url = f"{OKX_BASE_URL}/api/v5/public/instruments"
     params = {"instType": "SWAP"}
