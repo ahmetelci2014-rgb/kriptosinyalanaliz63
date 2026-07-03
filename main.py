@@ -114,7 +114,7 @@ def main():
     signals = sorted(signals, key=lambda x: x["score"], reverse=True)
 
     if signals:
-        strong_signals = signals[:3]
+        strong_signals = signals[:5]
 
         send_message(
             f"✅ KSA Futures taraması tamamlandı.\n"
