@@ -3,7 +3,17 @@ from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD, ADXIndicator
 from ta.volatility import AverageTrueRange
 from config import MIN_SCORE
-
+PREMIUM_COINS = [
+    "BTC-USDT",
+    "ETH-USDT",
+    "SOL-USDT",
+    "BNB-USDT",
+    "XRP-USDT",
+    "LINK-USDT",
+    "AVAX-USDT",
+    "SUI-USDT",
+    "DOGE-USDT"
+]
 
 def analyze_signal(symbol, df):
     if df is None or df.empty or len(df) < 200:
@@ -79,7 +89,9 @@ def analyze_signal(symbol, df):
         direction = "SHORT"
         score = short_score
         icon = "🔴"
-
+    # Premium coin önceliği
+    if symbol in PREMIUM_COINS:
+        score += 5
     if score < MIN_SCORE:
         return None
 
