@@ -126,7 +126,7 @@ def analyze_signal(symbol, df):
     ema_distance_percent = abs(price - last["ema20"]) / price * 100
     atr_percent = (atr / price) * 100
 
-    if ema_distance_percent > atr_percent * 1.2:
+    if ema_distance_percent > atr_percent * 0.9:
         return None
     if direction == "LONG":
         sl = price - atr * 1.3
@@ -143,12 +143,12 @@ def analyze_signal(symbol, df):
     reward = abs(tp2 - price)
     rr = reward / risk if risk > 0 else 0
 
-    if rr < 1.5:
+    if rr < 2.0:
         return None
 
-    leverage = "3x - 5x"
+    leverage = "2x - 3x"
     if score >= 90 and last["adx"] >= 30:
-        leverage = "5x - 10x"
+        leverage = "3x - 5x"
 
         score = min(score, 100)
 
