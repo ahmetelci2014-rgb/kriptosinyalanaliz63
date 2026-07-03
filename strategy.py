@@ -90,7 +90,7 @@ def analyze_signal(symbol, df):
         short_score += 15
 
     # Hacim onayı
-    if last["volume"] > last["volume_avg"] * 1.3:
+    if last["volume"] > last["volume_avg"] * 1.15:
         long_score += 15
         short_score += 15
     else:
