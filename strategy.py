@@ -239,8 +239,11 @@ def analyze_signal(symbol, df):
 """
 
     return {
-        "symbol": symbol,
-        "direction": direction,
-        "score": score,
-        "message": message
-    }
+    "symbol": symbol,
+    "direction": direction,
+    "score": score,
+    "entry": round(price, 6),
+    "tp1": round(tp1, 6),
+    "sl": round(sl, 6),
+    "message": message
+}
