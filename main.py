@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 from config import OKX_BASE_URL, INTERVAL, LIMIT, MAIN_TREND_INTERVAL, CONFIRM_INTERVAL, ENTRY_INTERVAL
 from telegram import send_message
-from strategy import analyze_signal
+from strategy import analyze_signal, get_trend_direction
 
 SIGNAL_FILE = "last_signals.json"
 
@@ -91,12 +91,27 @@ def main():
 
     signals = []
 
-    for symbol in pairs:
+for symbol in pairs:
         try:
+            df_4h = get_okx_candles(symbol, MAIN_TREND_INTERVAL)
+            df_1h = get_okx_candles(symbol, CONFIRM_INTERVAL)
             df = get_okx_candles(symbol, ENTRY_INTERVAL)
+
+            trend_4h = get_trend_direction(df_4h)
+            trend_1h = get_trend_direction(df_1h)
+
             result = analyze_signal(symbol, df)
 
             if result:
+                if trend_4h is None or trend_1h is None:
+                    continue
+
+                if result["direction"] != trend_4h:
+                    continue
+
+                if result["direction"] != trend_1h:
+                    continue
+
                 key = f"{result['symbol']}_{result['direction']}"
                 last_time = last_signals.get(key)
 
