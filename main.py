@@ -91,7 +91,7 @@ def main():
 
     signals = []
 
-for symbol in pairs:
+    for symbol in pairs:
         try:
             df_4h = get_okx_candles(symbol, MAIN_TREND_INTERVAL)
             df_1h = get_okx_candles(symbol, CONFIRM_INTERVAL)
@@ -126,7 +126,7 @@ for symbol in pairs:
         except Exception as e:
             print(f"{symbol} hata: {e}")
 
-                signals = sorted(signals, key=lambda x: x["score"], reverse=True)
+    signals = sorted(signals, key=lambda x: x["score"], reverse=True)
 
     if signals:
         strong_signals = signals[:5]
