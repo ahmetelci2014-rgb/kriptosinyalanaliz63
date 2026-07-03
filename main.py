@@ -103,13 +103,10 @@ def main():
             result = analyze_signal(symbol, df)
 
             if result:
-                if trend_4h is None or trend_1h is None:
+                if trend_4h is not None and result["direction"] != trend_4h:
                     continue
 
-                if result["direction"] != trend_4h:
-                    continue
-
-                if result["direction"] != trend_1h:
+                if trend_1h is not None and result["direction"] != trend_1h:
                     continue
 
                 key = f"{result['symbol']}_{result['direction']}"
