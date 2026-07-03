@@ -95,7 +95,12 @@ def analyze_signal(symbol, df):
     if atr_percent < 0.8:
         return None
     atr = last["atr"]
+    # Geç giriş filtresi
+    ema_distance_percent = abs(price - last["ema20"]) / price * 100
+    atr_percent = (atr / price) * 100
 
+    if ema_distance_percent > atr_percent * 1.5:
+        return None
     if direction == "LONG":
         sl = price - atr * 1.3
         tp1 = price + atr * 2
