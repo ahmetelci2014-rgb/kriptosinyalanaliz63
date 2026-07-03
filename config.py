@@ -41,5 +41,15 @@ COINS = [
     "INJ-USDT",
     "WLD-USDT",
     "FIL-USDT",
-    "ATOM-USDT"
+    "ATOM-USDT",
+    "UNI-USDT",
+    "AAVE-USDT",
+    "TRX-USDT",
+    "ETC-USDT",
+    "ICP-USDT",
+    "SEI-USDT",
+    "TIA-USDT",
+    "ORDI-USDT",
+    "JUP-USDT",
+    "TON-USDT"
 ]
