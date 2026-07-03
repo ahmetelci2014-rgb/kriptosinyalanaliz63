@@ -5,7 +5,7 @@ CHAT_ID = "8439391876"
 # Tarama Ayarları
 SCAN_INTERVAL = "30m"
 TOP_COINS = 30
-MIN_SCORE = 55
+MIN_SCORE = 50
 
 # CoinGecko
 VS_CURRENCY = "usd"
