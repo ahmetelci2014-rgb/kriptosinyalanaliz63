@@ -187,6 +187,10 @@ def analyze_signal(symbol, df):
     # Geç hareket / geç giriş filtresi
     ema_distance_percent = abs(price - last["ema20"]) / price * 100
     last_candle_move_percent = abs(last["close"] - last["open"]) / price * 100
+
+    if len(df) < 4:
+        return None
+
     recent_3_candle_move_percent = abs(last["close"] - df.iloc[-4]["close"]) / price * 100
 
     # Fiyat EMA20'den fazla uzaklaştıysa işlem alma
