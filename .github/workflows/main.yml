@@ -35,9 +35,11 @@ jobs:
         run: python main.py
 
       - name: Sinyal geçmişini kaydet
+        continue-on-error: true
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
+          git pull --rebase --autostash origin main || echo "Pull yapilamadi"
           git add last_signals.json
-          git commit -m "Update last signals" || echo "Değişiklik yok"
-          git push
+          git commit -m "Update last signals [skip ci]" || echo "Degisiklik yok"
+          git push || echo "Push yapilamadi"
