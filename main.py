@@ -4,7 +4,7 @@ import json
 import os
 from datetime import datetime, timedelta
 
-from config import OKX_BASE_URL, INTERVAL, LIMIT, MAIN_TREND_INTERVAL, CONFIRM_INTERVAL, ENTRY_INTERVAL
+from config import OKX_BASE_URL, INTERVAL, LIMIT, MAIN_TREND_INTERVAL, CONFIRM_INTERVAL, ENTRY_INTERVAL, COINS
 from telegram import send_message
 from strategy import analyze_signal, get_trend_direction
 
@@ -80,7 +80,7 @@ def get_okx_candles(symbol, interval=ENTRY_INTERVAL):
 
 
 def main():
-    pairs = get_okx_usdt_futures_pairs()
+    pairs = COINS
     last_signals = load_last_signals()
 
     if not pairs:
