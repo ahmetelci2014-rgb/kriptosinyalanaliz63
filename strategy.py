@@ -126,7 +126,7 @@ def analyze_signal(symbol, df):
     ema_distance_percent = abs(price - last["ema20"]) / price * 100
     atr_percent = (atr / price) * 100
 
-    if ema_distance_percent > atr_percent * 1.1:
+    if ema_distance_percent > atr_percent * 1.3:
         return None
     if direction == "LONG":
         sl = price - atr * 1.3
