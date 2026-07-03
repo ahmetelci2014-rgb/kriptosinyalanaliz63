@@ -36,6 +36,98 @@ def load_open_signals():
 def save_open_signals(data):
     with open(OPEN_SIGNALS_FILE, "w") as f:
         json.dump(data, f)
+def get_current_price(symbol):
+    okx_symbol = f"{symbol}-SWAP"
+    url = f"{OKX_BASE_URL}/api/v5/market/ticker"
+    params = {
+        "instId": okx_symbol
+    }
+
+    response = requests.get(url, params=params, timeout=20)
+    data = response.json()
+
+    if data.get("code") != "0":
+        print(f"{symbol} fiyat alınamadı: {data}")
+        return None
+
+    ticker = data.get("data", [])
+
+    if not ticker:
+        return None
+
+    return float(ticker[0]["last"])
+
+
+def check_open_signals():
+    open_signals = load_open_signals()
+
+    if not open_signals:
+        return
+
+    updated_signals = {}
+
+    for key, signal in open_signals.items():
+        try:
+            symbol = signal["symbol"]
+            direction = signal["direction"]
+            tp1 = float(signal["tp1"])
+            sl = float(signal["sl"])
+
+            current_price = get_current_price(symbol)
+
+            if current_price is None:
+                updated_signals[key] = signal
+                continue
+
+            if direction == "LONG":
+                if current_price >= tp1:
+                    send_message(
+                        f"✅ TP1 GELDİ\n\n"
+                        f"Coin: {symbol}\n"
+                        f"Yön: LONG 🟢\n"
+                        f"TP1: {tp1}\n"
+                        f"Güncel Fiyat: {current_price}"
+                    )
+                    continue
+
+                if current_price <= sl:
+                    send_message(
+                        f"❌ STOP OLDU\n\n"
+                        f"Coin: {symbol}\n"
+                        f"Yön: LONG 🟢\n"
+                        f"SL: {sl}\n"
+                        f"Güncel Fiyat: {current_price}"
+                    )
+                    continue
+
+            if direction == "SHORT":
+                if current_price <= tp1:
+                    send_message(
+                        f"✅ TP1 GELDİ\n\n"
+                        f"Coin: {symbol}\n"
+                        f"Yön: SHORT 🔴\n"
+                        f"TP1: {tp1}\n"
+                        f"Güncel Fiyat: {current_price}"
+                    )
+                    continue
+
+                if current_price >= sl:
+                    send_message(
+                        f"❌ STOP OLDU\n\n"
+                        f"Coin: {symbol}\n"
+                        f"Yön: SHORT 🔴\n"
+                        f"SL: {sl}\n"
+                        f"Güncel Fiyat: {current_price}"
+                    )
+                    continue
+
+            updated_signals[key] = signal
+
+        except Exception as e:
+            print(f"{key} takip hatası: {e}")
+            updated_signals[key] = signal
+
+    save_open_signals(updated_signals)
         
 def get_okx_usdt_futures_pairs():
     url = f"{OKX_BASE_URL}/api/v5/public/instruments"
