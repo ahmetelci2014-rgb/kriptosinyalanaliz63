@@ -94,6 +94,9 @@ def analyze_signal(symbol, df):
         long_score += 15
         short_score += 15
     else:
+        long_score += 0
+        short_score += 0
+    else:
         return None
 
     if long_score > short_score:
