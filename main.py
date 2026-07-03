@@ -232,13 +232,13 @@ def main():
             f"En güçlü sinyal sayısı: {len(strong_signals)}"
         )
 
-        for signal in strong_signals:
-    send_message(signal["message"])
+    for signal in strong_signals:
+        send_message(signal["message"])
 
-    key = f"{signal['symbol']}_{signal['direction']}"
-    last_signals[key] = datetime.utcnow().isoformat()
+        key = f"{signal['symbol']}_{signal['direction']}"
+        last_signals[key] = datetime.utcnow().isoformat()
 
-    open_signals[key] = {
+        open_signals[key] = {
         "symbol": signal["symbol"],
         "direction": signal["direction"],
         "entry": signal["entry"],
