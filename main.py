@@ -84,7 +84,7 @@ def main():
     last_signals = load_last_signals()
 
     if not pairs:
-        send_message("⚠️ OKX USDT futures pariteleri alınamadı.")
+        send_message("⚠️ Coin listesi boş.")
         return
 
     print(f"Toplam taranan parite: {len(pairs)}")
@@ -94,11 +94,9 @@ def main():
     for symbol in pairs:
         try:
             df = get_okx_candles(symbol, ENTRY_INTERVAL)
+            result = analyze_signal(symbol, df)
 
-                result = analyze_signal(symbol, df)
-
-                if result:
-
+            if result:
                 key = f"{result['symbol']}_{result['direction']}"
                 last_time = last_signals.get(key)
 
