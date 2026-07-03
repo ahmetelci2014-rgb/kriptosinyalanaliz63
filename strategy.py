@@ -169,6 +169,12 @@ def analyze_signal(symbol, df):
         icon = "🔴"
     else:
         return None
+    # Aşırı RSI filtresi
+    if direction == "LONG" and last["rsi"] > 70:
+        return None
+
+    if direction == "SHORT" and last["rsi"] < 30:
+        return None    
 
     # Premium coin bonusu
     if symbol in PREMIUM_COINS:
