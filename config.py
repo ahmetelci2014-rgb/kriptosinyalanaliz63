@@ -21,3 +21,25 @@ INTERVAL = "30m"
 LIMIT = 200
 MIN_SCORE = 60
 TOP_COINS = 20
+COINS = [
+    "BTC-USDT",
+    "ETH-USDT",
+    "SOL-USDT",
+    "BNB-USDT",
+    "XRP-USDT",
+    "DOGE-USDT",
+    "LINK-USDT",
+    "AVAX-USDT",
+    "SUI-USDT",
+    "ADA-USDT",
+    "LTC-USDT",
+    "DOT-USDT",
+    "APT-USDT",
+    "ARB-USDT",
+    "OP-USDT",
+    "NEAR-USDT",
+    "INJ-USDT",
+    "WLD-USDT",
+    "FIL-USDT",
+    "ATOM-USDT"
+]
