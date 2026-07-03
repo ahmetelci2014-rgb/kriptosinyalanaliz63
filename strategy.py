@@ -143,7 +143,7 @@ def analyze_signal(symbol, df):
     reward = abs(tp2 - price)
     rr = reward / risk if risk > 0 else 0
 
-    if rr < 2.0:
+    if rr < 1.7:
         return None
 
     leverage = "2x - 3x"
