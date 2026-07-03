@@ -3,23 +3,55 @@ from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD, ADXIndicator
 from ta.volatility import AverageTrueRange
 from config import MIN_SCORE
+
+
 PREMIUM_COINS = [
     "BTC-USDT",
     "ETH-USDT",
     "SOL-USDT",
     "BNB-USDT",
     "XRP-USDT",
+    "DOGE-USDT",
     "LINK-USDT",
     "AVAX-USDT",
     "SUI-USDT",
-    "DOGE-USDT"
+    "ADA-USDT",
+    "LTC-USDT",
+    "DOT-USDT",
+    "APT-USDT",
+    "ARB-USDT",
+    "OP-USDT",
+    "NEAR-USDT",
+    "INJ-USDT",
+    "WLD-USDT",
+    "FIL-USDT",
+    "ATOM-USDT",
+    "UNI-USDT",
+    "AAVE-USDT",
+    "TRX-USDT",
+    "ETC-USDT",
+    "ICP-USDT",
+    "SEI-USDT",
+    "TIA-USDT",
+    "ORDI-USDT",
+    "JUP-USDT",
+    "BCH-USDT"
 ]
+
+
 def get_trend_direction(df):
     if df is None or df.empty or len(df) < 200:
         return None
 
+    df = df.copy()
+
     df["ema50"] = EMAIndicator(df["close"], window=50).ema_indicator()
     df["ema200"] = EMAIndicator(df["close"], window=200).ema_indicator()
+
+    df = df.dropna()
+
+    if df.empty:
+        return None
 
     last = df.iloc[-1]
 
@@ -30,9 +62,13 @@ def get_trend_direction(df):
         return "SHORT"
 
     return None
+
+
 def analyze_signal(symbol, df):
     if df is None or df.empty or len(df) < 200:
         return None
+
+    df = df.copy()
 
     df["rsi"] = RSIIndicator(df["close"], window=14).rsi()
     df["ema20"] = EMAIndicator(df["close"], window=20).ema_indicator()
@@ -43,145 +79,168 @@ def analyze_signal(symbol, df):
     df["macd"] = macd.macd()
     df["macd_signal"] = macd.macd_signal()
 
-    df["atr"] = AverageTrueRange(df["high"], df["low"], df["close"], window=14).average_true_range()
-    df["adx"] = ADXIndicator(df["high"], df["low"], df["close"], window=14).adx()
+    df["atr"] = AverageTrueRange(
+        df["high"],
+        df["low"],
+        df["close"],
+        window=14
+    ).average_true_range()
+
+    df["adx"] = ADXIndicator(
+        df["high"],
+        df["low"],
+        df["close"],
+        window=14
+    ).adx()
+
     df["volume_avg"] = df["volume"].rolling(20).mean()
 
     df = df.dropna()
+
     if df.empty:
         return None
 
     last = df.iloc[-1]
-    price = last["close"]
+
+    price = float(last["close"])
+    atr = float(last["atr"])
+
+    if price <= 0 or atr <= 0:
+        return None
 
     long_score = 0
     short_score = 0
 
-    # Ana trend filtresi
-    if price > last["ema200"]:
-        long_score += 25
-    else:
-        short_score += 25
-
-    # Kısa trend onayı
-    if last["ema20"] > last["ema50"]:
+    # Trend puanı
+    if last["close"] > last["ema200"]:
         long_score += 20
-    else:
+
+    if last["close"] < last["ema200"]:
         short_score += 20
+
+    if last["ema20"] > last["ema50"]:
+        long_score += 15
+
+    if last["ema20"] < last["ema50"]:
+        short_score += 15
 
     # MACD onayı
     if last["macd"] > last["macd_signal"]:
-        long_score += 20
-    else:
-        short_score += 20
+        long_score += 15
 
-    # Trend gücü
+    if last["macd"] < last["macd_signal"]:
+        short_score += 15
+
+    # RSI dengesi
+    if 45 <= last["rsi"] <= 68:
+        long_score += 15
+
+    if 32 <= last["rsi"] <= 55:
+        short_score += 15
+
+    # ADX trend gücü
     if last["adx"] >= 25:
         long_score += 15
         short_score += 15
-    else:
-        return None
+    elif last["adx"] >= 20:
+        long_score += 8
+        short_score += 8
 
-    # RSI filtresi
-    if 45 <= last["rsi"] <= 65:
-        long_score += 15
-
-    if 35 <= last["rsi"] <= 55:
-        short_score += 15
-
-    # Hacim onayı
+    # Hacim puanı - artık direkt eleme yapmaz
     if last["volume"] > last["volume_avg"] * 1.05:
-        long_score += 15
-        short_score += 15
-    else:
-        long_score += 0
-        short_score += 0
-   
-        return None
+        long_score += 10
+        short_score += 10
 
+    # Volatilite puanı
+    atr_percent = (atr / price) * 100
+
+    if atr_percent >= 0.4:
+        long_score += 10
+        short_score += 10
+
+    # Yön belirleme
     if long_score > short_score:
         direction = "LONG"
         score = long_score
         icon = "🟢"
-    else:
+    elif short_score > long_score:
         direction = "SHORT"
         score = short_score
         icon = "🔴"
-    # Premium coin önceliği
+    else:
+        return None
+
+    # Premium coin bonusu
     if symbol in PREMIUM_COINS:
-        score += 10
+        score += 8
+
+    # Minimum puan kontrolü
     if score < MIN_SCORE:
         return None
 
-    # RSI filtresi
-    if direction == "LONG" and last["rsi"] > 75:
-        return None
-
-    if direction == "SHORT" and last["rsi"] < 25:
-        return None
-    # Volatilite filtresi
-    atr_percent = (last["atr"] / price) * 100
-
-    if atr_percent < 0.8:
-        return None
-    atr = last["atr"]
-    # Geç giriş filtresi
+    # Çok geç girişleri ele
     ema_distance_percent = abs(price - last["ema20"]) / price * 100
-    atr_percent = (atr / price) * 100
 
-    if ema_distance_percent > atr_percent * 1.3:
+    if ema_distance_percent > atr_percent * 1.8:
         return None
+
+    # TP / SL hesaplama
     if direction == "LONG":
-        sl = price - atr * 1.3
-        tp1 = price + atr * 2
-        tp2 = price + atr * 3
-        tp3 = price + atr * 4
+        sl = price - atr * 1.2
+        tp1 = price + atr * 1.6
+        tp2 = price + atr * 2.8
+        tp3 = price + atr * 4.0
     else:
-        sl = price + atr * 1.3
-        tp1 = price - atr * 2
-        tp2 = price - atr * 3
-        tp3 = price - atr * 4
+        sl = price + atr * 1.2
+        tp1 = price - atr * 1.6
+        tp2 = price - atr * 2.8
+        tp3 = price - atr * 4.0
 
     risk = abs(price - sl)
     reward = abs(tp2 - price)
-    rr = reward / risk if risk > 0 else 0
 
-    if rr < 1.7:
+    if risk <= 0:
+        return None
+
+    rr = reward / risk
+
+    if rr < 1.5:
         return None
 
     leverage = "2x - 3x"
+
     if score >= 90 and last["adx"] >= 30:
         leverage = "3x - 5x"
 
-        score = min(score, 100)
-
-        return {
-            "symbol": symbol,
-            "direction": direction,
-            "score": score,
-            "message": f"""
+    message = f"""
 🚀 KRİPTO SİNYAL ANALİZ BOTU FUTURES SİNYALİ
 
 {icon} {direction}
 🟡 Coin: {symbol}
 
-🔥 Giriş: {round(price, 5)}
-🎯 TP1: {round(tp1, 5)}
-🎯 TP2: {round(tp2, 5)}
-🎯 TP3: {round(tp3, 5)}
-🔴 SL: {round(sl, 5)}
+🔥 Giriş: {round(price, 6)}
+🎯 TP1: {round(tp1, 6)}
+🎯 TP2: {round(tp2, 6)}
+🎯 TP3: {round(tp3, 6)}
+🔴 SL: {round(sl, 6)}
 
 📊 RSI: {round(last["rsi"], 2)}
-📈 EMA20: {round(last["ema20"], 5)}
-📉 EMA50: {round(last["ema50"], 5)}
-📌 EMA200: {round(last["ema200"], 5)}
+📈 EMA20: {round(last["ema20"], 6)}
+📉 EMA50: {round(last["ema50"], 6)}
+📌 EMA200: {round(last["ema200"], 6)}
 💪 ADX: {round(last["adx"], 2)}
 ⚖️ Risk/Ödül: 1:{round(rr, 2)}
 🧮 Kaldıraç Önerisi: {leverage}
 
-🔥 Güven Puanı: %{score}
+🔥 Güven Puanı: %{min(int(score), 100)}
 ⏱ Veri: OKX / 30dk
 
 ⚠️ Finansal tavsiye değildir.
 """
+
+    return {
+        "symbol": symbol,
+        "direction": direction,
+        "score": score,
+        "message": message
     }
