@@ -184,10 +184,21 @@ def analyze_signal(symbol, df):
     if score < MIN_SCORE:
         return None
 
-    # Çok geç girişleri ele
+    # Geç hareket / geç giriş filtresi
     ema_distance_percent = abs(price - last["ema20"]) / price * 100
+    last_candle_move_percent = abs(last["close"] - last["open"]) / price * 100
+    recent_3_candle_move_percent = abs(last["close"] - df.iloc[-4]["close"]) / price * 100
 
-    if ema_distance_percent > atr_percent * 1.8:
+    # Fiyat EMA20'den fazla uzaklaştıysa işlem alma
+    if ema_distance_percent > atr_percent * 1.3:
+        return None
+
+    # Son mum çok sert hareket etmişse işlem alma
+    if last_candle_move_percent > atr_percent * 0.9:
+        return None
+
+    # Son 3 mumda hareket çoktan olmuşsa işlem alma
+    if recent_3_candle_move_percent > atr_percent * 2.0:
         return None
 
     # TP / SL hesaplama
