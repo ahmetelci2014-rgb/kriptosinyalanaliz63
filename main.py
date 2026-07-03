@@ -19,8 +19,14 @@ if not os.path.exists(OPEN_SIGNALS_FILE):
     with open(OPEN_SIGNALS_FILE, "w") as f:
         json.dump({}, f)
 def load_last_signals():
-    with open(SIGNAL_FILE, "r") as f:
-        return json.load(f)
+    try:
+        with open(SIGNAL_FILE, "r") as f:
+            content = f.read().strip()
+            if not content:
+                return {}
+            return json.loads(content)
+    except Exception:
+        return {}
 
 
 def save_last_signals(data):
@@ -29,8 +35,14 @@ def save_last_signals(data):
 
 
 def load_open_signals():
-    with open(OPEN_SIGNALS_FILE, "r") as f:
-        return json.load(f)
+    try:
+        with open(OPEN_SIGNALS_FILE, "r") as f:
+            content = f.read().strip()
+            if not content:
+                return {}
+            return json.loads(content)
+    except Exception:
+        return {}
 
 
 def save_open_signals(data):
