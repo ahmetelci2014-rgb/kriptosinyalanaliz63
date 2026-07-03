@@ -51,5 +51,5 @@ COINS = [
     "TIA-USDT",
     "ORDI-USDT",
     "JUP-USDT",
-    "TON-USDT"
+    "BCH-USDT"
 ]
