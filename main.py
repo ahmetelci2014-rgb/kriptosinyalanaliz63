@@ -93,21 +93,11 @@ def main():
 
     for symbol in pairs:
         try:
-            df_4h = get_okx_candles(symbol, MAIN_TREND_INTERVAL)
-            df_1h = get_okx_candles(symbol, CONFIRM_INTERVAL)
             df = get_okx_candles(symbol, ENTRY_INTERVAL)
 
-            trend_4h = get_trend_direction(df_4h)
-            trend_1h = get_trend_direction(df_1h)
+                result = analyze_signal(symbol, df)
 
-            result = analyze_signal(symbol, df)
-
-            if result:
-                if trend_4h is not None and result["direction"] != trend_4h:
-                    continue
-
-                if trend_1h is not None and result["direction"] != trend_1h:
-                    continue
+                if result:
 
                 key = f"{result['symbol']}_{result['direction']}"
                 last_time = last_signals.get(key)
