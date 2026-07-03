@@ -190,7 +190,9 @@ def get_okx_candles(symbol, interval=ENTRY_INTERVAL):
 def main():
     pairs = COINS
     last_signals = load_last_signals()
-
+    check_open_signals()
+    open_signals = load_open_signals()
+    
     if not pairs:
         send_message("⚠️ Coin listesi boş.")
         return
@@ -231,11 +233,22 @@ def main():
         )
 
         for signal in strong_signals:
-            send_message(signal["message"])
-            key = f"{signal['symbol']}_{signal['direction']}"
-            last_signals[key] = datetime.utcnow().isoformat()
+    send_message(signal["message"])
+
+    key = f"{signal['symbol']}_{signal['direction']}"
+    last_signals[key] = datetime.utcnow().isoformat()
+
+    open_signals[key] = {
+        "symbol": signal["symbol"],
+        "direction": signal["direction"],
+        "entry": signal["entry"],
+        "tp1": signal["tp1"],
+        "sl": signal["sl"],
+        "opened_at": datetime.utcnow().isoformat()
+    }
 
         save_last_signals(last_signals)
+        save_open_signals(open_signals)
 
     else:
         print("Şu an güçlü sinyal yok.")
