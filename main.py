@@ -1,268 +1,372 @@
+import os
+import time
 import requests
 import pandas as pd
-import json
-import os
-from datetime import datetime, timedelta
+import ccxt
 
-from config import OKX_BASE_URL, INTERVAL, LIMIT, MAIN_TREND_INTERVAL, CONFIRM_INTERVAL, ENTRY_INTERVAL, COINS
-from telegram import send_message
-from strategy import analyze_signal, get_trend_direction
-
-SIGNAL_FILE = "last_signals.json"
-OPEN_SIGNALS_FILE = "open_signals.json"
-
-if not os.path.exists(SIGNAL_FILE):
-    with open(SIGNAL_FILE, "w") as f:
-        json.dump({}, f)
-
-if not os.path.exists(OPEN_SIGNALS_FILE):
-    with open(OPEN_SIGNALS_FILE, "w") as f:
-        json.dump({}, f)
-def load_last_signals():
-    try:
-        with open(SIGNAL_FILE, "r") as f:
-            content = f.read().strip()
-            if not content:
-                return {}
-            return json.loads(content)
-    except Exception:
-        return {}
+from ta.momentum import RSIIndicator
+from ta.trend import EMAIndicator, MACD, ADXIndicator
+from ta.volatility import AverageTrueRange
 
 
-def save_last_signals(data):
-    with open(SIGNAL_FILE, "w") as f:
-        json.dump(data, f)
+TOKEN = os.getenv("TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
+
+# Ayarlar
+TIMEFRAME = "30m"
+LIMIT = 200
+SCAN_LIMIT = 50          # Kaç parite taransın
+MIN_SCORE = 45           # Sinyal eşiği
+MAX_SIGNALS = 5          # En fazla kaç sinyal göndersin
 
 
-def load_open_signals():
-    try:
-        with open(OPEN_SIGNALS_FILE, "r") as f:
-            content = f.read().strip()
-            if not content:
-                return {}
-            return json.loads(content)
-    except Exception:
-        return {}
-
-
-def save_open_signals(data):
-    with open(OPEN_SIGNALS_FILE, "w") as f:
-        json.dump(data, f)
-def get_current_price(symbol):
-    okx_symbol = f"{symbol}-SWAP"
-    url = f"{OKX_BASE_URL}/api/v5/market/ticker"
-    params = {
-        "instId": okx_symbol
-    }
-
-    response = requests.get(url, params=params, timeout=20)
-    data = response.json()
-
-    if data.get("code") != "0":
-        print(f"{symbol} fiyat alınamadı: {data}")
-        return None
-
-    ticker = data.get("data", [])
-
-    if not ticker:
-        return None
-
-    return float(ticker[0]["last"])
-
-
-def check_open_signals():
-    open_signals = load_open_signals()
-
-    if not open_signals:
+def send_telegram(message):
+    if not TOKEN or not CHAT_ID:
+        print("TOKEN veya CHAT_ID eksik.")
         return
 
-    updated_signals = {}
-
-    for key, signal in open_signals.items():
-        try:
-            symbol = signal["symbol"]
-            direction = signal["direction"]
-            tp1 = float(signal["tp1"])
-            sl = float(signal["sl"])
-
-            current_price = get_current_price(symbol)
-
-            if current_price is None:
-                updated_signals[key] = signal
-                continue
-
-            if direction == "LONG":
-                if current_price >= tp1:
-                    send_message(
-                        f"✅ TP1 GELDİ\n\n"
-                        f"Coin: {symbol}\n"
-                        f"Yön: LONG 🟢\n"
-                        f"TP1: {tp1}\n"
-                        f"Güncel Fiyat: {current_price}"
-                    )
-                    continue
-
-                if current_price <= sl:
-                    send_message(
-                        f"❌ STOP OLDU\n\n"
-                        f"Coin: {symbol}\n"
-                        f"Yön: LONG 🟢\n"
-                        f"SL: {sl}\n"
-                        f"Güncel Fiyat: {current_price}"
-                    )
-                    continue
-
-            if direction == "SHORT":
-                if current_price <= tp1:
-                    send_message(
-                        f"✅ TP1 GELDİ\n\n"
-                        f"Coin: {symbol}\n"
-                        f"Yön: SHORT 🔴\n"
-                        f"TP1: {tp1}\n"
-                        f"Güncel Fiyat: {current_price}"
-                    )
-                    continue
-
-                if current_price >= sl:
-                    send_message(
-                        f"❌ STOP OLDU\n\n"
-                        f"Coin: {symbol}\n"
-                        f"Yön: SHORT 🔴\n"
-                        f"SL: {sl}\n"
-                        f"Güncel Fiyat: {current_price}"
-                    )
-                    continue
-
-            updated_signals[key] = signal
-
-        except Exception as e:
-            print(f"{key} takip hatası: {e}")
-            updated_signals[key] = signal
-
-    save_open_signals(updated_signals)
-        
-def get_okx_usdt_futures_pairs():
-    url = f"{OKX_BASE_URL}/api/v5/public/instruments"
-    params = {"instType": "SWAP"}
-
-    response = requests.get(url, params=params, timeout=20)
-    data = response.json()
-
-    if data.get("code") != "0":
-        print(f"OKX parite hatası: {data}")
-        return []
-
-    pairs = []
-
-    for item in data.get("data", []):
-        inst_id = item.get("instId", "")
-
-        if inst_id.endswith("-USDT-SWAP"):
-            symbol = inst_id.replace("-SWAP", "")
-            pairs.append(symbol)
-
-    return pairs
-
-
-def get_okx_candles(symbol, interval=ENTRY_INTERVAL):
-    okx_symbol = f"{symbol}-SWAP"
-    url = f"{OKX_BASE_URL}/api/v5/market/candles"
-
-    params = {
-        "instId": okx_symbol,
-        "bar": interval,
-        "limit": LIMIT
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    data = {
+        "chat_id": CHAT_ID,
+        "text": message,
+        "parse_mode": "HTML"
     }
 
-    response = requests.get(url, params=params, timeout=20)
-    data = response.json()
+    try:
+        r = requests.post(url, data=data, timeout=20)
+        print("Telegram cevap:", r.status_code, r.text)
+    except Exception as e:
+        print("Telegram gönderim hatası:", e)
 
-    if data.get("code") != "0":
-        print(f"{symbol} OKX hata: {data}")
+
+def get_exchange():
+    return ccxt.okx({
+        "enableRateLimit": True,
+        "options": {
+            "defaultType": "swap"
+        }
+    })
+
+
+def get_top_symbols(exchange):
+    markets = exchange.load_markets()
+    tickers = exchange.fetch_tickers()
+
+    symbols = []
+
+    for symbol, market in markets.items():
+        try:
+            if not market.get("swap"):
+                continue
+
+            if market.get("quote") != "USDT":
+                continue
+
+            if not symbol.endswith(":USDT"):
+                continue
+
+            ticker = tickers.get(symbol, {})
+            quote_volume = ticker.get("quoteVolume") or 0
+            last_price = ticker.get("last") or 0
+
+            if last_price <= 0:
+                continue
+
+            symbols.append({
+                "symbol": symbol,
+                "volume": quote_volume
+            })
+
+        except Exception:
+            continue
+
+    symbols = sorted(symbols, key=lambda x: x["volume"], reverse=True)
+    return [x["symbol"] for x in symbols[:SCAN_LIMIT]]
+
+
+def fetch_df(exchange, symbol):
+    try:
+        ohlcv = exchange.fetch_ohlcv(symbol, timeframe=TIMEFRAME, limit=LIMIT)
+        if not ohlcv or len(ohlcv) < 150:
+            return None
+
+        df = pd.DataFrame(
+            ohlcv,
+            columns=["time", "open", "high", "low", "close", "volume"]
+        )
+
+        return df
+
+    except Exception as e:
+        print(symbol, "veri hatası:", e)
         return None
 
-    candles = data.get("data", [])
 
-    if len(candles) < 200:
+def analyze_symbol(symbol, df):
+    try:
+        df["rsi"] = RSIIndicator(df["close"], window=14).rsi()
+        df["ema20"] = EMAIndicator(df["close"], window=20).ema_indicator()
+        df["ema50"] = EMAIndicator(df["close"], window=50).ema_indicator()
+        df["ema200"] = EMAIndicator(df["close"], window=200).ema_indicator()
+
+        macd = MACD(df["close"])
+        df["macd"] = macd.macd()
+        df["macd_signal"] = macd.macd_signal()
+
+        adx = ADXIndicator(df["high"], df["low"], df["close"], window=14)
+        df["adx"] = adx.adx()
+
+        atr = AverageTrueRange(df["high"], df["low"], df["close"], window=14)
+        df["atr"] = atr.average_true_range()
+
+        df["volume_ma"] = df["volume"].rolling(20).mean()
+
+        last = df.iloc[-1]
+        prev = df.iloc[-2]
+
+        close = float(last["close"])
+        rsi = float(last["rsi"])
+        ema20 = float(last["ema20"])
+        ema50 = float(last["ema50"])
+        ema200 = float(last["ema200"])
+        macd_now = float(last["macd"])
+        macd_signal = float(last["macd_signal"])
+        macd_prev = float(prev["macd"])
+        macd_signal_prev = float(prev["macd_signal"])
+        adx_val = float(last["adx"])
+        atr_val = float(last["atr"])
+        volume = float(last["volume"])
+        volume_ma = float(last["volume_ma"]) if last["volume_ma"] > 0 else 1
+
+        if pd.isna(rsi) or pd.isna(ema200) or pd.isna(adx_val) or pd.isna(atr_val):
+            return None
+
+        volume_ratio = volume / volume_ma
+        atr_percent = (atr_val / close) * 100
+
+        long_score = 0
+        short_score = 0
+        reasons_long = []
+        reasons_short = []
+
+        # Trend puanı
+        if close > ema20:
+            long_score += 8
+            reasons_long.append("Fiyat EMA20 üstünde")
+        else:
+            short_score += 8
+            reasons_short.append("Fiyat EMA20 altında")
+
+        if ema20 > ema50:
+            long_score += 10
+            reasons_long.append("EMA20 EMA50 üstünde")
+        else:
+            short_score += 10
+            reasons_short.append("EMA20 EMA50 altında")
+
+        if close > ema200:
+            long_score += 10
+            reasons_long.append("Ana trend yukarı")
+        else:
+            short_score += 10
+            reasons_short.append("Ana trend aşağı")
+
+        # RSI puanı
+        if 45 <= rsi <= 68:
+            long_score += 10
+            reasons_long.append("RSI long için uygun")
+        elif 32 <= rsi <= 55:
+            short_score += 10
+            reasons_short.append("RSI short için uygun")
+
+        if rsi > 70:
+            short_score += 6
+            reasons_short.append("RSI aşırı alım bölgesi")
+
+        if rsi < 30:
+            long_score += 6
+            reasons_long.append("RSI aşırı satım bölgesi")
+
+        # MACD puanı
+        if macd_now > macd_signal:
+            long_score += 10
+            reasons_long.append("MACD pozitif")
+        else:
+            short_score += 10
+            reasons_short.append("MACD negatif")
+
+        if macd_prev < macd_signal_prev and macd_now > macd_signal:
+            long_score += 8
+            reasons_long.append("MACD yukarı kesişim")
+        elif macd_prev > macd_signal_prev and macd_now < macd_signal:
+            short_score += 8
+            reasons_short.append("MACD aşağı kesişim")
+
+        # ADX trend gücü
+        if adx_val >= 15:
+            long_score += 7
+            short_score += 7
+
+        if adx_val >= 25:
+            long_score += 5
+            short_score += 5
+
+        # Hacim
+        if volume_ratio >= 1.10:
+            long_score += 8
+            short_score += 8
+
+        if volume_ratio >= 1.50:
+            long_score += 5
+            short_score += 5
+
+        # Volatilite
+        if atr_percent >= 0.40:
+            long_score += 5
+            short_score += 5
+
+        if atr_percent >= 0.80:
+            long_score += 5
+            short_score += 5
+
+        # Çok cansız piyasayı ele
+        if adx_val < 12 and volume_ratio < 0.80:
+            return None
+
+        if long_score >= short_score:
+            side = "LONG"
+            score = long_score
+            reasons = reasons_long
+            entry = close
+            sl = entry - (atr_val * 1.5)
+            tp1 = entry + (atr_val * 1.5)
+            tp2 = entry + (atr_val * 2.5)
+            tp3 = entry + (atr_val * 3.5)
+        else:
+            side = "SHORT"
+            score = short_score
+            reasons = reasons_short
+            entry = close
+            sl = entry + (atr_val * 1.5)
+            tp1 = entry - (atr_val * 1.5)
+            tp2 = entry - (atr_val * 2.5)
+            tp3 = entry - (atr_val * 3.5)
+
+        clean_symbol = symbol.replace("/USDT:USDT", "USDT")
+
+        return {
+            "symbol": clean_symbol,
+            "side": side,
+            "score": round(score, 1),
+            "entry": entry,
+            "sl": sl,
+            "tp1": tp1,
+            "tp2": tp2,
+            "tp3": tp3,
+            "rsi": round(rsi, 2),
+            "adx": round(adx_val, 2),
+            "volume_ratio": round(volume_ratio, 2),
+            "atr_percent": round(atr_percent, 2),
+            "reasons": reasons[:4]
+        }
+
+    except Exception as e:
+        print(symbol, "analiz hatası:", e)
         return None
 
-    df = pd.DataFrame(candles, columns=[
-        "time", "open", "high", "low", "close",
-        "volume", "vol_ccy", "vol_ccy_quote", "confirm"
-    ])
 
-    df = df.iloc[::-1].reset_index(drop=True)
+def format_signal(signal):
+    reasons_text = "\n".join([f"• {r}" for r in signal["reasons"]])
 
-    for col in ["open", "high", "low", "close", "volume"]:
-        df[col] = df[col].astype(float)
+    return f"""
+🚨 <b>KRİPTO FUTURES SİNYAL</b>
 
-    return df
+<b>Parite:</b> {signal["symbol"]}
+<b>Yön:</b> {signal["side"]}
+<b>Skor:</b> {signal["score"]}/100
+
+<b>Giriş:</b> {signal["entry"]:.6f}
+
+🎯 <b>TP1:</b> {signal["tp1"]:.6f}
+🎯 <b>TP2:</b> {signal["tp2"]:.6f}
+🎯 <b>TP3:</b> {signal["tp3"]:.6f}
+
+🛑 <b>Stop:</b> {signal["sl"]:.6f}
+
+📊 <b>RSI:</b> {signal["rsi"]}
+📊 <b>ADX:</b> {signal["adx"]}
+📊 <b>Hacim:</b> {signal["volume_ratio"]}x
+📊 <b>Volatilite:</b> %{signal["atr_percent"]}
+
+<b>Sinyal Nedenleri:</b>
+{reasons_text}
+
+⚠️ Kaldıraç düşük tutulmalı. İşleme girmeden önce grafikte kontrol et.
+"""
+
+
+def format_watchlist(candidates):
+    text = "📡 <b>Bot çalıştı ama güçlü sinyal eşiği geçilmedi.</b>\n\n"
+    text += "En yakın adaylar:\n\n"
+
+    for i, s in enumerate(candidates[:5], 1):
+        text += f"{i}) <b>{s['symbol']}</b> | {s['side']} | Skor: {s['score']} | RSI: {s['rsi']} | ADX: {s['adx']}\n"
+
+    text += "\nBu mesaj botun çalıştığını gösterir. Güçlü sinyal çıkınca ayrıca sinyal gönderir."
+    return text
 
 
 def main():
-    pairs = COINS
-    last_signals = load_last_signals()
-    check_open_signals()
-    open_signals = load_open_signals()
-    
-    if not pairs:
-        send_message("⚠️ Coin listesi boş.")
+    print("Bot başladı...")
+
+    exchange = get_exchange()
+
+    try:
+        symbols = get_top_symbols(exchange)
+    except Exception as e:
+        print("Parite listesi alınamadı:", e)
+        send_telegram("❌ Bot hata verdi: Parite listesi alınamadı.")
         return
 
-    print(f"Toplam taranan parite: {len(pairs)}")
+    print("Toplam taranan parite:", len(symbols))
 
-    signals = []
+    all_candidates = []
 
-    for symbol in pairs:
-        try:
-            df = get_okx_candles(symbol, ENTRY_INTERVAL)
-            result = analyze_signal(symbol, df)
+    for symbol in symbols:
+        df = fetch_df(exchange, symbol)
+        if df is None:
+            continue
 
-            if result:
-                key = f"{result['symbol']}_{result['direction']}"
-                last_time = last_signals.get(key)
+        signal = analyze_symbol(symbol, df)
+        if signal:
+            all_candidates.append(signal)
 
-                if last_time:
-                    last_dt = datetime.fromisoformat(last_time)
-                    if datetime.utcnow() - last_dt < timedelta(hours=6):
-                        print(f"{key} tekrar sinyal, atlandı.")
-                        continue
+        time.sleep(0.2)
 
-                signals.append(result)
+    all_candidates = sorted(all_candidates, key=lambda x: x["score"], reverse=True)
 
-        except Exception as e:
-            print(f"{symbol} hata: {e}")
+    strong_signals = [s for s in all_candidates if s["score"] >= MIN_SCORE]
 
-    signals = sorted(signals, key=lambda x: x["score"], reverse=True)
-    strong_signals = signals[:5]
+    print("Aday sayısı:", len(all_candidates))
+    print("Güçlü sinyal sayısı:", len(strong_signals))
 
     if strong_signals:
-        send_message(
-            f"✅ KSA Futures taraması tamamlandı.\n"
-            f"Taranan parite: {len(pairs)}\n"
-            f"En güçlü sinyal sayısı: {len(strong_signals)}"
-        )
+        message = f"✅ <b>Bot çalıştı.</b>\nToplam taranan parite: {len(symbols)}\nGüçlü sinyal sayısı: {len(strong_signals)}\n"
+        send_telegram(message)
 
-        for signal in strong_signals:
-            send_message(signal["message"])
-
-            key = f"{signal['symbol']}_{signal['direction']}"
-            last_signals[key] = datetime.utcnow().isoformat()
-
-            open_signals[key] = {
-                "symbol": signal["symbol"],
-                "direction": signal["direction"],
-                "entry": signal["entry"],
-                "tp1": signal["tp1"],
-                "sl": signal["sl"],
-                "opened_at": datetime.utcnow().isoformat()
-            }
-
-        save_last_signals(last_signals)
-        save_open_signals(open_signals)
+        for signal in strong_signals[:MAX_SIGNALS]:
+            send_telegram(format_signal(signal))
+            time.sleep(1)
 
     else:
         print("Şu an güçlü sinyal yok.")
+
+        if all_candidates:
+            send_telegram(format_watchlist(all_candidates))
+        else:
+            send_telegram(
+                f"📡 Bot çalıştı.\n\nToplam taranan parite: {len(symbols)}\nŞu an uygun aday bulunamadı."
+            )
 
 
 if __name__ == "__main__":
