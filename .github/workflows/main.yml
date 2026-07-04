@@ -1,23 +1,17 @@
 name: Kripto Sinyal Botu
 
 on:
-  push:
-  schedule:
-    - cron: "30 * * * *"
   workflow_dispatch:
-
-permissions:
-  contents: write
+  schedule:
+    - cron: "*/15 * * * *"
 
 jobs:
   bot:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Kodu indir
+      - name: Repoyu indir
         uses: actions/checkout@v4
-        with:
-          persist-credentials: true
 
       - name: Python kur
         uses: actions/setup-python@v5
@@ -25,21 +19,10 @@ jobs:
           python-version: "3.11"
 
       - name: Paketleri yükle
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Botu çalıştır
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python main.py
-
-      - name: Sinyal geçmişini kaydet
-        continue-on-error: true
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git pull --rebase --autostash origin main || echo "Pull yapilamadi"
-          git add last_signals.json open_signals.json
-          git commit -m "Update last signals [skip ci]" || echo "Degisiklik yok"
-          git push || echo "Push yapilamadi"
