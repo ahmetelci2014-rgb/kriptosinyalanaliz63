@@ -9,8 +9,8 @@ from ta.trend import EMAIndicator, MACD, ADXIndicator
 from ta.volatility import AverageTrueRange
 
 
-TOKEN = os.getenv("TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
+TOKEN = os.getenv("8619346423:AAHyaf5nk3IQYvMzEcNAYQFQH8eALdz6220")
+CHAT_ID = os.getenv("8439391876")
 
 # Ayarlar
 TIMEFRAME = "30m"
