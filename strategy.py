@@ -206,6 +206,59 @@ def analyze_signal(symbol, df):
 
     rr = reward / risk
 
+    # Sinyal kalite etiketi
+    quality_score = 0
+    quality_notes = []
+
+    if adx >= 25:
+        quality_score += 2
+        quality_notes.append("Trend güçlü")
+    elif adx >= 20:
+        quality_score += 1
+        quality_notes.append("Trend orta")
+    else:
+        quality_notes.append("Trend zayıf")
+
+    if volume_ratio >= 1.00:
+        quality_score += 2
+        quality_notes.append("Hacim iyi")
+    elif volume_ratio >= 0.70:
+        quality_score += 1
+        quality_notes.append("Hacim orta")
+    else:
+        quality_notes.append("Hacim düşük")
+
+    if direction == "LONG":
+        if 45 <= rsi <= 66:
+            quality_score += 2
+            quality_notes.append("RSI long için uygun")
+        elif 42 <= rsi <= 70:
+            quality_score += 1
+            quality_notes.append("RSI idare eder")
+        else:
+            quality_notes.append("RSI riskli")
+
+    if direction == "SHORT":
+        if 35 <= rsi <= 55:
+            quality_score += 2
+            quality_notes.append("RSI short için uygun")
+        elif 30 <= rsi <= 58:
+            quality_score += 1
+            quality_notes.append("RSI idare eder")
+        else:
+            quality_notes.append("RSI riskli")
+
+    if quality_score >= 5:
+        signal_quality = "A"
+        trade_status = "✅ Değerlendirilebilir"
+    elif quality_score >= 3:
+        signal_quality = "B"
+        trade_status = "⚠️ Dikkatli değerlendir"
+    else:
+        signal_quality = "C"
+        trade_status = "⛔ Riskli, küçük bak veya girme"
+
+    quality_notes_text = "\n".join([f"• {note}" for note in quality_notes])
     reasons_text = "\n".join([f"• {r}" for r in reasons[:4]])
 
     message = f"""
@@ -235,6 +288,12 @@ def analyze_signal(symbol, df):
 • Marjin: Isolated kullan.
 
 🔥 Güven Puanı: %{min(int(score), 100)}
+📌 Sinyal Kalitesi: {signal_quality}
+✅ İşlem Durumu: {trade_status}
+
+📋 Kalite Notları:
+{quality_notes_text}
+
 ⏱ Veri: OKX / 30dk
 
 📌 Sinyal Nedenleri:
