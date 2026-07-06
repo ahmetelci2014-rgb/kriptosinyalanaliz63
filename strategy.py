@@ -111,12 +111,12 @@ def analyze_signal(symbol, df):
     volume_ratio = last["volume"] / last["volume_avg"]
     atr_percent = (atr / price) * 100
 
-    # Zayıf trend filtresi
-    if last["adx"] < 18:
+    # Zayıf trend filtresi - gevşetilmiş
+    if last["adx"] < 16:
         return None
 
-    # Çok düşük hacim filtresi
-    if volume_ratio < 0.60:
+    # Çok düşük hacim filtresi - gevşetilmiş
+    if volume_ratio < 0.50:
         return None
 
     long_score = 0
@@ -156,11 +156,17 @@ def analyze_signal(symbol, df):
     elif last["adx"] >= 20:
         long_score += 8
         short_score += 8
+    elif last["adx"] >= 16:
+        long_score += 4
+        short_score += 4
 
     # Hacim puanı
     if volume_ratio >= 1.05:
         long_score += 10
         short_score += 10
+    elif volume_ratio >= 0.80:
+        long_score += 5
+        short_score += 5
 
     # Volatilite puanı
     if atr_percent >= 0.4:
@@ -194,7 +200,7 @@ def analyze_signal(symbol, df):
     if score < MIN_SCORE:
         return None
 
-    # Geç hareket / geç giriş filtresi
+    # Geç hareket / geç giriş filtresi - gevşetilmiş
     ema_distance_percent = abs(price - last["ema20"]) / price * 100
     last_candle_move_percent = abs(last["close"] - last["open"]) / price * 100
 
@@ -203,16 +209,16 @@ def analyze_signal(symbol, df):
 
     recent_3_candle_move_percent = abs(last["close"] - df.iloc[-4]["close"]) / price * 100
 
-    # Fiyat EMA20'den çok uzaklaştıysa işlem alma
-    if ema_distance_percent > atr_percent * 1.6:
+    # Fiyat EMA20'den aşırı uzaklaştıysa işlem alma
+    if ema_distance_percent > atr_percent * 2.0:
         return None
 
     # Son mum aşırı sert hareket etmişse işlem alma
-    if last_candle_move_percent > atr_percent * 1.4:
+    if last_candle_move_percent > atr_percent * 1.8:
         return None
 
-    # Son 3 mumda hareket çoktan olmuşsa işlem alma
-    if recent_3_candle_move_percent > atr_percent * 3.0:
+    # Son 3 mumda hareket çoktan aşırı olmuşsa işlem alma
+    if recent_3_candle_move_percent > atr_percent * 4.0:
         return None
 
     # TP / SL hesaplama
