@@ -39,31 +39,6 @@ PREMIUM_COINS = [
 ]
 
 
-def get_trend_direction(df):
-    if df is None or df.empty or len(df) < 200:
-        return None
-
-    df = df.copy()
-
-    df["ema50"] = EMAIndicator(df["close"], window=50).ema_indicator()
-    df["ema200"] = EMAIndicator(df["close"], window=200).ema_indicator()
-
-    df = df.dropna()
-
-    if df.empty:
-        return None
-
-    last = df.iloc[-1]
-
-    if last["close"] > last["ema50"] > last["ema200"]:
-        return "LONG"
-
-    if last["close"] < last["ema50"] < last["ema200"]:
-        return "SHORT"
-
-    return None
-
-
 def analyze_signal(symbol, df):
     if df is None or df.empty or len(df) < 200:
         return None
@@ -108,68 +83,69 @@ def analyze_signal(symbol, df):
     if price <= 0 or atr <= 0:
         return None
 
-    volume_ratio = last["volume"] / last["volume_avg"]
+    rsi = float(last["rsi"])
+    adx = float(last["adx"])
+    volume_ratio = float(last["volume"] / last["volume_avg"])
     atr_percent = (atr / price) * 100
-
-    # Çok zayıf trend filtresi
-    if last["adx"] < 14:
-        return None
-
-    # Çok düşük hacim filtresi
-    if volume_ratio < 0.30:
-        return None
 
     long_score = 0
     short_score = 0
+    long_reasons = []
+    short_reasons = []
 
-    # Trend puanı
+    # Trend
     if last["close"] > last["ema200"]:
         long_score += 20
-
-    if last["close"] < last["ema200"]:
+        long_reasons.append("Fiyat EMA200 üstünde")
+    else:
         short_score += 20
+        short_reasons.append("Fiyat EMA200 altında")
 
     if last["ema20"] > last["ema50"]:
         long_score += 15
-
-    if last["ema20"] < last["ema50"]:
+        long_reasons.append("EMA20 EMA50 üstünde")
+    else:
         short_score += 15
+        short_reasons.append("EMA20 EMA50 altında")
 
-    # MACD onayı
+    # MACD
     if last["macd"] > last["macd_signal"]:
         long_score += 15
-
-    if last["macd"] < last["macd_signal"]:
+        long_reasons.append("MACD pozitif")
+    else:
         short_score += 15
+        short_reasons.append("MACD negatif")
 
-    # RSI dengesi
-    if 45 <= last["rsi"] <= 68:
+    # RSI
+    if 42 <= rsi <= 70:
         long_score += 15
+        long_reasons.append("RSI long için uygun")
 
-    if 32 <= last["rsi"] <= 55:
+    if 30 <= rsi <= 58:
         short_score += 15
+        short_reasons.append("RSI short için uygun")
 
-    # ADX trend gücü
-    if last["adx"] >= 25:
+    # ADX puan verir ama elemez
+    if adx >= 25:
         long_score += 15
         short_score += 15
-    elif last["adx"] >= 20:
+    elif adx >= 18:
         long_score += 8
         short_score += 8
-    elif last["adx"] >= 14:
+    elif adx >= 14:
         long_score += 4
         short_score += 4
 
-    # Hacim puanı
-    if volume_ratio >= 1.05:
+    # Hacim puan verir ama elemez
+    if volume_ratio >= 1.20:
         long_score += 10
         short_score += 10
-    elif volume_ratio >= 0.80:
+    elif volume_ratio >= 0.70:
         long_score += 5
         short_score += 5
 
-    # Volatilite puanı
-    if atr_percent >= 0.4:
+    # Volatilite
+    if atr_percent >= 0.35:
         long_score += 10
         short_score += 10
 
@@ -178,18 +154,20 @@ def analyze_signal(symbol, df):
         direction = "LONG"
         score = long_score
         icon = "🟢"
+        reasons = long_reasons
     elif short_score > long_score:
         direction = "SHORT"
         score = short_score
         icon = "🔴"
+        reasons = short_reasons
     else:
         return None
 
-    # Aşırı RSI filtresi
-    if direction == "LONG" and last["rsi"] > 72:
+    # Çok aşırı RSI varsa alma
+    if direction == "LONG" and rsi > 76:
         return None
 
-    if direction == "SHORT" and last["rsi"] < 28:
+    if direction == "SHORT" and rsi < 24:
         return None
 
     # Premium coin bonusu
@@ -198,27 +176,6 @@ def analyze_signal(symbol, df):
 
     # Minimum puan kontrolü
     if score < MIN_SCORE:
-        return None
-
-    # Geç hareket / geç giriş filtresi - gevşetildi
-    ema_distance_percent = abs(price - last["ema20"]) / price * 100
-    last_candle_move_percent = abs(last["close"] - last["open"]) / price * 100
-
-    if len(df) < 4:
-        return None
-
-    recent_3_candle_move_percent = abs(last["close"] - df.iloc[-4]["close"]) / price * 100
-
-    # Fiyat EMA20'den aşırı uzaklaştıysa işlem alma
-    if ema_distance_percent > atr_percent * 3.0:
-        return None
-
-    # Son mum aşırı sert hareket etmişse işlem alma
-    if last_candle_move_percent > atr_percent * 2.5:
-        return None
-
-    # Son 3 mumda hareket çoktan aşırı olmuşsa işlem alma
-    if recent_3_candle_move_percent > atr_percent * 6.0:
         return None
 
     # TP / SL hesaplama
@@ -241,10 +198,7 @@ def analyze_signal(symbol, df):
 
     rr = reward / risk
 
-    if rr < 1.5:
-        return None
-
-    leverage = "2x - 3x"
+    reasons_text = "\n".join([f"• {r}" for r in reasons[:4]])
 
     message = f"""
 🚀 KRİPTO SİNYAL ANALİZ BOTU FUTURES SİNYALİ
@@ -258,20 +212,20 @@ def analyze_signal(symbol, df):
 🎯 TP3: {round(tp3, 6)}
 🔴 SL: {round(sl, 6)}
 
-📊 RSI: {round(last["rsi"], 2)}
-📈 EMA20: {round(last["ema20"], 6)}
-📉 EMA50: {round(last["ema50"], 6)}
-📌 EMA200: {round(last["ema200"], 6)}
-💪 ADX: {round(last["adx"], 2)}
+📊 RSI: {round(rsi, 2)}
+💪 ADX: {round(adx, 2)}
 📊 Hacim: {round(volume_ratio, 2)}x
 📊 Volatilite: %{round(atr_percent, 2)}
 ⚖️ Risk/Ödül: 1:{round(rr, 2)}
-🧮 Kaldıraç Önerisi: {leverage}
+🧮 Kaldıraç Önerisi: 2x - 3x
 
 🔥 Güven Puanı: %{min(int(score), 100)}
 ⏱ Veri: OKX / 30dk
 
-⚠️ Finansal tavsiye değildir.
+📌 Sinyal Nedenleri:
+{reasons_text}
+
+⚠️ Finansal tavsiye değildir. Grafikte kontrol etmeden işleme girme.
 """
 
     return {
