@@ -111,12 +111,12 @@ def analyze_signal(symbol, df):
     volume_ratio = last["volume"] / last["volume_avg"]
     atr_percent = (atr / price) * 100
 
-    # Zayıf trend filtresi - gevşetilmiş
-    if last["adx"] < 16:
+    # Çok zayıf trend filtresi
+    if last["adx"] < 14:
         return None
 
-    # Çok düşük hacim filtresi - gevşetilmiş
-    if volume_ratio < 0.50:
+    # Çok düşük hacim filtresi
+    if volume_ratio < 0.30:
         return None
 
     long_score = 0
@@ -156,7 +156,7 @@ def analyze_signal(symbol, df):
     elif last["adx"] >= 20:
         long_score += 8
         short_score += 8
-    elif last["adx"] >= 16:
+    elif last["adx"] >= 14:
         long_score += 4
         short_score += 4
 
@@ -186,10 +186,10 @@ def analyze_signal(symbol, df):
         return None
 
     # Aşırı RSI filtresi
-    if direction == "LONG" and last["rsi"] > 70:
+    if direction == "LONG" and last["rsi"] > 72:
         return None
 
-    if direction == "SHORT" and last["rsi"] < 30:
+    if direction == "SHORT" and last["rsi"] < 28:
         return None
 
     # Premium coin bonusu
@@ -200,7 +200,7 @@ def analyze_signal(symbol, df):
     if score < MIN_SCORE:
         return None
 
-    # Geç hareket / geç giriş filtresi - gevşetilmiş
+    # Geç hareket / geç giriş filtresi - gevşetildi
     ema_distance_percent = abs(price - last["ema20"]) / price * 100
     last_candle_move_percent = abs(last["close"] - last["open"]) / price * 100
 
@@ -210,15 +210,15 @@ def analyze_signal(symbol, df):
     recent_3_candle_move_percent = abs(last["close"] - df.iloc[-4]["close"]) / price * 100
 
     # Fiyat EMA20'den aşırı uzaklaştıysa işlem alma
-    if ema_distance_percent > atr_percent * 2.0:
+    if ema_distance_percent > atr_percent * 3.0:
         return None
 
     # Son mum aşırı sert hareket etmişse işlem alma
-    if last_candle_move_percent > atr_percent * 1.8:
+    if last_candle_move_percent > atr_percent * 2.5:
         return None
 
     # Son 3 mumda hareket çoktan aşırı olmuşsa işlem alma
-    if recent_3_candle_move_percent > atr_percent * 4.0:
+    if recent_3_candle_move_percent > atr_percent * 6.0:
         return None
 
     # TP / SL hesaplama
