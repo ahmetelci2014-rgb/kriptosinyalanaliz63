@@ -108,6 +108,16 @@ def analyze_signal(symbol, df):
     if price <= 0 or atr <= 0:
         return None
 
+    # Zayıf trend filtresi
+    if last["adx"] < 20:
+        return None
+
+    # Çok düşük hacim filtresi
+    volume_ratio = last["volume"] / last["volume_avg"]
+
+    if volume_ratio < 0.80:
+        return None
+
     long_score = 0
     short_score = 0
 
@@ -146,8 +156,8 @@ def analyze_signal(symbol, df):
         long_score += 8
         short_score += 8
 
-    # Hacim puanı - artık direkt eleme yapmaz
-    if last["volume"] > last["volume_avg"] * 1.05:
+    # Hacim puanı
+    if volume_ratio >= 1.05:
         long_score += 10
         short_score += 10
 
@@ -169,12 +179,13 @@ def analyze_signal(symbol, df):
         icon = "🔴"
     else:
         return None
+
     # Aşırı RSI filtresi
     if direction == "LONG" and last["rsi"] > 70:
         return None
 
     if direction == "SHORT" and last["rsi"] < 30:
-        return None    
+        return None
 
     # Premium coin bonusu
     if symbol in PREMIUM_COINS:
@@ -198,11 +209,11 @@ def analyze_signal(symbol, df):
         return None
 
     # Son mum çok sert hareket etmişse işlem alma
-    if last_candle_move_percent > atr_percent * 0.9:
+    if last_candle_move_percent > atr_percent * 1.1:
         return None
 
     # Son 3 mumda hareket çoktan olmuşsa işlem alma
-    if recent_3_candle_move_percent > atr_percent * 2.0:
+    if recent_3_candle_move_percent > atr_percent * 2.5:
         return None
 
     # TP / SL hesaplama
@@ -230,9 +241,6 @@ def analyze_signal(symbol, df):
 
     leverage = "2x - 3x"
 
-    if score >= 90 and last["adx"] >= 30:
-        leverage = "3x - 5x"
-
     message = f"""
 🚀 KRİPTO SİNYAL ANALİZ BOTU FUTURES SİNYALİ
 
@@ -250,6 +258,7 @@ def analyze_signal(symbol, df):
 📉 EMA50: {round(last["ema50"], 6)}
 📌 EMA200: {round(last["ema200"], 6)}
 💪 ADX: {round(last["adx"], 2)}
+📊 Hacim: {round(volume_ratio, 2)}x
 ⚖️ Risk/Ödül: 1:{round(rr, 2)}
 🧮 Kaldıraç Önerisi: {leverage}
 
@@ -260,11 +269,11 @@ def analyze_signal(symbol, df):
 """
 
     return {
-    "symbol": symbol,
-    "direction": direction,
-    "score": score,
-    "entry": round(price, 6),
-    "tp1": round(tp1, 6),
-    "sl": round(sl, 6),
-    "message": message
-}
+        "symbol": symbol,
+        "direction": direction,
+        "score": score,
+        "entry": round(price, 6),
+        "tp1": round(tp1, 6),
+        "sl": round(sl, 6),
+        "message": message
+    }
