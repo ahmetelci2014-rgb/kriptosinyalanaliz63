@@ -1,5 +1,6 @@
 import os
 import time
+import json
 import requests
 import pandas as pd
 import ccxt
@@ -13,6 +14,7 @@ CHAT_ID = os.getenv("CHAT_ID")
 TIMEFRAME = "30m"
 LIMIT = 200
 MAX_SIGNALS = 5
+OPEN_SIGNALS_FILE = "open_signals.json"
 
 COINS = [
     "BTCUSDT",
@@ -67,6 +69,32 @@ def send_telegram(message):
         print("Telegram gönderim hatası:", e)
 
 
+def load_open_signals():
+    try:
+        if not os.path.exists(OPEN_SIGNALS_FILE):
+            return {}
+
+        with open(OPEN_SIGNALS_FILE, "r") as f:
+            content = f.read().strip()
+
+            if not content:
+                return {}
+
+            return json.loads(content)
+
+    except Exception as e:
+        print("open_signals okuma hatası:", e)
+        return {}
+
+
+def save_open_signals(data):
+    try:
+        with open(OPEN_SIGNALS_FILE, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print("open_signals kaydetme hatası:", e)
+
+
 def get_exchange():
     return ccxt.okx({
         "enableRateLimit": True,
@@ -104,6 +132,105 @@ def fetch_df(exchange, okx_symbol):
         return None
 
 
+def get_current_price(exchange, symbol):
+    try:
+        okx_symbol = to_okx_symbol(symbol)
+        ticker = exchange.fetch_ticker(okx_symbol)
+
+        price = ticker.get("last")
+
+        if price is None:
+            return None
+
+        return float(price)
+
+    except Exception as e:
+        print(symbol, "güncel fiyat hatası:", e)
+        return None
+
+
+def check_open_signals(exchange):
+    open_signals = load_open_signals()
+
+    if not open_signals:
+        print("Takip edilen açık sinyal yok.")
+        return
+
+    print("Takip edilen açık sinyal sayısı:", len(open_signals))
+
+    updated_signals = {}
+
+    for key, signal in open_signals.items():
+        try:
+            symbol = signal["symbol"]
+            direction = signal["direction"]
+            entry = float(signal["entry"])
+            tp1 = float(signal["tp1"])
+            sl = float(signal["sl"])
+
+            current_price = get_current_price(exchange, symbol)
+
+            if current_price is None:
+                updated_signals[key] = signal
+                continue
+
+            if direction == "LONG":
+                if current_price >= tp1:
+                    send_telegram(
+                        f"✅ TP1 GELDİ\n\n"
+                        f"Coin: {symbol}\n"
+                        f"Yön: LONG 🟢\n"
+                        f"Giriş: {entry}\n"
+                        f"TP1: {tp1}\n"
+                        f"Güncel Fiyat: {current_price}\n\n"
+                        f"Öneri: Kârın bir kısmını al, SL'yi giriş fiyatına çek."
+                    )
+                    continue
+
+                if current_price <= sl:
+                    send_telegram(
+                        f"❌ STOP OLDU\n\n"
+                        f"Coin: {symbol}\n"
+                        f"Yön: LONG 🟢\n"
+                        f"Giriş: {entry}\n"
+                        f"SL: {sl}\n"
+                        f"Güncel Fiyat: {current_price}"
+                    )
+                    continue
+
+            if direction == "SHORT":
+                if current_price <= tp1:
+                    send_telegram(
+                        f"✅ TP1 GELDİ\n\n"
+                        f"Coin: {symbol}\n"
+                        f"Yön: SHORT 🔴\n"
+                        f"Giriş: {entry}\n"
+                        f"TP1: {tp1}\n"
+                        f"Güncel Fiyat: {current_price}\n\n"
+                        f"Öneri: Kârın bir kısmını al, SL'yi giriş fiyatına çek."
+                    )
+                    continue
+
+                if current_price >= sl:
+                    send_telegram(
+                        f"❌ STOP OLDU\n\n"
+                        f"Coin: {symbol}\n"
+                        f"Yön: SHORT 🔴\n"
+                        f"Giriş: {entry}\n"
+                        f"SL: {sl}\n"
+                        f"Güncel Fiyat: {current_price}"
+                    )
+                    continue
+
+            updated_signals[key] = signal
+
+        except Exception as e:
+            print(key, "takip hatası:", e)
+            updated_signals[key] = signal
+
+    save_open_signals(updated_signals)
+
+
 def format_other_signals(other_signals):
     if not other_signals:
         return None
@@ -127,6 +254,9 @@ def main():
     print("Toplam taranan parite:", len(COINS))
 
     exchange = get_exchange()
+
+    # Önce eski açık sinyalleri takip et
+    check_open_signals(exchange)
 
     signals = []
 
@@ -189,9 +319,26 @@ def main():
             f"Diğer aday: {len(other_signals)}"
         )
 
+        open_signals = load_open_signals()
+
         for signal in strong_signals:
             send_telegram(signal["message"])
+
+            key = f"{signal['symbol']}_{signal['direction']}"
+
+            open_signals[key] = {
+                "symbol": signal["symbol"],
+                "direction": signal["direction"],
+                "entry": signal["entry"],
+                "tp1": signal["tp1"],
+                "sl": signal["sl"],
+                "score": signal["score"],
+                "opened_at": int(time.time())
+            }
+
             time.sleep(1)
+
+        save_open_signals(open_signals)
 
         other_message = format_other_signals(other_signals)
 
