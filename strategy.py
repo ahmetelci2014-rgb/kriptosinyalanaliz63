@@ -6,36 +6,36 @@ from config import MIN_SCORE
 
 
 PREMIUM_COINS = [
-    "BTC-USDT",
-    "ETH-USDT",
-    "SOL-USDT",
-    "BNB-USDT",
-    "XRP-USDT",
-    "DOGE-USDT",
-    "LINK-USDT",
-    "AVAX-USDT",
-    "SUI-USDT",
-    "ADA-USDT",
-    "LTC-USDT",
-    "DOT-USDT",
-    "APT-USDT",
-    "ARB-USDT",
-    "OP-USDT",
-    "NEAR-USDT",
-    "INJ-USDT",
-    "WLD-USDT",
-    "FIL-USDT",
-    "ATOM-USDT",
-    "UNI-USDT",
-    "AAVE-USDT",
-    "TRX-USDT",
-    "ETC-USDT",
-    "ICP-USDT",
-    "SEI-USDT",
-    "TIA-USDT",
-    "ORDI-USDT",
-    "JUP-USDT",
-    "BCH-USDT"
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "BNBUSDT",
+    "XRPUSDT",
+    "DOGEUSDT",
+    "LINKUSDT",
+    "AVAXUSDT",
+    "SUIUSDT",
+    "ADAUSDT",
+    "LTCUSDT",
+    "DOTUSDT",
+    "APTUSDT",
+    "ARBUSDT",
+    "OPUSDT",
+    "NEARUSDT",
+    "INJUSDT",
+    "WLDUSDT",
+    "FILUSDT",
+    "ATOMUSDT",
+    "UNIUSDT",
+    "AAVEUSDT",
+    "TRXUSDT",
+    "ETCUSDT",
+    "ICPUSDT",
+    "SEIUSDT",
+    "TIAUSDT",
+    "ORDIUSDT",
+    "JUPUSDT",
+    "BCHUSDT"
 ]
 
 
@@ -108,14 +108,15 @@ def analyze_signal(symbol, df):
     if price <= 0 or atr <= 0:
         return None
 
+    volume_ratio = last["volume"] / last["volume_avg"]
+    atr_percent = (atr / price) * 100
+
     # Zayıf trend filtresi
     if last["adx"] < 20:
         return None
 
     # Çok düşük hacim filtresi
-    volume_ratio = last["volume"] / last["volume_avg"]
-
-    if volume_ratio < 0.80:
+    if volume_ratio < 0.70:
         return None
 
     long_score = 0
@@ -162,8 +163,6 @@ def analyze_signal(symbol, df):
         short_score += 10
 
     # Volatilite puanı
-    atr_percent = (atr / price) * 100
-
     if atr_percent >= 0.4:
         long_score += 10
         short_score += 10
@@ -259,6 +258,7 @@ def analyze_signal(symbol, df):
 📌 EMA200: {round(last["ema200"], 6)}
 💪 ADX: {round(last["adx"], 2)}
 📊 Hacim: {round(volume_ratio, 2)}x
+📊 Volatilite: %{round(atr_percent, 2)}
 ⚖️ Risk/Ödül: 1:{round(rr, 2)}
 🧮 Kaldıraç Önerisi: {leverage}
 
