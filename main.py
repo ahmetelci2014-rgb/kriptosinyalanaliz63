@@ -149,6 +149,33 @@ def get_current_price(exchange, symbol):
         return None
 
 
+def get_last_candle(exchange, symbol):
+    try:
+        okx_symbol = to_okx_symbol(symbol)
+
+        ohlcv = exchange.fetch_ohlcv(
+            okx_symbol,
+            timeframe=TIMEFRAME,
+            limit=2
+        )
+
+        if not ohlcv:
+            return None
+
+        last = ohlcv[-1]
+
+        return {
+            "open": float(last[1]),
+            "high": float(last[2]),
+            "low": float(last[3]),
+            "close": float(last[4])
+        }
+
+    except Exception as e:
+        print(symbol, "mum verisi hatası:", e)
+        return None
+
+
 def check_open_signals(exchange):
     open_signals = load_open_signals()
 
@@ -168,56 +195,68 @@ def check_open_signals(exchange):
             tp1 = float(signal["tp1"])
             sl = float(signal["sl"])
 
+            candle = get_last_candle(exchange, symbol)
             current_price = get_current_price(exchange, symbol)
 
-            if current_price is None:
+            if candle is None or current_price is None:
                 updated_signals[key] = signal
                 continue
 
+            high = candle["high"]
+            low = candle["low"]
+
             if direction == "LONG":
-                if current_price >= tp1:
+                # LONG için TP1: mumun high değeri TP1'e değdiyse
+                if high >= tp1:
                     send_telegram(
                         f"✅ TP1 GELDİ\n\n"
                         f"Coin: {symbol}\n"
                         f"Yön: LONG 🟢\n"
                         f"Giriş: {entry}\n"
                         f"TP1: {tp1}\n"
+                        f"Mum High: {high}\n"
                         f"Güncel Fiyat: {current_price}\n\n"
-                        f"Öneri: Kârın bir kısmını al, SL'yi giriş fiyatına çek."
+                        f"Öneri: %50 kâr al, SL'yi giriş fiyatına çek."
                     )
                     continue
 
-                if current_price <= sl:
+                # LONG için SL: mumun low değeri SL'ye değdiyse
+                if low <= sl:
                     send_telegram(
                         f"❌ STOP OLDU\n\n"
                         f"Coin: {symbol}\n"
                         f"Yön: LONG 🟢\n"
                         f"Giriş: {entry}\n"
                         f"SL: {sl}\n"
+                        f"Mum Low: {low}\n"
                         f"Güncel Fiyat: {current_price}"
                     )
                     continue
 
             if direction == "SHORT":
-                if current_price <= tp1:
+                # SHORT için TP1: mumun low değeri TP1'e değdiyse
+                if low <= tp1:
                     send_telegram(
                         f"✅ TP1 GELDİ\n\n"
                         f"Coin: {symbol}\n"
                         f"Yön: SHORT 🔴\n"
                         f"Giriş: {entry}\n"
                         f"TP1: {tp1}\n"
+                        f"Mum Low: {low}\n"
                         f"Güncel Fiyat: {current_price}\n\n"
-                        f"Öneri: Kârın bir kısmını al, SL'yi giriş fiyatına çek."
+                        f"Öneri: %50 kâr al, SL'yi giriş fiyatına çek."
                     )
                     continue
 
-                if current_price >= sl:
+                # SHORT için SL: mumun high değeri SL'ye değdiyse
+                if high >= sl:
                     send_telegram(
                         f"❌ STOP OLDU\n\n"
                         f"Coin: {symbol}\n"
                         f"Yön: SHORT 🔴\n"
                         f"Giriş: {entry}\n"
                         f"SL: {sl}\n"
+                        f"Mum High: {high}\n"
                         f"Güncel Fiyat: {current_price}"
                     )
                     continue
