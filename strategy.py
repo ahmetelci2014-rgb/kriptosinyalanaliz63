@@ -227,6 +227,13 @@ def analyze_signal(symbol, df):
 ⚖️ Risk/Ödül: 1:{round(rr, 2)}
 🧮 Kaldıraç Önerisi: 2x - 3x
 
+📌 İşlem Kuralı:
+• Fiyat girişe yakınsa değerlendir.
+• TP1'e yaklaşmışsa işleme girme.
+• TP1 gelirse %50 kâr al, SL'yi giriş fiyatına çek.
+• Stop mutlaka girilmeli.
+• Marjin: Isolated kullan.
+
 🔥 Güven Puanı: %{min(int(score), 100)}
 ⏱ Veri: OKX / 30dk
 
