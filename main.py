@@ -104,6 +104,24 @@ def fetch_df(exchange, okx_symbol):
         return None
 
 
+def format_other_signals(other_signals):
+    if not other_signals:
+        return None
+
+    text = "📋 DİĞER SİNYAL ADAYLARI\n\n"
+
+    for i, signal in enumerate(other_signals[:25], 1):
+        text += (
+            f"{i}) {signal['symbol']} | "
+            f"{signal['direction']} | "
+            f"Skor: {signal['score']} | "
+            f"Giriş: {signal['entry']}\n"
+        )
+
+    text += "\nBu liste bilgilendirme amaçlıdır. Detaylı sinyaller üstte gönderildi."
+    return text
+
+
 def main():
     print("Bot başladı...")
     print("Toplam taranan parite:", len(COINS))
@@ -132,20 +150,53 @@ def main():
         time.sleep(0.2)
 
     signals = sorted(signals, key=lambda x: x["score"], reverse=True)
-    strong_signals = signals[:MAX_SIGNALS]
 
-    print("Güçlü sinyal sayısı:", len(strong_signals))
+    long_signals = [s for s in signals if s["direction"] == "LONG"]
+    short_signals = [s for s in signals if s["direction"] == "SHORT"]
+
+    strong_signals = []
+
+    # En güçlü 3 SHORT
+    strong_signals.extend(short_signals[:3])
+
+    # En güçlü 2 LONG
+    strong_signals.extend(long_signals[:2])
+
+    # Tekrar skora göre sırala
+    strong_signals = sorted(strong_signals, key=lambda x: x["score"], reverse=True)
+
+    # En fazla 5 detaylı sinyal gönder
+    strong_signals = strong_signals[:MAX_SIGNALS]
+
+    # Detaylı gönderilmeyen diğer adaylar
+    other_signals = [
+        s for s in signals
+        if s not in strong_signals
+    ]
+
+    print("LONG sinyal sayısı:", len(long_signals))
+    print("SHORT sinyal sayısı:", len(short_signals))
+    print("Gönderilecek detaylı sinyal sayısı:", len(strong_signals))
+    print("Diğer aday sayısı:", len(other_signals))
 
     if strong_signals:
         send_telegram(
             f"✅ Bot çalıştı.\n"
             f"Toplam taranan parite: {len(COINS)}\n"
-            f"Gönderilen güçlü sinyal sayısı: {len(strong_signals)}"
+            f"LONG aday: {len(long_signals)}\n"
+            f"SHORT aday: {len(short_signals)}\n"
+            f"Detaylı gönderilen sinyal: {len(strong_signals)}\n"
+            f"Diğer aday: {len(other_signals)}"
         )
 
         for signal in strong_signals:
             send_telegram(signal["message"])
             time.sleep(1)
+
+        other_message = format_other_signals(other_signals)
+
+        if other_message:
+            send_telegram(other_message)
 
     else:
         print("Şu an güçlü sinyal yok.")
