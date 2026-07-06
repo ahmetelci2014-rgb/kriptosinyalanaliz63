@@ -111,11 +111,11 @@ def analyze_signal(symbol, df):
     volume_ratio = last["volume"] / last["volume_avg"]
     atr_percent = (atr / price) * 100
 
-    # Zayıf trend filtresi - orta ayar
+    # Zayıf trend filtresi
     if last["adx"] < 18:
         return None
 
-    # Çok düşük hacim filtresi - orta ayar
+    # Çok düşük hacim filtresi
     if volume_ratio < 0.60:
         return None
 
@@ -203,15 +203,15 @@ def analyze_signal(symbol, df):
 
     recent_3_candle_move_percent = abs(last["close"] - df.iloc[-4]["close"]) / price * 100
 
-    # Fiyat EMA20'den fazla uzaklaştıysa işlem alma
-    if ema_distance_percent > atr_percent * 1.3:
+    # Fiyat EMA20'den çok uzaklaştıysa işlem alma
+    if ema_distance_percent > atr_percent * 1.6:
         return None
 
-    # Son mum çok sert hareket etmişse işlem alma
-    if last_candle_move_percent > atr_percent * 1.1:
+    # Son mum aşırı sert hareket etmişse işlem alma
+    if last_candle_move_percent > atr_percent * 1.4:
         return None
 
-    # Son 3 mumda hareket çoktan olmuşsa işlem alma - orta ayar
+    # Son 3 mumda hareket çoktan olmuşsa işlem alma
     if recent_3_candle_move_percent > atr_percent * 3.0:
         return None
 
