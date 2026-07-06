@@ -3,8 +3,8 @@ import requests
 
 
 def send_message(message):
-    token = os.getenv("TOKEN")
-    chat_id = os.getenv("CHAT_ID")
+    token = os.getenv("8619346423:AAELfIQVNONPR9_p8NTx-YHI7kwXPdaS7pA")
+    chat_id = os.getenv("8439391876")
 
     if not token or not chat_id:
         print("TOKEN veya CHAT_ID eksik.")
