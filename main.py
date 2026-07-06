@@ -16,6 +16,9 @@ LIMIT = 200
 MAX_SIGNALS = 5
 OPEN_SIGNALS_FILE = "open_signals.json"
 
+# Aynı coin + aynı yön sinyali 2 saat içinde tekrar gönderilmesin
+DUPLICATE_BLOCK_SECONDS = 2 * 60 * 60
+
 COINS = [
     "BTCUSDT",
     "ETHUSDT",
@@ -93,6 +96,27 @@ def save_open_signals(data):
             json.dump(data, f, indent=2)
     except Exception as e:
         print("open_signals kaydetme hatası:", e)
+
+
+def is_duplicate_signal(signal, open_signals):
+    try:
+        key = f"{signal['symbol']}_{signal['direction']}"
+
+        if key not in open_signals:
+            return False
+
+        opened_at = int(open_signals[key].get("opened_at", 0))
+        now = int(time.time())
+
+        if now - opened_at < DUPLICATE_BLOCK_SECONDS:
+            print(key, "2 saat içinde tekrar sinyal olduğu için engellendi.")
+            return True
+
+        return False
+
+    except Exception as e:
+        print("Tekrar sinyal kontrol hatası:", e)
+        return False
 
 
 def get_exchange():
@@ -319,6 +343,17 @@ def main():
         time.sleep(0.2)
 
     signals = sorted(signals, key=lambda x: x["score"], reverse=True)
+
+    # Aynı coin aynı yön tekrar sinyal engeli
+    open_signals_for_duplicate_check = load_open_signals()
+
+    filtered_signals = []
+
+    for signal in signals:
+        if not is_duplicate_signal(signal, open_signals_for_duplicate_check):
+            filtered_signals.append(signal)
+
+    signals = filtered_signals
 
     long_signals = [s for s in signals if s["direction"] == "LONG"]
     short_signals = [s for s in signals if s["direction"] == "SHORT"]
