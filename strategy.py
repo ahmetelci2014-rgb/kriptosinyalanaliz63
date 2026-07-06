@@ -88,6 +88,14 @@ def analyze_signal(symbol, df):
     volume_ratio = float(last["volume"] / last["volume_avg"])
     atr_percent = (atr / price) * 100
 
+    # Çok düşük hacimli sinyalleri kesin engelle
+    if volume_ratio < 0.30:
+        return None
+
+    # Çok zayıf trendleri engelle
+    if adx < 14:
+        return None
+
     long_score = 0
     short_score = 0
     long_reasons = []
@@ -125,7 +133,7 @@ def analyze_signal(symbol, df):
         short_score += 15
         short_reasons.append("RSI short için uygun")
 
-    # ADX puan verir ama elemez
+    # ADX puan verir
     if adx >= 25:
         long_score += 15
         short_score += 15
@@ -136,7 +144,7 @@ def analyze_signal(symbol, df):
         long_score += 4
         short_score += 4
 
-    # Hacim puan verir ama elemez
+    # Hacim puan verir
     if volume_ratio >= 1.20:
         long_score += 10
         short_score += 10
@@ -163,7 +171,7 @@ def analyze_signal(symbol, df):
     else:
         return None
 
-    # Çok aşırı RSI varsa alma
+    # Aşırı RSI filtresi
     if direction == "LONG" and rsi > 76:
         return None
 
