@@ -186,20 +186,21 @@ def analyze_signal(symbol, df):
         return None
 
     # Geç hareket / geç giriş filtresi
+    # Bu bölüm artık daha yumuşak. Botun tamamen susmasını engeller.
     ema_distance_percent = abs(price - last["ema20"]) / price * 100
     last_candle_move_percent = abs(last["close"] - last["open"]) / price * 100
     recent_3_candle_move_percent = abs(last["close"] - df.iloc[-4]["close"]) / price * 100
 
-    # Fiyat EMA20'den çok uzaklaştıysa sinyal alma
-    if ema_distance_percent > atr_percent * 2.2:
+    # Fiyat EMA20'den aşırı uzaklaştıysa sinyal alma
+    if ema_distance_percent > atr_percent * 4.0:
         return None
 
-    # Son mum çok sert hareket etmişse sinyal alma
-    if last_candle_move_percent > atr_percent * 2.0:
+    # Son mum aşırı sert hareket etmişse sinyal alma
+    if last_candle_move_percent > atr_percent * 4.0:
         return None
 
-    # Son 3 mumda hareket çoktan olmuşsa sinyal alma
-    if recent_3_candle_move_percent > atr_percent * 4.5:
+    # Son 3 mumda hareket aşırı olmuşsa sinyal alma
+    if recent_3_candle_move_percent > atr_percent * 8.0:
         return None
 
     # TP / SL hesaplama
