@@ -40,8 +40,12 @@ PREMIUM_COINS = [
 
 
 def analyze_signal(symbol, df):
-    if df is None or df.empty or len(df) < 200:
+    def reject(reason):
+        print(f"{symbol}: elendi -> {reason}")
         return None
+
+    if df is None or df.empty or len(df) < 200:
+        return reject("yetersiz veri")
 
     df = df.copy()
 
@@ -72,7 +76,7 @@ def analyze_signal(symbol, df):
     df = df.dropna()
 
     if df.empty or len(df) < 4:
-        return None
+        return reject("indikator verisi yetersiz")
 
     last = df.iloc[-1]
 
@@ -80,20 +84,18 @@ def analyze_signal(symbol, df):
     atr = float(last["atr"])
 
     if price <= 0 or atr <= 0:
-        return None
+        return reject("fiyat veya atr hatalı")
 
     rsi = float(last["rsi"])
     adx = float(last["adx"])
     volume_ratio = float(last["volume"] / last["volume_avg"])
     atr_percent = (atr / price) * 100
 
-    # Çok düşük hacimli sinyalleri engelle
     if volume_ratio < 0.30:
-        return None
+        return reject(f"hacim çok düşük: {round(volume_ratio, 2)}x")
 
-    # Çok zayıf trendleri engelle
     if adx < 14:
-        return None
+        return reject(f"adx düşük: {round(adx, 2)}")
 
     long_score = 0
     short_score = 0
@@ -168,14 +170,17 @@ def analyze_signal(symbol, df):
         icon = "🔴"
         reasons = short_reasons
     else:
-        return None
+        return reject(
+            f"long short eşit | long: {long_score} short: {short_score} "
+            f"rsi: {round(rsi, 2)} adx: {round(adx, 2)}"
+        )
 
     # Aşırı RSI filtresi
     if direction == "LONG" and rsi > 70:
-        return None
+        return reject(f"long rsi yüksek: {round(rsi, 2)}")
 
     if direction == "SHORT" and rsi < 30:
-        return None
+        return reject(f"short rsi düşük: {round(rsi, 2)}")
 
     # Premium coin bonusu
     if symbol in PREMIUM_COINS:
@@ -183,25 +188,33 @@ def analyze_signal(symbol, df):
 
     # Minimum puan kontrolü
     if score < MIN_SCORE:
-        return None
+        return reject(
+            f"puan düşük: {score} / min {MIN_SCORE} | "
+            f"long: {long_score} short: {short_score}"
+        )
 
     # Geç hareket / geç giriş filtresi
-    # Bu bölüm artık daha yumuşak. Botun tamamen susmasını engeller.
     ema_distance_percent = abs(price - last["ema20"]) / price * 100
     last_candle_move_percent = abs(last["close"] - last["open"]) / price * 100
     recent_3_candle_move_percent = abs(last["close"] - df.iloc[-4]["close"]) / price * 100
 
-    # Fiyat EMA20'den aşırı uzaklaştıysa sinyal alma
     if ema_distance_percent > atr_percent * 4.0:
-        return None
+        return reject(
+            f"ema20 uzak geç giriş | ema uzaklık: {round(ema_distance_percent, 2)} "
+            f"atr%: {round(atr_percent, 2)}"
+        )
 
-    # Son mum aşırı sert hareket etmişse sinyal alma
     if last_candle_move_percent > atr_percent * 4.0:
-        return None
+        return reject(
+            f"son mum çok sert | mum: {round(last_candle_move_percent, 2)} "
+            f"atr%: {round(atr_percent, 2)}"
+        )
 
-    # Son 3 mumda hareket aşırı olmuşsa sinyal alma
     if recent_3_candle_move_percent > atr_percent * 8.0:
-        return None
+        return reject(
+            f"son 3 mum hareketi fazla | hareket: {round(recent_3_candle_move_percent, 2)} "
+            f"atr%: {round(atr_percent, 2)}"
+        )
 
     # TP / SL hesaplama
     # Stop geniş tutuldu: erken fitil stoplarını azaltmak için ATR 1.8
@@ -220,13 +233,12 @@ def analyze_signal(symbol, df):
     reward = abs(tp2 - price)
 
     if risk <= 0:
-        return None
+        return reject("risk hesaplanamadı")
 
     rr = reward / risk
 
-    # Risk/ödül çok düşükse sinyal alma
     if rr < 1.40:
-        return None
+        return reject(f"risk ödül düşük: 1:{round(rr, 2)}")
 
     # Sinyal kalite etiketi
     quality_score = 0
@@ -282,6 +294,12 @@ def analyze_signal(symbol, df):
 
     quality_notes_text = "\n".join([f"• {note}" for note in quality_notes])
     reasons_text = "\n".join([f"• {r}" for r in reasons[:4]])
+
+    print(
+        f"{symbol}: SİNYAL BULUNDU -> {direction} | "
+        f"score: {score} | rsi: {round(rsi, 2)} | adx: {round(adx, 2)} | "
+        f"hacim: {round(volume_ratio, 2)}x | rr: 1:{round(rr, 2)}"
+    )
 
     message = f"""
 🚀 KRİPTO SİNYAL ANALİZ BOTU FUTURES SİNYALİ
