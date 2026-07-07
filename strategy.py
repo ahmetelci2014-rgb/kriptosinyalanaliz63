@@ -72,7 +72,7 @@ def analyze_signal(symbol, df):
 
     df = df.dropna()
 
-    if df.empty:
+    if df.empty or len(df) < 4:
         return None
 
     last = df.iloc[-1]
@@ -88,7 +88,7 @@ def analyze_signal(symbol, df):
     volume_ratio = float(last["volume"] / last["volume_avg"])
     atr_percent = (atr / price) * 100
 
-    # Çok düşük hacimli sinyalleri kesin engelle
+    # Çok düşük hacimli sinyalleri engelle
     if volume_ratio < 0.30:
         return None
 
@@ -125,15 +125,15 @@ def analyze_signal(symbol, df):
         short_reasons.append("MACD negatif")
 
     # RSI
-    if 42 <= rsi <= 70:
+    if 42 <= rsi <= 68:
         long_score += 15
         long_reasons.append("RSI long için uygun")
 
-    if 30 <= rsi <= 58:
+    if 32 <= rsi <= 58:
         short_score += 15
         short_reasons.append("RSI short için uygun")
 
-    # ADX puan verir
+    # ADX puanı
     if adx >= 25:
         long_score += 15
         short_score += 15
@@ -144,7 +144,7 @@ def analyze_signal(symbol, df):
         long_score += 4
         short_score += 4
 
-    # Hacim puan verir
+    # Hacim puanı
     if volume_ratio >= 1.20:
         long_score += 10
         short_score += 10
@@ -152,7 +152,7 @@ def analyze_signal(symbol, df):
         long_score += 5
         short_score += 5
 
-    # Volatilite
+    # Volatilite puanı
     if atr_percent >= 0.35:
         long_score += 10
         short_score += 10
@@ -172,10 +172,10 @@ def analyze_signal(symbol, df):
         return None
 
     # Aşırı RSI filtresi
-    if direction == "LONG" and rsi > 76:
+    if direction == "LONG" and rsi > 70:
         return None
 
-    if direction == "SHORT" and rsi < 24:
+    if direction == "SHORT" and rsi < 30:
         return None
 
     # Premium coin bonusu
@@ -186,17 +186,35 @@ def analyze_signal(symbol, df):
     if score < MIN_SCORE:
         return None
 
+    # Geç hareket / geç giriş filtresi
+    ema_distance_percent = abs(price - last["ema20"]) / price * 100
+    last_candle_move_percent = abs(last["close"] - last["open"]) / price * 100
+    recent_3_candle_move_percent = abs(last["close"] - df.iloc[-4]["close"]) / price * 100
+
+    # Fiyat EMA20'den çok uzaklaştıysa sinyal alma
+    if ema_distance_percent > atr_percent * 1.4:
+        return None
+
+    # Son mum çok sert hareket etmişse sinyal alma
+    if last_candle_move_percent > atr_percent * 1.2:
+        return None
+
+    # Son 3 mumda hareket çoktan olmuşsa sinyal alma
+    if recent_3_candle_move_percent > atr_percent * 2.7:
+        return None
+
     # TP / SL hesaplama
+    # Stop genişletildi: ATR 1.2 yerine ATR 1.8
     if direction == "LONG":
-        sl = price - atr * 1.2
-        tp1 = price + atr * 1.6
-        tp2 = price + atr * 2.8
-        tp3 = price + atr * 4.0
+        sl = price - atr * 1.8
+        tp1 = price + atr * 1.8
+        tp2 = price + atr * 3.0
+        tp3 = price + atr * 4.5
     else:
-        sl = price + atr * 1.2
-        tp1 = price - atr * 1.6
-        tp2 = price - atr * 2.8
-        tp3 = price - atr * 4.0
+        sl = price + atr * 1.8
+        tp1 = price - atr * 1.8
+        tp2 = price - atr * 3.0
+        tp3 = price - atr * 4.5
 
     risk = abs(price - sl)
     reward = abs(tp2 - price)
@@ -205,6 +223,9 @@ def analyze_signal(symbol, df):
         return None
 
     rr = reward / risk
+
+    if rr < 1.40:
+        return None
 
     # Sinyal kalite etiketi
     quality_score = 0
@@ -229,20 +250,20 @@ def analyze_signal(symbol, df):
         quality_notes.append("Hacim düşük")
 
     if direction == "LONG":
-        if 45 <= rsi <= 66:
+        if 45 <= rsi <= 64:
             quality_score += 2
             quality_notes.append("RSI long için uygun")
-        elif 42 <= rsi <= 70:
+        elif 42 <= rsi <= 68:
             quality_score += 1
             quality_notes.append("RSI idare eder")
         else:
             quality_notes.append("RSI riskli")
 
     if direction == "SHORT":
-        if 35 <= rsi <= 55:
+        if 36 <= rsi <= 54:
             quality_score += 2
             quality_notes.append("RSI short için uygun")
-        elif 30 <= rsi <= 58:
+        elif 32 <= rsi <= 58:
             quality_score += 1
             quality_notes.append("RSI idare eder")
         else:
