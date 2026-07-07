@@ -101,7 +101,7 @@ def analyze_signal(symbol, df):
     long_reasons = []
     short_reasons = []
 
-    # Trend
+    # Trend yönü
     if last["close"] > last["ema200"]:
         long_score += 20
         long_reasons.append("Fiyat EMA200 üstünde")
@@ -116,7 +116,7 @@ def analyze_signal(symbol, df):
         short_score += 15
         short_reasons.append("EMA20 EMA50 altında")
 
-    # MACD
+    # MACD yönü
     if last["macd"] > last["macd_signal"]:
         long_score += 15
         long_reasons.append("MACD pozitif")
@@ -124,7 +124,7 @@ def analyze_signal(symbol, df):
         short_score += 15
         short_reasons.append("MACD negatif")
 
-    # RSI
+    # RSI puanı
     if 42 <= rsi <= 68:
         long_score += 15
         long_reasons.append("RSI long için uygun")
@@ -192,19 +192,19 @@ def analyze_signal(symbol, df):
     recent_3_candle_move_percent = abs(last["close"] - df.iloc[-4]["close"]) / price * 100
 
     # Fiyat EMA20'den çok uzaklaştıysa sinyal alma
-    if ema_distance_percent > atr_percent * 1.4:
+    if ema_distance_percent > atr_percent * 1.8:
         return None
 
     # Son mum çok sert hareket etmişse sinyal alma
-    if last_candle_move_percent > atr_percent * 1.2:
+    if last_candle_move_percent > atr_percent * 1.6:
         return None
 
     # Son 3 mumda hareket çoktan olmuşsa sinyal alma
-    if recent_3_candle_move_percent > atr_percent * 2.7:
+    if recent_3_candle_move_percent > atr_percent * 3.5:
         return None
 
     # TP / SL hesaplama
-    # Stop genişletildi: ATR 1.2 yerine ATR 1.8
+    # Stop geniş tutuldu: erken fitil stoplarını azaltmak için ATR 1.8
     if direction == "LONG":
         sl = price - atr * 1.8
         tp1 = price + atr * 1.8
@@ -224,6 +224,7 @@ def analyze_signal(symbol, df):
 
     rr = reward / risk
 
+    # Risk/ödül çok düşükse sinyal alma
     if rr < 1.40:
         return None
 
