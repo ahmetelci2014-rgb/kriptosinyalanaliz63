@@ -75,7 +75,7 @@ def analyze_signal(symbol, df):
     df["volume_avg"] = df["volume"].rolling(20).mean()
     df = df.dropna()
 
-    if df.empty or len(df) < 4:
+    if df.empty:
         return reject("indikator verisi yetersiz")
 
     last = df.iloc[-1]
@@ -91,9 +91,11 @@ def analyze_signal(symbol, df):
     volume_ratio = float(last["volume"] / last["volume_avg"])
     atr_percent = (atr / price) * 100
 
+    # Çok düşük hacimli sinyalleri engelle
     if volume_ratio < 0.30:
         return reject(f"hacim çok düşük: {round(volume_ratio, 2)}x")
 
+    # Çok zayıf trendleri engelle
     if adx < 14:
         return reject(f"adx düşük: {round(adx, 2)}")
 
@@ -193,28 +195,9 @@ def analyze_signal(symbol, df):
             f"long: {long_score} short: {short_score}"
         )
 
-    # Geç hareket / geç giriş filtresi
-    ema_distance_percent = abs(price - last["ema20"]) / price * 100
-    last_candle_move_percent = abs(last["close"] - last["open"]) / price * 100
-    recent_3_candle_move_percent = abs(last["close"] - df.iloc[-4]["close"]) / price * 100
-
-    if ema_distance_percent > atr_percent * 4.0:
-        return reject(
-            f"ema20 uzak geç giriş | ema uzaklık: {round(ema_distance_percent, 2)} "
-            f"atr%: {round(atr_percent, 2)}"
-        )
-
-    if last_candle_move_percent > atr_percent * 4.0:
-        return reject(
-            f"son mum çok sert | mum: {round(last_candle_move_percent, 2)} "
-            f"atr%: {round(atr_percent, 2)}"
-        )
-
-    if recent_3_candle_move_percent > atr_percent * 8.0:
-        return reject(
-            f"son 3 mum hareketi fazla | hareket: {round(recent_3_candle_move_percent, 2)} "
-            f"atr%: {round(atr_percent, 2)}"
-        )
+    # Geç giriş filtresi şimdilik pasif.
+    # Sebep: Bot sürekli güçlü sinyal yok diyordu.
+    # Bu bölümü ileride tekrar daha dengeli şekilde açacağız.
 
     # TP / SL hesaplama
     # Stop geniş tutuldu: erken fitil stoplarını azaltmak için ATR 1.8
