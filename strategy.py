@@ -69,7 +69,6 @@ def analyze_signal(symbol, df):
     ).adx()
 
     df["volume_avg"] = df["volume"].rolling(20).mean()
-
     df = df.dropna()
 
     if df.empty or len(df) < 4:
@@ -192,15 +191,15 @@ def analyze_signal(symbol, df):
     recent_3_candle_move_percent = abs(last["close"] - df.iloc[-4]["close"]) / price * 100
 
     # Fiyat EMA20'den çok uzaklaştıysa sinyal alma
-    if ema_distance_percent > atr_percent * 1.8:
+    if ema_distance_percent > atr_percent * 2.2:
         return None
 
     # Son mum çok sert hareket etmişse sinyal alma
-    if last_candle_move_percent > atr_percent * 1.6:
+    if last_candle_move_percent > atr_percent * 2.0:
         return None
 
     # Son 3 mumda hareket çoktan olmuşsa sinyal alma
-    if recent_3_candle_move_percent > atr_percent * 3.5:
+    if recent_3_candle_move_percent > atr_percent * 4.5:
         return None
 
     # TP / SL hesaplama
