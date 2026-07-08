@@ -75,7 +75,7 @@ def analyze_signal(symbol, df):
     df["volume_avg"] = df["volume"].rolling(20).mean()
     df = df.dropna()
 
-    if df.empty:
+    if df.empty or len(df) < 5:
         return reject("indikator verisi yetersiz")
 
     last = df.iloc[-1]
@@ -200,24 +200,48 @@ def analyze_signal(symbol, df):
     # Bu bölümü ileride tekrar daha dengeli şekilde açacağız.
 
     # TP / SL hesaplama
-    # Stop geniş tutuldu: erken fitil stoplarını azaltmak için ATR 1.8
-    if direction == "LONG":
-        sl = price - atr * 1.8
-        tp1 = price + atr * 1.8
-        tp2 = price + atr * 3.0
-        tp3 = price + atr * 4.5
-    else:
-        sl = price + atr * 1.8
-        tp1 = price - atr * 1.8
-        tp2 = price - atr * 3.0
-        tp3 = price - atr * 4.5
+    # Yeni sistem: ATR + son 5 mum tepe/dip stop sistemi
+    # Amaç: ARB/DOGE gibi fitille stop olup sonra doğru yöne giden işlemleri azaltmak.
+    recent_high = float(df["high"].tail(5).max())
+    recent_low = float(df["low"].tail(5).min())
+    buffer = atr * 0.25
 
-    risk = abs(price - sl)
-    reward = abs(tp2 - price)
+    if direction == "LONG":
+        sl_atr = price - atr * 2.2
+        sl_swing = recent_low - buffer
+
+        # LONG için daha güvenli olan, daha aşağıdaki stop kullanılır
+        sl = min(sl_atr, sl_swing)
+
+        risk = abs(price - sl)
+
+        tp1 = price + risk * 1.0
+        tp2 = price + risk * 1.7
+        tp3 = price + risk * 2.5
+
+    else:
+        sl_atr = price + atr * 2.2
+        sl_swing = recent_high + buffer
+
+        # SHORT için daha güvenli olan, daha yukarıdaki stop kullanılır
+        sl = max(sl_atr, sl_swing)
+
+        risk = abs(sl - price)
+
+        tp1 = price - risk * 1.0
+        tp2 = price - risk * 1.7
+        tp3 = price - risk * 2.5
 
     if risk <= 0:
         return reject("risk hesaplanamadı")
 
+    # Stop çok aşırı uzaksa sinyal alma
+    risk_percent = (risk / price) * 100
+
+    if risk_percent > 3.0:
+        return reject(f"stop çok uzak: %{round(risk_percent, 2)}")
+
+    reward = abs(tp2 - price)
     rr = reward / risk
 
     if rr < 1.40:
@@ -281,7 +305,8 @@ def analyze_signal(symbol, df):
     print(
         f"{symbol}: SİNYAL BULUNDU -> {direction} | "
         f"score: {score} | rsi: {round(rsi, 2)} | adx: {round(adx, 2)} | "
-        f"hacim: {round(volume_ratio, 2)}x | rr: 1:{round(rr, 2)}"
+        f"hacim: {round(volume_ratio, 2)}x | rr: 1:{round(rr, 2)} | "
+        f"risk: %{round(risk_percent, 2)}"
     )
 
     message = f"""
@@ -300,6 +325,7 @@ def analyze_signal(symbol, df):
 💪 ADX: {round(adx, 2)}
 📊 Hacim: {round(volume_ratio, 2)}x
 📊 Volatilite: %{round(atr_percent, 2)}
+🛡️ Stop Mesafesi: %{round(risk_percent, 2)}
 ⚖️ Risk/Ödül: 1:{round(rr, 2)}
 🧮 Kaldıraç Önerisi: 2x - 3x
 
@@ -316,8 +342,6 @@ def analyze_signal(symbol, df):
 
 📋 Kalite Notları:
 {quality_notes_text}
-
-
 
 📌 Sinyal Nedenleri:
 {reasons_text}
