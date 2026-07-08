@@ -56,9 +56,6 @@ COINS = [
 
     # Yeni eklenen coinler
     "PEPEUSDT",
-    "TONUSDT",
-    "FETUSDT",
-    "RUNEUSDT",
     "DYDXUSDT",
     "GALAUSDT",
     "ALGOUSDT",
