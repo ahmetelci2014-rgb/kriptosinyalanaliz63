@@ -316,7 +316,8 @@ def analyze_signal(symbol, df):
 
     print(
         f"{symbol}: SİNYAL BULUNDU -> {direction} | "
-        f"score: {score} | rsi: {round(rsi, 2)} | adx: {round(adx, 2)} | "
+        f"score: {score} | quality: {signal_quality} | "
+        f"rsi: {round(rsi, 2)} | adx: {round(adx, 2)} | "
         f"hacim: {round(volume_ratio, 2)}x | rr: 1:{round(rr, 2)} | "
         f"risk: %{round(risk_percent, 2)}"
     )
@@ -365,6 +366,7 @@ def analyze_signal(symbol, df):
         "symbol": symbol,
         "direction": direction,
         "score": score,
+        "quality": signal_quality,
         "entry": round(price, 6),
         "tp1": round(tp1, 6),
         "tp2": round(tp2, 6),
