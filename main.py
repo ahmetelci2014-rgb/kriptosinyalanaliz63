@@ -8,13 +8,13 @@ import ccxt
 from datetime import datetime, timezone, timedelta
 
 from strategy import analyze_signal
+from config import COINS, INTERVAL, LIMIT
 
 
 TOKEN = os.getenv("TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
-TIMEFRAME = "30m"
-LIMIT = 200
+TIMEFRAME = INTERVAL
 MAX_SIGNALS = 5
 
 OPEN_SIGNALS_FILE = "open_signals.json"
@@ -29,49 +29,6 @@ OPEN_SUMMARY_EVERY_MINUTES = 60
 
 # Aynı coin + aynı yön sinyali 2 saat içinde tekrar gönderilmesin
 DUPLICATE_BLOCK_SECONDS = 2 * 60 * 60
-
-COINS = [
-    "BTCUSDT",
-    "ETHUSDT",
-    "SOLUSDT",
-    "BNBUSDT",
-    "XRPUSDT",
-    "DOGEUSDT",
-    "LINKUSDT",
-    "AVAXUSDT",
-    "SUIUSDT",
-    "ADAUSDT",
-    "LTCUSDT",
-    "DOTUSDT",
-    "APTUSDT",
-    "ARBUSDT",
-    "OPUSDT",
-    "NEARUSDT",
-    "INJUSDT",
-    "WLDUSDT",
-    "FILUSDT",
-    "ATOMUSDT",
-    "UNIUSDT",
-    "AAVEUSDT",
-    "TRXUSDT",
-    "ETCUSDT",
-    "ICPUSDT",
-    "SEIUSDT",
-    "TIAUSDT",
-    "ORDIUSDT",
-    "JUPUSDT",
-    "BCHUSDT"
-    "PEPE", 
-    "TON", 
-    "FET", 
-    "RUNE", 
-    "DYDX",
-    "GALA", 
-    "ALGO", 
-    "MANA", 
-    "SAND", 
-    "AXS"
-]
 
 
 def send_telegram(message):
@@ -433,6 +390,7 @@ def build_open_signals_summary(exchange):
                     status = "Giriş üstünde ⚠️"
 
             tp_status = []
+
             if tp1_hit:
                 tp_status.append("TP1 ✅")
             if tp2_hit:
