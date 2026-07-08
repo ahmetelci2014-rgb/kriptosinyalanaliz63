@@ -23,6 +23,9 @@ TR_TIMEZONE = timezone(timedelta(hours=3))
 DAILY_REPORT_HOUR = 23
 DAILY_REPORT_MINUTE = 45
 
+# Açık sinyal özeti kaç dakikada bir gönderilsin
+OPEN_SUMMARY_EVERY_MINUTES = 60
+
 # Aynı coin + aynı yön sinyali 2 saat içinde tekrar gönderilmesin
 DUPLICATE_BLOCK_SECONDS = 2 * 60 * 60
 
@@ -293,6 +296,116 @@ def maybe_send_daily_report():
     print("Günlük performans raporu gönderildi.")
 
 
+def should_send_open_summary():
+    performance = load_performance()
+    now = int(time.time())
+    last_summary = int(performance.get("last_open_summary", 0))
+    wait_seconds = OPEN_SUMMARY_EVERY_MINUTES * 60
+
+    if now - last_summary >= wait_seconds:
+        return True
+
+    return False
+
+
+def mark_open_summary_sent():
+    performance = load_performance()
+    performance["last_open_summary"] = int(time.time())
+    save_performance(performance)
+
+
+def build_open_signals_summary(exchange):
+    open_signals = load_open_signals()
+
+    if not open_signals:
+        return None
+
+    message = "📌 AÇIK SİNYAL DURUMU\n\n"
+
+    count = 0
+
+    for key, signal in open_signals.items():
+        try:
+            symbol = signal["symbol"]
+            direction = signal["direction"]
+            entry = float(signal["entry"])
+            tp1 = float(signal["tp1"])
+            sl = float(signal["sl"])
+            score = signal.get("score", "-")
+
+            current_price = get_current_price(exchange, symbol)
+
+            if current_price is None:
+                continue
+
+            if direction == "LONG":
+                icon = "🟢"
+                tp_distance = ((tp1 - current_price) / current_price) * 100
+                sl_distance = ((current_price - sl) / current_price) * 100
+
+                if current_price >= entry:
+                    status = "Kâr tarafında ✅"
+                else:
+                    status = "Giriş altında ⚠️"
+
+            else:
+                icon = "🔴"
+                tp_distance = ((current_price - tp1) / current_price) * 100
+                sl_distance = ((sl - current_price) / current_price) * 100
+
+                if current_price <= entry:
+                    status = "Kâr tarafında ✅"
+                else:
+                    status = "Giriş üstünde ⚠️"
+
+            message += (
+                f"{icon} {symbol} {direction}\n"
+                f"🔥 Giriş: {round(entry, 6)}\n"
+                f"💰 Güncel: {round(current_price, 6)}\n"
+                f"🎯 TP1: {round(tp1, 6)}\n"
+                f"🔴 SL: {round(sl, 6)}\n"
+                f"📊 Skor: {score}\n"
+                f"📍 Durum: {status}\n"
+                f"🎯 TP1 uzaklık: %{round(tp_distance, 2)}\n"
+                f"🛡️ SL uzaklık: %{round(sl_distance, 2)}\n\n"
+            )
+
+            count += 1
+
+            if count >= 10:
+                message += "Devam eden başka açık sinyaller de var.\n"
+                break
+
+        except Exception as e:
+            print(key, "açık sinyal özet hatası:", e)
+
+    if count == 0:
+        return None
+
+    message += "📌 Bu özet bilgilendirme amaçlıdır. İşleme girmeden grafikte kontrol et."
+
+    return message
+
+
+def maybe_send_open_signals_summary(exchange):
+    open_signals = load_open_signals()
+
+    if not open_signals:
+        print("Açık sinyal özeti gönderilmedi: açık sinyal yok.")
+        return
+
+    if not should_send_open_summary():
+        print("Açık sinyal özeti zamanı gelmedi.")
+        return
+
+    summary = build_open_signals_summary(exchange)
+
+    if summary:
+        send_telegram(summary)
+        mark_open_summary_sent()
+        print("Açık sinyal özeti gönderildi.")
+
+
 def is_duplicate_signal(signal, open_signals):
     try:
         key = f"{signal['symbol']}_{signal['direction']}"
@@ -519,6 +632,9 @@ def main():
 
     # Önce eski açık sinyalleri takip et
     check_open_signals(exchange)
+
+    # Açık sinyaller için saatlik kısa özet gönder
+    maybe_send_open_signals_summary(exchange)
 
     signals = []
 
