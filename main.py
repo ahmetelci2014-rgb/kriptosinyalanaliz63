@@ -28,7 +28,7 @@ DAILY_REPORT_MINUTE = 45
 OPEN_SUMMARY_EVERY_MINUTES = 60
 
 # Aynı coin + aynı yön sinyali 2 saat içinde tekrar gönderilmesin
-DUPLICATE_BLOCK_SECONDS = 2 * 60 * 60
+DUPLICATE_BLOCK_SECONDS = 45 * 60
 
 
 def send_telegram(message):
