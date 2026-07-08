@@ -1,26 +1,27 @@
-# Telegram
-TOKEN = "8619346423:AAHyaf5nk3IQYvMzEcNAYQFQH8eALdz6220"
-CHAT_ID = "8439391876"
+# config.py
 
 # Tarama Ayarları
 SCAN_INTERVAL = "15m"
-TOP_COINS = 30
+INTERVAL = "15m"
+LIMIT = 200
+
+# Sinyal Ayarları
 MIN_SCORE = 40
+TOP_COINS = 40
+
+# Zaman Dilimleri
+MAIN_TREND_INTERVAL = "4H"
+CONFIRM_INTERVAL = "1H"
+ENTRY_INTERVAL = "15m"
 
 # CoinGecko
 VS_CURRENCY = "usd"
 DAYS = 7
 
+# OKX
 OKX_BASE_URL = "https://www.okx.com"
 
-MAIN_TREND_INTERVAL = "4H"
-CONFIRM_INTERVAL = "1H"
-ENTRY_INTERVAL = "15m"
-
-INTERVAL = "15m"
-LIMIT = 200
-MIN_SCORE = 40
-TOP_COINS = 20
+# Coin Listesi
 COINS = [
     "BTCUSDT",
     "ETHUSDT",
@@ -51,5 +52,17 @@ COINS = [
     "TIAUSDT",
     "ORDIUSDT",
     "JUPUSDT",
-    "BCHUSDT"
+    "BCHUSDT",
+
+    # Yeni eklenen coinler
+    "PEPEUSDT",
+    "TONUSDT",
+    "FETUSDT",
+    "RUNEUSDT",
+    "DYDXUSDT",
+    "GALAUSDT",
+    "ALGOUSDT",
+    "MANAUSDT",
+    "SANDUSDT",
+    "AXSUSDT"
 ]
