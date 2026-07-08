@@ -2,41 +2,12 @@ import pandas as pd
 from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD, ADXIndicator
 from ta.volatility import AverageTrueRange
-from config import MIN_SCORE
+from config import MIN_SCORE, COINS
 
 
-PREMIUM_COINS = [
-    "BTCUSDT",
-    "ETHUSDT",
-    "SOLUSDT",
-    "BNBUSDT",
-    "XRPUSDT",
-    "DOGEUSDT",
-    "LINKUSDT",
-    "AVAXUSDT",
-    "SUIUSDT",
-    "ADAUSDT",
-    "LTCUSDT",
-    "DOTUSDT",
-    "APTUSDT",
-    "ARBUSDT",
-    "OPUSDT",
-    "NEARUSDT",
-    "INJUSDT",
-    "WLDUSDT",
-    "FILUSDT",
-    "ATOMUSDT",
-    "UNIUSDT",
-    "AAVEUSDT",
-    "TRXUSDT",
-    "ETCUSDT",
-    "ICPUSDT",
-    "SEIUSDT",
-    "TIAUSDT",
-    "ORDIUSDT",
-    "JUPUSDT",
-    "BCHUSDT"
-]
+# Premium coin listesi artık config.py içindeki COINS listesinden gelir.
+# Böylece coin eklemek istediğinde sadece config.py düzenlenir.
+PREMIUM_COINS = COINS
 
 
 def analyze_signal(symbol, df):
@@ -201,7 +172,7 @@ def analyze_signal(symbol, df):
 
     # TP / SL hesaplama
     # Yeni sistem: ATR + son 5 mum tepe/dip stop sistemi
-    # Amaç: ARB/DOGE gibi fitille stop olup sonra doğru yöne giden işlemleri azaltmak.
+    # Amaç: fitille stop olup sonra doğru yöne giden işlemleri azaltmak.
     recent_high = float(df["high"].tail(5).max())
     recent_low = float(df["low"].tail(5).min())
     buffer = atr * 0.25
@@ -355,6 +326,8 @@ def analyze_signal(symbol, df):
         "score": score,
         "entry": round(price, 6),
         "tp1": round(tp1, 6),
+        "tp2": round(tp2, 6),
+        "tp3": round(tp3, 6),
         "sl": round(sl, 6),
         "message": message
     }
