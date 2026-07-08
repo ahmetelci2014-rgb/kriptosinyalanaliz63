@@ -35,6 +35,7 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add open_signals.json
-          git commit -m "Update open signals [skip ci]" || echo "Degisiklik yok"
+          git pull --rebase --autostash origin main || echo "Pull yapilamadi"
+          git add open_signals.json performance.json
+          git commit -m "Update signal performance files [skip ci]" || echo "Degisiklik yok"
           git push || echo "Push yapilamadi"
