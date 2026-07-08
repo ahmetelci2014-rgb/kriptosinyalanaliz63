@@ -3,7 +3,7 @@
 # Tarama Ayarları
 SCAN_INTERVAL = "15m"
 INTERVAL = "15m"
-LIMIT = 200
+LIMIT = 400
 
 # Sinyal Ayarları
 MIN_SCORE = 38
