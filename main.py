@@ -14,7 +14,9 @@ CHAT_ID = os.getenv("CHAT_ID")
 TIMEFRAME = "30m"
 LIMIT = 200
 MAX_SIGNALS = 5
+
 OPEN_SIGNALS_FILE = "open_signals.json"
+PERFORMANCE_FILE = "performance.json"
 
 # Aynı coin + aynı yön sinyali 2 saat içinde tekrar gönderilmesin
 DUPLICATE_BLOCK_SECONDS = 2 * 60 * 60
@@ -72,12 +74,12 @@ def send_telegram(message):
         print("Telegram gönderim hatası:", e)
 
 
-def load_open_signals():
+def load_json_file(filename):
     try:
-        if not os.path.exists(OPEN_SIGNALS_FILE):
+        if not os.path.exists(filename):
             return {}
 
-        with open(OPEN_SIGNALS_FILE, "r") as f:
+        with open(filename, "r") as f:
             content = f.read().strip()
 
             if not content:
@@ -86,16 +88,76 @@ def load_open_signals():
             return json.loads(content)
 
     except Exception as e:
-        print("open_signals okuma hatası:", e)
+        print(filename, "okuma hatası:", e)
         return {}
 
 
-def save_open_signals(data):
+def save_json_file(filename, data):
     try:
-        with open(OPEN_SIGNALS_FILE, "w") as f:
+        with open(filename, "w") as f:
             json.dump(data, f, indent=2)
     except Exception as e:
-        print("open_signals kaydetme hatası:", e)
+        print(filename, "kaydetme hatası:", e)
+
+
+def load_open_signals():
+    return load_json_file(OPEN_SIGNALS_FILE)
+
+
+def save_open_signals(data):
+    save_json_file(OPEN_SIGNALS_FILE, data)
+
+
+def load_performance():
+    return load_json_file(PERFORMANCE_FILE)
+
+
+def save_performance(data):
+    save_json_file(PERFORMANCE_FILE, data)
+
+
+def update_performance(symbol, direction, result):
+    """
+    result:
+    OPENED = yeni sinyal gönderildi
+    TP1 = TP1 geldi
+    SL = Stop oldu
+    """
+
+    performance = load_performance()
+
+    if "total" not in performance:
+        performance["total"] = {
+            "signals": 0,
+            "tp1": 0,
+            "sl": 0
+        }
+
+    if "coins" not in performance:
+        performance["coins"] = {}
+
+    if symbol not in performance["coins"]:
+        performance["coins"][symbol] = {
+            "signals": 0,
+            "tp1": 0,
+            "sl": 0
+        }
+
+    if result == "OPENED":
+        performance["total"]["signals"] += 1
+        performance["coins"][symbol]["signals"] += 1
+
+    elif result == "TP1":
+        performance["total"]["tp1"] += 1
+        performance["coins"][symbol]["tp1"] += 1
+
+    elif result == "SL":
+        performance["total"]["sl"] += 1
+        performance["coins"][symbol]["sl"] += 1
+
+    performance["last_update"] = int(time.time())
+
+    save_performance(performance)
 
 
 def is_duplicate_signal(signal, open_signals):
@@ -242,6 +304,8 @@ def check_open_signals(exchange):
                         f"Güncel Fiyat: {current_price}\n\n"
                         f"Öneri: %50 kâr al, SL'yi giriş fiyatına çek."
                     )
+
+                    update_performance(symbol, direction, "TP1")
                     continue
 
                 # LONG için SL: mumun low değeri SL'ye değdiyse
@@ -255,6 +319,8 @@ def check_open_signals(exchange):
                         f"Mum Low: {low}\n"
                         f"Güncel Fiyat: {current_price}"
                     )
+
+                    update_performance(symbol, direction, "SL")
                     continue
 
             if direction == "SHORT":
@@ -270,6 +336,8 @@ def check_open_signals(exchange):
                         f"Güncel Fiyat: {current_price}\n\n"
                         f"Öneri: %50 kâr al, SL'yi giriş fiyatına çek."
                     )
+
+                    update_performance(symbol, direction, "TP1")
                     continue
 
                 # SHORT için SL: mumun high değeri SL'ye değdiyse
@@ -283,6 +351,8 @@ def check_open_signals(exchange):
                         f"Mum High: {high}\n"
                         f"Güncel Fiyat: {current_price}"
                     )
+
+                    update_performance(symbol, direction, "SL")
                     continue
 
             updated_signals[key] = signal
@@ -409,6 +479,8 @@ def main():
                 "score": signal["score"],
                 "opened_at": int(time.time())
             }
+
+            update_performance(signal["symbol"], signal["direction"], "OPENED")
 
             time.sleep(1)
 
