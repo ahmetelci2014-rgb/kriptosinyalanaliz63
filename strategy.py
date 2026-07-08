@@ -46,10 +46,14 @@ def analyze_signal(symbol, df):
     df["volume_avg"] = df["volume"].rolling(20).mean()
     df = df.dropna()
 
-    if df.empty or len(df) < 5:
+    # En az birkaç kapanmış mum kalmalı
+    if df.empty or len(df) < 10:
         return reject("indikator verisi yetersiz")
 
-    last = df.iloc[-1]
+    # ÖNEMLİ:
+    # -1 açık / oluşan son mum olabilir.
+    # Bu yüzden sinyal için kapanmış son mumu kullanıyoruz.
+    last = df.iloc[-2]
 
     price = float(last["close"])
     atr = float(last["atr"])
@@ -171,10 +175,11 @@ def analyze_signal(symbol, df):
     # Bu bölümü ileride tekrar daha dengeli şekilde açacağız.
 
     # TP / SL hesaplama
-    # Yeni sistem: ATR + son 5 mum tepe/dip stop sistemi
-    # Amaç: fitille stop olup sonra doğru yöne giden işlemleri azaltmak.
-    recent_high = float(df["high"].tail(5).max())
-    recent_low = float(df["low"].tail(5).min())
+    # ÖNEMLİ:
+    # Son açık mumu değil, kapanmış son 5 mumu kullanıyoruz.
+    # -6:-1 aralığı açık mumu dışarıda bırakır.
+    recent_high = float(df["high"].iloc[-6:-1].max())
+    recent_low = float(df["low"].iloc[-6:-1].min())
     buffer = atr * 0.25
 
     if direction == "LONG":
