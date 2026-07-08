@@ -1,6 +1,7 @@
 import os
 import time
 import json
+import re
 import requests
 import pandas as pd
 import ccxt
@@ -128,33 +129,40 @@ def get_today_key():
     return datetime.now(TR_TIMEZONE).strftime("%Y-%m-%d")
 
 
+def ensure_stats_bucket(bucket):
+    for key in ["signals", "tp1", "tp2", "tp3", "sl", "be"]:
+        if key not in bucket:
+            bucket[key] = 0
+
+    return bucket
+
+
 def update_performance(symbol, direction, result):
     """
     result:
     OPENED = yeni sinyal gönderildi
     TP1 = TP1 geldi
+    TP2 = TP2 geldi
+    TP3 = TP3 geldi
     SL = Stop oldu
+    BE = TP1 sonrası kalan işlem girişten kapandı
     """
 
     performance = load_performance()
     today = get_today_key()
 
     if "total" not in performance:
-        performance["total"] = {
-            "signals": 0,
-            "tp1": 0,
-            "sl": 0
-        }
+        performance["total"] = {}
+
+    performance["total"] = ensure_stats_bucket(performance["total"])
 
     if "coins" not in performance:
         performance["coins"] = {}
 
     if symbol not in performance["coins"]:
-        performance["coins"][symbol] = {
-            "signals": 0,
-            "tp1": 0,
-            "sl": 0
-        }
+        performance["coins"][symbol] = {}
+
+    performance["coins"][symbol] = ensure_stats_bucket(performance["coins"][symbol])
 
     if "days" not in performance:
         performance["days"] = {}
@@ -163,34 +171,44 @@ def update_performance(symbol, direction, result):
         performance["days"][today] = {
             "signals": 0,
             "tp1": 0,
+            "tp2": 0,
+            "tp3": 0,
             "sl": 0,
+            "be": 0,
             "coins": {}
         }
 
+    performance["days"][today] = ensure_stats_bucket(performance["days"][today])
+
+    if "coins" not in performance["days"][today]:
+        performance["days"][today]["coins"] = {}
+
     if symbol not in performance["days"][today]["coins"]:
-        performance["days"][today]["coins"][symbol] = {
-            "signals": 0,
-            "tp1": 0,
-            "sl": 0
-        }
+        performance["days"][today]["coins"][symbol] = {}
+
+    performance["days"][today]["coins"][symbol] = ensure_stats_bucket(
+        performance["days"][today]["coins"][symbol]
+    )
 
     if result == "OPENED":
-        performance["total"]["signals"] += 1
-        performance["coins"][symbol]["signals"] += 1
-        performance["days"][today]["signals"] += 1
-        performance["days"][today]["coins"][symbol]["signals"] += 1
-
+        field = "signals"
     elif result == "TP1":
-        performance["total"]["tp1"] += 1
-        performance["coins"][symbol]["tp1"] += 1
-        performance["days"][today]["tp1"] += 1
-        performance["days"][today]["coins"][symbol]["tp1"] += 1
-
+        field = "tp1"
+    elif result == "TP2":
+        field = "tp2"
+    elif result == "TP3":
+        field = "tp3"
     elif result == "SL":
-        performance["total"]["sl"] += 1
-        performance["coins"][symbol]["sl"] += 1
-        performance["days"][today]["sl"] += 1
-        performance["days"][today]["coins"][symbol]["sl"] += 1
+        field = "sl"
+    elif result == "BE":
+        field = "be"
+    else:
+        return
+
+    performance["total"][field] += 1
+    performance["coins"][symbol][field] += 1
+    performance["days"][today][field] += 1
+    performance["days"][today]["coins"][symbol][field] += 1
 
     performance["last_update"] = int(time.time())
 
@@ -214,13 +232,21 @@ def build_daily_report():
     day_data = performance.get("days", {}).get(today, {
         "signals": 0,
         "tp1": 0,
+        "tp2": 0,
+        "tp3": 0,
         "sl": 0,
+        "be": 0,
         "coins": {}
     })
 
+    day_data = ensure_stats_bucket(day_data)
+
     signals = int(day_data.get("signals", 0))
     tp1 = int(day_data.get("tp1", 0))
+    tp2 = int(day_data.get("tp2", 0))
+    tp3 = int(day_data.get("tp3", 0))
     sl = int(day_data.get("sl", 0))
+    be = int(day_data.get("be", 0))
     open_count = len(open_signals)
 
     success_rate = calculate_success_rate(tp1, sl)
@@ -231,6 +257,8 @@ def build_daily_report():
     worst_rate = 101
 
     for coin, data in day_data.get("coins", {}).items():
+        data = ensure_stats_bucket(data)
+
         coin_tp1 = int(data.get("tp1", 0))
         coin_sl = int(data.get("sl", 0))
         closed = coin_tp1 + coin_sl
@@ -255,16 +283,20 @@ def build_daily_report():
 
 📈 Bugünkü Sinyal: {signals}
 ✅ TP1 Gelen: {tp1}
+✅ TP2 Gelen: {tp2}
+✅ TP3 Gelen: {tp3}
+🟡 Girişten Kapanan: {be}
 ❌ Stop Olan: {sl}
 ⏳ Açık Sinyal: {open_count}
 
-📊 Başarı Oranı: %{success_rate}
+📊 TP1 Başarı Oranı: %{success_rate}
 
 🏆 En İyi Coin: {best_coin}
 ⚠️ En Zayıf Coin: {worst_coin}
 
 📌 Not:
 Başarı oranı sadece TP1 veya SL ile sonuçlanan sinyaller üzerinden hesaplanır.
+TP1 sonrası kalan işlem için SL giriş fiyatı olarak takip edilir.
 """
 
     return message
@@ -314,6 +346,30 @@ def mark_open_summary_sent():
     save_performance(performance)
 
 
+def extract_target_from_message(message, target_name):
+    try:
+        pattern = rf"{target_name}:\s*([0-9]+(?:\.[0-9]+)?)"
+        match = re.search(pattern, message)
+
+        if not match:
+            return None
+
+        return float(match.group(1))
+
+    except Exception as e:
+        print(target_name, "mesajdan okunamadı:", e)
+        return None
+
+
+def get_signal_target(signal, target_name):
+    value = signal.get(target_name.lower())
+
+    if value is not None:
+        return float(value)
+
+    return extract_target_from_message(signal.get("message", ""), target_name)
+
+
 def build_open_signals_summary(exchange):
     open_signals = load_open_signals()
 
@@ -330,8 +386,14 @@ def build_open_signals_summary(exchange):
             direction = signal["direction"]
             entry = float(signal["entry"])
             tp1 = float(signal["tp1"])
+            tp2 = signal.get("tp2")
+            tp3 = signal.get("tp3")
             sl = float(signal["sl"])
             score = signal.get("score", "-")
+
+            tp1_hit = bool(signal.get("tp1_hit", False))
+            tp2_hit = bool(signal.get("tp2_hit", False))
+            tp3_hit = bool(signal.get("tp3_hit", False))
 
             current_price = get_current_price(exchange, symbol)
 
@@ -342,6 +404,7 @@ def build_open_signals_summary(exchange):
                 icon = "🟢"
                 tp_distance = ((tp1 - current_price) / current_price) * 100
                 sl_distance = ((current_price - sl) / current_price) * 100
+                profit_percent = ((current_price - entry) / entry) * 100
 
                 if current_price >= entry:
                     status = "Kâr tarafında ✅"
@@ -352,20 +415,47 @@ def build_open_signals_summary(exchange):
                 icon = "🔴"
                 tp_distance = ((current_price - tp1) / current_price) * 100
                 sl_distance = ((sl - current_price) / current_price) * 100
+                profit_percent = ((entry - current_price) / entry) * 100
 
                 if current_price <= entry:
                     status = "Kâr tarafında ✅"
                 else:
                     status = "Giriş üstünde ⚠️"
 
+            tp_status = []
+            if tp1_hit:
+                tp_status.append("TP1 ✅")
+            if tp2_hit:
+                tp_status.append("TP2 ✅")
+            if tp3_hit:
+                tp_status.append("TP3 ✅")
+
+            if not tp_status:
+                tp_text = "Henüz TP yok"
+            else:
+                tp_text = " / ".join(tp_status)
+
+            active_sl_text = f"{round(entry, 6)} (TP1 sonrası girişe çekildi)" if tp1_hit else round(sl, 6)
+
             message += (
                 f"{icon} {symbol} {direction}\n"
                 f"🔥 Giriş: {round(entry, 6)}\n"
                 f"💰 Güncel: {round(current_price, 6)}\n"
                 f"🎯 TP1: {round(tp1, 6)}\n"
-                f"🔴 SL: {round(sl, 6)}\n"
+            )
+
+            if tp2 is not None:
+                message += f"🎯 TP2: {round(float(tp2), 6)}\n"
+
+            if tp3 is not None:
+                message += f"🎯 TP3: {round(float(tp3), 6)}\n"
+
+            message += (
+                f"🔴 Aktif SL: {active_sl_text}\n"
                 f"📊 Skor: {score}\n"
                 f"📍 Durum: {status}\n"
+                f"📈 Anlık Durum: %{round(profit_percent, 2)}\n"
+                f"✅ TP Durumu: {tp_text}\n"
                 f"🎯 TP1 uzaklık: %{round(tp_distance, 2)}\n"
                 f"🛡️ SL uzaklık: %{round(sl_distance, 2)}\n\n"
             )
@@ -525,7 +615,16 @@ def check_open_signals(exchange):
             direction = signal["direction"]
             entry = float(signal["entry"])
             tp1 = float(signal["tp1"])
+            tp2 = signal.get("tp2")
+            tp3 = signal.get("tp3")
             sl = float(signal["sl"])
+
+            tp2 = float(tp2) if tp2 is not None else None
+            tp3 = float(tp3) if tp3 is not None else None
+
+            tp1_hit = bool(signal.get("tp1_hit", False))
+            tp2_hit = bool(signal.get("tp2_hit", False))
+            tp3_hit = bool(signal.get("tp3_hit", False))
 
             candle = get_last_candle(exchange, symbol)
             current_price = get_current_price(exchange, symbol)
@@ -538,7 +637,38 @@ def check_open_signals(exchange):
             low = candle["low"]
 
             if direction == "LONG":
-                if high >= tp1:
+                if tp3 is not None and not tp3_hit and high >= tp3:
+                    send_telegram(
+                        f"🏁 TP3 GELDİ\n\n"
+                        f"Coin: {symbol}\n"
+                        f"Yön: LONG 🟢\n"
+                        f"Giriş: {entry}\n"
+                        f"TP3: {tp3}\n"
+                        f"Mum High: {high}\n"
+                        f"Güncel Fiyat: {current_price}\n\n"
+                        f"Sonuç: Sinyal maksimum hedefe ulaştı ✅"
+                    )
+
+                    update_performance(symbol, direction, "TP3")
+                    continue
+
+                if tp2 is not None and not tp2_hit and high >= tp2:
+                    send_telegram(
+                        f"✅ TP2 GELDİ\n\n"
+                        f"Coin: {symbol}\n"
+                        f"Yön: LONG 🟢\n"
+                        f"Giriş: {entry}\n"
+                        f"TP2: {tp2}\n"
+                        f"Mum High: {high}\n"
+                        f"Güncel Fiyat: {current_price}\n\n"
+                        f"Öneri: Kârın bir kısmı daha alınabilir. Kalan işlem takip edilebilir."
+                    )
+
+                    update_performance(symbol, direction, "TP2")
+                    signal["tp2_hit"] = True
+                    tp2_hit = True
+
+                if not tp1_hit and high >= tp1:
                     send_telegram(
                         f"✅ TP1 GELDİ\n\n"
                         f"Coin: {symbol}\n"
@@ -547,13 +677,29 @@ def check_open_signals(exchange):
                         f"TP1: {tp1}\n"
                         f"Mum High: {high}\n"
                         f"Güncel Fiyat: {current_price}\n\n"
-                        f"Öneri: %50 kâr al, SL'yi giriş fiyatına çek."
+                        f"Öneri: %50 kâr al, kalan işlem için SL giriş fiyatına çekildi."
                     )
 
                     update_performance(symbol, direction, "TP1")
+                    signal["tp1_hit"] = True
+                    signal["breakeven_sl"] = entry
+                    tp1_hit = True
+
+                if tp1_hit and low <= entry:
+                    send_telegram(
+                        f"🟡 KALAN İŞLEM GİRİŞTEN KAPANDI\n\n"
+                        f"Coin: {symbol}\n"
+                        f"Yön: LONG 🟢\n"
+                        f"Giriş: {entry}\n"
+                        f"Mum Low: {low}\n"
+                        f"Güncel Fiyat: {current_price}\n\n"
+                        f"TP1 sonrası kalan işlem girişten kapandı."
+                    )
+
+                    update_performance(symbol, direction, "BE")
                     continue
 
-                if low <= sl:
+                if not tp1_hit and low <= sl:
                     send_telegram(
                         f"❌ STOP OLDU\n\n"
                         f"Coin: {symbol}\n"
@@ -568,7 +714,38 @@ def check_open_signals(exchange):
                     continue
 
             if direction == "SHORT":
-                if low <= tp1:
+                if tp3 is not None and not tp3_hit and low <= tp3:
+                    send_telegram(
+                        f"🏁 TP3 GELDİ\n\n"
+                        f"Coin: {symbol}\n"
+                        f"Yön: SHORT 🔴\n"
+                        f"Giriş: {entry}\n"
+                        f"TP3: {tp3}\n"
+                        f"Mum Low: {low}\n"
+                        f"Güncel Fiyat: {current_price}\n\n"
+                        f"Sonuç: Sinyal maksimum hedefe ulaştı ✅"
+                    )
+
+                    update_performance(symbol, direction, "TP3")
+                    continue
+
+                if tp2 is not None and not tp2_hit and low <= tp2:
+                    send_telegram(
+                        f"✅ TP2 GELDİ\n\n"
+                        f"Coin: {symbol}\n"
+                        f"Yön: SHORT 🔴\n"
+                        f"Giriş: {entry}\n"
+                        f"TP2: {tp2}\n"
+                        f"Mum Low: {low}\n"
+                        f"Güncel Fiyat: {current_price}\n\n"
+                        f"Öneri: Kârın bir kısmı daha alınabilir. Kalan işlem takip edilebilir."
+                    )
+
+                    update_performance(symbol, direction, "TP2")
+                    signal["tp2_hit"] = True
+                    tp2_hit = True
+
+                if not tp1_hit and low <= tp1:
                     send_telegram(
                         f"✅ TP1 GELDİ\n\n"
                         f"Coin: {symbol}\n"
@@ -577,13 +754,29 @@ def check_open_signals(exchange):
                         f"TP1: {tp1}\n"
                         f"Mum Low: {low}\n"
                         f"Güncel Fiyat: {current_price}\n\n"
-                        f"Öneri: %50 kâr al, SL'yi giriş fiyatına çek."
+                        f"Öneri: %50 kâr al, kalan işlem için SL giriş fiyatına çekildi."
                     )
 
                     update_performance(symbol, direction, "TP1")
+                    signal["tp1_hit"] = True
+                    signal["breakeven_sl"] = entry
+                    tp1_hit = True
+
+                if tp1_hit and high >= entry:
+                    send_telegram(
+                        f"🟡 KALAN İŞLEM GİRİŞTEN KAPANDI\n\n"
+                        f"Coin: {symbol}\n"
+                        f"Yön: SHORT 🔴\n"
+                        f"Giriş: {entry}\n"
+                        f"Mum High: {high}\n"
+                        f"Güncel Fiyat: {current_price}\n\n"
+                        f"TP1 sonrası kalan işlem girişten kapandı."
+                    )
+
+                    update_performance(symbol, direction, "BE")
                     continue
 
-                if high >= sl:
+                if not tp1_hit and high >= sl:
                     send_telegram(
                         f"❌ STOP OLDU\n\n"
                         f"Coin: {symbol}\n"
@@ -707,14 +900,23 @@ def main():
 
             key = f"{signal['symbol']}_{signal['direction']}"
 
+            tp2 = get_signal_target(signal, "TP2")
+            tp3 = get_signal_target(signal, "TP3")
+
             open_signals[key] = {
                 "symbol": signal["symbol"],
                 "direction": signal["direction"],
                 "entry": signal["entry"],
                 "tp1": signal["tp1"],
+                "tp2": tp2,
+                "tp3": tp3,
                 "sl": signal["sl"],
                 "score": signal["score"],
-                "opened_at": int(time.time())
+                "opened_at": int(time.time()),
+                "tp1_hit": False,
+                "tp2_hit": False,
+                "tp3_hit": False,
+                "breakeven_sl": None
             }
 
             update_performance(signal["symbol"], signal["direction"], "OPENED")
