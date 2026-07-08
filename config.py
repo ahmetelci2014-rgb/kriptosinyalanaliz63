@@ -6,7 +6,7 @@ INTERVAL = "15m"
 LIMIT = 200
 
 # Sinyal Ayarları
-MIN_SCORE = 40
+MIN_SCORE = 38
 TOP_COINS = 40
 
 # Zaman Dilimleri
