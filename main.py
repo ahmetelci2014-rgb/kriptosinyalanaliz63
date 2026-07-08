@@ -61,6 +61,16 @@ COINS = [
     "ORDIUSDT",
     "JUPUSDT",
     "BCHUSDT"
+    "PEPE", 
+    "TON", 
+    "FET", 
+    "RUNE", 
+    "DYDX",
+    "GALA", 
+    "ALGO", 
+    "MANA", 
+    "SAND", 
+    "AXS"
 ]
 
 
