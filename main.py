@@ -15,7 +15,7 @@ TOKEN = os.getenv("TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
 TIMEFRAME = INTERVAL
-MAX_SIGNALS = 5
+MAX_SIGNALS = 3
 
 OPEN_SIGNALS_FILE = "open_signals.json"
 PERFORMANCE_FILE = "performance.json"
@@ -27,7 +27,7 @@ DAILY_REPORT_MINUTE = 45
 # Açık sinyal özeti kaç dakikada bir gönderilsin
 OPEN_SUMMARY_EVERY_MINUTES = 60
 
-# Aynı coin + aynı yön sinyali 2 saat içinde tekrar gönderilmesin
+# Aynı coin + aynı yön sinyali 45 dakika içinde tekrar gönderilmesin
 DUPLICATE_BLOCK_SECONDS = 45 * 60
 
 
@@ -357,6 +357,7 @@ def build_open_signals_summary(exchange):
             tp3 = signal.get("tp3")
             sl = float(signal["sl"])
             score = signal.get("score", "-")
+            quality = signal.get("quality", "-")
 
             tp1_hit = bool(signal.get("tp1_hit", False))
             tp2_hit = bool(signal.get("tp2_hit", False))
@@ -421,6 +422,7 @@ def build_open_signals_summary(exchange):
             message += (
                 f"🔴 Aktif SL: {active_sl_text}\n"
                 f"📊 Skor: {score}\n"
+                f"📌 Kalite: {quality}\n"
                 f"📍 Durum: {status}\n"
                 f"📈 Anlık Durum: %{round(profit_percent, 2)}\n"
                 f"✅ TP Durumu: {tp_text}\n"
@@ -475,7 +477,7 @@ def is_duplicate_signal(signal, open_signals):
         now = int(time.time())
 
         if now - opened_at < DUPLICATE_BLOCK_SECONDS:
-            print(key, "2 saat içinde tekrar sinyal olduğu için engellendi.")
+            print(key, "45 dakika içinde tekrar sinyal olduğu için engellendi.")
             return True
 
         return False
@@ -605,20 +607,22 @@ def check_open_signals(exchange):
             low = candle["low"]
 
             if direction == "LONG":
-                if tp3 is not None and not tp3_hit and high >= tp3:
+                if not tp1_hit and high >= tp1:
                     send_telegram(
-                        f"🏁 TP3 GELDİ\n\n"
+                        f"✅ TP1 GELDİ\n\n"
                         f"Coin: {symbol}\n"
                         f"Yön: LONG 🟢\n"
                         f"Giriş: {entry}\n"
-                        f"TP3: {tp3}\n"
+                        f"TP1: {tp1}\n"
                         f"Mum High: {high}\n"
                         f"Güncel Fiyat: {current_price}\n\n"
-                        f"Sonuç: Sinyal maksimum hedefe ulaştı ✅"
+                        f"Öneri: %50 kâr al, kalan işlem için SL giriş fiyatına çekildi."
                     )
 
-                    update_performance(symbol, direction, "TP3")
-                    continue
+                    update_performance(symbol, direction, "TP1")
+                    signal["tp1_hit"] = True
+                    signal["breakeven_sl"] = entry
+                    tp1_hit = True
 
                 if tp2 is not None and not tp2_hit and high >= tp2:
                     send_telegram(
@@ -636,22 +640,20 @@ def check_open_signals(exchange):
                     signal["tp2_hit"] = True
                     tp2_hit = True
 
-                if not tp1_hit and high >= tp1:
+                if tp3 is not None and not tp3_hit and high >= tp3:
                     send_telegram(
-                        f"✅ TP1 GELDİ\n\n"
+                        f"🏁 TP3 GELDİ\n\n"
                         f"Coin: {symbol}\n"
                         f"Yön: LONG 🟢\n"
                         f"Giriş: {entry}\n"
-                        f"TP1: {tp1}\n"
+                        f"TP3: {tp3}\n"
                         f"Mum High: {high}\n"
                         f"Güncel Fiyat: {current_price}\n\n"
-                        f"Öneri: %50 kâr al, kalan işlem için SL giriş fiyatına çekildi."
+                        f"Sonuç: Sinyal maksimum hedefe ulaştı ✅"
                     )
 
-                    update_performance(symbol, direction, "TP1")
-                    signal["tp1_hit"] = True
-                    signal["breakeven_sl"] = entry
-                    tp1_hit = True
+                    update_performance(symbol, direction, "TP3")
+                    continue
 
                 if tp1_hit and low <= entry:
                     send_telegram(
@@ -682,20 +684,22 @@ def check_open_signals(exchange):
                     continue
 
             if direction == "SHORT":
-                if tp3 is not None and not tp3_hit and low <= tp3:
+                if not tp1_hit and low <= tp1:
                     send_telegram(
-                        f"🏁 TP3 GELDİ\n\n"
+                        f"✅ TP1 GELDİ\n\n"
                         f"Coin: {symbol}\n"
                         f"Yön: SHORT 🔴\n"
                         f"Giriş: {entry}\n"
-                        f"TP3: {tp3}\n"
+                        f"TP1: {tp1}\n"
                         f"Mum Low: {low}\n"
                         f"Güncel Fiyat: {current_price}\n\n"
-                        f"Sonuç: Sinyal maksimum hedefe ulaştı ✅"
+                        f"Öneri: %50 kâr al, kalan işlem için SL giriş fiyatına çekildi."
                     )
 
-                    update_performance(symbol, direction, "TP3")
-                    continue
+                    update_performance(symbol, direction, "TP1")
+                    signal["tp1_hit"] = True
+                    signal["breakeven_sl"] = entry
+                    tp1_hit = True
 
                 if tp2 is not None and not tp2_hit and low <= tp2:
                     send_telegram(
@@ -713,22 +717,20 @@ def check_open_signals(exchange):
                     signal["tp2_hit"] = True
                     tp2_hit = True
 
-                if not tp1_hit and low <= tp1:
+                if tp3 is not None and not tp3_hit and low <= tp3:
                     send_telegram(
-                        f"✅ TP1 GELDİ\n\n"
+                        f"🏁 TP3 GELDİ\n\n"
                         f"Coin: {symbol}\n"
                         f"Yön: SHORT 🔴\n"
                         f"Giriş: {entry}\n"
-                        f"TP1: {tp1}\n"
+                        f"TP3: {tp3}\n"
                         f"Mum Low: {low}\n"
                         f"Güncel Fiyat: {current_price}\n\n"
-                        f"Öneri: %50 kâr al, kalan işlem için SL giriş fiyatına çekildi."
+                        f"Sonuç: Sinyal maksimum hedefe ulaştı ✅"
                     )
 
-                    update_performance(symbol, direction, "TP1")
-                    signal["tp1_hit"] = True
-                    signal["breakeven_sl"] = entry
-                    tp1_hit = True
+                    update_performance(symbol, direction, "TP3")
+                    continue
 
                 if tp1_hit and high >= entry:
                     send_telegram(
@@ -778,6 +780,7 @@ def format_other_signals(other_signals):
             f"{i}) {signal['symbol']} | "
             f"{signal['direction']} | "
             f"Skor: {signal['score']} | "
+            f"Kalite: {signal.get('quality', '-') } | "
             f"Giriş: {signal['entry']}\n"
         )
 
@@ -812,13 +815,29 @@ def main():
 
         if signal:
             signals.append(signal)
-            print(coin, "sinyal bulundu:", signal["direction"], signal["score"])
+            print(
+                coin,
+                "sinyal bulundu:",
+                signal["direction"],
+                signal["score"],
+                "kalite:",
+                signal.get("quality", "-")
+            )
         else:
             print(coin, "sinyal yok")
 
         time.sleep(0.2)
 
     signals = sorted(signals, key=lambda x: x["score"], reverse=True)
+
+    before_quality_count = len(signals)
+
+    # C kalite sinyaller gönderilmesin
+    signals = [s for s in signals if s.get("quality") in ["A", "B"]]
+
+    print("Kalite filtresi öncesi aday:", before_quality_count)
+    print("A/B kalite sonrası aday:", len(signals))
+    print("C kalite elenen:", before_quality_count - len(signals))
 
     open_signals_for_duplicate_check = load_open_signals()
 
@@ -835,7 +854,7 @@ def main():
 
     strong_signals = []
 
-    strong_signals.extend(short_signals[:3])
+    strong_signals.extend(short_signals[:2])
     strong_signals.extend(long_signals[:2])
 
     strong_signals = sorted(strong_signals, key=lambda x: x["score"], reverse=True)
@@ -858,7 +877,7 @@ def main():
             f"LONG aday: {len(long_signals)}\n"
             f"SHORT aday: {len(short_signals)}\n"
             f"Detaylı gönderilen sinyal: {len(strong_signals)}\n"
-            f"Diğer aday: {len(other_signals)}"
+            f"C kalite sinyaller gönderilmedi."
         )
 
         open_signals = load_open_signals()
@@ -874,12 +893,13 @@ def main():
             open_signals[key] = {
                 "symbol": signal["symbol"],
                 "direction": signal["direction"],
+                "score": signal["score"],
+                "quality": signal.get("quality", "-"),
                 "entry": signal["entry"],
                 "tp1": signal["tp1"],
                 "tp2": tp2,
                 "tp3": tp3,
                 "sl": signal["sl"],
-                "score": signal["score"],
                 "opened_at": int(time.time()),
                 "tp1_hit": False,
                 "tp2_hit": False,
@@ -893,17 +913,18 @@ def main():
 
         save_open_signals(open_signals)
 
-        other_message = format_other_signals(other_signals)
-
-        if other_message:
-            send_telegram(other_message)
+        # Diğer aday listesi çok kalabalık yaptığı için kapatıldı.
+        # other_message = format_other_signals(other_signals)
+        # if other_message:
+        #     send_telegram(other_message)
 
     else:
-        print("Şu an güçlü sinyal yok.")
+        print("Şu an güçlü A/B kalite sinyal yok.")
         send_telegram(
             f"📡 Bot çalıştı.\n\n"
             f"Toplam taranan parite: {len(COINS)}\n"
-            f"Şu an güçlü sinyal yok."
+            f"Şu an güçlü A/B kalite sinyal yok.\n"
+            f"C kalite sinyaller gönderilmedi."
         )
 
     maybe_send_daily_report()
