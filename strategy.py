@@ -54,6 +54,7 @@ def analyze_signal(symbol, df):
     # -1 açık / oluşan son mum olabilir.
     # Bu yüzden sinyal için kapanmış son mumu kullanıyoruz.
     last = df.iloc[-2]
+    prev = df.iloc[-3]
 
     price = float(last["close"])
     atr = float(last["atr"])
@@ -62,6 +63,7 @@ def analyze_signal(symbol, df):
         return reject("fiyat veya atr hatalı")
 
     rsi = float(last["rsi"])
+    prev_rsi = float(prev["rsi"])
     adx = float(last["adx"])
     volume_ratio = float(last["volume"] / last["volume_avg"])
     atr_percent = (atr / price) * 100
@@ -158,6 +160,40 @@ def analyze_signal(symbol, df):
 
     if direction == "SHORT" and rsi < 30:
         return reject(f"short rsi düşük: {round(rsi, 2)}")
+
+    # DÖNÜŞ FİLTRESİ
+    # Amaç: Düşüş bitmişken geç SHORT, yükseliş bitmişken geç LONG sinyallerini azaltmak.
+    if direction == "SHORT":
+        # SHORT için fiyat EMA20 altında kalmalı
+        if float(last["close"]) > float(last["ema20"]):
+            return reject("short dönüş riski: fiyat EMA20 üstünde")
+
+        # SHORT için son kapanış önceki kapanıştan düşük olmalı
+        if float(last["close"]) > float(prev["close"]):
+            return reject("short dönüş riski: son mum yukarı kapattı")
+
+        # RSI sert yukarı dönmüşse SHORT riskli
+        if rsi > prev_rsi + 3:
+            return reject(
+                f"short dönüş riski: RSI yukarı dönüyor "
+                f"{round(prev_rsi, 2)} -> {round(rsi, 2)}"
+            )
+
+    if direction == "LONG":
+        # LONG için fiyat EMA20 üstünde kalmalı
+        if float(last["close"]) < float(last["ema20"]):
+            return reject("long dönüş riski: fiyat EMA20 altında")
+
+        # LONG için son kapanış önceki kapanıştan yüksek olmalı
+        if float(last["close"]) < float(prev["close"]):
+            return reject("long dönüş riski: son mum aşağı kapattı")
+
+        # RSI sert aşağı dönmüşse LONG riskli
+        if rsi < prev_rsi - 3:
+            return reject(
+                f"long dönüş riski: RSI aşağı dönüyor "
+                f"{round(prev_rsi, 2)} -> {round(rsi, 2)}"
+            )
 
     # Premium coin bonusu
     if symbol in PREMIUM_COINS:
