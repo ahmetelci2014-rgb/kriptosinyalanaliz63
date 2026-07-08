@@ -4,6 +4,7 @@ import json
 import requests
 import pandas as pd
 import ccxt
+from datetime import datetime, timezone, timedelta
 
 from strategy import analyze_signal
 
@@ -17,6 +18,10 @@ MAX_SIGNALS = 5
 
 OPEN_SIGNALS_FILE = "open_signals.json"
 PERFORMANCE_FILE = "performance.json"
+
+TR_TIMEZONE = timezone(timedelta(hours=3))
+DAILY_REPORT_HOUR = 23
+DAILY_REPORT_MINUTE = 45
 
 # Aynı coin + aynı yön sinyali 2 saat içinde tekrar gönderilmesin
 DUPLICATE_BLOCK_SECONDS = 2 * 60 * 60
@@ -116,6 +121,10 @@ def save_performance(data):
     save_json_file(PERFORMANCE_FILE, data)
 
 
+def get_today_key():
+    return datetime.now(TR_TIMEZONE).strftime("%Y-%m-%d")
+
+
 def update_performance(symbol, direction, result):
     """
     result:
@@ -125,6 +134,7 @@ def update_performance(symbol, direction, result):
     """
 
     performance = load_performance()
+    today = get_today_key()
 
     if "total" not in performance:
         performance["total"] = {
@@ -143,21 +153,144 @@ def update_performance(symbol, direction, result):
             "sl": 0
         }
 
+    if "days" not in performance:
+        performance["days"] = {}
+
+    if today not in performance["days"]:
+        performance["days"][today] = {
+            "signals": 0,
+            "tp1": 0,
+            "sl": 0,
+            "coins": {}
+        }
+
+    if symbol not in performance["days"][today]["coins"]:
+        performance["days"][today]["coins"][symbol] = {
+            "signals": 0,
+            "tp1": 0,
+            "sl": 0
+        }
+
     if result == "OPENED":
         performance["total"]["signals"] += 1
         performance["coins"][symbol]["signals"] += 1
+        performance["days"][today]["signals"] += 1
+        performance["days"][today]["coins"][symbol]["signals"] += 1
 
     elif result == "TP1":
         performance["total"]["tp1"] += 1
         performance["coins"][symbol]["tp1"] += 1
+        performance["days"][today]["tp1"] += 1
+        performance["days"][today]["coins"][symbol]["tp1"] += 1
 
     elif result == "SL":
         performance["total"]["sl"] += 1
         performance["coins"][symbol]["sl"] += 1
+        performance["days"][today]["sl"] += 1
+        performance["days"][today]["coins"][symbol]["sl"] += 1
 
     performance["last_update"] = int(time.time())
 
     save_performance(performance)
+
+
+def calculate_success_rate(tp1, sl):
+    closed = tp1 + sl
+
+    if closed <= 0:
+        return 0
+
+    return round((tp1 / closed) * 100, 2)
+
+
+def build_daily_report():
+    performance = load_performance()
+    open_signals = load_open_signals()
+    today = get_today_key()
+
+    day_data = performance.get("days", {}).get(today, {
+        "signals": 0,
+        "tp1": 0,
+        "sl": 0,
+        "coins": {}
+    })
+
+    signals = int(day_data.get("signals", 0))
+    tp1 = int(day_data.get("tp1", 0))
+    sl = int(day_data.get("sl", 0))
+    open_count = len(open_signals)
+
+    success_rate = calculate_success_rate(tp1, sl)
+
+    best_coin = "Yok"
+    worst_coin = "Yok"
+    best_rate = -1
+    worst_rate = 101
+
+    for coin, data in day_data.get("coins", {}).items():
+        coin_tp1 = int(data.get("tp1", 0))
+        coin_sl = int(data.get("sl", 0))
+        closed = coin_tp1 + coin_sl
+
+        if closed <= 0:
+            continue
+
+        rate = calculate_success_rate(coin_tp1, coin_sl)
+
+        if rate > best_rate:
+            best_rate = rate
+            best_coin = f"{coin} (%{rate})"
+
+        if rate < worst_rate:
+            worst_rate = rate
+            worst_coin = f"{coin} (%{rate})"
+
+    message = f"""
+📊 GÜNLÜK PERFORMANS RAPORU
+
+📅 Tarih: {today}
+
+📈 Bugünkü Sinyal: {signals}
+✅ TP1 Gelen: {tp1}
+❌ Stop Olan: {sl}
+⏳ Açık Sinyal: {open_count}
+
+📊 Başarı Oranı: %{success_rate}
+
+🏆 En İyi Coin: {best_coin}
+⚠️ En Zayıf Coin: {worst_coin}
+
+📌 Not:
+Başarı oranı sadece TP1 veya SL ile sonuçlanan sinyaller üzerinden hesaplanır.
+"""
+
+    return message
+
+
+def maybe_send_daily_report():
+    now = datetime.now(TR_TIMEZONE)
+    today = get_today_key()
+
+    if now.hour != DAILY_REPORT_HOUR:
+        return
+
+    if now.minute < DAILY_REPORT_MINUTE:
+        return
+
+    performance = load_performance()
+
+    if performance.get("last_daily_report") == today:
+        print("Günlük rapor bugün zaten gönderilmiş.")
+        return
+
+    report_message = build_daily_report()
+    send_telegram(report_message)
+
+    performance = load_performance()
+    performance["last_daily_report"] = today
+    save_performance(performance)
+
+    print("Günlük performans raporu gönderildi.")
 
 
 def is_duplicate_signal(signal, open_signals):
@@ -292,7 +425,6 @@ def check_open_signals(exchange):
             low = candle["low"]
 
             if direction == "LONG":
-                # LONG için TP1: mumun high değeri TP1'e değdiyse
                 if high >= tp1:
                     send_telegram(
                         f"✅ TP1 GELDİ\n\n"
@@ -308,7 +440,6 @@ def check_open_signals(exchange):
                     update_performance(symbol, direction, "TP1")
                     continue
 
-                # LONG için SL: mumun low değeri SL'ye değdiyse
                 if low <= sl:
                     send_telegram(
                         f"❌ STOP OLDU\n\n"
@@ -324,7 +455,6 @@ def check_open_signals(exchange):
                     continue
 
             if direction == "SHORT":
-                # SHORT için TP1: mumun low değeri TP1'e değdiyse
                 if low <= tp1:
                     send_telegram(
                         f"✅ TP1 GELDİ\n\n"
@@ -340,7 +470,6 @@ def check_open_signals(exchange):
                     update_performance(symbol, direction, "TP1")
                     continue
 
-                # SHORT için SL: mumun high değeri SL'ye değdiyse
                 if high >= sl:
                     send_telegram(
                         f"❌ STOP OLDU\n\n"
@@ -414,7 +543,6 @@ def main():
 
     signals = sorted(signals, key=lambda x: x["score"], reverse=True)
 
-    # Aynı coin aynı yön tekrar sinyal engeli
     open_signals_for_duplicate_check = load_open_signals()
 
     filtered_signals = []
@@ -430,19 +558,12 @@ def main():
 
     strong_signals = []
 
-    # En güçlü 3 SHORT
     strong_signals.extend(short_signals[:3])
-
-    # En güçlü 2 LONG
     strong_signals.extend(long_signals[:2])
 
-    # Tekrar skora göre sırala
     strong_signals = sorted(strong_signals, key=lambda x: x["score"], reverse=True)
-
-    # En fazla 5 detaylı sinyal gönder
     strong_signals = strong_signals[:MAX_SIGNALS]
 
-    # Detaylı gönderilmeyen diğer adaylar
     other_signals = [
         s for s in signals
         if s not in strong_signals
@@ -498,6 +619,8 @@ def main():
             f"Toplam taranan parite: {len(COINS)}\n"
             f"Şu an güçlü sinyal yok."
         )
+
+    maybe_send_daily_report()
 
 
 if __name__ == "__main__":
