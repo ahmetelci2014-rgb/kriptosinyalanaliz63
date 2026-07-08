@@ -317,7 +317,7 @@ def analyze_signal(symbol, df):
 📋 Kalite Notları:
 {quality_notes_text}
 
-⏱ Veri: OKX / 30dk
+
 
 📌 Sinyal Nedenleri:
 {reasons_text}
