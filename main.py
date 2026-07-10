@@ -832,12 +832,12 @@ def main():
 
     before_quality_count = len(signals)
 
-    # C kalite sinyaller gönderilmesin
-    signals = [s for s in signals if s.get("quality") in ["A", "B"]]
+    # B/C kalite sinyaller gönderilmesin
+    signals = [s for s in signals if s.get("quality") == "A"]
 
     print("Kalite filtresi öncesi aday:", before_quality_count)
-    print("A/B kalite sonrası aday:", len(signals))
-    print("C kalite elenen:", before_quality_count - len(signals))
+    print("A kalite sonrası aday:", len(signals))
+    print("B/C kalite elenen:", before_quality_count - len(signals))
 
     open_signals_for_duplicate_check = load_open_signals()
 
@@ -877,7 +877,7 @@ def main():
             f"LONG aday: {len(long_signals)}\n"
             f"SHORT aday: {len(short_signals)}\n"
             f"Detaylı gönderilen sinyal: {len(strong_signals)}\n"
-            f"C kalite sinyaller gönderilmedi."
+            f"b/C kalite sinyaller gönderilmedi."
         )
 
         open_signals = load_open_signals()
@@ -919,11 +919,11 @@ def main():
         #     send_telegram(other_message)
 
     else:
-        print("Şu an güçlü A/B kalite sinyal yok.")
+        print("Şu an güçlü A kalite sinyal yok.")
         send_telegram(
             f"📡 Bot çalıştı.\n\n"
             f"Toplam taranan parite: {len(COINS)}\n"
-            f"Şu an güçlü A/B kalite sinyal yok.\n"
+            f"Şu an güçlü A kalite sinyal yok.\n"
             f"C kalite sinyaller gönderilmedi."
         )
 
