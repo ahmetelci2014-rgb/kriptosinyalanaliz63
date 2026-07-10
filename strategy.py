@@ -301,15 +301,20 @@ def analyze_signal(symbol, df):
         else:
             quality_notes.append("RSI riskli")
 
-    if quality_score >= 6:
+    # A kaliteyi güçlendirdik:
+    # Artık A olmak için kalite puanı 6 VE güven puanı 80+ olmalı.
+    if quality_score >= 6 and score >= 80:
         signal_quality = "A"
-        trade_status = "✅ Değerlendirilebilir"
+        trade_status = "✅ Çok güçlü A kalite sinyal"
+    elif quality_score >= 6:
+        signal_quality = "B"
+        trade_status = "⚠️ Kalite iyi ama güven puanı A için yetersiz"
     elif quality_score >= 3:
         signal_quality = "B"
         trade_status = "⚠️ Dikkatli değerlendir"
     else:
         signal_quality = "C"
-        trade_status = "⛔ Riskli, küçük bak veya girme"
+        trade_status = "⛔ Riskli, işlem dışı"
 
     quality_notes_text = "\n".join([f"• {note}" for note in quality_notes])
     reasons_text = "\n".join([f"• {r}" for r in reasons[:4]])
