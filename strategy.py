@@ -301,7 +301,7 @@ def analyze_signal(symbol, df):
         else:
             quality_notes.append("RSI riskli")
 
-    if quality_score >= 5:
+    if quality_score >= 6:
         signal_quality = "A"
         trade_status = "✅ Değerlendirilebilir"
     elif quality_score >= 3:
