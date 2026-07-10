@@ -10,6 +10,23 @@ from config import MIN_SCORE, COINS
 PREMIUM_COINS = COINS
 
 
+def format_price(value):
+    """
+    PEPE gibi fiyatı çok küçük coinlerde 3e-06 görünmesini engeller.
+    Fiyatı okunabilir şekilde gösterir.
+    """
+    value = float(value)
+
+    if value >= 100:
+        return f"{value:.2f}"
+    elif value >= 1:
+        return f"{value:.4f}"
+    elif value >= 0.01:
+        return f"{value:.6f}"
+    else:
+        return f"{value:.10f}"
+
+
 def analyze_signal(symbol, df):
     def reject(reason):
         print(f"{symbol}: elendi -> {reason}")
@@ -333,11 +350,11 @@ def analyze_signal(symbol, df):
 {icon} {direction}
 🟡 Coin: {symbol}
 
-🔥 Giriş: {round(price, 6)}
-🎯 TP1: {round(tp1, 6)}
-🎯 TP2: {round(tp2, 6)}
-🎯 TP3: {round(tp3, 6)}
-🔴 SL: {round(sl, 6)}
+🔥 Giriş: {format_price(price)}
+🎯 TP1: {format_price(tp1)}
+🎯 TP2: {format_price(tp2)}
+🎯 TP3: {format_price(tp3)}
+🔴 SL: {format_price(sl)}
 
 📊 RSI: {round(rsi, 2)}
 💪 ADX: {round(adx, 2)}
@@ -372,10 +389,10 @@ def analyze_signal(symbol, df):
         "direction": direction,
         "score": score,
         "quality": signal_quality,
-        "entry": round(price, 6),
-        "tp1": round(tp1, 6),
-        "tp2": round(tp2, 6),
-        "tp3": round(tp3, 6),
-        "sl": round(sl, 6),
+        "entry": round(price, 10),
+        "tp1": round(tp1, 10),
+        "tp2": round(tp2, 10),
+        "tp3": round(tp3, 10),
+        "sl": round(sl, 10),
         "message": message
     }
