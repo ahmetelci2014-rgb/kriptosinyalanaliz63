@@ -404,7 +404,11 @@ def build_open_signals_summary(exchange):
             else:
                 tp_text = " / ".join(tp_status)
 
-            active_sl_text = f"{round(entry, 6)} (TP1 sonrası girişe çekildi)" if tp1_hit else round(sl, 6)
+            active_sl_text = (
+                f"{round(entry, 6)} (TP1 sonrası girişe çekildi)"
+                if tp1_hit
+                else round(sl, 6)
+            )
 
             message += (
                 f"{icon} {symbol} {direction}\n"
@@ -780,7 +784,7 @@ def format_other_signals(other_signals):
             f"{i}) {signal['symbol']} | "
             f"{signal['direction']} | "
             f"Skor: {signal['score']} | "
-            f"Kalite: {signal.get('quality', '-') } | "
+            f"Kalite: {signal.get('quality', '-')} | "
             f"Giriş: {signal['entry']}\n"
         )
 
@@ -832,7 +836,8 @@ def main():
 
     before_quality_count = len(signals)
 
-    # B/C kalite sinyaller gönderilmesin
+    # SADECE A kalite sinyaller gönderilsin
+    # B ve C kalite sinyaller artık Telegram'a gönderilmeyecek
     signals = [s for s in signals if s.get("quality") == "A"]
 
     print("Kalite filtresi öncesi aday:", before_quality_count)
@@ -877,7 +882,7 @@ def main():
             f"LONG aday: {len(long_signals)}\n"
             f"SHORT aday: {len(short_signals)}\n"
             f"Detaylı gönderilen sinyal: {len(strong_signals)}\n"
-            f"b/C kalite sinyaller gönderilmedi."
+            f"Sadece A kalite sinyaller gönderildi. B/C kalite gönderilmedi."
         )
 
         open_signals = load_open_signals()
@@ -919,11 +924,11 @@ def main():
         #     send_telegram(other_message)
 
     else:
-        print("Şu an güçlü A kalite sinyal yok.")
+        print("Şu an A kalite sinyal yok.")
         send_telegram(
             f"📡 Bot çalıştı.\n\n"
             f"Toplam taranan parite: {len(COINS)}\n"
-            f"Şu an güçlü A kalite sinyal yok.\n"
+            f"Şu an A kalite sinyal yok.\n"
             f"B/C kalite sinyaller gönderilmedi."
         )
 
