@@ -24,20 +24,16 @@ TR_TIMEZONE = timezone(timedelta(hours=3))
 DAILY_REPORT_HOUR = 23
 DAILY_REPORT_MINUTE = 45
 
-# Açık sinyal özeti kaç dakikada bir gönderilsin
 OPEN_SUMMARY_EVERY_MINUTES = 60
-
-# Aynı coin + aynı yön sinyali 45 dakika içinde tekrar gönderilmesin
 DUPLICATE_BLOCK_SECONDS = 45 * 60
 
 
 def send_telegram(message):
     if not TOKEN or not CHAT_ID:
         print("TOKEN veya CHAT_ID eksik.")
-        return
+        return False
 
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-
     data = {
         "chat_id": CHAT_ID,
         "text": message
@@ -46,8 +42,10 @@ def send_telegram(message):
     try:
         response = requests.post(url, data=data, timeout=20)
         print("Telegram cevap:", response.status_code, response.text)
+        return response.status_code == 200
     except Exception as e:
         print("Telegram gönderim hatası:", e)
+        return False
 
 
 def load_json_file(filename):
@@ -55,13 +53,19 @@ def load_json_file(filename):
         if not os.path.exists(filename):
             return {}
 
-        with open(filename, "r") as f:
+        with open(filename, "r", encoding="utf-8") as f:
             content = f.read().strip()
 
-            if not content:
-                return {}
+        if not content:
+            return {}
 
-            return json.loads(content)
+        data = json.loads(content)
+
+        if not isinstance(data, dict):
+            print(filename, "dict formatında değil, sıfırlandı.")
+            return {}
+
+        return data
 
     except Exception as e:
         print(filename, "okuma hatası:", e)
@@ -70,10 +74,18 @@ def load_json_file(filename):
 
 def save_json_file(filename, data):
     try:
-        with open(filename, "w") as f:
-            json.dump(data, f, indent=2)
+        if not isinstance(data, dict):
+            print(filename, "kaydedilecek veri dict değil, {} olarak kaydedildi.")
+            data = {}
+
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+
+        return True
+
     except Exception as e:
         print(filename, "kaydetme hatası:", e)
+        return False
 
 
 def load_open_signals():
@@ -81,7 +93,7 @@ def load_open_signals():
 
 
 def save_open_signals(data):
-    save_json_file(OPEN_SIGNALS_FILE, data)
+    return save_json_file(OPEN_SIGNALS_FILE, data)
 
 
 def load_performance():
@@ -89,7 +101,7 @@ def load_performance():
 
 
 def save_performance(data):
-    save_json_file(PERFORMANCE_FILE, data)
+    return save_json_file(PERFORMANCE_FILE, data)
 
 
 def get_today_key():
@@ -97,6 +109,9 @@ def get_today_key():
 
 
 def ensure_stats_bucket(bucket):
+    if not isinstance(bucket, dict):
+        bucket = {}
+
     for key in ["signals", "tp1", "tp2", "tp3", "sl", "be"]:
         if key not in bucket:
             bucket[key] = 0
@@ -105,36 +120,26 @@ def ensure_stats_bucket(bucket):
 
 
 def update_performance(symbol, direction, result):
-    """
-    result:
-    OPENED = yeni sinyal gönderildi
-    TP1 = TP1 geldi
-    TP2 = TP2 geldi
-    TP3 = TP3 geldi
-    SL = Stop oldu
-    BE = TP1 sonrası kalan işlem girişten kapandı
-    """
-
     performance = load_performance()
     today = get_today_key()
 
-    if "total" not in performance:
+    if "total" not in performance or not isinstance(performance.get("total"), dict):
         performance["total"] = {}
 
     performance["total"] = ensure_stats_bucket(performance["total"])
 
-    if "coins" not in performance:
+    if "coins" not in performance or not isinstance(performance.get("coins"), dict):
         performance["coins"] = {}
 
-    if symbol not in performance["coins"]:
+    if symbol not in performance["coins"] or not isinstance(performance["coins"].get(symbol), dict):
         performance["coins"][symbol] = {}
 
     performance["coins"][symbol] = ensure_stats_bucket(performance["coins"][symbol])
 
-    if "days" not in performance:
+    if "days" not in performance or not isinstance(performance.get("days"), dict):
         performance["days"] = {}
 
-    if today not in performance["days"]:
+    if today not in performance["days"] or not isinstance(performance["days"].get(today), dict):
         performance["days"][today] = {
             "signals": 0,
             "tp1": 0,
@@ -147,29 +152,28 @@ def update_performance(symbol, direction, result):
 
     performance["days"][today] = ensure_stats_bucket(performance["days"][today])
 
-    if "coins" not in performance["days"][today]:
+    if "coins" not in performance["days"][today] or not isinstance(performance["days"][today].get("coins"), dict):
         performance["days"][today]["coins"] = {}
 
-    if symbol not in performance["days"][today]["coins"]:
+    if symbol not in performance["days"][today]["coins"] or not isinstance(performance["days"][today]["coins"].get(symbol), dict):
         performance["days"][today]["coins"][symbol] = {}
 
     performance["days"][today]["coins"][symbol] = ensure_stats_bucket(
         performance["days"][today]["coins"][symbol]
     )
 
-    if result == "OPENED":
-        field = "signals"
-    elif result == "TP1":
-        field = "tp1"
-    elif result == "TP2":
-        field = "tp2"
-    elif result == "TP3":
-        field = "tp3"
-    elif result == "SL":
-        field = "sl"
-    elif result == "BE":
-        field = "be"
-    else:
+    result_to_field = {
+        "OPENED": "signals",
+        "TP1": "tp1",
+        "TP2": "tp2",
+        "TP3": "tp3",
+        "SL": "sl",
+        "BE": "be"
+    }
+
+    field = result_to_field.get(result)
+
+    if not field:
         return
 
     performance["total"][field] += 1
@@ -196,7 +200,7 @@ def build_daily_report():
     open_signals = load_open_signals()
     today = get_today_key()
 
-    day_data = performance.get("days", {}).get(today, {
+    default_day = {
         "signals": 0,
         "tp1": 0,
         "tp2": 0,
@@ -204,7 +208,12 @@ def build_daily_report():
         "sl": 0,
         "be": 0,
         "coins": {}
-    })
+    }
+
+    day_data = performance.get("days", {}).get(today, default_day)
+
+    if not isinstance(day_data, dict):
+        day_data = default_day
 
     day_data = ensure_stats_bucket(day_data)
 
@@ -223,7 +232,12 @@ def build_daily_report():
     best_rate = -1
     worst_rate = 101
 
-    for coin, data in day_data.get("coins", {}).items():
+    coins_data = day_data.get("coins", {})
+
+    if not isinstance(coins_data, dict):
+        coins_data = {}
+
+    for coin, data in coins_data.items():
         data = ensure_stats_bucket(data)
 
         coin_tp1 = int(data.get("tp1", 0))
@@ -301,10 +315,7 @@ def should_send_open_summary():
     last_summary = int(performance.get("last_open_summary", 0))
     wait_seconds = OPEN_SUMMARY_EVERY_MINUTES * 60
 
-    if now - last_summary >= wait_seconds:
-        return True
-
-    return False
+    return now - last_summary >= wait_seconds
 
 
 def mark_open_summary_sent():
@@ -337,6 +348,86 @@ def get_signal_target(signal, target_name):
     return extract_target_from_message(signal.get("message", ""), target_name)
 
 
+def get_exchange():
+    return ccxt.okx({
+        "enableRateLimit": True,
+        "options": {
+            "defaultType": "swap"
+        }
+    })
+
+
+def to_okx_symbol(symbol):
+    base = symbol.replace("USDT", "")
+    return f"{base}/USDT:USDT"
+
+
+def fetch_df(exchange, okx_symbol):
+    try:
+        ohlcv = exchange.fetch_ohlcv(
+            okx_symbol,
+            timeframe=TIMEFRAME,
+            limit=LIMIT
+        )
+
+        if not ohlcv or len(ohlcv) < 200:
+            return None
+
+        df = pd.DataFrame(
+            ohlcv,
+            columns=["time", "open", "high", "low", "close", "volume"]
+        )
+
+        return df
+
+    except Exception as e:
+        print(okx_symbol, "veri hatası:", e)
+        return None
+
+
+def get_current_price(exchange, symbol):
+    try:
+        okx_symbol = to_okx_symbol(symbol)
+        ticker = exchange.fetch_ticker(okx_symbol)
+        price = ticker.get("last")
+
+        if price is None:
+            return None
+
+        return float(price)
+
+    except Exception as e:
+        print(symbol, "güncel fiyat hatası:", e)
+        return None
+
+
+def get_last_candle(exchange, symbol):
+    try:
+        okx_symbol = to_okx_symbol(symbol)
+
+        ohlcv = exchange.fetch_ohlcv(
+            okx_symbol,
+            timeframe=TIMEFRAME,
+            limit=2
+        )
+
+        if not ohlcv:
+            return None
+
+        last = ohlcv[-1]
+
+        return {
+            "open": float(last[1]),
+            "high": float(last[2]),
+            "low": float(last[3]),
+            "close": float(last[4])
+        }
+
+    except Exception as e:
+        print(symbol, "mum verisi hatası:", e)
+        return None
+
+
 def build_open_signals_summary(exchange):
     open_signals = load_open_signals()
 
@@ -344,7 +435,6 @@ def build_open_signals_summary(exchange):
         return None
 
     message = "📌 AÇIK SİNYAL DURUMU\n\n"
-
     count = 0
 
     for key, signal in open_signals.items():
@@ -373,22 +463,14 @@ def build_open_signals_summary(exchange):
                 tp_distance = ((tp1 - current_price) / current_price) * 100
                 sl_distance = ((current_price - sl) / current_price) * 100
                 profit_percent = ((current_price - entry) / entry) * 100
-
-                if current_price >= entry:
-                    status = "Kâr tarafında ✅"
-                else:
-                    status = "Giriş altında ⚠️"
+                status = "Kâr tarafında ✅" if current_price >= entry else "Giriş altında ⚠️"
 
             else:
                 icon = "🔴"
                 tp_distance = ((current_price - tp1) / current_price) * 100
                 sl_distance = ((sl - current_price) / current_price) * 100
                 profit_percent = ((entry - current_price) / entry) * 100
-
-                if current_price <= entry:
-                    status = "Kâr tarafında ✅"
-                else:
-                    status = "Giriş üstünde ⚠️"
+                status = "Kâr tarafında ✅" if current_price <= entry else "Giriş üstünde ⚠️"
 
             tp_status = []
 
@@ -399,11 +481,7 @@ def build_open_signals_summary(exchange):
             if tp3_hit:
                 tp_status.append("TP3 ✅")
 
-            if not tp_status:
-                tp_text = "Henüz TP yok"
-            else:
-                tp_text = " / ".join(tp_status)
-
+            tp_text = " / ".join(tp_status) if tp_status else "Henüz TP yok"
             active_sl_text = (
                 f"{round(entry, 6)} (TP1 sonrası girişe çekildi)"
                 if tp1_hit
@@ -470,108 +548,6 @@ def maybe_send_open_signals_summary(exchange):
         print("Açık sinyal özeti gönderildi.")
 
 
-def is_duplicate_signal(signal, open_signals):
-    try:
-        key = f"{signal['symbol']}_{signal['direction']}"
-
-        if key not in open_signals:
-            return False
-
-        opened_at = int(open_signals[key].get("opened_at", 0))
-        now = int(time.time())
-
-        if now - opened_at < DUPLICATE_BLOCK_SECONDS:
-            print(key, "45 dakika içinde tekrar sinyal olduğu için engellendi.")
-            return True
-
-        return False
-
-    except Exception as e:
-        print("Tekrar sinyal kontrol hatası:", e)
-        return False
-
-
-def get_exchange():
-    return ccxt.okx({
-        "enableRateLimit": True,
-        "options": {
-            "defaultType": "swap"
-        }
-    })
-
-
-def to_okx_symbol(symbol):
-    base = symbol.replace("USDT", "")
-    return f"{base}/USDT:USDT"
-
-
-def fetch_df(exchange, okx_symbol):
-    try:
-        ohlcv = exchange.fetch_ohlcv(
-            okx_symbol,
-            timeframe=TIMEFRAME,
-            limit=LIMIT
-        )
-
-        if not ohlcv or len(ohlcv) < 200:
-            return None
-
-        df = pd.DataFrame(
-            ohlcv,
-            columns=["time", "open", "high", "low", "close", "volume"]
-        )
-
-        return df
-
-    except Exception as e:
-        print(okx_symbol, "veri hatası:", e)
-        return None
-
-
-def get_current_price(exchange, symbol):
-    try:
-        okx_symbol = to_okx_symbol(symbol)
-        ticker = exchange.fetch_ticker(okx_symbol)
-
-        price = ticker.get("last")
-
-        if price is None:
-            return None
-
-        return float(price)
-
-    except Exception as e:
-        print(symbol, "güncel fiyat hatası:", e)
-        return None
-
-
-def get_last_candle(exchange, symbol):
-    try:
-        okx_symbol = to_okx_symbol(symbol)
-
-        ohlcv = exchange.fetch_ohlcv(
-            okx_symbol,
-            timeframe=TIMEFRAME,
-            limit=2
-        )
-
-        if not ohlcv:
-            return None
-
-        last = ohlcv[-1]
-
-        return {
-            "open": float(last[1]),
-            "high": float(last[2]),
-            "low": float(last[3]),
-            "close": float(last[4])
-        }
-
-    except Exception as e:
-        print(symbol, "mum verisi hatası:", e)
-        return None
-
-
 def check_open_signals(exchange):
     open_signals = load_open_signals()
 
@@ -580,7 +556,6 @@ def check_open_signals(exchange):
         return
 
     print("Takip edilen açık sinyal sayısı:", len(open_signals))
-
     updated_signals = {}
 
     for key, signal in open_signals.items():
@@ -687,7 +662,7 @@ def check_open_signals(exchange):
                     update_performance(symbol, direction, "SL")
                     continue
 
-            if direction == "SHORT":
+            elif direction == "SHORT":
                 if not tp1_hit and low <= tp1:
                     send_telegram(
                         f"✅ TP1 GELDİ\n\n"
@@ -773,23 +748,25 @@ def check_open_signals(exchange):
     save_open_signals(updated_signals)
 
 
-def format_other_signals(other_signals):
-    if not other_signals:
-        return None
+def is_duplicate_signal(signal, open_signals):
+    try:
+        key = f"{signal['symbol']}_{signal['direction']}"
 
-    text = "📋 DİĞER SİNYAL ADAYLARI\n\n"
+        if key not in open_signals:
+            return False
 
-    for i, signal in enumerate(other_signals[:25], 1):
-        text += (
-            f"{i}) {signal['symbol']} | "
-            f"{signal['direction']} | "
-            f"Skor: {signal['score']} | "
-            f"Kalite: {signal.get('quality', '-')} | "
-            f"Giriş: {signal['entry']}\n"
-        )
+        opened_at = int(open_signals[key].get("opened_at", 0))
+        now = int(time.time())
 
-    text += "\nBu liste bilgilendirme amaçlıdır. Detaylı sinyaller üstte gönderildi."
-    return text
+        if now - opened_at < DUPLICATE_BLOCK_SECONDS:
+            print(key, "45 dakika içinde tekrar sinyal olduğu için engellendi.")
+            return True
+
+        return False
+
+    except Exception as e:
+        print("Tekrar sinyal kontrol hatası:", e)
+        return False
 
 
 def main():
@@ -798,46 +775,44 @@ def main():
 
     exchange = get_exchange()
 
-    # Önce eski açık sinyalleri takip et
     check_open_signals(exchange)
-
-    # Açık sinyaller için saatlik kısa özet gönder
     maybe_send_open_signals_summary(exchange)
 
     signals = []
 
     for coin in COINS:
-        okx_symbol = to_okx_symbol(coin)
+        try:
+            okx_symbol = to_okx_symbol(coin)
+            df = fetch_df(exchange, okx_symbol)
 
-        df = fetch_df(exchange, okx_symbol)
+            if df is None:
+                print(coin, "veri yok")
+                continue
 
-        if df is None:
-            print(coin, "veri yok")
-            continue
+            signal = analyze_signal(coin, df)
 
-        signal = analyze_signal(coin, df)
+            if signal:
+                signals.append(signal)
+                print(
+                    coin,
+                    "sinyal bulundu:",
+                    signal["direction"],
+                    signal["score"],
+                    "kalite:",
+                    signal.get("quality", "-")
+                )
+            else:
+                print(coin, "sinyal yok")
 
-        if signal:
-            signals.append(signal)
-            print(
-                coin,
-                "sinyal bulundu:",
-                signal["direction"],
-                signal["score"],
-                "kalite:",
-                signal.get("quality", "-")
-            )
-        else:
-            print(coin, "sinyal yok")
+            time.sleep(0.2)
 
-        time.sleep(0.2)
+        except Exception as e:
+            print(coin, "analiz hatası:", e)
 
     signals = sorted(signals, key=lambda x: x["score"], reverse=True)
 
     before_quality_count = len(signals)
 
-    # SADECE A kalite sinyaller gönderilsin
-    # B ve C kalite sinyaller artık Telegram'a gönderilmeyecek
     signals = [s for s in signals if s.get("quality") == "A"]
 
     print("Kalite filtresi öncesi aday:", before_quality_count)
@@ -865,15 +840,10 @@ def main():
     strong_signals = sorted(strong_signals, key=lambda x: x["score"], reverse=True)
     strong_signals = strong_signals[:MAX_SIGNALS]
 
-    other_signals = [
-        s for s in signals
-        if s not in strong_signals
-    ]
-
     print("LONG sinyal sayısı:", len(long_signals))
     print("SHORT sinyal sayısı:", len(short_signals))
     print("Gönderilecek detaylı sinyal sayısı:", len(strong_signals))
-    print("Diğer aday sayısı:", len(other_signals))
+    print("Diğer aday sayısı:", max(len(signals) - len(strong_signals), 0))
 
     if strong_signals:
         send_telegram(
@@ -888,40 +858,38 @@ def main():
         open_signals = load_open_signals()
 
         for signal in strong_signals:
-            send_telegram(signal["message"])
+            try:
+                send_telegram(signal["message"])
 
-            key = f"{signal['symbol']}_{signal['direction']}"
+                key = f"{signal['symbol']}_{signal['direction']}"
 
-            tp2 = get_signal_target(signal, "TP2")
-            tp3 = get_signal_target(signal, "TP3")
+                tp2 = get_signal_target(signal, "TP2")
+                tp3 = get_signal_target(signal, "TP3")
 
-            open_signals[key] = {
-                "symbol": signal["symbol"],
-                "direction": signal["direction"],
-                "score": signal["score"],
-                "quality": signal.get("quality", "-"),
-                "entry": signal["entry"],
-                "tp1": signal["tp1"],
-                "tp2": tp2,
-                "tp3": tp3,
-                "sl": signal["sl"],
-                "opened_at": int(time.time()),
-                "tp1_hit": False,
-                "tp2_hit": False,
-                "tp3_hit": False,
-                "breakeven_sl": None
-            }
+                open_signals[key] = {
+                    "symbol": signal["symbol"],
+                    "direction": signal["direction"],
+                    "score": signal["score"],
+                    "quality": signal.get("quality", "-"),
+                    "entry": signal["entry"],
+                    "tp1": signal["tp1"],
+                    "tp2": tp2,
+                    "tp3": tp3,
+                    "sl": signal["sl"],
+                    "opened_at": int(time.time()),
+                    "tp1_hit": False,
+                    "tp2_hit": False,
+                    "tp3_hit": False,
+                    "breakeven_sl": None
+                }
 
-            update_performance(signal["symbol"], signal["direction"], "OPENED")
+                update_performance(signal["symbol"], signal["direction"], "OPENED")
+                time.sleep(1)
 
-            time.sleep(1)
+            except Exception as e:
+                print(signal.get("symbol", "-"), "sinyal gönderme/kayıt hatası:", e)
 
         save_open_signals(open_signals)
-
-        # Diğer aday listesi çok kalabalık yaptığı için kapatıldı.
-        # other_message = format_other_signals(other_signals)
-        # if other_message:
-        #     send_telegram(other_message)
 
     else:
         print("Şu an A kalite sinyal yok.")
@@ -933,6 +901,7 @@ def main():
         )
 
     maybe_send_daily_report()
+    print("Bot tamamlandı.")
 
 
 if __name__ == "__main__":
