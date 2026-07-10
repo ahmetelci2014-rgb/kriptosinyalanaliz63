@@ -924,7 +924,7 @@ def main():
             f"📡 Bot çalıştı.\n\n"
             f"Toplam taranan parite: {len(COINS)}\n"
             f"Şu an güçlü A kalite sinyal yok.\n"
-            f"C kalite sinyaller gönderilmedi."
+            f"B/C kalite sinyaller gönderilmedi."
         )
 
     maybe_send_daily_report()
