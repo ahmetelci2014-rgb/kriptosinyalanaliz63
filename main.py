@@ -17,6 +17,9 @@ CHAT_ID = os.getenv("CHAT_ID")
 TIMEFRAME = INTERVAL
 MAX_SIGNALS = 3
 
+# OKX'teki tüm aktif USDT swap/futures paritelerini otomatik tara
+AUTO_SCAN_ALL_OKX_USDT = True
+
 # 4H ana trend filtresi
 HIGHER_TIMEFRAME = "4h"
 HIGHER_LIMIT = 300
@@ -30,6 +33,8 @@ DAILY_REPORT_MINUTE = 45
 
 OPEN_SUMMARY_EVERY_MINUTES = 60
 DUPLICATE_BLOCK_SECONDS = 45 * 60
+
+STABLE_BASES = {"USDT", "USDC", "DAI", "FDUSD", "TUSD", "USDP", "USD"}
 
 
 def format_price(value):
@@ -376,6 +381,76 @@ def get_exchange():
             "defaultType": "swap"
         }
     })
+
+
+def okx_symbol_to_bot_symbol(okx_symbol):
+    # Örnek: BTC/USDT:USDT -> BTCUSDT
+    base = okx_symbol.split("/")[0]
+    return f"{base}USDT".upper()
+
+
+def get_scan_coins(exchange):
+    """
+    AUTO_SCAN_ALL_OKX_USDT True ise OKX'teki tüm aktif USDT swap paritelerini çeker.
+    Sorun olursa config.py içindeki COINS listesine geri döner.
+    """
+    if not AUTO_SCAN_ALL_OKX_USDT:
+        print("Otomatik tarama kapalı. Config COINS listesi kullanılacak.")
+        return COINS
+
+    try:
+        markets = exchange.load_markets()
+        auto_coins = []
+
+        for market in markets.values():
+            try:
+                if not market.get("active", True):
+                    continue
+
+                if not market.get("swap", False):
+                    continue
+
+                if market.get("quote") != "USDT":
+                    continue
+
+                if market.get("settle") != "USDT":
+                    continue
+
+                okx_symbol = market.get("symbol")
+
+                if not okx_symbol or "/USDT:USDT" not in okx_symbol:
+                    continue
+
+                base = str(market.get("base", "")).upper()
+
+                if not base or base in STABLE_BASES:
+                    continue
+
+                coin = okx_symbol_to_bot_symbol(okx_symbol)
+
+                if coin not in auto_coins:
+                    auto_coins.append(coin)
+
+            except Exception as market_error:
+                print("Market filtreleme hatası:", market_error)
+
+        if not auto_coins:
+            print("OKX otomatik parite bulunamadı. Config COINS listesi kullanılacak.")
+            return COINS
+
+        # Config'teki ana coinleri önce sırala, diğerlerini alfabetik ekle
+        priority_coins = [coin for coin in COINS if coin in auto_coins]
+        other_coins = sorted([coin for coin in auto_coins if coin not in priority_coins])
+
+        scan_coins = priority_coins + other_coins
+
+        print("OKX otomatik USDT swap parite sayısı:", len(scan_coins))
+        return scan_coins
+
+    except Exception as e:
+        print("OKX otomatik parite çekme hatası:", e)
+        print("Config COINS listesi kullanılacak.")
+        return COINS
 
 
 def to_okx_symbol(symbol):
@@ -846,10 +921,13 @@ def is_duplicate_signal(signal, open_signals):
 
 def main():
     print("Bot başladı...")
-    print("Toplam taranan parite:", len(COINS))
-    print("4H ana trend filtresi aktif.")
 
     exchange = get_exchange()
+    scan_coins = get_scan_coins(exchange)
+
+    print("Toplam taranan parite:", len(scan_coins))
+    print("4H ana trend filtresi aktif.")
+    print("OKX tüm USDT swap otomatik tarama:", AUTO_SCAN_ALL_OKX_USDT)
 
     check_open_signals(exchange)
     maybe_send_open_signals_summary(exchange)
@@ -857,7 +935,7 @@ def main():
     signals = []
     htf_rejected_count = 0
 
-    for coin in COINS:
+    for coin in scan_coins:
         try:
             okx_symbol = to_okx_symbol(coin)
             df = fetch_df(exchange, okx_symbol)
@@ -945,11 +1023,12 @@ def main():
     if strong_signals:
         send_telegram(
             f"✅ Bot çalıştı.\n"
-            f"Toplam taranan parite: {len(COINS)}\n"
+            f"Toplam taranan parite: {len(scan_coins)}\n"
             f"4H trend uyumsuz elenen: {htf_rejected_count}\n"
             f"LONG aday: {len(long_signals)}\n"
             f"SHORT aday: {len(short_signals)}\n"
             f"Detaylı gönderilen sinyal: {len(strong_signals)}\n"
+            f"OKX tüm USDT swap tarandı.\n"
             f"Sadece A kalite + 4H trend uyumlu sinyaller gönderildi."
         )
 
@@ -994,9 +1073,10 @@ def main():
         print("Şu an A kalite ve 4H trend uyumlu sinyal yok.")
         send_telegram(
             f"📡 Bot çalıştı.\n\n"
-            f"Toplam taranan parite: {len(COINS)}\n"
+            f"Toplam taranan parite: {len(scan_coins)}\n"
             f"4H trend uyumsuz elenen: {htf_rejected_count}\n"
             f"Şu an A kalite ve 4H trend uyumlu sinyal yok.\n"
+            f"OKX tüm USDT swap tarandı.\n"
             f"B/C kalite veya 4H ters sinyaller gönderilmedi."
         )
 
