@@ -17,6 +17,10 @@ CHAT_ID = os.getenv("CHAT_ID")
 TIMEFRAME = INTERVAL
 MAX_SIGNALS = 3
 
+# 4H ana trend filtresi
+HIGHER_TIMEFRAME = "4h"
+HIGHER_LIMIT = 300
+
 OPEN_SIGNALS_FILE = "open_signals.json"
 PERFORMANCE_FILE = "performance.json"
 
@@ -26,6 +30,23 @@ DAILY_REPORT_MINUTE = 45
 
 OPEN_SUMMARY_EVERY_MINUTES = 60
 DUPLICATE_BLOCK_SECONDS = 45 * 60
+
+
+def format_price(value):
+    """
+    PEPE gibi fiyatı çok küçük coinlerde 3e-06 görünmesini engeller.
+    Fiyatları okunabilir şekilde gösterir.
+    """
+    value = float(value)
+
+    if value >= 100:
+        return f"{value:.2f}"
+    elif value >= 1:
+        return f"{value:.4f}"
+    elif value >= 0.01:
+        return f"{value:.6f}"
+    else:
+        return f"{value:.10f}"
 
 
 def send_telegram(message):
@@ -362,12 +383,12 @@ def to_okx_symbol(symbol):
     return f"{base}/USDT:USDT"
 
 
-def fetch_df(exchange, okx_symbol):
+def fetch_df_timeframe(exchange, okx_symbol, timeframe, limit):
     try:
         ohlcv = exchange.fetch_ohlcv(
             okx_symbol,
-            timeframe=TIMEFRAME,
-            limit=LIMIT
+            timeframe=timeframe,
+            limit=limit
         )
 
         if not ohlcv or len(ohlcv) < 200:
@@ -381,8 +402,60 @@ def fetch_df(exchange, okx_symbol):
         return df
 
     except Exception as e:
-        print(okx_symbol, "veri hatası:", e)
+        print(okx_symbol, timeframe, "veri hatası:", e)
         return None
+
+
+def fetch_df(exchange, okx_symbol):
+    return fetch_df_timeframe(exchange, okx_symbol, TIMEFRAME, LIMIT)
+
+
+def get_4h_trend(exchange, symbol):
+    """
+    4H ana trend filtresi.
+    LONG için: fiyat EMA200 üstünde + EMA20 EMA50 üstünde + EMA20 yukarı eğimli.
+    SHORT için: fiyat EMA200 altında + EMA20 EMA50 altında + EMA20 aşağı eğimli.
+    Diğer durumlarda NEUTRAL döner ve sinyal gönderilmez.
+    """
+    try:
+        okx_symbol = to_okx_symbol(symbol)
+        df = fetch_df_timeframe(exchange, okx_symbol, HIGHER_TIMEFRAME, HIGHER_LIMIT)
+
+        if df is None or len(df) < 220:
+            print(symbol, "4H trend okunamadı: yetersiz veri")
+            return "NEUTRAL"
+
+        df = df.copy()
+        df["ema20"] = df["close"].ewm(span=20, adjust=False).mean()
+        df["ema50"] = df["close"].ewm(span=50, adjust=False).mean()
+        df["ema200"] = df["close"].ewm(span=200, adjust=False).mean()
+        df["ema20_slope"] = df["ema20"] - df["ema20"].shift(3)
+        df = df.dropna()
+
+        if df.empty or len(df) < 10:
+            print(symbol, "4H trend okunamadı: indikatör yetersiz")
+            return "NEUTRAL"
+
+        # Son açık 4H mumu yerine kapanmış son 4H mumu kullanılır.
+        last = df.iloc[-2]
+
+        close = float(last["close"])
+        ema20 = float(last["ema20"])
+        ema50 = float(last["ema50"])
+        ema200 = float(last["ema200"])
+        slope = float(last["ema20_slope"])
+
+        if close > ema200 and ema20 > ema50 and slope > 0:
+            return "LONG"
+
+        if close < ema200 and ema20 < ema50 and slope < 0:
+            return "SHORT"
+
+        return "NEUTRAL"
+
+    except Exception as e:
+        print(symbol, "4H trend hatası:", e)
+        return "NEUTRAL"
 
 
 def get_current_price(exchange, symbol):
@@ -448,6 +521,7 @@ def build_open_signals_summary(exchange):
             sl = float(signal["sl"])
             score = signal.get("score", "-")
             quality = signal.get("quality", "-")
+            trend_4h = signal.get("trend_4h", "-")
 
             tp1_hit = bool(signal.get("tp1_hit", False))
             tp2_hit = bool(signal.get("tp2_hit", False))
@@ -483,28 +557,29 @@ def build_open_signals_summary(exchange):
 
             tp_text = " / ".join(tp_status) if tp_status else "Henüz TP yok"
             active_sl_text = (
-                f"{round(entry, 6)} (TP1 sonrası girişe çekildi)"
+                f"{format_price(entry)} (TP1 sonrası girişe çekildi)"
                 if tp1_hit
-                else round(sl, 6)
+                else format_price(sl)
             )
 
             message += (
                 f"{icon} {symbol} {direction}\n"
-                f"🔥 Giriş: {round(entry, 6)}\n"
-                f"💰 Güncel: {round(current_price, 6)}\n"
-                f"🎯 TP1: {round(tp1, 6)}\n"
+                f"🔥 Giriş: {format_price(entry)}\n"
+                f"💰 Güncel: {format_price(current_price)}\n"
+                f"🎯 TP1: {format_price(tp1)}\n"
             )
 
             if tp2 is not None:
-                message += f"🎯 TP2: {round(float(tp2), 6)}\n"
+                message += f"🎯 TP2: {format_price(float(tp2))}\n"
 
             if tp3 is not None:
-                message += f"🎯 TP3: {round(float(tp3), 6)}\n"
+                message += f"🎯 TP3: {format_price(float(tp3))}\n"
 
             message += (
                 f"🔴 Aktif SL: {active_sl_text}\n"
                 f"📊 Skor: {score}\n"
                 f"📌 Kalite: {quality}\n"
+                f"📈 4H Trend: {trend_4h}\n"
                 f"📍 Durum: {status}\n"
                 f"📈 Anlık Durum: %{round(profit_percent, 2)}\n"
                 f"✅ TP Durumu: {tp_text}\n"
@@ -591,10 +666,10 @@ def check_open_signals(exchange):
                         f"✅ TP1 GELDİ\n\n"
                         f"Coin: {symbol}\n"
                         f"Yön: LONG 🟢\n"
-                        f"Giriş: {entry}\n"
-                        f"TP1: {tp1}\n"
-                        f"Mum High: {high}\n"
-                        f"Güncel Fiyat: {current_price}\n\n"
+                        f"Giriş: {format_price(entry)}\n"
+                        f"TP1: {format_price(tp1)}\n"
+                        f"Mum High: {format_price(high)}\n"
+                        f"Güncel Fiyat: {format_price(current_price)}\n\n"
                         f"Öneri: %50 kâr al, kalan işlem için SL giriş fiyatına çekildi."
                     )
 
@@ -608,10 +683,10 @@ def check_open_signals(exchange):
                         f"✅ TP2 GELDİ\n\n"
                         f"Coin: {symbol}\n"
                         f"Yön: LONG 🟢\n"
-                        f"Giriş: {entry}\n"
-                        f"TP2: {tp2}\n"
-                        f"Mum High: {high}\n"
-                        f"Güncel Fiyat: {current_price}\n\n"
+                        f"Giriş: {format_price(entry)}\n"
+                        f"TP2: {format_price(tp2)}\n"
+                        f"Mum High: {format_price(high)}\n"
+                        f"Güncel Fiyat: {format_price(current_price)}\n\n"
                         f"Öneri: Kârın bir kısmı daha alınabilir. Kalan işlem takip edilebilir."
                     )
 
@@ -624,10 +699,10 @@ def check_open_signals(exchange):
                         f"🏁 TP3 GELDİ\n\n"
                         f"Coin: {symbol}\n"
                         f"Yön: LONG 🟢\n"
-                        f"Giriş: {entry}\n"
-                        f"TP3: {tp3}\n"
-                        f"Mum High: {high}\n"
-                        f"Güncel Fiyat: {current_price}\n\n"
+                        f"Giriş: {format_price(entry)}\n"
+                        f"TP3: {format_price(tp3)}\n"
+                        f"Mum High: {format_price(high)}\n"
+                        f"Güncel Fiyat: {format_price(current_price)}\n\n"
                         f"Sonuç: Sinyal maksimum hedefe ulaştı ✅"
                     )
 
@@ -639,9 +714,9 @@ def check_open_signals(exchange):
                         f"🟡 KALAN İŞLEM GİRİŞTEN KAPANDI\n\n"
                         f"Coin: {symbol}\n"
                         f"Yön: LONG 🟢\n"
-                        f"Giriş: {entry}\n"
-                        f"Mum Low: {low}\n"
-                        f"Güncel Fiyat: {current_price}\n\n"
+                        f"Giriş: {format_price(entry)}\n"
+                        f"Mum Low: {format_price(low)}\n"
+                        f"Güncel Fiyat: {format_price(current_price)}\n\n"
                         f"TP1 sonrası kalan işlem girişten kapandı."
                     )
 
@@ -653,10 +728,10 @@ def check_open_signals(exchange):
                         f"❌ STOP OLDU\n\n"
                         f"Coin: {symbol}\n"
                         f"Yön: LONG 🟢\n"
-                        f"Giriş: {entry}\n"
-                        f"SL: {sl}\n"
-                        f"Mum Low: {low}\n"
-                        f"Güncel Fiyat: {current_price}"
+                        f"Giriş: {format_price(entry)}\n"
+                        f"SL: {format_price(sl)}\n"
+                        f"Mum Low: {format_price(low)}\n"
+                        f"Güncel Fiyat: {format_price(current_price)}"
                     )
 
                     update_performance(symbol, direction, "SL")
@@ -668,10 +743,10 @@ def check_open_signals(exchange):
                         f"✅ TP1 GELDİ\n\n"
                         f"Coin: {symbol}\n"
                         f"Yön: SHORT 🔴\n"
-                        f"Giriş: {entry}\n"
-                        f"TP1: {tp1}\n"
-                        f"Mum Low: {low}\n"
-                        f"Güncel Fiyat: {current_price}\n\n"
+                        f"Giriş: {format_price(entry)}\n"
+                        f"TP1: {format_price(tp1)}\n"
+                        f"Mum Low: {format_price(low)}\n"
+                        f"Güncel Fiyat: {format_price(current_price)}\n\n"
                         f"Öneri: %50 kâr al, kalan işlem için SL giriş fiyatına çekildi."
                     )
 
@@ -685,10 +760,10 @@ def check_open_signals(exchange):
                         f"✅ TP2 GELDİ\n\n"
                         f"Coin: {symbol}\n"
                         f"Yön: SHORT 🔴\n"
-                        f"Giriş: {entry}\n"
-                        f"TP2: {tp2}\n"
-                        f"Mum Low: {low}\n"
-                        f"Güncel Fiyat: {current_price}\n\n"
+                        f"Giriş: {format_price(entry)}\n"
+                        f"TP2: {format_price(tp2)}\n"
+                        f"Mum Low: {format_price(low)}\n"
+                        f"Güncel Fiyat: {format_price(current_price)}\n\n"
                         f"Öneri: Kârın bir kısmı daha alınabilir. Kalan işlem takip edilebilir."
                     )
 
@@ -701,10 +776,10 @@ def check_open_signals(exchange):
                         f"🏁 TP3 GELDİ\n\n"
                         f"Coin: {symbol}\n"
                         f"Yön: SHORT 🔴\n"
-                        f"Giriş: {entry}\n"
-                        f"TP3: {tp3}\n"
-                        f"Mum Low: {low}\n"
-                        f"Güncel Fiyat: {current_price}\n\n"
+                        f"Giriş: {format_price(entry)}\n"
+                        f"TP3: {format_price(tp3)}\n"
+                        f"Mum Low: {format_price(low)}\n"
+                        f"Güncel Fiyat: {format_price(current_price)}\n\n"
                         f"Sonuç: Sinyal maksimum hedefe ulaştı ✅"
                     )
 
@@ -716,9 +791,9 @@ def check_open_signals(exchange):
                         f"🟡 KALAN İŞLEM GİRİŞTEN KAPANDI\n\n"
                         f"Coin: {symbol}\n"
                         f"Yön: SHORT 🔴\n"
-                        f"Giriş: {entry}\n"
-                        f"Mum High: {high}\n"
-                        f"Güncel Fiyat: {current_price}\n\n"
+                        f"Giriş: {format_price(entry)}\n"
+                        f"Mum High: {format_price(high)}\n"
+                        f"Güncel Fiyat: {format_price(current_price)}\n\n"
                         f"TP1 sonrası kalan işlem girişten kapandı."
                     )
 
@@ -730,10 +805,10 @@ def check_open_signals(exchange):
                         f"❌ STOP OLDU\n\n"
                         f"Coin: {symbol}\n"
                         f"Yön: SHORT 🔴\n"
-                        f"Giriş: {entry}\n"
-                        f"SL: {sl}\n"
-                        f"Mum High: {high}\n"
-                        f"Güncel Fiyat: {current_price}"
+                        f"Giriş: {format_price(entry)}\n"
+                        f"SL: {format_price(sl)}\n"
+                        f"Mum High: {format_price(high)}\n"
+                        f"Güncel Fiyat: {format_price(current_price)}"
                     )
 
                     update_performance(symbol, direction, "SL")
@@ -772,6 +847,7 @@ def is_duplicate_signal(signal, open_signals):
 def main():
     print("Bot başladı...")
     print("Toplam taranan parite:", len(COINS))
+    print("4H ana trend filtresi aktif.")
 
     exchange = get_exchange()
 
@@ -779,6 +855,7 @@ def main():
     maybe_send_open_signals_summary(exchange)
 
     signals = []
+    htf_rejected_count = 0
 
     for coin in COINS:
         try:
@@ -792,6 +869,23 @@ def main():
             signal = analyze_signal(coin, df)
 
             if signal:
+                trend_4h = get_4h_trend(exchange, coin)
+                signal["trend_4h"] = trend_4h
+
+                if trend_4h != signal["direction"]:
+                    print(
+                        coin,
+                        "elendi -> 4H trend uyumsuz |",
+                        "Sinyal:",
+                        signal["direction"],
+                        "| 4H:",
+                        trend_4h
+                    )
+                    htf_rejected_count += 1
+                    continue
+
+                signal["message"] += f"\n📈 4H Ana Trend: {trend_4h} uyumlu ✅\n"
+
                 signals.append(signal)
                 print(
                     coin,
@@ -799,7 +893,9 @@ def main():
                     signal["direction"],
                     signal["score"],
                     "kalite:",
-                    signal.get("quality", "-")
+                    signal.get("quality", "-"),
+                    "4H:",
+                    trend_4h
                 )
             else:
                 print(coin, "sinyal yok")
@@ -815,6 +911,7 @@ def main():
 
     signals = [s for s in signals if s.get("quality") == "A"]
 
+    print("4H trend uyumsuz elenen:", htf_rejected_count)
     print("Kalite filtresi öncesi aday:", before_quality_count)
     print("A kalite sonrası aday:", len(signals))
     print("B/C kalite elenen:", before_quality_count - len(signals))
@@ -849,10 +946,11 @@ def main():
         send_telegram(
             f"✅ Bot çalıştı.\n"
             f"Toplam taranan parite: {len(COINS)}\n"
+            f"4H trend uyumsuz elenen: {htf_rejected_count}\n"
             f"LONG aday: {len(long_signals)}\n"
             f"SHORT aday: {len(short_signals)}\n"
             f"Detaylı gönderilen sinyal: {len(strong_signals)}\n"
-            f"Sadece A kalite sinyaller gönderildi. B/C kalite gönderilmedi."
+            f"Sadece A kalite + 4H trend uyumlu sinyaller gönderildi."
         )
 
         open_signals = load_open_signals()
@@ -871,6 +969,7 @@ def main():
                     "direction": signal["direction"],
                     "score": signal["score"],
                     "quality": signal.get("quality", "-"),
+                    "trend_4h": signal.get("trend_4h", "-"),
                     "entry": signal["entry"],
                     "tp1": signal["tp1"],
                     "tp2": tp2,
@@ -892,12 +991,13 @@ def main():
         save_open_signals(open_signals)
 
     else:
-        print("Şu an A kalite sinyal yok.")
+        print("Şu an A kalite ve 4H trend uyumlu sinyal yok.")
         send_telegram(
             f"📡 Bot çalıştı.\n\n"
             f"Toplam taranan parite: {len(COINS)}\n"
-            f"Şu an A kalite sinyal yok.\n"
-            f"B/C kalite sinyaller gönderilmedi."
+            f"4H trend uyumsuz elenen: {htf_rejected_count}\n"
+            f"Şu an A kalite ve 4H trend uyumlu sinyal yok.\n"
+            f"B/C kalite veya 4H ters sinyaller gönderilmedi."
         )
 
     maybe_send_daily_report()
