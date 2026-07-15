@@ -1,49 +1,20 @@
 # config.py
+# Sade Premium V1
+# Amaç: Karmaşık ve zayıf sistemi bırakıp daha kontrollü sinyal üretmek.
+# Bu bot otomatik emir açmaz. Sadece Telegram sinyali gönderir.
 
-# Tarama Ayarları
-SCAN_INTERVAL = "15m"
-INTERVAL = "15m"
-LIMIT = 400
+# Zaman dilimleri
+ENTRY_TIMEFRAME = "15m"
+CONFIRM_TIMEFRAME = "1h"
+TREND_TIMEFRAME = "4h"
 
-# Sinyal Ayarları
-MIN_SCORE = 40
-TOP_COINS = 40
+# Veri limitleri
+ENTRY_LIMIT = 400
+CONFIRM_LIMIT = 300
+TREND_LIMIT = 300
 
-# İşlem Yön Ayarları
-# Backtest sonucuna göre SHORT tarafı şimdilik kapalı.
-ALLOW_LONG_SIGNALS = True
-ALLOW_SHORT_SIGNALS = False
-
-# Kötü performans gösteren coinler
-# Bu coinler otomatik taramada elenir.
-BLACKLIST_COINS = [
-    "ARMUSDT",
-    "GALAUSDT",
-    "TRXUSDT",
-    "BERAUSDT",
-    "BONKUSDT",
-    "DYDXUSDT",
-    "ATHUSDT",
-    "BLURUSDT",
-    "APEUSDT",
-    "BANDUSDT"
-]
-
-# Zaman Dilimleri
-MAIN_TREND_INTERVAL = "4H"
-CONFIRM_INTERVAL = "1H"
-ENTRY_INTERVAL = "15m"
-
-# CoinGecko
-VS_CURRENCY = "usd"
-DAYS = 7
-
-# OKX
-OKX_BASE_URL = "https://www.okx.com"
-
-# Premium / Yedek Coin Listesi
-# main.py otomatik OKX USDT swap taraması yapar.
-# Bu liste yedek ve premium öncelik listesi gibi kullanılır.
+# Sadece likiditesi yüksek ana coinler.
+# Tüm piyasayı taramak yerine önce daha temiz verili coinlerde kalite arıyoruz.
 COINS = [
     "BTCUSDT",
     "ETHUSDT",
@@ -53,32 +24,44 @@ COINS = [
     "DOGEUSDT",
     "LINKUSDT",
     "AVAXUSDT",
-    "SUIUSDT",
     "ADAUSDT",
     "LTCUSDT",
     "DOTUSDT",
     "APTUSDT",
     "ARBUSDT",
     "OPUSDT",
-    "NEARUSDT",
-    "INJUSDT",
-    "WLDUSDT",
-    "FILUSDT",
-    "ATOMUSDT",
-    "UNIUSDT",
-    "AAVEUSDT",
-    "ETCUSDT",
-    "ICPUSDT",
-    "SEIUSDT",
-    "TIAUSDT",
-    "ORDIUSDT",
-    "JUPUSDT",
-    "BCHUSDT",
-
-    # Ek coinler
-    "PEPEUSDT",
-    "ALGOUSDT",
-    "MANAUSDT",
-    "SANDUSDT",
-    "AXSUSDT"
+    "NEARUSDT"
 ]
+
+# Sistem ayarları
+MAX_SIGNALS = 2
+
+# Backtestte SHORT tarafı kötü çıktığı için kapalı.
+ALLOW_LONG_SIGNALS = True
+ALLOW_SHORT_SIGNALS = False
+
+# Kalite eşikleri
+MIN_SCORE = 75
+MIN_ADX_4H = 18
+MIN_ADX_1H = 18
+MIN_VOLUME_RATIO = 0.75
+
+# Stop mesafesi
+MIN_RISK_PERCENT = 0.35
+MAX_RISK_PERCENT = 2.40
+
+# Geç giriş filtresi
+# Sinyal üretildikten sonra canlı fiyat girişten çok uzaksa Telegram'a gönderilmez.
+MAX_ENTRY_DISTANCE_PERCENT = 0.35
+MAX_TP1_PROGRESS_PERCENT = 40
+
+# Tekrar sinyal engeli
+DUPLICATE_BLOCK_SECONDS = 4 * 60 * 60
+
+# Günlük rapor
+DAILY_REPORT_HOUR = 23
+DAILY_REPORT_MINUTE = 45
+
+# Açık sinyal özeti
+OPEN_SUMMARY_EVERY_MINUTES = 120
+SEND_NO_SIGNAL_MESSAGE = True
