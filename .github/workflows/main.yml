@@ -1,4 +1,4 @@
-name: Kripto Sinyal Botu
+name: Premium GitHub V2
 
 on:
   workflow_dispatch:
@@ -8,12 +8,16 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: premium-github-v2
+  cancel-in-progress: true
+
 jobs:
-  bot:
+  signal-bot:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Repoyu indir
+      - name: Repo indir
         uses: actions/checkout@v4
 
       - name: Python kur
@@ -21,8 +25,9 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Paketleri yükle
-        run: pip install -r requirements.txt
+      - name: Paketleri kur
+        run: |
+          pip install -r requirements.txt
 
       - name: Botu çalıştır
         env:
@@ -30,12 +35,10 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python main.py
 
-      - name: Sinyal takip dosyasını kaydet
-        continue-on-error: true
+      - name: Durum dosyalarını kaydet
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git pull --rebase --autostash origin main || echo "Pull yapilamadi"
-          git add open_signals.json performance.json
-          git commit -m "Update signal performance files [skip ci]" || echo "Degisiklik yok"
-          git push || echo "Push yapilamadi"
+          git add open_signals.json performance.json last_signals.json
+          git diff --cached --quiet || git commit -m "Update bot state"
+          git push
