@@ -12,6 +12,17 @@ ENTRY_LIMIT = 400
 CONFIRM_LIMIT = 300
 TREND_LIMIT = 300
 
+# Tarama kapsamı
+# True olursa OKX'teki USDT swap/futures pariteleri içinden
+# 24 saatlik hacmi en yüksek ilk MAX_SCAN_COINS coin taranır.
+AUTO_TOP_VOLUME_SCAN = True
+MAX_SCAN_COINS = 80
+
+# Hacmi aşırı düşük pariteleri elemek için alt sınır.
+# OKX hacim verisi okunamazsa bot yine ilk 80 sıralamayı kullanır.
+MIN_24H_QUOTE_VOLUME = 1_000_000
+
+
 # Sadece likiditesi yüksek ana coinler.
 COINS = [
     "BTCUSDT",

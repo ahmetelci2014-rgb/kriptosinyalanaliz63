@@ -12,6 +12,9 @@ from datetime import datetime, timezone, timedelta
 
 from config import (
     COINS,
+    AUTO_TOP_VOLUME_SCAN,
+    MAX_SCAN_COINS,
+    MIN_24H_QUOTE_VOLUME,
     ENTRY_TIMEFRAME,
     CONFIRM_TIMEFRAME,
     TREND_TIMEFRAME,
@@ -330,6 +333,131 @@ def get_exchange():
 def to_okx_symbol(symbol):
     base = symbol.replace("USDT", "")
     return f"{base}/USDT:USDT"
+
+
+def okx_symbol_to_bot_symbol(okx_symbol):
+    # Örnek: BTC/USDT:USDT -> BTCUSDT
+    base = okx_symbol.split("/")[0]
+    return f"{base}USDT".upper()
+
+
+def safe_quote_volume(ticker):
+    """
+    OKX/CCXT bazı paritelerde quoteVolume bilgisini farklı alanlarda döndürebilir.
+    Bu fonksiyon hacmi mümkün olduğunca güvenli okur.
+    """
+    try:
+        for key in ["quoteVolume", "quote_volume"]:
+            value = ticker.get(key)
+            if value is not None:
+                return float(value)
+
+        info = ticker.get("info", {})
+
+        # OKX çoğu zaman 24h hacim bilgilerini info içinde verir.
+        for key in ["volCcy24h", "volUsd24h", "vol24h"]:
+            value = info.get(key)
+            if value is not None:
+                return float(value)
+
+    except Exception:
+        pass
+
+    return 0.0
+
+
+def get_scan_coins(exchange):
+    """
+    AUTO_TOP_VOLUME_SCAN True ise:
+    OKX'teki aktif USDT swap pariteleri içinden hacmi en yüksek ilk 80 coin taranır.
+    Sorun olursa config.py içindeki COINS listesine geri döner.
+    """
+    if not AUTO_TOP_VOLUME_SCAN:
+        print("Top volume tarama kapalı. Sabit COINS listesi kullanılacak.")
+        return COINS
+
+    try:
+        markets = exchange.load_markets()
+        usdt_swap_symbols = []
+
+        stable_bases = {"USDT", "USDC", "DAI", "FDUSD", "TUSD", "USDP", "USD"}
+
+        for market in markets.values():
+            try:
+                if not market.get("active", True):
+                    continue
+
+                if not market.get("swap", False):
+                    continue
+
+                if market.get("quote") != "USDT":
+                    continue
+
+                if market.get("settle") != "USDT":
+                    continue
+
+                okx_symbol = market.get("symbol")
+
+                if not okx_symbol or "/USDT:USDT" not in okx_symbol:
+                    continue
+
+                base = str(market.get("base", "")).upper()
+
+                if not base or base in stable_bases:
+                    continue
+
+                usdt_swap_symbols.append(okx_symbol)
+
+            except Exception as market_error:
+                print("Market filtreleme hatası:", market_error)
+
+        if not usdt_swap_symbols:
+            print("OKX USDT swap paritesi bulunamadı. Sabit COINS listesi kullanılacak.")
+            return COINS
+
+        tickers = exchange.fetch_tickers(usdt_swap_symbols)
+
+        volume_rows = []
+
+        for okx_symbol in usdt_swap_symbols:
+            try:
+                ticker = tickers.get(okx_symbol, {})
+                quote_volume = safe_quote_volume(ticker)
+                coin = okx_symbol_to_bot_symbol(okx_symbol)
+
+                if quote_volume < MIN_24H_QUOTE_VOLUME:
+                    continue
+
+                volume_rows.append((coin, quote_volume))
+
+            except Exception as ticker_error:
+                print(okx_symbol, "hacim okuma hatası:", ticker_error)
+
+        if not volume_rows:
+            print("Hacim filtresinden geçen coin yok. Sabit COINS listesi kullanılacak.")
+            return COINS
+
+        volume_rows = sorted(volume_rows, key=lambda x: x[1], reverse=True)
+
+        # Önce config.py içindeki ana coinleri, listedeyse koru.
+        # Sonra hacme göre diğer coinleri ekle.
+        all_volume_coins = [coin for coin, _ in volume_rows]
+        priority_coins = [coin for coin in COINS if coin in all_volume_coins]
+        other_coins = [coin for coin in all_volume_coins if coin not in priority_coins]
+
+        scan_coins = (priority_coins + other_coins)[:MAX_SCAN_COINS]
+
+        print("OKX hacimli USDT swap tarama aktif.")
+        print("Hacim filtresinden geçen coin:", len(volume_rows))
+        print("Taranacak coin:", len(scan_coins))
+        print("İlk 10 coin:", scan_coins[:10])
+
+        return scan_coins
+
+    except Exception as e:
+        print("Top volume coin listesi alınamadı:", e)
+        print("Sabit COINS listesi kullanılacak.")
+        return COINS
 
 
 def fetch_df(exchange, symbol, timeframe, limit):
@@ -779,19 +907,23 @@ def maybe_send_open_summary(exchange):
 
 def main():
     print("Sade Premium V1 bot başladı.")
-    print("Coin sayısı:", len(COINS))
+
+    exchange = get_exchange()
+    scan_coins = get_scan_coins(exchange)
+
+    print("Coin sayısı:", len(scan_coins))
+    print("Top volume tarama:", AUTO_TOP_VOLUME_SCAN)
+    print("Maksimum tarama:", MAX_SCAN_COINS)
     print("LONG açık:", ALLOW_LONG_SIGNALS)
     print("SHORT açık:", ALLOW_SHORT_SIGNALS)
     print("Bot emir açmaz, sadece Telegram sinyali gönderir.")
-
-    exchange = get_exchange()
 
     check_open_signals(exchange)
     maybe_send_open_summary(exchange)
 
     candidates = []
 
-    for symbol in COINS:
+    for symbol in scan_coins:
         try:
             print(symbol, "analiz ediliyor...")
 
@@ -849,7 +981,8 @@ def main():
 
         send_telegram(
             f"✅ Sade Premium V1 bot çalıştı.\n"
-            f"Taranan coin: {len(COINS)}\n"
+            f"Taranan coin: {len(scan_coins)}\n"
+            f"Tarama: Hacimli ilk {MAX_SCAN_COINS} USDT swap coin\n"
             f"Uygun aday: {len(candidates)}\n"
             f"Gönderilen sinyal: {len(strong_signals)}\n"
             f"LONG: {long_count} | SHORT: {short_count}\n"
@@ -903,7 +1036,8 @@ def main():
         if SEND_NO_SIGNAL_MESSAGE:
             send_telegram(
                 f"📡 Sade Premium V1 bot çalıştı.\n\n"
-                f"Taranan coin: {len(COINS)}\n"
+                f"Taranan coin: {len(scan_coins)}\n"
+                f"Tarama: Hacimli ilk {MAX_SCAN_COINS} USDT swap coin\n"
                 f"Şu an uygun LONG/SHORT sinyal yok.\n"
                 f"Sistem: 4H trend + 1H onay + 15M giriş.\n"
                 f"SHORT kontrollü açık."
