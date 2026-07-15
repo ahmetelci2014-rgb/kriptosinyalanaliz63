@@ -1,5 +1,5 @@
 # strategy.py
-# Sade Premium V1 - Kontrollü LONG/SHORT strateji
+# Sade Premium V1 - GEVŞETİLMİŞ Kontrollü LONG/SHORT strateji
 # LONG: 4H yukarı + 1H yukarı + 15M geri çekilme sonrası toparlanma.
 # SHORT: 4H aşağı + 1H aşağı + 15M tepki sonrası aşağı dönüş.
 # Emir açmaz; main.py sadece Telegram sinyali gönderir.
@@ -95,7 +95,7 @@ def build_message(symbol, direction, price, tp1, tp2, tp3, sl, rsi, adx15, volum
     notes_text = "\n".join([f"• {n}" for n in notes])
 
     return f"""
-🚀 SADE PREMIUM V1 FUTURES SİNYALİ
+🚀 SADE PREMIUM V1 GEVŞETİLMİŞ FUTURES SİNYALİ
 
 {icon} {direction}
 🟡 Coin: {symbol}
@@ -154,7 +154,7 @@ def build_long(symbol, df15m, df1h, df4h):
         return None
     if float(last_1h["macd"]) <= float(last_1h["macd_signal"]):
         return None
-    if float(last_1h["rsi"]) < 50:
+    if float(last_1h["rsi"]) < 48:
         return None
     if float(last_1h["adx"]) < MIN_ADX_1H:
         return None
@@ -172,22 +172,22 @@ def build_long(symbol, df15m, df1h, df4h):
 
     if ema20_distance < 0:
         return None
-    if ema20_distance > atr * 1.20:
+    if ema20_distance > atr * 1.80:
         return None
 
     pullback_happened = (
         float(prev_15["close"]) <= float(prev_15["ema20"])
-        or float(prev_15["low"]) <= float(prev_15["ema20"]) * 1.003
+        or float(prev_15["low"]) <= float(prev_15["ema20"]) * 1.008
     )
 
     if not pullback_happened:
         return None
-    if float(last_15["close"]) <= float(prev_15["close"]):
+    if float(last_15["close"]) < float(prev_15["close"]) * 0.998:
         return None
 
     rsi = float(last_15["rsi"])
 
-    if not (45 <= rsi <= 64):
+    if not (42 <= rsi <= 68):
         return None
     if float(last_15["macd"]) <= float(last_15["macd_signal"]):
         return None
@@ -299,7 +299,7 @@ def build_short(symbol, df15m, df1h, df4h):
         return None
     if float(last_4h["ema20_slope"]) >= 0:
         return None
-    if float(last_4h["adx"]) < (MIN_ADX_4H + 2):
+    if float(last_4h["adx"]) < MIN_ADX_4H:
         return None
 
     if float(last_1h["close"]) >= float(last_1h["ema200"]):
@@ -308,9 +308,9 @@ def build_short(symbol, df15m, df1h, df4h):
         return None
     if float(last_1h["macd"]) >= float(last_1h["macd_signal"]):
         return None
-    if float(last_1h["rsi"]) > 50:
+    if float(last_1h["rsi"]) > 52:
         return None
-    if float(last_1h["adx"]) < (MIN_ADX_1H + 2):
+    if float(last_1h["adx"]) < MIN_ADX_1H:
         return None
 
     price = float(last_15["close"])
@@ -326,29 +326,29 @@ def build_short(symbol, df15m, df1h, df4h):
 
     if ema20_distance < 0:
         return None
-    if ema20_distance > atr * 1.20:
+    if ema20_distance > atr * 1.80:
         return None
 
     pullback_happened = (
         float(prev_15["close"]) >= float(prev_15["ema20"])
-        or float(prev_15["high"]) >= float(prev_15["ema20"]) * 0.997
+        or float(prev_15["high"]) >= float(prev_15["ema20"]) * 0.992
     )
 
     if not pullback_happened:
         return None
-    if float(last_15["close"]) >= float(prev_15["close"]):
+    if float(last_15["close"]) > float(prev_15["close"]) * 1.002:
         return None
 
     rsi = float(last_15["rsi"])
 
-    if not (36 <= rsi <= 55):
+    if not (32 <= rsi <= 60):
         return None
     if float(last_15["macd"]) >= float(last_15["macd_signal"]):
         return None
 
     volume_ratio = float(last_15["volume_ratio"])
 
-    if volume_ratio < (MIN_VOLUME_RATIO + 0.10):
+    if volume_ratio < MIN_VOLUME_RATIO:
         return None
 
     recent_high = float(df15m["high"].iloc[-10:-1].max())
@@ -396,14 +396,14 @@ def build_short(symbol, df15m, df1h, df4h):
         score += 10
         notes.append("15M RSI short için kabul edilebilir")
 
-    if volume_ratio >= 1.30:
+    if volume_ratio >= 1.15:
         score += 20
         notes.append("Satış hacmi güçlü")
     else:
         score += 10
         notes.append("Hacim yeterli")
 
-    if float(last_15["adx"]) >= 22:
+    if float(last_15["adx"]) >= 18:
         score += 15
         notes.append("15M düşüş hareketi güçlü")
     else:

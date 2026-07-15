@@ -1,5 +1,5 @@
 # config.py
-# Sade Premium V1 - Kontrollü LONG/SHORT
+# Sade Premium V1 - GEVŞETİLMİŞ Kontrollü LONG/SHORT
 # Bu bot otomatik emir açmaz. Sadece Telegram sinyali gönderir.
 
 # Zaman dilimleri
@@ -16,11 +16,11 @@ TREND_LIMIT = 300
 # True olursa OKX'teki USDT swap/futures pariteleri içinden
 # 24 saatlik hacmi en yüksek ilk MAX_SCAN_COINS coin taranır.
 AUTO_TOP_VOLUME_SCAN = True
-MAX_SCAN_COINS = 80
+MAX_SCAN_COINS = 120
 
 # Hacmi aşırı düşük pariteleri elemek için alt sınır.
 # OKX hacim verisi okunamazsa bot yine ilk 80 sıralamayı kullanır.
-MIN_24H_QUOTE_VOLUME = 1_000_000
+MIN_24H_QUOTE_VOLUME = 500_000
 
 
 # Sadece likiditesi yüksek ana coinler.
@@ -43,34 +43,41 @@ COINS = [
 ]
 
 # Sistem ayarları
-MAX_SIGNALS = 3
+MAX_SIGNALS = 5
 
 # SHORT tekrar açıldı ama daha sıkı filtreyle çalışır.
 ALLOW_LONG_SIGNALS = True
 ALLOW_SHORT_SIGNALS = True
 
 # Kalite eşikleri
-MIN_SCORE = 75
-SHORT_MIN_SCORE = 85
-MIN_ADX_4H = 18
-MIN_ADX_1H = 18
-MIN_VOLUME_RATIO = 0.75
+MIN_SCORE = 65
+SHORT_MIN_SCORE = 75
+MIN_ADX_4H = 15
+MIN_ADX_1H = 15
+MIN_VOLUME_RATIO = 0.60
 
 # Stop mesafesi
-MIN_RISK_PERCENT = 0.35
-MAX_RISK_PERCENT = 2.40
+MIN_RISK_PERCENT = 0.25
+MAX_RISK_PERCENT = 2.80
 
 # Geç giriş filtresi
-MAX_ENTRY_DISTANCE_PERCENT = 0.35
-MAX_TP1_PROGRESS_PERCENT = 40
+MAX_ENTRY_DISTANCE_PERCENT = 0.50
+MAX_TP1_PROGRESS_PERCENT = 55
 
 # Tekrar sinyal engeli
-DUPLICATE_BLOCK_SECONDS = 4 * 60 * 60
+DUPLICATE_BLOCK_SECONDS = 2 * 60 * 60
 
 # Günlük rapor
 DAILY_REPORT_HOUR = 23
 DAILY_REPORT_MINUTE = 45
 
 # Açık sinyal özeti
-OPEN_SUMMARY_EVERY_MINUTES = 120
+OPEN_SUMMARY_EVERY_MINUTES = 60
 SEND_NO_SIGNAL_MESSAGE = True
+
+
+# GEVSETME_NOTU:
+# Bu sürüm sinyal sayısını artırmak için kontrollü gevşetildi.
+# 80 yerine 120 hacimli coin tarar.
+# Skor, ADX, hacim ve geç giriş filtreleri biraz yumuşatıldı.
+# Otomatik emir açmaz; gelen sinyaller yine grafikte kontrol edilmelidir.
