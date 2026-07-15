@@ -243,6 +243,15 @@ def build_daily_report():
             worst_rate = rate
             worst_coin = f"{coin} (%{rate})"
 
+    long_open = 0
+    short_open = 0
+
+    for signal in open_signals.values():
+        if signal.get("direction") == "LONG":
+            long_open += 1
+        elif signal.get("direction") == "SHORT":
+            short_open += 1
+
     return f"""
 📊 GÜNLÜK PERFORMANS RAPORU
 
@@ -255,6 +264,8 @@ def build_daily_report():
 🟡 Girişten Kapanan: {be}
 ❌ Stop Olan: {sl}
 ⏳ Açık Sinyal: {len(open_signals)}
+🟢 Açık LONG: {long_open}
+🔴 Açık SHORT: {short_open}
 
 📊 TP1 Başarı Oranı: %{success_rate}
 
@@ -262,7 +273,6 @@ def build_daily_report():
 ⚠️ En Zayıf Coin: {worst_coin}
 
 📌 Not:
-Bu sistem sadece LONG sinyal üretir.
 Başarı oranı TP1 veya SL ile sonuçlanan sinyaller üzerinden hesaplanır.
 TP1 sonrası kalan işlem için SL giriş fiyatı olarak takip edilir.
 """
@@ -407,6 +417,7 @@ def get_candles_since_last_check(exchange, symbol, last_checked_at):
 
 def is_entry_still_valid(signal, current_price):
     try:
+        direction = signal["direction"]
         entry = float(signal["entry"])
         tp1 = float(signal["tp1"])
         sl = float(signal["sl"])
@@ -420,25 +431,47 @@ def is_entry_still_valid(signal, current_price):
             print(signal["symbol"], "elendi -> geç giriş:", round(entry_distance_percent, 2))
             return False
 
-        tp1_distance = tp1 - entry
-        current_progress = current_price - entry
+        if direction == "LONG":
+            tp1_distance = tp1 - entry
+            current_progress = current_price - entry
 
-        if tp1_distance <= 0:
-            return False
+            if tp1_distance <= 0:
+                return False
 
-        progress_percent = (current_progress / tp1_distance) * 100
+            progress_percent = (current_progress / tp1_distance) * 100
 
-        if progress_percent >= MAX_TP1_PROGRESS_PERCENT:
-            print(signal["symbol"], "elendi -> TP1'e yaklaşmış:", round(progress_percent, 2))
-            return False
+            if progress_percent >= MAX_TP1_PROGRESS_PERCENT:
+                print(signal["symbol"], "elendi -> LONG TP1'e yaklaşmış:", round(progress_percent, 2))
+                return False
 
-        if current_price >= tp1:
-            print(signal["symbol"], "elendi -> TP1 zaten gelmiş")
-            return False
+            if current_price >= tp1:
+                print(signal["symbol"], "elendi -> LONG TP1 zaten gelmiş")
+                return False
 
-        if current_price <= sl:
-            print(signal["symbol"], "elendi -> SL tarafında")
-            return False
+            if current_price <= sl:
+                print(signal["symbol"], "elendi -> LONG SL tarafında")
+                return False
+
+        elif direction == "SHORT":
+            tp1_distance = entry - tp1
+            current_progress = entry - current_price
+
+            if tp1_distance <= 0:
+                return False
+
+            progress_percent = (current_progress / tp1_distance) * 100
+
+            if progress_percent >= MAX_TP1_PROGRESS_PERCENT:
+                print(signal["symbol"], "elendi -> SHORT TP1'e yaklaşmış:", round(progress_percent, 2))
+                return False
+
+            if current_price <= tp1:
+                print(signal["symbol"], "elendi -> SHORT TP1 zaten gelmiş")
+                return False
+
+            if current_price >= sl:
+                print(signal["symbol"], "elendi -> SHORT SL tarafında")
+                return False
 
         return True
     except Exception as e:
@@ -481,6 +514,7 @@ def check_open_signals(exchange):
     for key, signal in open_signals.items():
         try:
             symbol = signal["symbol"]
+            direction = signal.get("direction", "LONG")
             entry = float(signal["entry"])
             tp1 = float(signal["tp1"])
             tp2 = float(signal.get("tp2", 0))
@@ -510,83 +544,159 @@ def check_open_signals(exchange):
 
             signal["last_checked_at"] = int(time.time())
 
-            # LONG takip.
-            # TP1 öncesi aynı aralıkta hem TP1 hem SL varsa temkinli davranıp SL sayıyoruz.
-            if not tp1_hit:
-                if low <= sl:
-                    send_telegram(
-                        f"❌ STOP OLDU\n\n"
-                        f"Coin: {symbol}\n"
-                        f"Yön: LONG 🟢\n"
-                        f"Giriş: {format_price(entry)}\n"
-                        f"SL: {format_price(sl)}\n"
-                        f"En düşük: {format_price(low)}\n"
-                        f"Güncel: {format_price(current_price)}"
-                    )
+            if direction == "LONG":
+                if not tp1_hit:
+                    if low <= sl:
+                        send_telegram(
+                            f"❌ STOP OLDU\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: LONG 🟢\n"
+                            f"Giriş: {format_price(entry)}\n"
+                            f"SL: {format_price(sl)}\n"
+                            f"En düşük: {format_price(low)}\n"
+                            f"Güncel: {format_price(current_price)}"
+                        )
 
-                    update_performance(symbol, "SL")
-                    continue
+                        update_performance(symbol, "SL")
+                        continue
 
-                if high >= tp1:
-                    send_telegram(
-                        f"✅ TP1 GELDİ\n\n"
-                        f"Coin: {symbol}\n"
-                        f"Yön: LONG 🟢\n"
-                        f"Giriş: {format_price(entry)}\n"
-                        f"TP1: {format_price(tp1)}\n"
-                        f"En yüksek: {format_price(high)}\n"
-                        f"Güncel: {format_price(current_price)}\n\n"
-                        f"Öneri: %50 kâr al, kalan işlem için SL giriş fiyatına çekildi."
-                    )
+                    if high >= tp1:
+                        send_telegram(
+                            f"✅ TP1 GELDİ\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: LONG 🟢\n"
+                            f"Giriş: {format_price(entry)}\n"
+                            f"TP1: {format_price(tp1)}\n"
+                            f"En yüksek: {format_price(high)}\n"
+                            f"Güncel: {format_price(current_price)}\n\n"
+                            f"Öneri: %50 kâr al, kalan işlem için SL giriş fiyatına çekildi."
+                        )
 
-                    update_performance(symbol, "TP1")
-                    signal["tp1_hit"] = True
-                    signal["breakeven_sl"] = entry
-                    tp1_hit = True
+                        update_performance(symbol, "TP1")
+                        signal["tp1_hit"] = True
+                        signal["breakeven_sl"] = entry
+                        tp1_hit = True
 
-            if tp1_hit:
-                if tp3 and not tp3_hit and high >= tp3:
-                    send_telegram(
-                        f"🏁 TP3 GELDİ\n\n"
-                        f"Coin: {symbol}\n"
-                        f"Yön: LONG 🟢\n"
-                        f"Giriş: {format_price(entry)}\n"
-                        f"TP3: {format_price(tp3)}\n"
-                        f"En yüksek: {format_price(high)}\n"
-                        f"Güncel: {format_price(current_price)}"
-                    )
+                if tp1_hit:
+                    if tp3 and not tp3_hit and high >= tp3:
+                        send_telegram(
+                            f"🏁 TP3 GELDİ\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: LONG 🟢\n"
+                            f"Giriş: {format_price(entry)}\n"
+                            f"TP3: {format_price(tp3)}\n"
+                            f"En yüksek: {format_price(high)}\n"
+                            f"Güncel: {format_price(current_price)}"
+                        )
 
-                    update_performance(symbol, "TP3")
-                    continue
+                        update_performance(symbol, "TP3")
+                        continue
 
-                if tp2 and not tp2_hit and high >= tp2:
-                    send_telegram(
-                        f"✅ TP2 GELDİ\n\n"
-                        f"Coin: {symbol}\n"
-                        f"Yön: LONG 🟢\n"
-                        f"Giriş: {format_price(entry)}\n"
-                        f"TP2: {format_price(tp2)}\n"
-                        f"En yüksek: {format_price(high)}\n"
-                        f"Güncel: {format_price(current_price)}"
-                    )
+                    if tp2 and not tp2_hit and high >= tp2:
+                        send_telegram(
+                            f"✅ TP2 GELDİ\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: LONG 🟢\n"
+                            f"Giriş: {format_price(entry)}\n"
+                            f"TP2: {format_price(tp2)}\n"
+                            f"En yüksek: {format_price(high)}\n"
+                            f"Güncel: {format_price(current_price)}"
+                        )
 
-                    update_performance(symbol, "TP2")
-                    signal["tp2_hit"] = True
-                    tp2_hit = True
+                        update_performance(symbol, "TP2")
+                        signal["tp2_hit"] = True
+                        tp2_hit = True
 
-                if low <= entry:
-                    send_telegram(
-                        f"🟡 KALAN İŞLEM GİRİŞTEN KAPANDI\n\n"
-                        f"Coin: {symbol}\n"
-                        f"Yön: LONG 🟢\n"
-                        f"Giriş: {format_price(entry)}\n"
-                        f"En düşük: {format_price(low)}\n"
-                        f"Güncel: {format_price(current_price)}\n\n"
-                        f"TP1 sonrası kalan işlem girişten kapandı."
-                    )
+                    if low <= entry:
+                        send_telegram(
+                            f"🟡 KALAN İŞLEM GİRİŞTEN KAPANDI\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: LONG 🟢\n"
+                            f"Giriş: {format_price(entry)}\n"
+                            f"En düşük: {format_price(low)}\n"
+                            f"Güncel: {format_price(current_price)}\n\n"
+                            f"TP1 sonrası kalan işlem girişten kapandı."
+                        )
 
-                    update_performance(symbol, "BE")
-                    continue
+                        update_performance(symbol, "BE")
+                        continue
+
+            elif direction == "SHORT":
+                if not tp1_hit:
+                    if high >= sl:
+                        send_telegram(
+                            f"❌ STOP OLDU\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: SHORT 🔴\n"
+                            f"Giriş: {format_price(entry)}\n"
+                            f"SL: {format_price(sl)}\n"
+                            f"En yüksek: {format_price(high)}\n"
+                            f"Güncel: {format_price(current_price)}"
+                        )
+
+                        update_performance(symbol, "SL")
+                        continue
+
+                    if low <= tp1:
+                        send_telegram(
+                            f"✅ TP1 GELDİ\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: SHORT 🔴\n"
+                            f"Giriş: {format_price(entry)}\n"
+                            f"TP1: {format_price(tp1)}\n"
+                            f"En düşük: {format_price(low)}\n"
+                            f"Güncel: {format_price(current_price)}\n\n"
+                            f"Öneri: %50 kâr al, kalan işlem için SL giriş fiyatına çekildi."
+                        )
+
+                        update_performance(symbol, "TP1")
+                        signal["tp1_hit"] = True
+                        signal["breakeven_sl"] = entry
+                        tp1_hit = True
+
+                if tp1_hit:
+                    if tp3 and not tp3_hit and low <= tp3:
+                        send_telegram(
+                            f"🏁 TP3 GELDİ\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: SHORT 🔴\n"
+                            f"Giriş: {format_price(entry)}\n"
+                            f"TP3: {format_price(tp3)}\n"
+                            f"En düşük: {format_price(low)}\n"
+                            f"Güncel: {format_price(current_price)}"
+                        )
+
+                        update_performance(symbol, "TP3")
+                        continue
+
+                    if tp2 and not tp2_hit and low <= tp2:
+                        send_telegram(
+                            f"✅ TP2 GELDİ\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: SHORT 🔴\n"
+                            f"Giriş: {format_price(entry)}\n"
+                            f"TP2: {format_price(tp2)}\n"
+                            f"En düşük: {format_price(low)}\n"
+                            f"Güncel: {format_price(current_price)}"
+                        )
+
+                        update_performance(symbol, "TP2")
+                        signal["tp2_hit"] = True
+                        tp2_hit = True
+
+                    if high >= entry:
+                        send_telegram(
+                            f"🟡 KALAN İŞLEM GİRİŞTEN KAPANDI\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: SHORT 🔴\n"
+                            f"Giriş: {format_price(entry)}\n"
+                            f"En yüksek: {format_price(high)}\n"
+                            f"Güncel: {format_price(current_price)}\n\n"
+                            f"TP1 sonrası kalan işlem girişten kapandı."
+                        )
+
+                        update_performance(symbol, "BE")
+                        continue
 
             updated[key] = signal
 
@@ -610,6 +720,7 @@ def build_open_summary(exchange):
     for key, signal in open_signals.items():
         try:
             symbol = signal["symbol"]
+            direction = signal.get("direction", "LONG")
             entry = float(signal["entry"])
             tp1 = float(signal["tp1"])
             sl = float(signal["sl"])
@@ -618,11 +729,17 @@ def build_open_summary(exchange):
             if current_price is None:
                 continue
 
-            profit_percent = ((current_price - entry) / entry) * 100
             tp1_hit = bool(signal.get("tp1_hit", False))
 
+            if direction == "LONG":
+                icon = "🟢"
+                profit_percent = ((current_price - entry) / entry) * 100
+            else:
+                icon = "🔴"
+                profit_percent = ((entry - current_price) / entry) * 100
+
             lines.append(
-                f"🟢 {symbol} LONG\n"
+                f"{icon} {symbol} {direction}\n"
                 f"🔥 Giriş: {format_price(entry)}\n"
                 f"💰 Güncel: {format_price(current_price)}\n"
                 f"🎯 TP1: {format_price(tp1)}\n"
@@ -727,12 +844,17 @@ def main():
     print("Gönderilecek sinyal:", len(strong_signals))
 
     if strong_signals:
+        long_count = len([s for s in strong_signals if s["direction"] == "LONG"])
+        short_count = len([s for s in strong_signals if s["direction"] == "SHORT"])
+
         send_telegram(
             f"✅ Sade Premium V1 bot çalıştı.\n"
             f"Taranan coin: {len(COINS)}\n"
             f"Uygun aday: {len(candidates)}\n"
             f"Gönderilen sinyal: {len(strong_signals)}\n"
-            f"Sistem: Sadece LONG + 4H/1H onay + 15M giriş.\n"
+            f"LONG: {long_count} | SHORT: {short_count}\n"
+            f"Sistem: 4H/1H onay + 15M giriş.\n"
+            f"SHORT kontrollü şekilde tekrar açıldı.\n"
             f"Emir açılmadı, sadece sinyal gönderildi."
         )
 
@@ -782,9 +904,9 @@ def main():
             send_telegram(
                 f"📡 Sade Premium V1 bot çalıştı.\n\n"
                 f"Taranan coin: {len(COINS)}\n"
-                f"Şu an uygun LONG sinyal yok.\n"
+                f"Şu an uygun LONG/SHORT sinyal yok.\n"
                 f"Sistem: 4H trend + 1H onay + 15M giriş.\n"
-                f"SHORT kapalı."
+                f"SHORT kontrollü açık."
             )
 
     maybe_send_daily_report()

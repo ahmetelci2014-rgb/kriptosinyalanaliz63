@@ -1,6 +1,5 @@
 # config.py
-# Sade Premium V1
-# Amaç: Karmaşık ve zayıf sistemi bırakıp daha kontrollü sinyal üretmek.
+# Sade Premium V1 - Kontrollü LONG/SHORT
 # Bu bot otomatik emir açmaz. Sadece Telegram sinyali gönderir.
 
 # Zaman dilimleri
@@ -14,7 +13,6 @@ CONFIRM_LIMIT = 300
 TREND_LIMIT = 300
 
 # Sadece likiditesi yüksek ana coinler.
-# Tüm piyasayı taramak yerine önce daha temiz verili coinlerde kalite arıyoruz.
 COINS = [
     "BTCUSDT",
     "ETHUSDT",
@@ -34,14 +32,15 @@ COINS = [
 ]
 
 # Sistem ayarları
-MAX_SIGNALS = 2
+MAX_SIGNALS = 3
 
-# Backtestte SHORT tarafı kötü çıktığı için kapalı.
+# SHORT tekrar açıldı ama daha sıkı filtreyle çalışır.
 ALLOW_LONG_SIGNALS = True
-ALLOW_SHORT_SIGNALS = False
+ALLOW_SHORT_SIGNALS = True
 
 # Kalite eşikleri
 MIN_SCORE = 75
+SHORT_MIN_SCORE = 85
 MIN_ADX_4H = 18
 MIN_ADX_1H = 18
 MIN_VOLUME_RATIO = 0.75
@@ -51,7 +50,6 @@ MIN_RISK_PERCENT = 0.35
 MAX_RISK_PERCENT = 2.40
 
 # Geç giriş filtresi
-# Sinyal üretildikten sonra canlı fiyat girişten çok uzaksa Telegram'a gönderilmez.
 MAX_ENTRY_DISTANCE_PERCENT = 0.35
 MAX_TP1_PROGRESS_PERCENT = 40
 
