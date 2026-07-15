@@ -1,21 +1,28 @@
 # strategy.py
-# Sade Premium V1 - GEVŞETİLMİŞ Kontrollü LONG/SHORT strateji
-# LONG: 4H yukarı + 1H yukarı + 15M geri çekilme sonrası toparlanma.
-# SHORT: 4H aşağı + 1H aşağı + 15M tepki sonrası aşağı dönüş.
-# Emir açmaz; main.py sadece Telegram sinyali gönderir.
+# Premium GitHub V2 strateji motoru
+# Normal sinyal: 4H trend + 1H onay + 15M giriş
+# Radar sinyal: 5M ani hareket + hacim + 15M destek + 1H ters olmaması
 
+import pandas as pd
 from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD, ADXIndicator
 from ta.volatility import AverageTrueRange
 
 from config import (
-    MIN_SCORE,
-    SHORT_MIN_SCORE,
+    TRADE_MIN_SCORE,
+    RADAR_MIN_SCORE,
     MIN_ADX_4H,
     MIN_ADX_1H,
     MIN_VOLUME_RATIO,
     MIN_RISK_PERCENT,
-    MAX_RISK_PERCENT
+    MAX_RISK_PERCENT,
+    RADAR_MIN_RISK_PERCENT,
+    RADAR_MAX_RISK_PERCENT,
+    RADAR_MIN_5M_MOVE_PERCENT,
+    RADAR_MAX_5M_MOVE_PERCENT,
+    RADAR_MIN_15M_MOVE_PERCENT,
+    RADAR_MIN_VOLUME_RATIO,
+    RADAR_MAX_CURRENT_FROM_CLOSE_PERCENT,
 )
 
 
@@ -24,12 +31,12 @@ def format_price(value):
 
     if value >= 100:
         return f"{value:.2f}"
-    elif value >= 1:
+    if value >= 1:
         return f"{value:.4f}"
-    elif value >= 0.01:
+    if value >= 0.01:
         return f"{value:.6f}"
-    else:
-        return f"{value:.10f}"
+
+    return f"{value:.10f}"
 
 
 def add_indicators(df):
@@ -37,9 +44,6 @@ def add_indicators(df):
         return None
 
     df = df.copy()
-
-    for col in ["open", "high", "low", "close", "volume"]:
-        df[col] = df[col].astype(float)
 
     df["rsi"] = RSIIndicator(df["close"], window=14).rsi()
     df["ema20"] = EMAIndicator(df["close"], window=20).ema_indicator()
@@ -68,406 +72,450 @@ def add_indicators(df):
     df["volume_ratio"] = df["volume"] / df["volume_avg"]
     df["ema20_slope"] = df["ema20"] - df["ema20"].shift(3)
 
-    df = df.dropna().reset_index(drop=True)
-
-    if df.empty:
-        return None
-
-    return df
+    return df.dropna().reset_index(drop=True)
 
 
-def reject(symbol, reason):
-    print(f"{symbol}: elendi -> {reason}")
-    return None
+def get_trend_4h(df4h):
+    df = add_indicators(df4h)
+
+    if df is None or len(df) < 10:
+        return "NEUTRAL", "4H veri yetersiz", {}
+
+    row = df.iloc[-2]
+
+    close = float(row["close"])
+    ema20 = float(row["ema20"])
+    ema50 = float(row["ema50"])
+    ema200 = float(row["ema200"])
+    slope = float(row["ema20_slope"])
+    adx = float(row["adx"])
+    rsi = float(row["rsi"])
+
+    info = {
+        "adx_4h": round(adx, 2),
+        "rsi_4h": round(rsi, 2)
+    }
+
+    if close > ema200 and ema20 > ema50 and slope > 0 and adx >= MIN_ADX_4H:
+        return "LONG", "4H ana trend yukarı", info
+
+    if close < ema200 and ema20 < ema50 and slope < 0 and adx >= MIN_ADX_4H:
+        return "SHORT", "4H ana trend aşağı", info
+
+    return "NEUTRAL", "4H kararsız", info
 
 
-def get_closed_row(df):
-    if df is None or len(df) < 3:
-        return None
+def get_confirm_1h(df1h):
+    df = add_indicators(df1h)
 
-    return df.iloc[-2]
+    if df is None or len(df) < 10:
+        return "NEUTRAL", "1H veri yetersiz", {}
+
+    row = df.iloc[-2]
+
+    close = float(row["close"])
+    ema20 = float(row["ema20"])
+    ema50 = float(row["ema50"])
+    ema200 = float(row["ema200"])
+    macd_value = float(row["macd"])
+    macd_signal = float(row["macd_signal"])
+    adx = float(row["adx"])
+    rsi = float(row["rsi"])
+
+    info = {
+        "adx_1h": round(adx, 2),
+        "rsi_1h": round(rsi, 2)
+    }
+
+    if close > ema200 and ema20 > ema50 and macd_value > macd_signal and rsi >= 48 and adx >= MIN_ADX_1H:
+        return "LONG", "1H alım onayı", info
+
+    if close < ema200 and ema20 < ema50 and macd_value < macd_signal and rsi <= 52 and adx >= MIN_ADX_1H:
+        return "SHORT", "1H satış onayı", info
+
+    return "NEUTRAL", "1H kararsız", info
 
 
-def build_message(symbol, direction, price, tp1, tp2, tp3, sl, rsi, adx15, volume_ratio, risk_percent, score, notes):
+def build_targets(direction, entry, atr, recent_high, recent_low, risk_mode="normal"):
+    if direction == "LONG":
+        if risk_mode == "radar":
+            sl_atr = entry - atr * 1.25
+        else:
+            sl_atr = entry - atr * 1.70
+
+        sl_swing = recent_low - atr * 0.20
+        sl = min(sl_atr, sl_swing)
+        risk = entry - sl
+
+        if risk <= 0:
+            return None
+
+        tp1 = entry + risk * 1.00
+        tp2 = entry + risk * 1.70
+        tp3 = entry + risk * 2.50
+
+    else:
+        if risk_mode == "radar":
+            sl_atr = entry + atr * 1.25
+        else:
+            sl_atr = entry + atr * 1.70
+
+        sl_swing = recent_high + atr * 0.20
+        sl = max(sl_atr, sl_swing)
+        risk = sl - entry
+
+        if risk <= 0:
+            return None
+
+        tp1 = entry - risk * 1.00
+        tp2 = entry - risk * 1.70
+        tp3 = entry - risk * 2.50
+
+        if tp1 <= 0 or tp2 <= 0 or tp3 <= 0:
+            return None
+
+    risk_percent = (risk / entry) * 100
+
+    return {
+        "sl": sl,
+        "tp1": tp1,
+        "tp2": tp2,
+        "tp3": tp3,
+        "risk_percent": risk_percent
+    }
+
+
+def make_message(signal):
+    direction = signal["direction"]
     icon = "🟢" if direction == "LONG" else "🔴"
-    trend_text = "yukarı" if direction == "LONG" else "aşağı"
-    entry_text = "geri çekilme sonrası toparlanma" if direction == "LONG" else "tepki sonrası aşağı dönüş"
-    notes_text = "\n".join([f"• {n}" for n in notes])
+    source_text = "PREMIUM GİRİŞ SİNYALİ" if signal["source"] == "NORMAL" else "ANLIK RADAR GİRİŞ ADAYI"
+    risk_text = "Daha onaylı" if signal["source"] == "NORMAL" else "Daha hızlı, daha riskli"
 
     return f"""
-🚀 SADE PREMIUM V1 GEVŞETİLMİŞ FUTURES SİNYALİ
+🚀 {source_text}
 
 {icon} {direction}
-🟡 Coin: {symbol}
+🟡 Coin: {signal["symbol"]}
 
-🔥 Giriş: {format_price(price)}
-🎯 TP1: {format_price(tp1)}
-🎯 TP2: {format_price(tp2)}
-🎯 TP3: {format_price(tp3)}
-🔴 SL: {format_price(sl)}
+🔥 Giriş: {format_price(signal["entry"])}
+🎯 TP1: {format_price(signal["tp1"])}
+🎯 TP2: {format_price(signal["tp2"])}
+🎯 TP3: {format_price(signal["tp3"])}
+🔴 SL: {format_price(signal["sl"])}
 
-📊 15M RSI: {round(rsi, 2)}
-💪 15M ADX: {round(adx15, 2)}
-📊 Hacim: {round(volume_ratio, 2)}x
-🛡️ Stop Mesafesi: %{round(risk_percent, 2)}
-🔥 Skor: %{min(int(score), 100)}
+📊 Skor: %{signal["score"]}
+🛡️ Stop Mesafesi: %{round(signal["risk_percent"], 2)}
+📌 Sinyal Tipi: {signal["source"]}
+⚠️ Risk Notu: {risk_text}
 
-📈 Sistem Onayı:
-• 4H ana trend {trend_text} ✅
-• 1H onay {trend_text} ✅
-• 15M {entry_text} ✅
-• LONG/SHORT kontrollü açık ✅
+📈 Onaylar:
+• 4H: {signal.get("trend_reason", "-")}
+• 1H: {signal.get("confirm_reason", "-")}
+• Giriş: {signal.get("entry_reason", "-")}
 
-📋 Kalite Notları:
-{notes_text}
+📊 Detay:
+• 15M RSI: {signal.get("rsi_15m", "-")}
+• 15M ADX: {signal.get("adx_15m", "-")}
+• Hacim: {signal.get("volume_ratio", "-")}x
+• 5M Hareket: %{signal.get("move_5m", "-")}
 
 📌 İşlem Kuralı:
 • Fiyat girişe yakınsa değerlendir.
-• TP1'e yaklaşmışsa işleme girme.
+• TP1'e yaklaşmışsa girme.
 • TP1 gelirse %50 kâr al, SL'yi girişe çek.
 • Stop mutlaka girilmeli.
 • Marjin: Isolated.
 • Kaldıraç: 2x - 3x.
+• Aynı coinde ikinci işlem açma.
 
 ⚠️ Finansal tavsiye değildir. Grafikte kontrol etmeden işleme girme.
 """
 
 
-def build_long(symbol, df15m, df1h, df4h):
-    last_15 = get_closed_row(df15m)
-    prev_15 = df15m.iloc[-3]
-    last_1h = get_closed_row(df1h)
-    last_4h = get_closed_row(df4h)
+def analyze_normal_signal(symbol, df15m, df1h, df4h, current_price=None):
+    trend, trend_reason, trend_info = get_trend_4h(df4h)
 
-    if float(last_4h["close"]) <= float(last_4h["ema200"]):
-        return None
-    if float(last_4h["ema20"]) <= float(last_4h["ema50"]):
-        return None
-    if float(last_4h["ema20_slope"]) <= 0:
-        return None
-    if float(last_4h["adx"]) < MIN_ADX_4H:
+    if trend == "NEUTRAL":
+        print(symbol, "normal elendi ->", trend_reason)
         return None
 
-    if float(last_1h["close"]) <= float(last_1h["ema200"]):
-        return None
-    if float(last_1h["ema20"]) <= float(last_1h["ema50"]):
-        return None
-    if float(last_1h["macd"]) <= float(last_1h["macd_signal"]):
-        return None
-    if float(last_1h["rsi"]) < 48:
-        return None
-    if float(last_1h["adx"]) < MIN_ADX_1H:
+    confirm, confirm_reason, confirm_info = get_confirm_1h(df1h)
+
+    if confirm != trend:
+        print(symbol, "normal elendi -> 1H uyumsuz:", confirm_reason)
         return None
 
-    price = float(last_15["close"])
-    atr = float(last_15["atr"])
+    df15 = add_indicators(df15m)
 
-    if price <= 0 or atr <= 0:
+    if df15 is None or len(df15) < 20:
+        print(symbol, "normal elendi -> 15M veri yetersiz")
         return None
 
-    if float(last_15["close"]) <= float(last_15["ema200"]):
+    last = df15.iloc[-2]
+    prev = df15.iloc[-3]
+
+    entry = float(last["close"])
+    atr = float(last["atr"])
+
+    if current_price is not None and current_price > 0:
+        entry = float(current_price)
+
+    if entry <= 0 or atr <= 0:
         return None
 
-    ema20_distance = float(last_15["close"]) - float(last_15["ema20"])
-
-    if ema20_distance < 0:
-        return None
-    if ema20_distance > atr * 1.80:
-        return None
-
-    pullback_happened = (
-        float(prev_15["close"]) <= float(prev_15["ema20"])
-        or float(prev_15["low"]) <= float(prev_15["ema20"]) * 1.008
-    )
-
-    if not pullback_happened:
-        return None
-    if float(last_15["close"]) < float(prev_15["close"]) * 0.998:
-        return None
-
-    rsi = float(last_15["rsi"])
-
-    if not (42 <= rsi <= 68):
-        return None
-    if float(last_15["macd"]) <= float(last_15["macd_signal"]):
-        return None
-
-    volume_ratio = float(last_15["volume_ratio"])
+    rsi = float(last["rsi"])
+    adx = float(last["adx"])
+    volume_ratio = float(last["volume_ratio"])
 
     if volume_ratio < MIN_VOLUME_RATIO:
+        print(symbol, "normal elendi -> hacim düşük:", round(volume_ratio, 2))
         return None
 
-    recent_low = float(df15m["low"].iloc[-10:-1].min())
-    sl_atr = price - (atr * 1.8)
-    sl_swing = recent_low - (atr * 0.20)
-    sl = min(sl_atr, sl_swing)
-    risk = price - sl
+    entry_ok = False
+    entry_reason = "-"
 
-    if risk <= 0:
+    if trend == "LONG":
+        pullback_ok = float(prev["low"]) <= float(prev["ema20"]) * 1.008
+        recovery_ok = float(last["close"]) >= float(prev["close"]) * 0.998
+        ema_ok = float(last["close"]) > float(last["ema20"]) and float(last["close"]) > float(last["ema200"])
+        rsi_ok = 42 <= rsi <= 68
+        macd_ok = float(last["macd"]) > float(last["macd_signal"])
+
+        if pullback_ok and recovery_ok and ema_ok and rsi_ok and macd_ok:
+            entry_ok = True
+            entry_reason = "15M geri çekilme sonrası yukarı dönüş"
+
+    if trend == "SHORT":
+        pullback_ok = float(prev["high"]) >= float(prev["ema20"]) * 0.992
+        recovery_ok = float(last["close"]) <= float(prev["close"]) * 1.002
+        ema_ok = float(last["close"]) < float(last["ema20"]) and float(last["close"]) < float(last["ema200"])
+        rsi_ok = 32 <= rsi <= 60
+        macd_ok = float(last["macd"]) < float(last["macd_signal"])
+
+        if pullback_ok and recovery_ok and ema_ok and rsi_ok and macd_ok:
+            entry_ok = True
+            entry_reason = "15M tepki sonrası aşağı dönüş"
+
+    if not entry_ok:
+        print(symbol, "normal elendi -> 15M giriş yok")
         return None
 
-    risk_percent = (risk / price) * 100
+    recent = df15.iloc[-10:-1]
+    targets = build_targets(
+        direction=trend,
+        entry=entry,
+        atr=atr,
+        recent_high=float(recent["high"].max()),
+        recent_low=float(recent["low"].min()),
+        risk_mode="normal"
+    )
+
+    if targets is None:
+        return None
+
+    risk_percent = targets["risk_percent"]
 
     if risk_percent < MIN_RISK_PERCENT or risk_percent > MAX_RISK_PERCENT:
+        print(symbol, "normal elendi -> risk uygunsuz:", round(risk_percent, 2))
         return None
 
-    tp1 = price + risk * 1.00
-    tp2 = price + risk * 1.70
-    tp3 = price + risk * 2.50
+    score = 40
 
-    score = 0
-    notes = []
-
-    if float(last_4h["adx"]) >= 25:
-        score += 25
-        notes.append("4H trend güçlü")
-    else:
+    if trend_info.get("adx_4h", 0) >= 22:
         score += 15
-        notes.append("4H trend orta")
-
-    if float(last_1h["adx"]) >= 25:
-        score += 20
-        notes.append("1H onay güçlü")
     else:
-        score += 10
-        notes.append("1H onay orta")
+        score += 8
 
-    if 48 <= rsi <= 58:
-        score += 20
-        notes.append("15M RSI ideal")
+    if confirm_info.get("adx_1h", 0) >= 22:
+        score += 15
     else:
+        score += 8
+
+    if adx >= 20:
         score += 10
-        notes.append("15M RSI kabul edilebilir")
+    else:
+        score += 5
 
     if volume_ratio >= 1.20:
-        score += 20
-        notes.append("Hacim güçlü")
-    else:
-        score += 10
-        notes.append("Hacim yeterli")
-
-    if float(last_15["adx"]) >= 20:
         score += 15
-        notes.append("15M hareket güçlü")
     else:
-        score += 10
-        notes.append("15M hareket orta")
+        score += 8
 
-    if score < MIN_SCORE:
+    if trend == "LONG" and 48 <= rsi <= 58:
+        score += 10
+    elif trend == "SHORT" and 38 <= rsi <= 52:
+        score += 10
+    else:
+        score += 5
+
+    if score < TRADE_MIN_SCORE:
+        print(symbol, "normal elendi -> skor düşük:", score)
         return None
 
-    message = build_message(
-        symbol=symbol,
-        direction="LONG",
-        price=price,
-        tp1=tp1,
-        tp2=tp2,
-        tp3=tp3,
-        sl=sl,
-        rsi=rsi,
-        adx15=float(last_15["adx"]),
-        volume_ratio=volume_ratio,
-        risk_percent=risk_percent,
-        score=score,
-        notes=notes
-    )
-
-    return {
+    signal = {
         "symbol": symbol,
-        "direction": "LONG",
-        "entry": round(price, 10),
-        "tp1": round(tp1, 10),
-        "tp2": round(tp2, 10),
-        "tp3": round(tp3, 10),
-        "sl": round(sl, 10),
-        "score": int(score),
+        "direction": trend,
+        "source": "NORMAL",
+        "entry": round(entry, 10),
+        "tp1": round(targets["tp1"], 10),
+        "tp2": round(targets["tp2"], 10),
+        "tp3": round(targets["tp3"], 10),
+        "sl": round(targets["sl"], 10),
         "risk_percent": round(risk_percent, 3),
-        "message": message
+        "score": int(score),
+        "trend_reason": trend_reason,
+        "confirm_reason": confirm_reason,
+        "entry_reason": entry_reason,
+        "rsi_15m": round(rsi, 2),
+        "adx_15m": round(adx, 2),
+        "volume_ratio": round(volume_ratio, 2),
+        "move_5m": "-"
     }
 
+    signal["message"] = make_message(signal)
 
-def build_short(symbol, df15m, df1h, df4h):
-    last_15 = get_closed_row(df15m)
-    prev_15 = df15m.iloc[-3]
-    last_1h = get_closed_row(df1h)
-    last_4h = get_closed_row(df4h)
+    return signal
 
-    # SHORT tarafı eski backtestte zayıf çıktığı için daha sıkı tutulur.
-    if float(last_4h["close"]) >= float(last_4h["ema200"]):
-        return None
-    if float(last_4h["ema20"]) >= float(last_4h["ema50"]):
-        return None
-    if float(last_4h["ema20_slope"]) >= 0:
-        return None
-    if float(last_4h["adx"]) < MIN_ADX_4H:
+
+def analyze_radar_signal(symbol, df5m, df15m, df1h, current_price=None):
+    if df5m is None or df15m is None or len(df5m) < 35 or len(df15m) < 20:
         return None
 
-    if float(last_1h["close"]) >= float(last_1h["ema200"]):
-        return None
-    if float(last_1h["ema20"]) >= float(last_1h["ema50"]):
-        return None
-    if float(last_1h["macd"]) >= float(last_1h["macd_signal"]):
-        return None
-    if float(last_1h["rsi"]) > 52:
-        return None
-    if float(last_1h["adx"]) < MIN_ADX_1H:
+    df5 = df5m.copy()
+    df15 = add_indicators(df15m)
+
+    if df15 is None or len(df15) < 20:
         return None
 
-    price = float(last_15["close"])
-    atr = float(last_15["atr"])
+    last5 = df5.iloc[-2]
+    prev5 = df5.iloc[-3]
+    last15 = df15.iloc[-2]
+    prev15 = df15.iloc[-3]
 
-    if price <= 0 or atr <= 0:
+    open5 = float(last5["open"])
+    close5 = float(last5["close"])
+    high5 = float(last5["high"])
+    low5 = float(last5["low"])
+
+    if open5 <= 0 or close5 <= 0:
         return None
 
-    if float(last_15["close"]) >= float(last_15["ema200"]):
+    move_5m = ((close5 - open5) / open5) * 100
+    move_15m = ((float(last15["close"]) - float(prev15["close"])) / float(prev15["close"])) * 100
+
+    if abs(move_5m) < RADAR_MIN_5M_MOVE_PERCENT:
         return None
 
-    ema20_distance = float(last_15["ema20"]) - float(last_15["close"])
-
-    if ema20_distance < 0:
-        return None
-    if ema20_distance > atr * 1.80:
+    if abs(move_5m) > RADAR_MAX_5M_MOVE_PERCENT:
+        print(symbol, "radar elendi -> 5M mum fazla uzamış:", round(move_5m, 2))
         return None
 
-    pullback_happened = (
-        float(prev_15["close"]) >= float(prev_15["ema20"])
-        or float(prev_15["high"]) >= float(prev_15["ema20"]) * 0.992
+    volume_avg = float(df5["volume"].iloc[-22:-2].mean())
+
+    if volume_avg <= 0:
+        return None
+
+    volume_ratio = float(last5["volume"]) / volume_avg
+
+    if volume_ratio < RADAR_MIN_VOLUME_RATIO:
+        return None
+
+    direction = None
+
+    if move_5m > 0 and move_15m >= RADAR_MIN_15M_MOVE_PERCENT:
+        direction = "LONG"
+
+    if move_5m < 0 and move_15m <= -RADAR_MIN_15M_MOVE_PERCENT:
+        direction = "SHORT"
+
+    if direction is None:
+        return None
+
+    entry = float(current_price) if current_price is not None and current_price > 0 else close5
+
+    current_from_close = abs((entry - close5) / close5) * 100
+
+    if current_from_close > RADAR_MAX_CURRENT_FROM_CLOSE_PERCENT:
+        print(symbol, "radar elendi -> güncel fiyat kapanıştan uzak:", round(current_from_close, 2))
+        return None
+
+    # 1H çok ters ise radar iptal.
+    confirm, confirm_reason, confirm_info = get_confirm_1h(df1h)
+
+    if direction == "LONG" and confirm == "SHORT":
+        print(symbol, "radar LONG elendi -> 1H ters")
+        return None
+
+    if direction == "SHORT" and confirm == "LONG":
+        print(symbol, "radar SHORT elendi -> 1H ters")
+        return None
+
+    atr5 = float((df5["high"] - df5["low"]).iloc[-18:-2].mean())
+
+    if atr5 <= 0:
+        atr5 = abs(close5 - open5)
+
+    recent_high = max(float(prev5["high"]), high5)
+    recent_low = min(float(prev5["low"]), low5)
+
+    targets = build_targets(
+        direction=direction,
+        entry=entry,
+        atr=atr5,
+        recent_high=recent_high,
+        recent_low=recent_low,
+        risk_mode="radar"
     )
 
-    if not pullback_happened:
-        return None
-    if float(last_15["close"]) > float(prev_15["close"]) * 1.002:
+    if targets is None:
         return None
 
-    rsi = float(last_15["rsi"])
+    risk_percent = targets["risk_percent"]
 
-    if not (32 <= rsi <= 60):
-        return None
-    if float(last_15["macd"]) >= float(last_15["macd_signal"]):
-        return None
-
-    volume_ratio = float(last_15["volume_ratio"])
-
-    if volume_ratio < MIN_VOLUME_RATIO:
+    if risk_percent < RADAR_MIN_RISK_PERCENT or risk_percent > RADAR_MAX_RISK_PERCENT:
+        print(symbol, "radar elendi -> risk uygunsuz:", round(risk_percent, 2))
         return None
 
-    recent_high = float(df15m["high"].iloc[-10:-1].max())
-    sl_atr = price + (atr * 1.8)
-    sl_swing = recent_high + (atr * 0.20)
-    sl = max(sl_atr, sl_swing)
-    risk = sl - price
+    rsi15 = float(last15["rsi"])
+    adx15 = float(last15["adx"])
 
-    if risk <= 0:
-        return None
+    score = 55
+    score += min(abs(move_5m) * 18, 18)
+    score += min(volume_ratio * 7, 17)
 
-    risk_percent = (risk / price) * 100
-
-    if risk_percent < MIN_RISK_PERCENT or risk_percent > MAX_RISK_PERCENT:
-        return None
-
-    tp1 = price - risk * 1.00
-    tp2 = price - risk * 1.70
-    tp3 = price - risk * 2.50
-
-    if tp1 <= 0 or tp2 <= 0 or tp3 <= 0:
-        return None
-
-    score = 0
-    notes = []
-
-    if float(last_4h["adx"]) >= 25:
-        score += 25
-        notes.append("4H düşüş trendi güçlü")
-    else:
-        score += 15
-        notes.append("4H düşüş trendi orta")
-
-    if float(last_1h["adx"]) >= 25:
-        score += 20
-        notes.append("1H satış onayı güçlü")
-    else:
+    if confirm == direction:
         score += 10
-        notes.append("1H satış onayı orta")
 
-    if 40 <= rsi <= 50:
-        score += 20
-        notes.append("15M RSI short için ideal")
-    else:
-        score += 10
-        notes.append("15M RSI short için kabul edilebilir")
+    if direction == "LONG" and rsi15 >= 48:
+        score += 5
 
-    if volume_ratio >= 1.15:
-        score += 20
-        notes.append("Satış hacmi güçlü")
-    else:
-        score += 10
-        notes.append("Hacim yeterli")
+    if direction == "SHORT" and rsi15 <= 52:
+        score += 5
 
-    if float(last_15["adx"]) >= 18:
-        score += 15
-        notes.append("15M düşüş hareketi güçlü")
-    else:
-        score += 10
-        notes.append("15M düşüş hareketi orta")
-
-    if score < SHORT_MIN_SCORE:
+    if score < RADAR_MIN_SCORE:
+        print(symbol, "radar elendi -> skor düşük:", score)
         return None
 
-    message = build_message(
-        symbol=symbol,
-        direction="SHORT",
-        price=price,
-        tp1=tp1,
-        tp2=tp2,
-        tp3=tp3,
-        sl=sl,
-        rsi=rsi,
-        adx15=float(last_15["adx"]),
-        volume_ratio=volume_ratio,
-        risk_percent=risk_percent,
-        score=score,
-        notes=notes
-    )
-
-    return {
+    signal = {
         "symbol": symbol,
-        "direction": "SHORT",
-        "entry": round(price, 10),
-        "tp1": round(tp1, 10),
-        "tp2": round(tp2, 10),
-        "tp3": round(tp3, 10),
-        "sl": round(sl, 10),
-        "score": int(score),
+        "direction": direction,
+        "source": "RADAR",
+        "entry": round(entry, 10),
+        "tp1": round(targets["tp1"], 10),
+        "tp2": round(targets["tp2"], 10),
+        "tp3": round(targets["tp3"], 10),
+        "sl": round(targets["sl"], 10),
         "risk_percent": round(risk_percent, 3),
-        "message": message
+        "score": int(score),
+        "trend_reason": "5M ani hareket",
+        "confirm_reason": confirm_reason,
+        "entry_reason": "5M hareket + hacim + 15M destek",
+        "rsi_15m": round(rsi15, 2),
+        "adx_15m": round(adx15, 2),
+        "volume_ratio": round(volume_ratio, 2),
+        "move_5m": round(move_5m, 2)
     }
 
+    signal["message"] = make_message(signal)
 
-def analyze_signal(symbol, df15m, df1h, df4h):
-    df15m = add_indicators(df15m)
-    df1h = add_indicators(df1h)
-    df4h = add_indicators(df4h)
-
-    if df15m is None or len(df15m) < 30:
-        return reject(symbol, "15M veri/indikatör yetersiz")
-    if df1h is None or len(df1h) < 30:
-        return reject(symbol, "1H veri/indikatör yetersiz")
-    if df4h is None or len(df4h) < 30:
-        return reject(symbol, "4H veri/indikatör yetersiz")
-
-    long_signal = build_long(symbol, df15m, df1h, df4h)
-    short_signal = build_short(symbol, df15m, df1h, df4h)
-
-    candidates = [s for s in [long_signal, short_signal] if s is not None]
-
-    if not candidates:
-        return reject(symbol, "LONG/SHORT uygun sinyal yok")
-
-    best = sorted(candidates, key=lambda x: x["score"], reverse=True)[0]
-
-    print(
-        f"{symbol}: SİNYAL -> {best['direction']} | skor: {best['score']} | "
-        f"risk: %{best['risk_percent']}"
-    )
-
-    return best
+    return signal
