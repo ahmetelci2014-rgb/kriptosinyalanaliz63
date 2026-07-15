@@ -30,7 +30,17 @@ from config import (
     DAILY_REPORT_HOUR,
     DAILY_REPORT_MINUTE,
     OPEN_SUMMARY_EVERY_MINUTES,
-    SEND_NO_SIGNAL_MESSAGE
+    SEND_NO_SIGNAL_MESSAGE,
+    RADAR_ENABLED,
+    RADAR_TIMEFRAME,
+    RADAR_LIMIT,
+    RADAR_MAX_ALERTS,
+    RADAR_MIN_MOVE_PERCENT,
+    RADAR_MIN_VOLUME_RATIO,
+    RADAR_MIN_15M_MOVE_PERCENT,
+    RADAR_MIN_RISK_PERCENT,
+    RADAR_MAX_RISK_PERCENT,
+    RADAR_COOLDOWN_SECONDS
 )
 from strategy import analyze_signal, format_price
 
@@ -40,6 +50,7 @@ CHAT_ID = os.getenv("CHAT_ID")
 
 OPEN_SIGNALS_FILE = "open_signals.json"
 PERFORMANCE_FILE = "performance.json"
+RADAR_FILE = "last_signals.json"
 
 TR_TIMEZONE = timezone(timedelta(hours=3))
 
@@ -484,6 +495,272 @@ def fetch_df(exchange, symbol, timeframe, limit):
         return None
 
 
+def fetch_df_loose(exchange, symbol, timeframe, limit, min_len=30):
+    try:
+        okx_symbol = to_okx_symbol(symbol)
+
+        ohlcv = exchange.fetch_ohlcv(
+            okx_symbol,
+            timeframe=timeframe,
+            limit=limit
+        )
+
+        if not ohlcv or len(ohlcv) < min_len:
+            return None
+
+        df = pd.DataFrame(
+            ohlcv,
+            columns=["time", "open", "high", "low", "close", "volume"]
+        )
+
+        return df
+    except Exception as e:
+        print(symbol, timeframe, "radar veri hatası:", e)
+        return None
+
+
+def load_radar_state():
+    return load_json_file(RADAR_FILE)
+
+
+def save_radar_state(data):
+    return save_json_file(RADAR_FILE, data)
+
+
+def is_radar_duplicate(symbol, direction):
+    try:
+        state = load_radar_state()
+        key = f"RADAR_{symbol}_{direction}"
+        last_time = int(state.get(key, 0))
+        now = int(time.time())
+
+        if now - last_time < RADAR_COOLDOWN_SECONDS:
+            print(key, "radar tekrar engellendi.")
+            return True
+
+        return False
+    except Exception as e:
+        print("Radar tekrar kontrol hatası:", e)
+        return False
+
+
+def mark_radar_sent(symbol, direction):
+    state = load_radar_state()
+    key = f"RADAR_{symbol}_{direction}"
+    state[key] = int(time.time())
+    save_radar_state(state)
+
+
+def simple_ema(series, span):
+    return series.ewm(span=span, adjust=False).mean()
+
+
+def build_radar_message(symbol, direction, entry, tp1, tp2, tp3, sl, move_percent, volume_ratio, risk_percent, trend_text, score):
+    icon = "🟢" if direction == "LONG" else "🔴"
+
+    return f"""
+⚡ ANLIK HAREKET RADARI - HIZLI GİRİŞ ADAYI
+
+{icon} {direction}
+🟡 Coin: {symbol}
+
+🔥 Giriş: {format_price(entry)}
+🎯 TP1: {format_price(tp1)}
+🎯 TP2: {format_price(tp2)}
+🎯 TP3: {format_price(tp3)}
+🔴 SL: {format_price(sl)}
+
+🚀 5M Hareket: %{round(move_percent, 2)}
+📊 Hacim: {round(volume_ratio, 2)}x
+🛡️ Stop Mesafesi: %{round(risk_percent, 2)}
+🔥 Radar Skoru: %{min(int(score), 100)}
+
+📈 Anlık Durum:
+• 5M güçlü hareket yakalandı
+• Hacim artışı var
+• {trend_text}
+
+📌 Hızlı İşlem Kuralı:
+• Fiyat girişe çok yakınsa değerlendir.
+• Mum çok uzadıysa işleme girme.
+• TP1'e yaklaşmışsa girme.
+• Stop mutlaka girilmeli.
+• Marjin: Isolated.
+• Kaldıraç: 2x - 3x.
+• Aynı coinde ikinci işlem açma.
+
+⚠️ Bu radar sinyali hızlıdır ve normal sinyale göre daha risklidir. Grafikte kontrol etmeden işleme girme.
+"""
+
+
+def analyze_momentum_radar(symbol, df5m, df15m, df1h, current_price):
+    try:
+        if not RADAR_ENABLED:
+            return None
+
+        if df5m is None or df15m is None or len(df5m) < 35 or len(df15m) < 20:
+            return None
+
+        df5m = df5m.copy()
+        df15m = df15m.copy()
+
+        # Kapanmış son mumlar
+        last5 = df5m.iloc[-2]
+        prev5 = df5m.iloc[-3]
+        last15 = df15m.iloc[-2]
+        prev15 = df15m.iloc[-3]
+
+        if current_price is None:
+            current_price = float(last5["close"])
+
+        open5 = float(last5["open"])
+        close5 = float(last5["close"])
+        high5 = float(last5["high"])
+        low5 = float(last5["low"])
+
+        if open5 <= 0 or close5 <= 0:
+            return None
+
+        move_percent = ((close5 - open5) / open5) * 100
+        move15_percent = ((float(last15["close"]) - float(prev15["close"])) / float(prev15["close"])) * 100
+
+        volume_avg = float(df5m["volume"].iloc[-22:-2].mean())
+        if volume_avg <= 0:
+            return None
+
+        volume_ratio = float(last5["volume"]) / volume_avg
+
+        if abs(move_percent) < RADAR_MIN_MOVE_PERCENT:
+            return None
+
+        if volume_ratio < RADAR_MIN_VOLUME_RATIO:
+            return None
+
+        direction = None
+
+        if move_percent > 0 and move15_percent >= RADAR_MIN_15M_MOVE_PERCENT:
+            direction = "LONG"
+
+        if move_percent < 0 and move15_percent <= -RADAR_MIN_15M_MOVE_PERCENT:
+            direction = "SHORT"
+
+        if direction is None:
+            return None
+
+        # 1H yön çok tersse radar iptal et; nötr ise izin ver.
+        trend_text = "1H yön nötr, hareket radarı aktif"
+
+        if df1h is not None and len(df1h) >= 60:
+            df1h = df1h.copy()
+            df1h["ema20"] = simple_ema(df1h["close"], 20)
+            df1h["ema50"] = simple_ema(df1h["close"], 50)
+            h1 = df1h.iloc[-2]
+
+            if float(h1["ema20"]) > float(h1["ema50"]):
+                h1_direction = "LONG"
+            elif float(h1["ema20"]) < float(h1["ema50"]):
+                h1_direction = "SHORT"
+            else:
+                h1_direction = "NEUTRAL"
+
+            if direction == "LONG" and h1_direction == "SHORT":
+                print(symbol, "radar LONG elendi -> 1H ters")
+                return None
+
+            if direction == "SHORT" and h1_direction == "LONG":
+                print(symbol, "radar SHORT elendi -> 1H ters")
+                return None
+
+            trend_text = f"1H yön: {h1_direction}"
+
+        # Basit ATR benzeri 5M ortalama hareket
+        ranges = (df5m["high"] - df5m["low"]).iloc[-16:-2]
+        avg_range = float(ranges.mean())
+
+        if avg_range <= 0:
+            avg_range = abs(close5 - open5)
+
+        entry = float(current_price)
+
+        if direction == "LONG":
+            swing_sl = min(float(prev5["low"]), low5) - avg_range * 0.20
+            sl = min(swing_sl, entry - avg_range * 1.2)
+            risk = entry - sl
+
+            if risk <= 0:
+                return None
+
+            tp1 = entry + risk * 1.00
+            tp2 = entry + risk * 1.60
+            tp3 = entry + risk * 2.30
+
+        else:
+            swing_sl = max(float(prev5["high"]), high5) + avg_range * 0.20
+            sl = max(swing_sl, entry + avg_range * 1.2)
+            risk = sl - entry
+
+            if risk <= 0:
+                return None
+
+            tp1 = entry - risk * 1.00
+            tp2 = entry - risk * 1.60
+            tp3 = entry - risk * 2.30
+
+            if tp1 <= 0 or tp2 <= 0 or tp3 <= 0:
+                return None
+
+        risk_percent = (risk / entry) * 100
+
+        if risk_percent < RADAR_MIN_RISK_PERCENT:
+            return None
+
+        if risk_percent > RADAR_MAX_RISK_PERCENT:
+            return None
+
+        score = 60
+        score += min(abs(move_percent) * 18, 20)
+        score += min(volume_ratio * 8, 20)
+
+        if "LONG" in trend_text and direction == "LONG":
+            score += 10
+
+        if "SHORT" in trend_text and direction == "SHORT":
+            score += 10
+
+        message = build_radar_message(
+            symbol=symbol,
+            direction=direction,
+            entry=entry,
+            tp1=tp1,
+            tp2=tp2,
+            tp3=tp3,
+            sl=sl,
+            move_percent=move_percent,
+            volume_ratio=volume_ratio,
+            risk_percent=risk_percent,
+            trend_text=trend_text,
+            score=score
+        )
+
+        return {
+            "symbol": symbol,
+            "direction": direction,
+            "entry": round(entry, 10),
+            "tp1": round(tp1, 10),
+            "tp2": round(tp2, 10),
+            "tp3": round(tp3, 10),
+            "sl": round(sl, 10),
+            "score": int(score),
+            "risk_percent": round(risk_percent, 3),
+            "source": "RADAR",
+            "message": message
+        }
+
+    except Exception as e:
+        print(symbol, "radar analiz hatası:", e)
+        return None
+
+
 def get_current_price(exchange, symbol):
     try:
         ticker = exchange.fetch_ticker(to_okx_symbol(symbol))
@@ -906,7 +1183,7 @@ def maybe_send_open_summary(exchange):
 
 
 def main():
-    print("Sade Premium V1 bot başladı.")
+    print("Sade Premium V1 ANLIK RADAR bot başladı.")
 
     exchange = get_exchange()
     scan_coins = get_scan_coins(exchange)
@@ -917,6 +1194,8 @@ def main():
     print("LONG açık:", ALLOW_LONG_SIGNALS)
     print("SHORT açık:", ALLOW_SHORT_SIGNALS)
     print("Bot emir açmaz, sadece Telegram sinyali gönderir.")
+    print("Anlık radar aktif:", RADAR_ENABLED)
+    print("Radar zaman dilimi:", RADAR_TIMEFRAME)
 
     check_open_signals(exchange)
     maybe_send_open_summary(exchange)
@@ -930,29 +1209,38 @@ def main():
             df15m = fetch_df(exchange, symbol, ENTRY_TIMEFRAME, ENTRY_LIMIT)
             df1h = fetch_df(exchange, symbol, CONFIRM_TIMEFRAME, CONFIRM_LIMIT)
             df4h = fetch_df(exchange, symbol, TREND_TIMEFRAME, TREND_LIMIT)
-
-            signal = analyze_signal(symbol, df15m, df1h, df4h)
-
-            if signal is None:
-                time.sleep(0.2)
-                continue
-
-            if signal["direction"] == "LONG" and not ALLOW_LONG_SIGNALS:
-                print(symbol, "LONG kapalı olduğu için elendi.")
-                continue
-
-            if signal["direction"] == "SHORT" and not ALLOW_SHORT_SIGNALS:
-                print(symbol, "SHORT kapalı olduğu için elendi.")
-                continue
+            df5m = fetch_df_loose(exchange, symbol, RADAR_TIMEFRAME, RADAR_LIMIT, min_len=35)
 
             current_price = get_current_price(exchange, symbol)
 
-            if not is_entry_still_valid(signal, current_price):
-                print(symbol, "geç giriş nedeniyle gönderilmedi.")
-                continue
+            # 1) Normal onaylı sinyal
+            if df15m is not None and df1h is not None and df4h is not None:
+                signal = analyze_signal(symbol, df15m, df1h, df4h)
 
-            signal["current_price"] = current_price
-            candidates.append(signal)
+                if signal is not None:
+                    if signal["direction"] == "LONG" and not ALLOW_LONG_SIGNALS:
+                        print(symbol, "LONG kapalı olduğu için elendi.")
+                    elif signal["direction"] == "SHORT" and not ALLOW_SHORT_SIGNALS:
+                        print(symbol, "SHORT kapalı olduğu için elendi.")
+                    elif is_entry_still_valid(signal, current_price):
+                        signal["current_price"] = current_price
+                        signal["source"] = "NORMAL"
+                        candidates.append(signal)
+                    else:
+                        print(symbol, "normal sinyal geç giriş nedeniyle gönderilmedi.")
+
+            # 2) Anlık hareket radarı
+            radar_signal = analyze_momentum_radar(symbol, df5m, df15m, df1h, current_price)
+
+            if radar_signal is not None:
+                if radar_signal["direction"] == "LONG" and not ALLOW_LONG_SIGNALS:
+                    print(symbol, "radar LONG kapalı olduğu için elendi.")
+                elif radar_signal["direction"] == "SHORT" and not ALLOW_SHORT_SIGNALS:
+                    print(symbol, "radar SHORT kapalı olduğu için elendi.")
+                elif not is_radar_duplicate(symbol, radar_signal["direction"]):
+                    radar_signal["current_price"] = current_price
+                    candidates.append(radar_signal)
+                    print(symbol, "RADAR SİNYALİ:", radar_signal["direction"], radar_signal["score"])
 
             time.sleep(0.2)
 
@@ -978,15 +1266,18 @@ def main():
     if strong_signals:
         long_count = len([s for s in strong_signals if s["direction"] == "LONG"])
         short_count = len([s for s in strong_signals if s["direction"] == "SHORT"])
+        radar_count = len([s for s in strong_signals if s.get("source") == "RADAR"])
+        normal_count = len([s for s in strong_signals if s.get("source") != "RADAR"])
 
         send_telegram(
-            f"✅ Sade Premium V1 bot çalıştı.\n"
+            f"✅ Sade Premium V1 ANLIK RADAR bot çalıştı.\n"
             f"Taranan coin: {len(scan_coins)}\n"
             f"Tarama: Hacimli ilk {MAX_SCAN_COINS} USDT swap coin\n"
             f"Uygun aday: {len(candidates)}\n"
             f"Gönderilen sinyal: {len(strong_signals)}\n"
             f"LONG: {long_count} | SHORT: {short_count}\n"
-            f"Sistem: 4H/1H onay + 15M giriş.\n"
+            f"Normal: {normal_count} | Anlık Radar: {radar_count}\n"
+            f"Sistem: 4H/1H onay + 15M giriş + 5M anlık radar.\n"
             f"SHORT kontrollü şekilde tekrar açıldı.\n"
             f"Emir açılmadı, sadece sinyal gönderildi."
         )
@@ -1014,6 +1305,7 @@ def main():
                     "sl": signal["sl"],
                     "score": signal["score"],
                     "risk_percent": signal.get("risk_percent"),
+                    "source": signal.get("source", "NORMAL"),
                     "opened_at": int(time.time()),
                     "last_checked_at": int(time.time()),
                     "tp1_hit": False,
@@ -1021,6 +1313,9 @@ def main():
                     "tp3_hit": False,
                     "breakeven_sl": None
                 }
+
+                if signal.get("source") == "RADAR":
+                    mark_radar_sent(signal["symbol"], signal["direction"])
 
                 update_performance(signal["symbol"], "OPENED")
                 time.sleep(1)
@@ -1035,12 +1330,12 @@ def main():
 
         if SEND_NO_SIGNAL_MESSAGE:
             send_telegram(
-                f"📡 Sade Premium V1 bot çalıştı.\n\n"
+                f"📡 Sade Premium V1 ANLIK RADAR bot çalıştı.\n\n"
                 f"Taranan coin: {len(scan_coins)}\n"
                 f"Tarama: Hacimli ilk {MAX_SCAN_COINS} USDT swap coin\n"
                 f"Şu an uygun LONG/SHORT sinyal yok.\n"
-                f"Sistem: 4H trend + 1H onay + 15M giriş.\n"
-                f"SHORT kontrollü açık."
+                f"Sistem: 4H trend + 1H onay + 15M giriş + 5M anlık radar.\n"
+                f"SHORT kontrollü açık. Radar aktif."
             )
 
     maybe_send_daily_report()
