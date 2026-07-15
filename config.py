@@ -3,7 +3,7 @@
 # GitHub Actions ile 5 dakikada bir çalışacak sade ama güçlü sinyal botu.
 # Bot otomatik emir açmaz. Sadece Telegram sinyali gönderir.
 
-BOT_NAME = "Premium GitHub V2"
+BOT_NAME = "Premium GitHub V2 - Market Koruma"
 
 # Tarama
 AUTO_TOP_VOLUME_SCAN = True
@@ -33,8 +33,8 @@ ALLOW_LONG = True
 ALLOW_SHORT = True
 
 # Gönderim
-MAX_SIGNALS_PER_RUN = 5
-MAX_OPEN_SIGNALS = 6
+MAX_SIGNALS_PER_RUN = 3
+MAX_OPEN_SIGNALS = 3
 SEND_STATUS_EVERY_MINUTES = 60
 
 # Normal premium sinyal eşikleri
@@ -51,6 +51,14 @@ RADAR_MAX_5M_MOVE_PERCENT = 1.15
 RADAR_MIN_15M_MOVE_PERCENT = 0.15
 RADAR_MIN_VOLUME_RATIO = 1.20
 RADAR_MAX_CURRENT_FROM_CLOSE_PERCENT = 0.20
+
+# Stop azaltma filtresi
+# BILL gibi dipten SHORT ve ZORA gibi tepeden LONG sinyallerini azaltmak için.
+RADAR_LONG_MAX_RSI = 70
+RADAR_SHORT_MIN_RSI = 35
+
+# Aynı coin bugün stop olduysa o coin için yeni sinyal gönderme.
+BLOCK_COIN_AFTER_DAILY_STOP = True
 
 # Risk
 MIN_RISK_PERCENT = 0.25
@@ -75,4 +83,38 @@ DAILY_REPORT_HOUR = 23
 DAILY_REPORT_MINUTE = 45
 
 # Güvenlik / disiplin
-MAX_DAILY_STOP_ALERTS = 4
+MAX_DAILY_STOP_ALERTS = 2
+
+
+# STOP_FILTRESI_NOTU:
+# Bu sürüm; BILL, ZORA, ATH ve ROBO stoplarından sonra hazırlanmıştır.
+# Eklenen mantık:
+# 1) RADAR LONG sinyali RSI 70 üstündeyse gönderilmez.
+# 2) RADAR SHORT sinyali RSI 35 altındaysa gönderilmez.
+# 3) Bir coin aynı gün stop olduysa, o coin gün bitene kadar tekrar sinyal üretmez.
+# Normal 4H/1H/15M onaylı sistem aynen korunmuştur.
+
+
+# Market koruma filtresi
+# NEAR ve LTC gibi aynı anda gelen LONG stopları, genel piyasa geri çekilmesi riskini gösterir.
+MARKET_GUARD_ENABLED = True
+MARKET_REFERENCE_COINS = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+
+# LONG için piyasa şartı:
+# En az 2 referans coin 15M'de EMA20 üstünde olmalı ve son 5M sert kırmızı olmamalı.
+MARKET_LONG_MIN_OK_COUNT = 2
+
+# SHORT için piyasa şartı:
+# En az 2 referans coin 15M'de EMA20 altında olmalı ve son 5M sert yeşil olmamalı.
+MARKET_SHORT_MIN_OK_COUNT = 2
+
+# Referans coin 5M mum ters yönde bu orandan fazla hareket ederse o yön bloklanır.
+MARKET_MAX_COUNTER_5M_MOVE_PERCENT = 0.35
+
+# Aynı yönde günlük stop limiti.
+# Örn: 2 LONG stop olduysa o gün yeni LONG sinyali gönderilmez.
+DAILY_DIRECTION_STOP_LIMIT = 2
+
+# MARKET_KORUMA_NOTU:
+# Bu sürüm NEAR/LTC gibi aynı anda gelen LONG stoplarından sonra hazırlanmıştır.
+# Amaç, genel piyasa aşağı dönerken yeni LONG sinyalini kesmektir.

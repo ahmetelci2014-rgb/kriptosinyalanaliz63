@@ -40,6 +40,13 @@ from config import (
     DAILY_REPORT_HOUR,
     DAILY_REPORT_MINUTE,
     MAX_DAILY_STOP_ALERTS,
+    BLOCK_COIN_AFTER_DAILY_STOP,
+    MARKET_GUARD_ENABLED,
+    MARKET_REFERENCE_COINS,
+    MARKET_LONG_MIN_OK_COUNT,
+    MARKET_SHORT_MIN_OK_COUNT,
+    MARKET_MAX_COUNTER_5M_MOVE_PERCENT,
+    DAILY_DIRECTION_STOP_LIMIT,
 )
 from strategy import (
     analyze_normal_signal,
@@ -192,6 +199,10 @@ def update_performance(symbol, result, direction=None, source=None):
         key = result.lower()
         day[key] = day.get(key, 0) + 1
 
+        if result == "SL" and direction in ["LONG", "SHORT"]:
+            day.setdefault("direction_stops", {})
+            day["direction_stops"][direction] = int(day["direction_stops"].get(direction, 0)) + 1
+
     day.setdefault("coins", {})
     day["coins"].setdefault(symbol, {
         "opened": 0,
@@ -218,6 +229,104 @@ def get_today_sl_count():
     performance = load_performance()
     day = performance.get("days", {}).get(today_key(), {})
     return int(day.get("sl", 0))
+
+
+def has_coin_stop_today(symbol):
+    if not BLOCK_COIN_AFTER_DAILY_STOP:
+        return False
+
+    performance = load_performance()
+    day = performance.get("days", {}).get(today_key(), {})
+    coin = day.get("coins", {}).get(symbol, {})
+
+    return int(coin.get("sl", 0)) > 0
+
+
+def get_today_direction_stop_count(direction):
+    performance = load_performance()
+    day = performance.get("days", {}).get(today_key(), {})
+    direction_stops = day.get("direction_stops", {})
+
+    return int(direction_stops.get(direction, 0))
+
+
+def direction_stop_limit_reached(direction):
+    return get_today_direction_stop_count(direction) >= DAILY_DIRECTION_STOP_LIMIT
+
+
+def simple_ema(series, span):
+    return series.ewm(span=span, adjust=False).mean()
+
+
+def get_market_direction_status(exchange):
+    if not MARKET_GUARD_ENABLED:
+        return {
+            "LONG": True,
+            "SHORT": True,
+            "reason": "Market koruma kapalı"
+        }
+
+    long_ok = 0
+    short_ok = 0
+    hard_red_count = 0
+    hard_green_count = 0
+    details = []
+
+    for ref_symbol in MARKET_REFERENCE_COINS:
+        try:
+            df15 = fetch_df(exchange, ref_symbol, ENTRY_TIMEFRAME, 80, min_len=40)
+            df5 = fetch_df(exchange, ref_symbol, RADAR_TIMEFRAME, 40, min_len=20)
+
+            if df15 is None or df5 is None:
+                continue
+
+            df15 = df15.copy()
+            df15["ema20"] = simple_ema(df15["close"], 20)
+
+            last15 = df15.iloc[-2]
+            close15 = float(last15["close"])
+            ema20 = float(last15["ema20"])
+
+            last5 = df5.iloc[-2]
+            move5 = ((float(last5["close"]) - float(last5["open"])) / float(last5["open"])) * 100
+
+            ref_long_ok = close15 >= ema20 and move5 > -MARKET_MAX_COUNTER_5M_MOVE_PERCENT
+            ref_short_ok = close15 <= ema20 and move5 < MARKET_MAX_COUNTER_5M_MOVE_PERCENT
+
+            if ref_long_ok:
+                long_ok += 1
+
+            if ref_short_ok:
+                short_ok += 1
+
+            if move5 <= -MARKET_MAX_COUNTER_5M_MOVE_PERCENT:
+                hard_red_count += 1
+
+            if move5 >= MARKET_MAX_COUNTER_5M_MOVE_PERCENT:
+                hard_green_count += 1
+
+            details.append(f"{ref_symbol}: 15M {'EMA20 üstü' if close15 >= ema20 else 'EMA20 altı'}, 5M %{round(move5, 2)}")
+
+        except Exception as e:
+            print(ref_symbol, "market koruma veri hatası:", e)
+
+    allow_long = long_ok >= MARKET_LONG_MIN_OK_COUNT and hard_red_count < 2
+    allow_short = short_ok >= MARKET_SHORT_MIN_OK_COUNT and hard_green_count < 2
+
+    reason = (
+        f"Market LONG uygun: {long_ok}/{len(MARKET_REFERENCE_COINS)} | "
+        f"SHORT uygun: {short_ok}/{len(MARKET_REFERENCE_COINS)} | "
+        f"Sert kırmızı: {hard_red_count} | Sert yeşil: {hard_green_count} | "
+        + " | ".join(details)
+    )
+
+    print("Market koruma:", reason)
+
+    return {
+        "LONG": allow_long,
+        "SHORT": allow_short,
+        "reason": reason
+    }
 
 
 def get_exchange():
@@ -541,7 +650,7 @@ def check_open_signals(exchange):
                         f"SL: {format_price(sl)}\n"
                         f"Güncel: {format_price(current_price or sl)}"
                     )
-                    update_performance(symbol, "SL")
+                    update_performance(symbol, "SL", direction=direction, source=signal.get("source"))
                     continue
 
                 if not tp1_hit and high >= tp1:
@@ -599,7 +708,7 @@ def check_open_signals(exchange):
                         f"SL: {format_price(sl)}\n"
                         f"Güncel: {format_price(current_price or sl)}"
                     )
-                    update_performance(symbol, "SL")
+                    update_performance(symbol, "SL", direction=direction, source=signal.get("source"))
                     continue
 
                 if not tp1_hit and low <= tp1:
@@ -862,6 +971,7 @@ def main():
 
     scan_coins = get_scan_coins(exchange)
     open_signals = load_open_signals()
+    market_status = get_market_direction_status(exchange)
 
     print("Taranan coin:", len(scan_coins))
     print("Açık sinyal:", len(open_signals))
@@ -877,6 +987,10 @@ def main():
 
             if has_open_same_symbol(symbol):
                 print(symbol, "zaten açık sinyal var, atlandı.")
+                continue
+
+            if has_coin_stop_today(symbol):
+                print(symbol, "bugün stop olduğu için atlandı.")
                 continue
 
             current_price = get_current_price(exchange, symbol)
@@ -899,6 +1013,14 @@ def main():
                     normal_signal = None
 
             if normal_signal is not None:
+                if not market_status.get(normal_signal["direction"], True):
+                    print(symbol, "normal elendi -> market koruma", normal_signal["direction"])
+                    normal_signal = None
+                elif direction_stop_limit_reached(normal_signal["direction"]):
+                    print(symbol, "normal elendi -> günlük yön stop limiti", normal_signal["direction"])
+                    normal_signal = None
+
+            if normal_signal is not None:
                 valid, reason = is_entry_still_valid(normal_signal, current_price)
 
                 if valid and not is_duplicate(normal_signal):
@@ -915,6 +1037,14 @@ def main():
                     if radar_signal["direction"] == "LONG" and not ALLOW_LONG:
                         radar_signal = None
                     elif radar_signal["direction"] == "SHORT" and not ALLOW_SHORT:
+                        radar_signal = None
+
+                if radar_signal is not None:
+                    if not market_status.get(radar_signal["direction"], True):
+                        print(symbol, "radar elendi -> market koruma", radar_signal["direction"])
+                        radar_signal = None
+                    elif direction_stop_limit_reached(radar_signal["direction"]):
+                        print(symbol, "radar elendi -> günlük yön stop limiti", radar_signal["direction"])
                         radar_signal = None
 
                 if radar_signal is not None:
@@ -952,7 +1082,7 @@ def main():
             f"Gönderilen sinyal: {len(selected)}\n"
             f"LONG: {long_count} | SHORT: {short_count}\n"
             f"Normal: {normal_count} | Radar: {radar_count}\n"
-            f"Sistem: 5M radar + 15M giriş + 1H/4H onay.\n"
+            f"Sistem: 5M radar + 15M giriş + 1H/4H onay + stop filtresi + market koruma.\n"
             f"Emir açılmadı, sadece sinyal gönderildi."
         )
 
@@ -991,8 +1121,8 @@ def main():
                 f"📡 {BOT_NAME} çalıştı.\n\n"
                 f"Taranan coin: {len(scan_coins)}\n"
                 f"Uygun giriş sinyali yok.\n"
-                f"Sistem: 5M radar + 15M giriş + 1H/4H onay.\n"
-                f"Geç giriş ve TP1'e yaklaşmış sinyaller gönderilmedi."
+                f"Sistem: 5M radar + 15M giriş + 1H/4H onay + stop filtresi + market koruma.\n"
+                f"Geç giriş, TP1'e yaklaşmış, stop riski yükselen ve piyasa yönüne ters sinyaller gönderilmedi."
             )
             mark_status_sent()
 

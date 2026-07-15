@@ -23,6 +23,8 @@ from config import (
     RADAR_MIN_15M_MOVE_PERCENT,
     RADAR_MIN_VOLUME_RATIO,
     RADAR_MAX_CURRENT_FROM_CLOSE_PERCENT,
+    RADAR_LONG_MAX_RSI,
+    RADAR_SHORT_MIN_RSI,
 )
 
 
@@ -478,6 +480,17 @@ def analyze_radar_signal(symbol, df5m, df15m, df1h, current_price=None):
 
     rsi15 = float(last15["rsi"])
     adx15 = float(last15["adx"])
+
+    # Stop azaltma filtresi:
+    # ZORA tipi: 15M RSI çok yüksekken LONG gelirse tepeden dönüş riski artıyor.
+    # BILL tipi: 15M RSI çok düşükken SHORT gelirse dipten tepki riski artıyor.
+    if direction == "LONG" and rsi15 > RADAR_LONG_MAX_RSI:
+        print(symbol, "radar LONG elendi -> RSI çok yüksek:", round(rsi15, 2))
+        return None
+
+    if direction == "SHORT" and rsi15 < RADAR_SHORT_MIN_RSI:
+        print(symbol, "radar SHORT elendi -> RSI çok düşük:", round(rsi15, 2))
+        return None
 
     score = 55
     score += min(abs(move_5m) * 18, 18)
