@@ -8,7 +8,14 @@ import ccxt
 from datetime import datetime, timezone, timedelta
 
 from strategy import analyze_signal
-from config import COINS, INTERVAL, LIMIT
+from config import (
+    COINS,
+    INTERVAL,
+    LIMIT,
+    ALLOW_LONG_SIGNALS,
+    ALLOW_SHORT_SIGNALS,
+    BLACKLIST_COINS
+)
 
 
 TOKEN = os.getenv("TOKEN")
@@ -396,7 +403,7 @@ def get_scan_coins(exchange):
     """
     if not AUTO_SCAN_ALL_OKX_USDT:
         print("Otomatik tarama kapalı. Config COINS listesi kullanılacak.")
-        return COINS
+        return [coin for coin in COINS if coin not in BLACKLIST_COINS]
 
     try:
         markets = exchange.load_markets()
@@ -436,7 +443,7 @@ def get_scan_coins(exchange):
 
         if not auto_coins:
             print("OKX otomatik parite bulunamadı. Config COINS listesi kullanılacak.")
-            return COINS
+            return [coin for coin in COINS if coin not in BLACKLIST_COINS]
 
         # Config'teki ana coinleri önce sırala, diğerlerini alfabetik ekle
         priority_coins = [coin for coin in COINS if coin in auto_coins]
@@ -444,13 +451,17 @@ def get_scan_coins(exchange):
 
         scan_coins = priority_coins + other_coins
 
+        # Backtestte kötü performans gösteren coinleri ele
+        scan_coins = [coin for coin in scan_coins if coin not in BLACKLIST_COINS]
+
         print("OKX otomatik USDT swap parite sayısı:", len(scan_coins))
+        print("Kara liste elenen coinler:", BLACKLIST_COINS)
         return scan_coins
 
     except Exception as e:
         print("OKX otomatik parite çekme hatası:", e)
         print("Config COINS listesi kullanılacak.")
-        return COINS
+        return [coin for coin in COINS if coin not in BLACKLIST_COINS]
 
 
 def to_okx_symbol(symbol):
@@ -928,6 +939,9 @@ def main():
     print("Toplam taranan parite:", len(scan_coins))
     print("4H ana trend filtresi aktif.")
     print("OKX tüm USDT swap otomatik tarama:", AUTO_SCAN_ALL_OKX_USDT)
+    print("LONG sinyal izni:", ALLOW_LONG_SIGNALS)
+    print("SHORT sinyal izni:", ALLOW_SHORT_SIGNALS)
+    print("Kara liste coin sayısı:", len(BLACKLIST_COINS))
 
     check_open_signals(exchange)
     maybe_send_open_signals_summary(exchange)
@@ -989,10 +1003,22 @@ def main():
 
     signals = [s for s in signals if s.get("quality") == "A"]
 
+    before_direction_filter_count = len(signals)
+
+    if not ALLOW_LONG_SIGNALS:
+        signals = [s for s in signals if s["direction"] != "LONG"]
+
+    if not ALLOW_SHORT_SIGNALS:
+        signals = [s for s in signals if s["direction"] != "SHORT"]
+
+    direction_rejected_count = before_direction_filter_count - len(signals)
+
     print("4H trend uyumsuz elenen:", htf_rejected_count)
     print("Kalite filtresi öncesi aday:", before_quality_count)
-    print("A kalite sonrası aday:", len(signals))
-    print("B/C kalite elenen:", before_quality_count - len(signals))
+    print("A kalite sonrası aday:", before_direction_filter_count)
+    print("Yön filtresi elenen:", direction_rejected_count)
+    print("Yön filtresi sonrası aday:", len(signals))
+    print("B/C kalite elenen:", before_quality_count - before_direction_filter_count)
 
     open_signals_for_duplicate_check = load_open_signals()
 
@@ -1029,7 +1055,10 @@ def main():
             f"SHORT aday: {len(short_signals)}\n"
             f"Detaylı gönderilen sinyal: {len(strong_signals)}\n"
             f"OKX tüm USDT swap tarandı.\n"
-            f"Sadece A kalite + 4H trend uyumlu sinyaller gönderildi."
+            f"LONG aktif: {ALLOW_LONG_SIGNALS}\n"
+            f"SHORT aktif: {ALLOW_SHORT_SIGNALS}\n"
+            f"Kara liste coin sayısı: {len(BLACKLIST_COINS)}\n"
+            f"Sadece A kalite + 4H trend uyumlu + izin verilen yön sinyalleri gönderildi."
         )
 
         open_signals = load_open_signals()
@@ -1077,7 +1106,10 @@ def main():
             f"4H trend uyumsuz elenen: {htf_rejected_count}\n"
             f"Şu an A kalite ve 4H trend uyumlu sinyal yok.\n"
             f"OKX tüm USDT swap tarandı.\n"
-            f"B/C kalite veya 4H ters sinyaller gönderilmedi."
+            f"LONG aktif: {ALLOW_LONG_SIGNALS}\n"
+            f"SHORT aktif: {ALLOW_SHORT_SIGNALS}\n"
+            f"Kara liste coin sayısı: {len(BLACKLIST_COINS)}\n"
+            f"B/C kalite, 4H ters veya kapalı yön sinyalleri gönderilmedi."
         )
 
     maybe_send_daily_report()
