@@ -9,6 +9,26 @@ LIMIT = 400
 MIN_SCORE = 40
 TOP_COINS = 40
 
+# İşlem Yön Ayarları
+# Backtest sonucuna göre SHORT tarafı şimdilik kapalı.
+ALLOW_LONG_SIGNALS = True
+ALLOW_SHORT_SIGNALS = False
+
+# Kötü performans gösteren coinler
+# Bu coinler otomatik taramada elenir.
+BLACKLIST_COINS = [
+    "ARMUSDT",
+    "GALAUSDT",
+    "TRXUSDT",
+    "BERAUSDT",
+    "BONKUSDT",
+    "DYDXUSDT",
+    "ATHUSDT",
+    "BLURUSDT",
+    "APEUSDT",
+    "BANDUSDT"
+]
+
 # Zaman Dilimleri
 MAIN_TREND_INTERVAL = "4H"
 CONFIRM_INTERVAL = "1H"
@@ -21,7 +41,9 @@ DAYS = 7
 # OKX
 OKX_BASE_URL = "https://www.okx.com"
 
-# Coin Listesi
+# Premium / Yedek Coin Listesi
+# main.py otomatik OKX USDT swap taraması yapar.
+# Bu liste yedek ve premium öncelik listesi gibi kullanılır.
 COINS = [
     "BTCUSDT",
     "ETHUSDT",
@@ -45,7 +67,6 @@ COINS = [
     "ATOMUSDT",
     "UNIUSDT",
     "AAVEUSDT",
-    "TRXUSDT",
     "ETCUSDT",
     "ICPUSDT",
     "SEIUSDT",
@@ -54,10 +75,8 @@ COINS = [
     "JUPUSDT",
     "BCHUSDT",
 
-    # Yeni eklenen coinler
+    # Ek coinler
     "PEPEUSDT",
-    "DYDXUSDT",
-    "GALAUSDT",
     "ALGOUSDT",
     "MANAUSDT",
     "SANDUSDT",
