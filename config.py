@@ -3,7 +3,7 @@
 # GitHub Actions ile 5 dakikada bir çalışacak sade ama güçlü sinyal botu.
 # Bot otomatik emir açmaz. Sadece Telegram sinyali gönderir.
 
-BOT_NAME = "Premium GitHub V2 - Market Koruma"
+BOT_NAME = "Premium GitHub V2 - Akıllı Risk Koruma"
 
 # Tarama
 AUTO_TOP_VOLUME_SCAN = True
@@ -83,7 +83,7 @@ DAILY_REPORT_HOUR = 23
 DAILY_REPORT_MINUTE = 45
 
 # Güvenlik / disiplin
-MAX_DAILY_STOP_ALERTS = 2
+MAX_DAILY_STOP_ALERTS = 99
 
 
 # STOP_FILTRESI_NOTU:
@@ -113,8 +113,15 @@ MARKET_MAX_COUNTER_5M_MOVE_PERCENT = 0.35
 
 # Aynı yönde günlük stop limiti.
 # Örn: 2 LONG stop olduysa o gün yeni LONG sinyali gönderilmez.
-DAILY_DIRECTION_STOP_LIMIT = 2
+DAILY_DIRECTION_STOP_LIMIT = 3
 
 # MARKET_KORUMA_NOTU:
 # Bu sürüm NEAR/LTC gibi aynı anda gelen LONG stoplarından sonra hazırlanmıştır.
 # Amaç, genel piyasa aşağı dönerken yeni LONG sinyalini kesmektir.
+
+
+# Akıllı risk modu
+RISK_SOFT_STOP_LIMIT = 2
+RISK_HARD_STOP_LIMIT = 5
+RISK_MODE_MAX_SIGNALS = 1
+RISK_MODE_ALLOW_RADAR = False
