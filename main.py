@@ -47,7 +47,12 @@ from config import (
     MARKET_SHORT_MIN_OK_COUNT,
     MARKET_MAX_COUNTER_5M_MOVE_PERCENT,
     DAILY_DIRECTION_STOP_LIMIT,
+    RISK_SOFT_STOP_LIMIT,
+    RISK_HARD_STOP_LIMIT,
+    RISK_MODE_MAX_SIGNALS,
+    RISK_MODE_ALLOW_RADAR,
 )
+
 from strategy import (
     analyze_normal_signal,
     analyze_radar_signal,
@@ -170,7 +175,8 @@ def ensure_perf_day(performance):
         "long": 0,
         "short": 0,
         "normal": 0,
-        "radar": 0
+        "radar": 0,
+        "direction_stops": {}
     })
 
     return performance
@@ -305,7 +311,10 @@ def get_market_direction_status(exchange):
             if move5 >= MARKET_MAX_COUNTER_5M_MOVE_PERCENT:
                 hard_green_count += 1
 
-            details.append(f"{ref_symbol}: 15M {'EMA20 üstü' if close15 >= ema20 else 'EMA20 altı'}, 5M %{round(move5, 2)}")
+            details.append(
+                f"{ref_symbol}: 15M {'EMA20 üstü' if close15 >= ema20 else 'EMA20 altı'}, "
+                f"5M %{round(move5, 2)}"
+            )
 
         except Exception as e:
             print(ref_symbol, "market koruma veri hatası:", e)
@@ -955,19 +964,35 @@ def main():
     check_open_signals(exchange)
     maybe_send_open_summary(exchange)
 
-    if get_today_sl_count() >= MAX_DAILY_STOP_ALERTS:
-        print("Günlük stop limiti doldu, yeni sinyal gönderilmeyecek.")
+    today_sl_count = get_today_sl_count()
+    risk_mode_active = today_sl_count >= RISK_SOFT_STOP_LIMIT
+
+    if today_sl_count >= RISK_HARD_STOP_LIMIT:
+        print("Günlük hard stop limiti doldu, yeni sinyal gönderilmeyecek.")
         if should_send_status():
             send_telegram(
                 f"⛔ {BOT_NAME} çalıştı.\n\n"
-                f"Bugün stop limiti dolduğu için yeni sinyal gönderilmiyor.\n"
-                f"Risk kontrolü aktif."
+                f"Bugün hard stop limiti dolduğu için yeni sinyal gönderilmiyor.\n"
+                f"Açık sinyal takibi devam ediyor.\n"
+                f"Stop sayısı: {today_sl_count}"
             )
             mark_status_sent()
 
         maybe_send_daily_report()
         print(BOT_NAME, "tamamlandı.")
         return
+
+    if risk_mode_active:
+        print("Akıllı risk modu aktif. Stop sayısı:", today_sl_count)
+        if should_send_status():
+            send_telegram(
+                f"🟡 {BOT_NAME} çalıştı.\n\n"
+                f"Bugün stop sayısı: {today_sl_count}\n"
+                f"Bot tamamen durmadı; akıllı risk moduna geçti.\n"
+                f"Bu modda radar sinyalleri kapalı, maksimum {RISK_MODE_MAX_SIGNALS} yeni sinyal gönderilir.\n"
+                f"Açık sinyal takibi devam ediyor."
+            )
+            mark_status_sent()
 
     scan_coins = get_scan_coins(exchange)
     open_signals = load_open_signals()
@@ -994,13 +1019,13 @@ def main():
                 continue
 
             current_price = get_current_price(exchange, symbol)
+            radar_signal = None
 
             df5m = fetch_df(exchange, symbol, RADAR_TIMEFRAME, RADAR_LIMIT, min_len=35)
             df15m = fetch_df(exchange, symbol, ENTRY_TIMEFRAME, ENTRY_LIMIT, min_len=220)
             df1h = fetch_df(exchange, symbol, CONFIRM_TIMEFRAME, CONFIRM_LIMIT, min_len=220)
             df4h = fetch_df(exchange, symbol, TREND_TIMEFRAME, TREND_LIMIT, min_len=220)
 
-            # Normal daha onaylı sinyal
             normal_signal = None
 
             if df15m is not None and df1h is not None and df4h is not None:
@@ -1029,8 +1054,7 @@ def main():
                 else:
                     print(symbol, "normal elendi ->", reason)
 
-            # Radar daha hızlı sinyal
-            if RADAR_ENABLED:
+            if RADAR_ENABLED and not (risk_mode_active and not RISK_MODE_ALLOW_RADAR):
                 radar_signal = analyze_radar_signal(symbol, df5m, df15m, df1h, current_price)
 
                 if radar_signal is not None:
@@ -1061,13 +1085,13 @@ def main():
         except Exception as e:
             print(symbol, "analiz hatası:", e)
 
-    # Normal sinyale küçük öncelik, sonra skor.
     def sort_key(signal):
         source_bonus = 8 if signal.get("source") == "NORMAL" else 0
         return signal["score"] + source_bonus
 
     candidates = sorted(candidates, key=sort_key, reverse=True)
-    selected = candidates[:MAX_SIGNALS_PER_RUN]
+    max_signals_this_run = RISK_MODE_MAX_SIGNALS if risk_mode_active else MAX_SIGNALS_PER_RUN
+    selected = candidates[:max_signals_this_run]
 
     if selected:
         long_count = len([s for s in selected if s["direction"] == "LONG"])
@@ -1080,6 +1104,7 @@ def main():
             f"Taranan coin: {len(scan_coins)}\n"
             f"Uygun aday: {len(candidates)}\n"
             f"Gönderilen sinyal: {len(selected)}\n"
+            f"Risk Modu: {'AKTİF' if risk_mode_active else 'Kapalı'}\n"
             f"LONG: {long_count} | SHORT: {short_count}\n"
             f"Normal: {normal_count} | Radar: {radar_count}\n"
             f"Sistem: 5M radar + 15M giriş + 1H/4H onay + stop filtresi + market koruma.\n"
