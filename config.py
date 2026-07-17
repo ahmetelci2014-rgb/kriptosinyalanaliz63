@@ -44,13 +44,13 @@ TRACK_LIMIT = 180
 # SİNYAL SAYISI
 # =========================
 MAX_TRADE_SIGNALS_PER_RUN = 3
-MAX_RADAR_ALERTS_PER_RUN = 5
+MAX_RADAR_ALERTS_PER_RUN = 0
 MAX_OPEN_SIGNALS = 3
 
 # Stop sayısı artarsa sistem durmaz, sadece daha seçici olur.
 RISK_MODE_STOP_COUNT = 3
 RISK_MODE_MAX_TRADE_SIGNALS = 1
-RISK_MODE_MAX_RADAR_ALERTS = 3
+RISK_MODE_MAX_RADAR_ALERTS = 0
 RISK_MODE_ALLOW_RADAR_TRADE = False
 
 # =========================
@@ -128,3 +128,9 @@ SYSTEM_NOTE = (
     "A kalite işlem ve radar uyarısı ayrıdır. "
     "Sistem stopta durmaz, risk modunda daha seçici devam eder."
 )
+
+
+# RADAR_MESAJLARI_KAPALI:
+# Kalabalık yapmaması için işlem olmayan radar uyarıları kapatıldı.
+# 5M radar verisi analiz içinde kullanılmaya devam eder.
+# Telegram'a sadece A kalite işlem sinyalleri, TP/SL takipleri ve raporlar gelir.

@@ -112,3 +112,20 @@ Kâr garantisi vermez.
 Otomatik emir açmaz.
 Futures işlemler yüksek risklidir.
 Stop mutlaka kullanılmalıdır.
+
+
+## Radar Kapalı Sürüm
+
+Bu sürümde işlem olmayan radar mesajları kapatıldı.
+
+Telegram'a gelecek mesajlar:
+
+- A kalite işlem sinyali
+- TP1 / TP2 / TP3 bildirimi
+- Stop bildirimi
+- TP1 sonrası girişten kapanma
+- Açık sinyal özeti
+- Günlük performans raporu
+- Saatlik durum mesajı
+
+Radar verisi tamamen silinmedi. 5M hareketler sistem içinde analiz desteği olarak kalır, fakat "işlem açma" radar kalabalığı gönderilmez.
