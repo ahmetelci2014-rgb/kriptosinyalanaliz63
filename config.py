@@ -43,9 +43,9 @@ TRACK_LIMIT = 180
 # =========================
 # SİNYAL SAYISI
 # =========================
-MAX_TRADE_SIGNALS_PER_RUN = 3
+MAX_TRADE_SIGNALS_PER_RUN = 2
 MAX_RADAR_ALERTS_PER_RUN = 0
-MAX_OPEN_SIGNALS = 3
+MAX_OPEN_SIGNALS = 2
 
 # Stop sayısı artarsa sistem durmaz, sadece daha seçici olur.
 RISK_MODE_STOP_COUNT = 3
@@ -61,7 +61,7 @@ MIN_SCORE_RADAR = 64
 
 MIN_ADX_4H = 12
 MIN_ADX_1H = 12
-MIN_VOLUME_RATIO_15M = 0.60
+MIN_VOLUME_RATIO_15M = 1.00
 
 LONG_RSI_MIN = 40
 LONG_RSI_MAX = 70
@@ -79,7 +79,7 @@ RADAR_TRADE_MIN_VOLUME_RATIO = 1.60
 # RİSK / TP / SL
 # =========================
 MIN_RISK_PERCENT = 0.45
-MAX_RISK_PERCENT = 2.80
+MAX_RISK_PERCENT = 1.80
 
 TP1_R_MULTIPLIER = 0.75
 TP2_R_MULTIPLIER = 1.35
@@ -134,3 +134,11 @@ SYSTEM_NOTE = (
 # Kalabalık yapmaması için işlem olmayan radar uyarıları kapatıldı.
 # 5M radar verisi analiz içinde kullanılmaya devam eder.
 # Telegram'a sadece A kalite işlem sinyalleri, TP/SL takipleri ve raporlar gelir.
+
+
+# HACIM_RISK_FILTRESI_NOTU:
+# PNUTUSDT örneğinde 15M hacim 0.66x olmasına rağmen sinyal geldi ve stop oldu.
+# Bu sürümde A kalite işlem için 15M hacim en az 1.00x olmalı.
+# Stop mesafesi %1.80 üstündeyse işlem sinyali üretilmez.
+# Aynı anda maksimum 2 açık işlem tutulur.
+# Radar mesajları kapalı kalır.
