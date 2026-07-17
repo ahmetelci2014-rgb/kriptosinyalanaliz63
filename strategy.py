@@ -26,6 +26,10 @@ from config import (
     RADAR_SHORT_MIN_RSI,
     MAX_ENTRY_DISTANCE_PERCENT,
     MAX_TP1_PROGRESS_PERCENT,
+    MIN_TRADE_RISK_PERCENT,
+    MIN_TRADE_VOLUME_RATIO,
+    REQUIRE_15M_REVERSAL_CANDLE,
+    REQUIRE_15M_EMA20_CONFIRM,
     MIN_RISK_PERCENT,
     MAX_RISK_PERCENT,
 )
@@ -329,6 +333,26 @@ def analyze_futures_setup(symbol, df5m, df15m, df1h, df4h, current_price=None):
     adx = float(last["adx"])
     volume_ratio = float(last["volume_ratio"])
 
+    last_open = float(last["open"])
+    last_close = float(last["close"])
+    last_high = float(last["high"])
+    last_low = float(last["low"])
+    prev_open = float(prev["open"])
+    prev_close = float(prev["close"])
+    ema20 = float(last["ema20"])
+
+    bullish_reversal = (
+        last_close > last_open
+        and last_close >= ema20
+        and last_close > prev_close
+    )
+
+    bearish_reversal = (
+        last_close < last_open
+        and last_close <= ema20
+        and last_close < prev_close
+    )
+
     if entry <= 0 or atr <= 0:
         return None
 
@@ -346,22 +370,26 @@ def analyze_futures_setup(symbol, df5m, df15m, df1h, df4h, current_price=None):
     if trend == "LONG" and confirm in ["LONG", "NEUTRAL"]:
         near_support = percent_distance(entry, support) <= MAX_DISTANCE_TO_ENTRY_ZONE_PERCENT
         enough_to_resistance = percent_distance(resistance, entry) >= MIN_DISTANCE_TO_TARGET_PERCENT
-        ema_recovery = float(last["close"]) >= float(last["ema20"]) or float(prev["low"]) <= float(prev["ema20"])
+        ema_recovery = last_close >= ema20 or float(prev["low"]) <= float(prev["ema20"])
+        reversal_ok = bullish_reversal if REQUIRE_15M_REVERSAL_CANDLE else True
+        ema_ok = last_close >= ema20 if REQUIRE_15M_EMA20_CONFIRM else ema_recovery
 
         if near_support and enough_to_resistance and ema_recovery:
             direction = "LONG"
             setup_reason = "Destek bölgesinden trend yönlü LONG"
-            sr_reason = f"Fiyat desteğe yakın, direnç hedef alanı uygun"
+            sr_reason = "Fiyat desteğe yakın, direnç hedef alanı uygun"
 
     if trend == "SHORT" and confirm in ["SHORT", "NEUTRAL"]:
         near_resistance = percent_distance(entry, resistance) <= MAX_DISTANCE_TO_ENTRY_ZONE_PERCENT
         enough_to_support = percent_distance(entry, support) >= MIN_DISTANCE_TO_TARGET_PERCENT
-        ema_reject = float(last["close"]) <= float(last["ema20"]) or float(prev["high"]) >= float(prev["ema20"])
+        ema_reject = last_close <= ema20 or float(prev["high"]) >= float(prev["ema20"])
+        reversal_ok = bearish_reversal if REQUIRE_15M_REVERSAL_CANDLE else True
+        ema_ok = last_close <= ema20 if REQUIRE_15M_EMA20_CONFIRM else ema_reject
 
         if near_resistance and enough_to_support and ema_reject:
             direction = "SHORT"
             setup_reason = "Direnç bölgesinden trend yönlü SHORT"
-            sr_reason = f"Fiyat dirence yakın, destek hedef alanı uygun"
+            sr_reason = "Fiyat dirence yakın, destek hedef alanı uygun"
 
     # Radar destekli alternatif: fiyat bölgeden uzak değilse ve hacim/momentum varsa takip adayı olabilir.
     if direction is None and df5m is not None and len(df5m) > 35:
@@ -397,6 +425,21 @@ def analyze_futures_setup(symbol, df5m, df15m, df1h, df4h, current_price=None):
     risk_percent = targets["risk_percent"]
     if risk_percent < MIN_RISK_PERCENT or risk_percent > MAX_RISK_PERCENT:
         return None
+
+    if direction == "LONG":
+        reversal_reason = "15M yeşil kapanış + EMA20 üstü" if bullish_reversal and last_close >= ema20 else "Dönüş zayıf / takip"
+        trade_reversal_ok = bullish_reversal and last_close >= ema20
+    else:
+        reversal_reason = "15M kırmızı kapanış + EMA20 altı" if bearish_reversal and last_close <= ema20 else "Dönüş zayıf / takip"
+        trade_reversal_ok = bearish_reversal and last_close <= ema20
+
+    strong_trade_conditions = (
+        trade_reversal_ok
+        and risk_percent >= MIN_TRADE_RISK_PERCENT
+        and volume_ratio >= MIN_TRADE_VOLUME_RATIO
+        and confirm == direction
+        and trend == direction
+    )
 
     score = 40
 
@@ -444,7 +487,12 @@ def analyze_futures_setup(symbol, df5m, df15m, df1h, df4h, current_price=None):
     if targets["rr_tp2"] >= MIN_RR_TP2:
         score += 6
 
-    signal_class = "TRADE" if score >= MIN_SCORE_TRADE and targets["rr_tp2"] >= MIN_RR_TP2 and volume_ratio >= MIN_VOLUME_RATIO else "WATCH"
+    signal_class = "TRADE" if (
+        score >= MIN_SCORE_TRADE
+        and targets["rr_tp2"] >= MIN_RR_TP2
+        and volume_ratio >= MIN_VOLUME_RATIO
+        and strong_trade_conditions
+    ) else "WATCH"
 
     if score < MIN_SCORE_WATCH:
         return None
@@ -473,6 +521,7 @@ def analyze_futures_setup(symbol, df5m, df15m, df1h, df4h, current_price=None):
         "confirm_reason": confirm_reason,
         "entry_reason": setup_reason,
         "sr_reason": sr_reason,
+        "reversal_reason": reversal_reason,
         "rsi_15m": round(rsi, 2),
         "adx_15m": round(adx, 2),
         "volume_ratio": round(volume_ratio, 2)

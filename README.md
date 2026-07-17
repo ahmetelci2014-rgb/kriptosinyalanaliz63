@@ -1,31 +1,49 @@
-# Premium GitHub V4 - Destek Direnç Futures
+# Premium GitHub V4.1 - Dönüş Onaylı Futures
 
-Bu sürüm kaldıraçlı futures mantığına göre daha düzenli tasarlandı.
+Bu sürüm V4'te gelen arka arkaya stoplardan sonra hazırlanmıştır.
 
-## Ana mantık
+## Ana değişiklik
 
-- OKX uygun USDT swap/futures coinlerini geniş tarar.
-- Trend kontrol eder.
-- Destek / direnç bölgesi hesaplar.
-- Hacim oranını kontrol eder.
-- Risk / ödül hesabı yapar.
-- Stop mesafesine göre kaldıraç önerir.
-- A kalite işlem sinyali ve takip radarı ayrıdır.
-- Sistem stop sayısı artsa bile tamamen durmaz; riskli modda daha seçici çalışır.
+Destek gördü diye LONG, direnç gördü diye SHORT vermez.
 
-## Sinyal tipleri
+A kalite işlem için artık şunlar aranır:
 
-### A kalite futures girişi
-İşlem adayıdır. TP/SL takibine alınır.
+- 4H trend aynı yönde
+- 1H onay aynı yönde
+- 15M dönüş mumu
+- 15M EMA20 onayı
+- Hacim onayı
+- Stop mesafesi en az %0.80
+- Risk / ödül uygunluğu
+- BTC / ETH / SOL market yönü ters değil
 
-### Takip radarı
-İşlem sinyali değildir. Sadece coin hareketleniyor diye uyarır.
+## LONG kuralı
+
+- Desteğe yakınlık tek başına yetmez.
+- 15M yeşil kapanış gerekir.
+- Fiyat EMA20 üstünde olmalıdır.
+- BTC / ETH / SOL sert düşüşteyse LONG işlem sinyali verilmez.
+
+## SHORT kuralı
+
+- Dirence yakınlık tek başına yetmez.
+- 15M kırmızı kapanış gerekir.
+- Fiyat EMA20 altında olmalıdır.
+- BTC / ETH / SOL sert yükselişteyse SHORT işlem sinyali verilmez.
+
+## Sistem durur mu?
+
+Hayır. Sistem tamamen durmaz.
+
+Stop sayısı artarsa riskli piyasa moduna geçer:
+
+- Maksimum işlem sinyali azalır.
+- Takip radarı devam eder.
+- Bot taramaya devam eder.
 
 ## Kurulum
 
-Zip içindeki dosyaları GitHub repo ana dizinine yükle.
-
-Gerekli dosyalar:
+Zip içindeki dosyaları GitHub repo ana dizinine yükle:
 
 - config.py
 - strategy.py
@@ -39,7 +57,7 @@ Gerekli dosyalar:
 
 Telegram'da şu isim görünmelidir:
 
-Premium GitHub V4 - Destek Direnç Futures
+Premium GitHub V4.1 - Dönüş Onaylı Futures
 
 ## Uyarı
 

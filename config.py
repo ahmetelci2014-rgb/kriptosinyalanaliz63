@@ -3,7 +3,7 @@
 # GitHub Actions ile 5 dakikada bir çalışır.
 # Bot emir açmaz, sadece Telegram sinyali gönderir.
 
-BOT_NAME = "Premium GitHub V4 - Destek Direnç Futures"
+BOT_NAME = "Premium GitHub V4.1 - Dönüş Onaylı Futures"
 
 # Tarama
 AUTO_TOP_VOLUME_SCAN = True
@@ -46,8 +46,8 @@ MAX_DISTANCE_TO_ENTRY_ZONE_PERCENT = 0.45
 MIN_DISTANCE_TO_TARGET_PERCENT = 0.45
 
 # Trend / hacim / skor
-MIN_SCORE_TRADE = 78
-MIN_SCORE_WATCH = 66
+MIN_SCORE_TRADE = 80
+MIN_SCORE_WATCH = 64
 MIN_ADX_4H = 15
 MIN_ADX_1H = 15
 MIN_VOLUME_RATIO = 0.70
@@ -58,7 +58,7 @@ MIN_RR_TP2 = 1.35
 RADAR_ENABLED = True
 RADAR_MIN_MOVE_PERCENT = 0.35
 RADAR_MAX_MOVE_PERCENT = 1.25
-RADAR_MIN_VOLUME_RATIO = 1.25
+RADAR_MIN_VOLUME_RATIO = 0.70
 RADAR_LONG_MAX_RSI = 70
 RADAR_SHORT_MIN_RSI = 35
 
@@ -88,3 +88,19 @@ DAILY_REPORT_MINUTE = 45
 
 # Açık sinyal maksimum takip süresi
 MAX_OPEN_SIGNAL_HOURS = 24
+
+
+# V4.1 Dönüş Onayı
+# Destek gördü diye LONG, direnç gördü diye SHORT yok.
+# Seviye + tepki mumu + EMA20 geri kazanım/red + hacim + piyasa yönü aranır.
+MIN_TRADE_RISK_PERCENT = 0.80
+MIN_TRADE_VOLUME_RATIO = 0.90
+REQUIRE_15M_REVERSAL_CANDLE = True
+REQUIRE_15M_EMA20_CONFIRM = True
+
+# BTC/ETH/SOL piyasa koruması
+MARKET_GUARD_ENABLED = True
+MARKET_REFERENCE_COINS = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+MARKET_LONG_MIN_OK_COUNT = 2
+MARKET_SHORT_MIN_OK_COUNT = 2
+MARKET_MAX_COUNTER_5M_MOVE_PERCENT = 0.35

@@ -1,5 +1,5 @@
 # main.py
-# Premium GitHub V4 - Destek Direnç Futures
+# Premium GitHub V4.1 - Dönüş Onaylı Futures
 # Emir açmaz. Telegram sinyali ve takip bildirimi gönderir.
 
 import os
@@ -44,6 +44,11 @@ from config import (
     RISK_MODE_MAX_TRADE_SIGNALS,
     RISK_MODE_MAX_WATCH_ALERTS,
     RISK_MODE_ALLOW_RADAR_TRADE,
+    MARKET_GUARD_ENABLED,
+    MARKET_REFERENCE_COINS,
+    MARKET_LONG_MIN_OK_COUNT,
+    MARKET_SHORT_MIN_OK_COUNT,
+    MARKET_MAX_COUNTER_5M_MOVE_PERCENT,
 )
 from strategy import analyze_futures_setup, format_price
 
@@ -320,6 +325,75 @@ def fetch_df(exchange, symbol, timeframe, limit, min_len=30):
     except Exception as e:
         print(symbol, timeframe, "veri hatası:", e)
         return None
+
+
+
+def simple_ema(series, span):
+    return series.ewm(span=span, adjust=False).mean()
+
+
+def get_market_direction_status(exchange):
+    if not MARKET_GUARD_ENABLED:
+        return {"LONG": True, "SHORT": True, "reason": "Market koruma kapalı"}
+
+    long_ok = 0
+    short_ok = 0
+    hard_red = 0
+    hard_green = 0
+    details = []
+
+    for ref_symbol in MARKET_REFERENCE_COINS:
+        try:
+            df15 = fetch_df(exchange, ref_symbol, ENTRY_TIMEFRAME, 80, min_len=40)
+            df5 = fetch_df(exchange, ref_symbol, RADAR_TIMEFRAME, 40, min_len=20)
+
+            if df15 is None or df5 is None:
+                continue
+
+            df15 = df15.copy()
+            df15["ema20"] = simple_ema(df15["close"], 20)
+
+            last15 = df15.iloc[-2]
+            close15 = float(last15["close"])
+            ema20 = float(last15["ema20"])
+
+            last5 = df5.iloc[-2]
+            move5 = ((float(last5["close"]) - float(last5["open"])) / float(last5["open"])) * 100
+
+            ref_long_ok = close15 >= ema20 and move5 > -MARKET_MAX_COUNTER_5M_MOVE_PERCENT
+            ref_short_ok = close15 <= ema20 and move5 < MARKET_MAX_COUNTER_5M_MOVE_PERCENT
+
+            if ref_long_ok:
+                long_ok += 1
+
+            if ref_short_ok:
+                short_ok += 1
+
+            if move5 <= -MARKET_MAX_COUNTER_5M_MOVE_PERCENT:
+                hard_red += 1
+
+            if move5 >= MARKET_MAX_COUNTER_5M_MOVE_PERCENT:
+                hard_green += 1
+
+            details.append(f"{ref_symbol}: 15M {'EMA20 üstü' if close15 >= ema20 else 'EMA20 altı'}, 5M %{round(move5, 2)}")
+
+        except Exception as e:
+            print(ref_symbol, "market koruma veri hatası:", e)
+
+    allow_long = long_ok >= MARKET_LONG_MIN_OK_COUNT and hard_red < 2
+    allow_short = short_ok >= MARKET_SHORT_MIN_OK_COUNT and hard_green < 2
+
+    reason = (
+        f"LONG uygun: {long_ok}/{len(MARKET_REFERENCE_COINS)} | "
+        f"SHORT uygun: {short_ok}/{len(MARKET_REFERENCE_COINS)} | "
+        f"Sert kırmızı: {hard_red} | Sert yeşil: {hard_green} | "
+        + " | ".join(details)
+    )
+
+    print("Market koruma:", reason)
+
+    return {"LONG": allow_long, "SHORT": allow_short, "reason": reason}
+
 
 
 def fetch_candles_since(exchange, symbol, timeframe, since_seconds, limit=150):
@@ -757,6 +831,7 @@ def main():
 
     scan_coins = get_scan_coins(exchange)
     open_signals = load_open_signals()
+    market_status = get_market_direction_status(exchange)
 
     print("Taranan coin:", len(scan_coins))
     print("Açık sinyal:", len(open_signals))
@@ -800,6 +875,10 @@ def main():
             if signal["direction"] == "SHORT" and not ALLOW_SHORT:
                 continue
 
+            if signal.get("signal_class") == "TRADE" and not market_status.get(signal["direction"], True):
+                print(symbol, "market yönü ters olduğu için işlemden takip radarına düşürüldü:", signal["direction"])
+                signal["signal_class"] = "WATCH"
+
             valid, reason = is_entry_still_valid(signal, current_price)
 
             if not valid:
@@ -840,7 +919,7 @@ def main():
             f"A kalite aday: {len(trade_candidates)}\n"
             f"Gönderilen işlem sinyali: {len(selected_trade)}\n"
             f"Riskli Piyasa Modu: {'AKTİF' if risk_mode else 'Kapalı'}\n"
-            f"Sistem: Trend + Destek/Direnç + Hacim + R/R + Kaldıraç."
+            f"Sistem: Dönüş Onayı + Trend + Destek/Direnç + Hacim + R/R + Kaldıraç."
         )
 
         for signal in selected_trade:
