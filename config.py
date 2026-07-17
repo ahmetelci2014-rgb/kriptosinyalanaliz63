@@ -1,14 +1,14 @@
 # config.py
-# Premium GitHub V2
-# GitHub Actions ile 5 dakikada bir çalışacak sade ama güçlü sinyal botu.
-# Bot otomatik emir açmaz. Sadece Telegram sinyali gönderir.
+# Premium GitHub V4 - Destek Direnç Futures
+# GitHub Actions ile 5 dakikada bir çalışır.
+# Bot emir açmaz, sadece Telegram sinyali gönderir.
 
-BOT_NAME = "Premium GitHub V2 - Akıllı Risk Koruma"
+BOT_NAME = "Premium GitHub V4 - Destek Direnç Futures"
 
 # Tarama
 AUTO_TOP_VOLUME_SCAN = True
-MAX_SCAN_COINS = 120
-MIN_24H_QUOTE_VOLUME = 500_000
+MAX_SCAN_COINS = 300
+MIN_24H_QUOTE_VOLUME = 300_000
 
 # Zaman dilimleri
 RADAR_TIMEFRAME = "5m"
@@ -16,112 +16,72 @@ ENTRY_TIMEFRAME = "15m"
 CONFIRM_TIMEFRAME = "1h"
 TREND_TIMEFRAME = "4h"
 
-RADAR_LIMIT = 160
+RADAR_LIMIT = 180
 ENTRY_LIMIT = 420
 CONFIRM_LIMIT = 320
 TREND_LIMIT = 320
 
-# Yedek / öncelikli coin listesi
+# Öncelikli coinler
 COINS = [
     "BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT",
     "DOGEUSDT", "LINKUSDT", "AVAXUSDT", "ADAUSDT", "LTCUSDT",
     "DOTUSDT", "ARBUSDT", "OPUSDT", "NEARUSDT", "INJUSDT"
 ]
 
-# Yönler
 ALLOW_LONG = True
 ALLOW_SHORT = True
 
 # Gönderim
-MAX_SIGNALS_PER_RUN = 3
-MAX_OPEN_SIGNALS = 3
+MAX_TRADE_SIGNALS_PER_RUN = 3
+MAX_WATCH_ALERTS_PER_RUN = 5
+MAX_OPEN_SIGNALS_NORMAL = 3
+MAX_OPEN_SIGNALS_RISK = 2
 SEND_STATUS_EVERY_MINUTES = 60
+OPEN_SUMMARY_EVERY_MINUTES = 90
 
-# Normal premium sinyal eşikleri
-TRADE_MIN_SCORE = 76
+# Destek / direnç sistemi
+SR_LOOKBACK = 80
+SR_ZONE_PERCENT = 0.45
+MAX_DISTANCE_TO_ENTRY_ZONE_PERCENT = 0.45
+MIN_DISTANCE_TO_TARGET_PERCENT = 0.45
+
+# Trend / hacim / skor
+MIN_SCORE_TRADE = 78
+MIN_SCORE_WATCH = 66
 MIN_ADX_4H = 15
 MIN_ADX_1H = 15
-MIN_VOLUME_RATIO = 0.60
+MIN_VOLUME_RATIO = 0.70
+MIN_RR_TP1 = 0.85
+MIN_RR_TP2 = 1.35
 
-# Radar hızlı giriş eşikleri
+# Radar
 RADAR_ENABLED = True
-RADAR_MIN_SCORE = 72
-RADAR_MIN_5M_MOVE_PERCENT = 0.35
-RADAR_MAX_5M_MOVE_PERCENT = 1.15
-RADAR_MIN_15M_MOVE_PERCENT = 0.15
-RADAR_MIN_VOLUME_RATIO = 1.20
-RADAR_MAX_CURRENT_FROM_CLOSE_PERCENT = 0.20
-
-# Stop azaltma filtresi
-# BILL gibi dipten SHORT ve ZORA gibi tepeden LONG sinyallerini azaltmak için.
+RADAR_MIN_MOVE_PERCENT = 0.35
+RADAR_MAX_MOVE_PERCENT = 1.25
+RADAR_MIN_VOLUME_RATIO = 1.25
 RADAR_LONG_MAX_RSI = 70
 RADAR_SHORT_MIN_RSI = 35
 
-# Aynı coin bugün stop olduysa o coin için yeni sinyal gönderme.
-BLOCK_COIN_AFTER_DAILY_STOP = True
-
-# Risk
-MIN_RISK_PERCENT = 0.25
-MAX_RISK_PERCENT = 2.80
-RADAR_MIN_RISK_PERCENT = 0.40
-RADAR_MAX_RISK_PERCENT = 2.60
-
 # Geç giriş engeli
-MAX_ENTRY_DISTANCE_PERCENT = 0.30
-MAX_TP1_PROGRESS_PERCENT = 35
+MAX_ENTRY_DISTANCE_PERCENT = 0.35
+MAX_TP1_PROGRESS_PERCENT = 40
 
-# Tekrar sinyal engeli
+# Risk / kaldıraç
+MIN_RISK_PERCENT = 0.25
+MAX_RISK_PERCENT = 3.00
+
+# Riskli piyasa modu
+# Sistem ASLA tamamen durmaz. Stop artarsa daha seçici moda geçer.
+RISK_MODE_STOP_COUNT = 2
+RISK_MODE_MAX_TRADE_SIGNALS = 1
+RISK_MODE_MAX_WATCH_ALERTS = 3
+RISK_MODE_ALLOW_RADAR_TRADE = False
+
+# Tekrar engelleri
 DUPLICATE_BLOCK_SECONDS = 2 * 60 * 60
-RADAR_DUPLICATE_BLOCK_SECONDS = 45 * 60
-
-# Açık sinyal takip
-MAX_OPEN_SIGNAL_HOURS = 24
-OPEN_SUMMARY_EVERY_MINUTES = 90
+WATCH_DUPLICATE_BLOCK_SECONDS = 45 * 60
+BLOCK_STOPPED_COIN_HOURS = 6
 
 # Günlük rapor
 DAILY_REPORT_HOUR = 23
 DAILY_REPORT_MINUTE = 45
-
-# Güvenlik / disiplin
-MAX_DAILY_STOP_ALERTS = 99
-
-
-# STOP_FILTRESI_NOTU:
-# Bu sürüm; BILL, ZORA, ATH ve ROBO stoplarından sonra hazırlanmıştır.
-# Eklenen mantık:
-# 1) RADAR LONG sinyali RSI 70 üstündeyse gönderilmez.
-# 2) RADAR SHORT sinyali RSI 35 altındaysa gönderilmez.
-# 3) Bir coin aynı gün stop olduysa, o coin gün bitene kadar tekrar sinyal üretmez.
-# Normal 4H/1H/15M onaylı sistem aynen korunmuştur.
-
-
-# Market koruma filtresi
-# NEAR ve LTC gibi aynı anda gelen LONG stopları, genel piyasa geri çekilmesi riskini gösterir.
-MARKET_GUARD_ENABLED = True
-MARKET_REFERENCE_COINS = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
-
-# LONG için piyasa şartı:
-# En az 2 referans coin 15M'de EMA20 üstünde olmalı ve son 5M sert kırmızı olmamalı.
-MARKET_LONG_MIN_OK_COUNT = 2
-
-# SHORT için piyasa şartı:
-# En az 2 referans coin 15M'de EMA20 altında olmalı ve son 5M sert yeşil olmamalı.
-MARKET_SHORT_MIN_OK_COUNT = 2
-
-# Referans coin 5M mum ters yönde bu orandan fazla hareket ederse o yön bloklanır.
-MARKET_MAX_COUNTER_5M_MOVE_PERCENT = 0.35
-
-# Aynı yönde günlük stop limiti.
-# Örn: 2 LONG stop olduysa o gün yeni LONG sinyali gönderilmez.
-DAILY_DIRECTION_STOP_LIMIT = 3
-
-# MARKET_KORUMA_NOTU:
-# Bu sürüm NEAR/LTC gibi aynı anda gelen LONG stoplarından sonra hazırlanmıştır.
-# Amaç, genel piyasa aşağı dönerken yeni LONG sinyalini kesmektir.
-
-
-# Akıllı risk modu
-RISK_SOFT_STOP_LIMIT = 2
-RISK_HARD_STOP_LIMIT = 5
-RISK_MODE_MAX_SIGNALS = 1
-RISK_MODE_ALLOW_RADAR = False
