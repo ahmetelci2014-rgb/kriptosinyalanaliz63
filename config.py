@@ -3,7 +3,7 @@
 # GitHub Actions ile 5 dakikada bir çalışır.
 # Bot emir açmaz, sadece Telegram sinyali gönderir.
 
-BOT_NAME = "Premium GitHub V4.1 - Dönüş Onaylı Futures"
+BOT_NAME = "Premium GitHub V4.2 - Erken TP Futures"
 
 # Tarama
 AUTO_TOP_VOLUME_SCAN = True
@@ -46,13 +46,13 @@ MAX_DISTANCE_TO_ENTRY_ZONE_PERCENT = 0.45
 MIN_DISTANCE_TO_TARGET_PERCENT = 0.45
 
 # Trend / hacim / skor
-MIN_SCORE_TRADE = 80
-MIN_SCORE_WATCH = 64
+MIN_SCORE_TRADE = 78
+MIN_SCORE_WATCH = 62
 MIN_ADX_4H = 15
 MIN_ADX_1H = 15
 MIN_VOLUME_RATIO = 0.70
-MIN_RR_TP1 = 0.85
-MIN_RR_TP2 = 1.35
+MIN_RR_TP1 = 0.55
+MIN_RR_TP2 = 1.05
 
 # Radar
 RADAR_ENABLED = True
@@ -104,3 +104,12 @@ MARKET_REFERENCE_COINS = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
 MARKET_LONG_MIN_OK_COUNT = 2
 MARKET_SHORT_MIN_OK_COUNT = 2
 MARKET_MAX_COUNTER_5M_MOVE_PERCENT = 0.35
+
+
+# V4.2 Erken TP ayarları
+# V4/V4.1'de TP1 bazı işlemlerde uzak kaldı.
+# Bu sürümde TP1 daha yakın, TP2 ana hedef, TP3 ekstra hedef mantığı kullanılır.
+TP1_R_MULTIPLIER = 0.65
+TP2_R_MULTIPLIER = 1.15
+TP3_R_MULTIPLIER = 1.75
+MIN_TP1_R_MULTIPLIER = 0.45

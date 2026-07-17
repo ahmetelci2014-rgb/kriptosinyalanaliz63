@@ -19,6 +19,10 @@ from config import (
     MIN_VOLUME_RATIO,
     MIN_RR_TP1,
     MIN_RR_TP2,
+    TP1_R_MULTIPLIER,
+    TP2_R_MULTIPLIER,
+    TP3_R_MULTIPLIER,
+    MIN_TP1_R_MULTIPLIER,
     RADAR_MIN_MOVE_PERCENT,
     RADAR_MAX_MOVE_PERCENT,
     RADAR_MIN_VOLUME_RATIO,
@@ -244,6 +248,7 @@ def build_signal_message(signal):
 
 📊 Skor: %{signal["score"]} ({signal["quality"]})
 📈 R/R TP1: {round(signal["rr_tp1"], 2)}
+📌 TP1: Erken kâr hedefi
 📈 R/R TP2: {round(signal["rr_tp2"], 2)}
 🛡️ Stop Mesafesi: %{round(signal["risk_percent"], 2)}
 ⚙️ Kaldıraç Önerisi: {signal["leverage"]}
@@ -269,34 +274,55 @@ def build_signal_message(signal):
 
 
 def build_targets_with_sr(direction, entry, atr, support, resistance):
+    """
+    V4.2 düzeltmesi:
+    Önceki sürümlerde TP1 bazı işlemlerde fazla uzak kalabiliyordu.
+    Burada TP1 daha yakın alınır.
+    TP2 ana hedef, TP3 ekstra hedef gibi çalışır.
+    """
     if direction == "LONG":
-        sl = min(support - atr * 0.35, entry - atr * 1.25)
+        sl = min(support - atr * 0.45, entry - atr * 1.30)
         risk = entry - sl
 
         if risk <= 0:
             return None
 
-        tp1 = max(resistance, entry + risk * 0.90)
-        tp2 = entry + risk * 1.60
-        tp3 = entry + risk * 2.40
+        default_tp1 = entry + risk * TP1_R_MULTIPLIER
+        default_tp2 = entry + risk * TP2_R_MULTIPLIER
+        default_tp3 = entry + risk * TP3_R_MULTIPLIER
 
-        # TP2/TP3 direnç üstü hedeflenebilir ama mantıklı sıralı olsun.
-        tp2 = max(tp2, tp1 + risk * 0.45)
-        tp3 = max(tp3, tp2 + risk * 0.45)
+        if resistance > entry:
+            tp1 = min(resistance, default_tp1)
+
+            if (tp1 - entry) / risk < MIN_TP1_R_MULTIPLIER:
+                tp1 = default_tp1
+        else:
+            tp1 = default_tp1
+
+        tp2 = max(default_tp2, tp1 + risk * 0.35)
+        tp3 = max(default_tp3, tp2 + risk * 0.35)
 
     else:
-        sl = max(resistance + atr * 0.35, entry + atr * 1.25)
+        sl = max(resistance + atr * 0.45, entry + atr * 1.30)
         risk = sl - entry
 
         if risk <= 0:
             return None
 
-        tp1 = min(support, entry - risk * 0.90)
-        tp2 = entry - risk * 1.60
-        tp3 = entry - risk * 2.40
+        default_tp1 = entry - risk * TP1_R_MULTIPLIER
+        default_tp2 = entry - risk * TP2_R_MULTIPLIER
+        default_tp3 = entry - risk * TP3_R_MULTIPLIER
 
-        tp2 = min(tp2, tp1 - risk * 0.45)
-        tp3 = min(tp3, tp2 - risk * 0.45)
+        if support < entry:
+            tp1 = max(support, default_tp1)
+
+            if (entry - tp1) / risk < MIN_TP1_R_MULTIPLIER:
+                tp1 = default_tp1
+        else:
+            tp1 = default_tp1
+
+        tp2 = min(default_tp2, tp1 - risk * 0.35)
+        tp3 = min(default_tp3, tp2 - risk * 0.35)
 
         if tp1 <= 0 or tp2 <= 0 or tp3 <= 0:
             return None
@@ -314,7 +340,6 @@ def build_targets_with_sr(direction, entry, atr, support, resistance):
         "rr_tp1": rr_tp1,
         "rr_tp2": rr_tp2
     }
-
 
 def analyze_futures_setup(symbol, df5m, df15m, df1h, df4h, current_price=None):
     trend, trend_reason, trend_info = get_trend_4h(df4h)

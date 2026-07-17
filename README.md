@@ -1,45 +1,36 @@
-# Premium GitHub V4.1 - Dönüş Onaylı Futures
+# Premium GitHub V4.2 - Erken TP Futures
 
-Bu sürüm V4'te gelen arka arkaya stoplardan sonra hazırlanmıştır.
+Bu sürüm, V4/V4.1 tarafında TP1'in uzak kalması ve işlemlerin TP görmeden stopa gitmesi üzerine hazırlandı.
 
-## Ana değişiklik
+## Ana düzeltme
 
-Destek gördü diye LONG, direnç gördü diye SHORT vermez.
+V4/V4.1'de TP1 bazı işlemlerde fazla uzak kalıyordu.
+Bu sürümde TP1 daha yakın alınır.
 
-A kalite işlem için artık şunlar aranır:
+- TP1: erken kâr hedefi
+- TP2: ana hedef
+- TP3: ekstra hedef
 
-- 4H trend aynı yönde
-- 1H onay aynı yönde
-- 15M dönüş mumu
-- 15M EMA20 onayı
-- Hacim onayı
-- Stop mesafesi en az %0.80
-- Risk / ödül uygunluğu
-- BTC / ETH / SOL market yönü ters değil
+## Sistem mantığı
 
-## LONG kuralı
+- Destek / direnç hesaplar.
+- Trend kontrol eder.
+- 1H onay arar.
+- 15M dönüş mumu arar.
+- Hacim kontrol eder.
+- Stop mesafesine göre kaldıraç önerir.
+- TP1 daha yakın hesaplanır.
+- TP1 gelirse %50 kâr al, kalan işlem için SL girişe çek mantığı korunur.
 
-- Desteğe yakınlık tek başına yetmez.
-- 15M yeşil kapanış gerekir.
-- Fiyat EMA20 üstünde olmalıdır.
-- BTC / ETH / SOL sert düşüşteyse LONG işlem sinyali verilmez.
+## Neden bu değişti?
 
-## SHORT kuralı
-
-- Dirence yakınlık tek başına yetmez.
-- 15M kırmızı kapanış gerekir.
-- Fiyat EMA20 altında olmalıdır.
-- BTC / ETH / SOL sert yükselişteyse SHORT işlem sinyali verilmez.
+Önceki sürümde bazı işlemler doğru yöne kısa hareket etse bile TP1 uzak kaldığı için başarı yazamadan stopa dönebiliyordu.
+V4.2 bunu azaltmak için TP1'i daha erken hedef yapar.
 
 ## Sistem durur mu?
 
 Hayır. Sistem tamamen durmaz.
-
-Stop sayısı artarsa riskli piyasa moduna geçer:
-
-- Maksimum işlem sinyali azalır.
-- Takip radarı devam eder.
-- Bot taramaya devam eder.
+Stop sayısı artarsa riskli piyasa modunda daha seçici devam eder.
 
 ## Kurulum
 
@@ -57,7 +48,7 @@ Zip içindeki dosyaları GitHub repo ana dizinine yükle:
 
 Telegram'da şu isim görünmelidir:
 
-Premium GitHub V4.1 - Dönüş Onaylı Futures
+Premium GitHub V4.2 - Erken TP Futures
 
 ## Uyarı
 

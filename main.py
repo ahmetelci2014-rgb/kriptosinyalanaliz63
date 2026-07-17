@@ -1,5 +1,5 @@
 # main.py
-# Premium GitHub V4.1 - Dönüş Onaylı Futures
+# Premium GitHub V4.2 - Erken TP Futures
 # Emir açmaz. Telegram sinyali ve takip bildirimi gönderir.
 
 import os
@@ -919,7 +919,7 @@ def main():
             f"A kalite aday: {len(trade_candidates)}\n"
             f"Gönderilen işlem sinyali: {len(selected_trade)}\n"
             f"Riskli Piyasa Modu: {'AKTİF' if risk_mode else 'Kapalı'}\n"
-            f"Sistem: Dönüş Onayı + Trend + Destek/Direnç + Hacim + R/R + Kaldıraç."
+            f"Sistem: Erken TP + Dönüş Onayı + Trend + Destek/Direnç + Hacim + Kaldıraç."
         )
 
         for signal in selected_trade:
