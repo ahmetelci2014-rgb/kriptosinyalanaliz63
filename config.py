@@ -85,3 +85,6 @@ BLOCK_STOPPED_COIN_HOURS = 6
 # Günlük rapor
 DAILY_REPORT_HOUR = 23
 DAILY_REPORT_MINUTE = 45
+
+# Açık sinyal maksimum takip süresi
+MAX_OPEN_SIGNAL_HOURS = 24
