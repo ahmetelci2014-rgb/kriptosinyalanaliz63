@@ -432,7 +432,7 @@ def main():
     selected_trade = trade_candidates[:(RISK_MODE_MAX_TRADE_SIGNALS if risk_mode else MAX_TRADE_SIGNALS_PER_RUN)]
     selected_watch = watch_candidates[:(RISK_MODE_MAX_WATCH_ALERTS if risk_mode else MAX_WATCH_ALERTS_PER_RUN)]
     if selected_trade:
-        send_telegram(f"✅ {BOT_NAME} çalıştı.\nTaranan coin: {len(scan_coins)}\nA kalite aday: {len(trade_candidates)}\nGönderilen işlem sinyali: {len(selected_trade)}\nRiskli Piyasa Modu: {'AKTİF' if risk_mode else 'Kapalı'}\nSistem: 4H trend + 1H onay + 15M pullback + hacim + radar.")
+        send_telegram(f"✅ {BOT_NAME} çalıştı.\nTaranan coin: {len(scan_coins)}\nA kalite aday: {len(trade_candidates)}\nGönderilen işlem sinyali: {len(selected_trade)}\nRiskli Piyasa Modu: {'AKTİF' if risk_mode else 'Kapalı'}\nSistem: Dengeli V5.1: 4H trend + 1H onay + 15M pullback + hacim + radar.")
         for sig in selected_trade:
             cur = get_current_price(exchange, sig["symbol"]); valid, reason = is_entry_still_valid(sig, cur)
             if not valid: continue

@@ -313,7 +313,16 @@ def analyze_radar_signal(symbol, df5m, df15m, df1h, df4h, current_price=None):
     elif adx >= 18:
         score += 7
     score += 8 if abs(move5) <= 0.85 else 4
-    signal_class = "TRADE" if score >= RADAR_MIN_SCORE_TRADE and direction_allowed_by_trend(direction, trend, confirm, trade=True) else "WATCH"
+    signal_class = "TRADE" if (
+        score >= RADAR_MIN_SCORE_TRADE
+        and (
+            direction_allowed_by_trend(direction, trend, confirm, trade=True)
+            or (
+                direction_allowed_by_trend(direction, trend, confirm, trade=False)
+                and score >= RADAR_MIN_SCORE_TRADE + 4
+            )
+        )
+    ) else "WATCH"
     if score < RADAR_MIN_SCORE_WATCH:
         return None
     signal = {
