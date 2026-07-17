@@ -1,4 +1,4 @@
-name: Premium GitHub V4
+name: Premium GitHub V5
 
 on:
   workflow_dispatch:
@@ -9,32 +9,26 @@ permissions:
   contents: write
 
 concurrency:
-  group: premium-github-v4
+  group: premium-github-v5
   cancel-in-progress: true
 
 jobs:
   signal-bot:
     runs-on: ubuntu-latest
-
     steps:
       - name: Repo indir
         uses: actions/checkout@v4
-
       - name: Python kur
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - name: Paketleri kur
-        run: |
-          pip install -r requirements.txt
-
+        run: pip install -r requirements.txt
       - name: Botu çalıştır
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python main.py
-
       - name: Durum dosyalarını kaydet
         run: |
           git config user.name "github-actions"
