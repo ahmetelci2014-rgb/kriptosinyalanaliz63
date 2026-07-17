@@ -1,0 +1,39 @@
+name: Erken Pump Radarı
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/5 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: erken-pump-radari
+  cancel-in-progress: true
+
+jobs:
+  pump-radar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repo indir
+        uses: actions/checkout@v4
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Paketleri kur
+        run: |
+          pip install -r requirements.txt
+      - name: Pump radar çalıştır
+        env:
+          TOKEN: ${{ secrets.TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python pump_radar.py
+      - name: Radar durum dosyasını kaydet
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add pump_radar_state.json
+          git diff --cached --quiet || git commit -m "Update pump radar state"
+          git push
