@@ -1,36 +1,114 @@
-# Premium GitHub V5.1 - Dengeli Sinyal
+# Premium MTF Futures Bot v1
 
-V5 çalıştı ama çok sessiz kaldı. 160 coin taramasına rağmen uygun sinyal bulmadı.
-Bu sürüm V5'in daha dengeli halidir.
+Bu sistem sıfırdan hazırlanmıştır.
 
-## Değişiklikler
+Eski V2 / V3 / V4 / V5 dosyalarına bağlı değildir.
 
-- Tarama 160 coinden 220 coine çıkarıldı.
-- Minimum hacim 500.000 USDT yerine 300.000 USDT oldu.
-- İşlem skoru 82 yerine 76 oldu.
-- Takip radarı skoru 70 yerine 62 oldu.
-- 1H / 4H ADX eşiği 14 yerine 12 oldu.
-- Minimum hacim oranı 0.75x yerine 0.60x oldu.
-- Radar hacim şartı 1.35x yerine 1.15x oldu.
-- Market koruma ve risk modu korunur.
+## Ana Mantık
 
-## Amaç
+- 4H ana trend belirler.
+- 1H yönü onaylar.
+- 15M giriş fırsatını arar.
+- 5M erken radar / momentum uyarısı verir.
 
-Sinyali çok azaltmadan, V4'teki kadar kontrolsüz de olmadan orta yolu bulmak.
+## Sinyal Tipleri
 
-## Ana sistem
+### A Kalite MTF Futures Sinyali
 
-- 4H trend
-- 1H onay
-- 15M EMA pullback / dönüş
-- Hacim kontrolü
-- 5M radar momentum
-- ATR tabanlı TP/SL
-- A kalite işlem ve takip radarı ayrımı
+İşlem adayıdır. Açık sinyal takibine alınır.
+
+Telegram'da gelir:
+
+- Coin
+- Yön
+- Giriş
+- TP1
+- TP2
+- TP3
+- SL
+- Kaldıraç önerisi
+- Stop mesafesi
+- 4H / 1H / 15M / 5M açıklaması
+- Hacim, RSI, ADX
+
+### Radar Uyarısı
+
+İşlem sinyali değildir. Coin hareketleniyor diye haber verir.
+
+## TP / SL Takibi
+
+Bot her çalıştığında açık sinyalleri kontrol eder.
+
+Şunları bildirir:
+
+- TP1 geldi
+- TP2 geldi
+- TP3 geldi
+- Stop oldu
+- TP1 sonrası kalan işlem girişten kapandı
+- Sinyal süresi doldu
+
+TP1 gelince varsayılan kural:
+
+- %50 kâr al
+- Kalan işlem için SL girişe çek
+
+## İstatistik Sistemi
+
+performance.json içinde günlük istatistik tutulur.
+
+Günlük raporda şunlar gelir:
+
+- Açılan işlem sinyali
+- Radar uyarısı
+- LONG / SHORT sayısı
+- TP1 / TP2 / TP3
+- Stop sayısı
+- Girişten kapanan
+- Süresi dolan
+- Açık sinyal
+- TP1 başarı oranı
+- En iyi coin
+- En zayıf coin
+- Son kapanan işlemler
+
+## Risk Modu
+
+Sistem tamamen durmaz.
+
+Günlük stop sayısı yükselirse risk moduna geçer:
+
+- İşlem sinyali azalır
+- Radar uyarısı azalır
+- Bot taramaya devam eder
+
+## Kurulum
+
+Zip içindeki dosyaları GitHub repo ana dizinine yükle:
+
+- config.py
+- strategy.py
+- main.py
+- requirements.txt
+- README.md
+- .github/workflows/main.yml
+- open_signals.json
+- performance.json
+- last_signals.json
+
+GitHub Secrets:
+
+- TOKEN
+- CHAT_ID
+
+Telegram'da şu isim görünmelidir:
+
+Premium MTF Futures Bot v1
 
 ## Uyarı
 
 Bu bot finansal tavsiye değildir.
 Kâr garantisi vermez.
 Otomatik emir açmaz.
+Futures işlemler yüksek risklidir.
 Stop mutlaka kullanılmalıdır.
