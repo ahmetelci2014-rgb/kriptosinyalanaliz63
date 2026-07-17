@@ -1,5 +1,5 @@
 # coin_analyzer.py
-# Tek coin detay analiz programı
+# Tek coin detay analiz programı - FIX sürüm
 # Kullanım:
 #   python coin_analyzer.py BTCUSDT
 # veya GitHub Actions Run workflow ekranında SYMBOL alanına BTCUSDT yaz.
@@ -8,7 +8,6 @@
 
 import os
 import sys
-import math
 import requests
 import pandas as pd
 import ccxt
@@ -23,10 +22,10 @@ CHAT_ID = os.getenv("CHAT_ID")
 SYMBOL = os.getenv("SYMBOL") or (sys.argv[1] if len(sys.argv) > 1 else "BTCUSDT")
 
 TIMEFRAMES = {
-    "5M": ("5m", 180),
-    "15M": ("15m", 280),
-    "1H": ("1h", 240),
-    "4H": ("4h", 240),
+    "5M": ("5m", 220),
+    "15M": ("15m", 320),
+    "1H": ("1h", 320),
+    "4H": ("4h", 320),
 }
 
 
@@ -49,7 +48,7 @@ def send_telegram(message):
 
 
 def normalize_symbol(symbol):
-    symbol = symbol.upper().replace("/", "").replace("-", "").replace("_", "")
+    symbol = str(symbol).upper().replace("/", "").replace("-", "").replace("_", "").strip()
 
     if not symbol.endswith("USDT"):
         symbol = symbol + "USDT"
@@ -69,14 +68,58 @@ def get_exchange():
     })
 
 
-def fetch_df(exchange, symbol, timeframe, limit):
+def resolve_okx_swap_symbol(exchange, symbol):
+    """
+    Kullanıcı BTCUSDT yazar.
+    OKX/ccxt tarafında bu BTC/USDT:USDT olarak aranır.
+    Coin OKX USDT swap tarafında yoksa düzgün hata mesajı verir.
+    """
+    symbol = normalize_symbol(symbol)
+    wanted = to_okx_symbol(symbol)
+
+    markets = exchange.load_markets()
+
+    if wanted in markets:
+        market = markets[wanted]
+        if market.get("swap") and market.get("quote") == "USDT":
+            return wanted
+
+    base = symbol.replace("USDT", "")
+    candidates = []
+
+    for market_symbol, market in markets.items():
+        try:
+            if not market.get("active", True):
+                continue
+            if not market.get("swap", False):
+                continue
+            if market.get("quote") != "USDT":
+                continue
+            if market.get("settle") != "USDT":
+                continue
+            if str(market.get("base", "")).upper() == base:
+                candidates.append(market_symbol)
+        except Exception:
+            continue
+
+    if candidates:
+        return candidates[0]
+
+    raise RuntimeError(
+        f"{symbol} OKX USDT futures/swap tarafında bulunamadı. "
+        f"Bu program sadece OKX USDT perpetual/futures coinlerini analiz eder. "
+        f"Coin spotta olabilir ama futures tarafında olmayabilir."
+    )
+
+
+def fetch_df(exchange, market_symbol, timeframe, limit):
     ohlcv = exchange.fetch_ohlcv(
-        to_okx_symbol(symbol),
+        market_symbol,
         timeframe=timeframe,
         limit=limit
     )
 
-    if not ohlcv or len(ohlcv) < 80:
+    if not ohlcv or len(ohlcv) < 60:
         return None
 
     return pd.DataFrame(
@@ -86,6 +129,9 @@ def fetch_df(exchange, symbol, timeframe, limit):
 
 
 def add_indicators(df):
+    if df is None or df.empty or len(df) < 60:
+        return None
+
     df = df.copy()
 
     df["rsi"] = RSIIndicator(df["close"], window=14).rsi()
@@ -118,11 +164,19 @@ def add_indicators(df):
     df["volume_ratio"] = df["volume"] / df["volume_avg"]
     df["ema20_slope"] = df["ema20"] - df["ema20"].shift(3)
 
-    return df.dropna().reset_index(drop=True)
+    df = df.dropna().reset_index(drop=True)
+
+    if len(df) < 30:
+        return None
+
+    return df
 
 
 def fmt(value):
-    value = float(value)
+    try:
+        value = float(value)
+    except Exception:
+        return "-"
 
     if value >= 100:
         return f"{value:.2f}"
@@ -145,16 +199,30 @@ def abs_pct(a, b):
 
 
 def nearest_support_resistance(df, price, lookback=80):
-    recent = df.iloc[-lookback - 1:-1].copy()
+    if df is None or len(df) < 5:
+        return {
+            "support1": price,
+            "support2": price,
+            "resistance1": price,
+            "resistance2": price,
+            "support_distance": 0,
+            "resistance_distance": 0,
+        }
+
+    usable_lookback = min(lookback, max(5, len(df) - 2))
+    recent = df.iloc[-usable_lookback - 1:-1].copy()
+
+    if recent.empty:
+        recent = df.copy()
 
     lows = sorted([float(x) for x in recent["low"] if float(x) < price], reverse=True)
     highs = sorted([float(x) for x in recent["high"] if float(x) > price])
 
-    support1 = lows[0] if lows else float(recent["low"].min())
-    support2 = lows[1] if len(lows) > 1 else float(recent["low"].min())
+    support1 = lows[0] if len(lows) >= 1 else float(recent["low"].min())
+    support2 = lows[1] if len(lows) >= 2 else support1
 
-    resistance1 = highs[0] if highs else float(recent["high"].max())
-    resistance2 = highs[1] if len(highs) > 1 else float(recent["high"].max())
+    resistance1 = highs[0] if len(highs) >= 1 else float(recent["high"].max())
+    resistance2 = highs[1] if len(highs) >= 2 else resistance1
 
     return {
         "support1": support1,
@@ -167,6 +235,20 @@ def nearest_support_resistance(df, price, lookback=80):
 
 
 def trend_status(df, label):
+    if df is None or len(df) < 2:
+        return {
+            "direction": "NEUTRAL",
+            "text": f"{label}: veri yetersiz",
+            "close": 0,
+            "rsi": "-",
+            "adx": "-",
+            "volume_ratio": "-",
+            "ema20": 0,
+            "ema50": 0,
+            "ema200": 0,
+            "macd_ok": False,
+        }
+
     row = df.iloc[-2]
 
     close = float(row["close"])
@@ -205,17 +287,16 @@ def trend_status(df, label):
 
 
 def candle_signal_15m(df):
+    if df is None or len(df) < 3:
+        return "NEUTRAL", "15M veri yetersiz"
+
     last = df.iloc[-2]
     prev = df.iloc[-3]
 
     close = float(last["close"])
     open_ = float(last["open"])
-    high = float(last["high"])
-    low = float(last["low"])
     ema20 = float(last["ema20"])
-    ema50 = float(last["ema50"])
     rsi = float(last["rsi"])
-    volume_ratio = float(last["volume_ratio"])
     macd_hist = float(last["macd_hist"])
     prev_macd_hist = float(prev["macd_hist"])
 
@@ -234,6 +315,9 @@ def candle_signal_15m(df):
 
 
 def radar_5m(df):
+    if df is None or len(df) < 25:
+        return "NEUTRAL", "5M veri yetersiz"
+
     last = df.iloc[-2]
 
     move = pct(float(last["close"]), float(last["open"]))
@@ -260,11 +344,17 @@ def leverage_suggestion(risk_percent):
     return "1x veya pas geç"
 
 
-def build_trade_plan(direction, price, df15, sr):
+def build_trade_plan(direction, price, df15):
+    if df15 is None or len(df15) < 20:
+        return None
+
     row = df15.iloc[-2]
     atr = float(row["atr"])
 
     recent = df15.iloc[-14:-2]
+
+    if recent.empty or atr <= 0:
+        return None
 
     if direction == "LONG":
         swing_low = float(recent["low"].min())
@@ -319,6 +409,9 @@ def build_trade_plan(direction, price, df15, sr):
 def score_direction(direction, s4h, s1h, entry15, radar5, df15):
     score = 0
     reasons = []
+
+    if df15 is None or len(df15) < 2:
+        return score, ["veri yetersiz"]
 
     row = df15.iloc[-2]
     rsi = float(row["rsi"])
@@ -390,21 +483,51 @@ def final_verdict(long_score, short_score):
     return "WAIT", "Net işlem şartı yok"
 
 
+def plan_text(title, plan):
+    if not plan:
+        return f"\n{title}\nPlan üretilemedi."
+
+    return f"""
+{title}
+Giriş: {fmt(plan["entry"])}
+TP1: {fmt(plan["tp1"])}
+TP2: {fmt(plan["tp2"])}
+TP3: {fmt(plan["tp3"])}
+SL: {fmt(plan["sl"])}
+Risk: %{round(plan["risk_percent"], 2)}
+R/R TP1: {round(plan["rr1"], 2)}
+R/R TP2: {round(plan["rr2"], 2)}
+Kaldıraç Önerisi: {plan["leverage"]}
+"""
+
+
 def analyze_coin(symbol):
     symbol = normalize_symbol(symbol)
     exchange = get_exchange()
+    market_symbol = resolve_okx_swap_symbol(exchange, symbol)
 
     dfs = {}
 
     for label, (tf, limit) in TIMEFRAMES.items():
-        df = fetch_df(exchange, symbol, tf, limit)
+        raw_df = fetch_df(exchange, market_symbol, tf, limit)
+
+        if raw_df is None:
+            raise RuntimeError(f"{symbol} için {label} verisi alınamadı veya veri yetersiz.")
+
+        df = add_indicators(raw_df)
 
         if df is None:
-            raise RuntimeError(f"{symbol} için {label} verisi alınamadı.")
+            raise RuntimeError(f"{symbol} için {label} indikatör verisi yetersiz.")
 
-        dfs[label] = add_indicators(df)
+        dfs[label] = df
 
-    price = float(exchange.fetch_ticker(to_okx_symbol(symbol)).get("last"))
+    ticker = exchange.fetch_ticker(market_symbol)
+    price = ticker.get("last")
+
+    if price is None:
+        raise RuntimeError(f"{symbol} güncel fiyat alınamadı.")
+
+    price = float(price)
 
     df5 = dfs["5M"]
     df15 = dfs["15M"]
@@ -428,8 +551,8 @@ def analyze_coin(symbol):
 
     verdict, verdict_reason = final_verdict(long_score, short_score)
 
-    long_plan = build_trade_plan("LONG", price, df15, sr15)
-    short_plan = build_trade_plan("SHORT", price, df15, sr15)
+    long_plan = build_trade_plan("LONG", price, df15)
+    short_plan = build_trade_plan("SHORT", price, df15)
 
     row15 = df15.iloc[-2]
 
@@ -437,6 +560,7 @@ def analyze_coin(symbol):
 📊 TEK COIN DETAY ANALİZİ
 
 Coin: {symbol}
+OKX Market: {market_symbol}
 Güncel Fiyat: {fmt(price)}
 
 🧭 Çoklu Zaman Dilimi:
@@ -474,35 +598,8 @@ Nedenler: {", ".join(short_reasons) if short_reasons else "Yeterli neden yok"}
 {verdict} → {verdict_reason}
 """
 
-    if long_plan:
-        report += f"""
-
-🟢 LONG Senaryosu:
-Giriş: {fmt(long_plan["entry"])}
-TP1: {fmt(long_plan["tp1"])}
-TP2: {fmt(long_plan["tp2"])}
-TP3: {fmt(long_plan["tp3"])}
-SL: {fmt(long_plan["sl"])}
-Risk: %{round(long_plan["risk_percent"], 2)}
-R/R TP1: {round(long_plan["rr1"], 2)}
-R/R TP2: {round(long_plan["rr2"], 2)}
-Kaldıraç Önerisi: {long_plan["leverage"]}
-"""
-
-    if short_plan:
-        report += f"""
-
-🔴 SHORT Senaryosu:
-Giriş: {fmt(short_plan["entry"])}
-TP1: {fmt(short_plan["tp1"])}
-TP2: {fmt(short_plan["tp2"])}
-TP3: {fmt(short_plan["tp3"])}
-SL: {fmt(short_plan["sl"])}
-Risk: %{round(short_plan["risk_percent"], 2)}
-R/R TP1: {round(short_plan["rr1"], 2)}
-R/R TP2: {round(short_plan["rr2"], 2)}
-Kaldıraç Önerisi: {short_plan["leverage"]}
-"""
+    report += plan_text("🟢 LONG Senaryosu:", long_plan)
+    report += plan_text("🔴 SHORT Senaryosu:", short_plan)
 
     report += """
 
