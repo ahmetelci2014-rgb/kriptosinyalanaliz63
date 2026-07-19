@@ -44,20 +44,20 @@ TRACK_LIMIT = 180
 # SİNYAL SAYISI
 # =========================
 MAX_TRADE_SIGNALS_PER_RUN = 3
-MAX_RADAR_ALERTS_PER_RUN = 5
+MAX_RADAR_ALERTS_PER_RUN = 0
 MAX_OPEN_SIGNALS = 3
 
 # Stop sayısı artarsa sistem durmaz, sadece daha seçici olur.
 RISK_MODE_STOP_COUNT = 3
 RISK_MODE_MAX_TRADE_SIGNALS = 1
-RISK_MODE_MAX_RADAR_ALERTS = 3
+RISK_MODE_MAX_RADAR_ALERTS = 0
 RISK_MODE_ALLOW_RADAR_TRADE = False
 
 # =========================
 # FİLTRELER
 # =========================
 MIN_SCORE_TRADE = 76
-MIN_SCORE_RADAR = 64
+MIN_SCORE_RADAR = 999
 
 MIN_ADX_4H = 12
 MIN_ADX_1H = 12
@@ -72,8 +72,8 @@ SHORT_RSI_MAX = 60
 RADAR_MIN_5M_MOVE_PERCENT = 0.30
 RADAR_MAX_5M_MOVE_PERCENT = 1.35
 RADAR_MIN_VOLUME_RATIO = 1.15
-RADAR_TRADE_MIN_SCORE = 86
-RADAR_TRADE_MIN_VOLUME_RATIO = 1.60
+RADAR_TRADE_MIN_SCORE = 999
+RADAR_TRADE_MIN_VOLUME_RATIO = 999
 
 # =========================
 # RİSK / TP / SL
@@ -128,3 +128,10 @@ SYSTEM_NOTE = (
     "A kalite işlem ve radar uyarısı ayrıdır. "
     "Sistem stopta durmaz, risk modunda daha seçici devam eder."
 )
+
+
+# ANA_BOT_RADAR_KAPALI_NOTU:
+# Ana MTF bot içinde gelen "5M / 15M RADAR - İŞLEM AÇMA" aday mesajları kapatıldı.
+# Pump radar ayrı çalışmaya devam eder; pump_radar.py dosyasına dokunulmadı.
+# Ana bot sadece kendi net işlem sinyallerini ve takip/rapor mesajlarını göndermelidir.
+# MAX_SCAN_COINS = 300 olarak bırakıldı.
