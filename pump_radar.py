@@ -1,5 +1,5 @@
 # pump_radar.py
-# Net Pump Radar v2
+# Net Pump Radar v3 - Erken Giriş + Kırılım Girişi
 # Sadece OKX USDT Futures tarafında güçlü pump LONG işlem sinyali üretir.
 # Spot uyarı, zayıf "erken hacim radarı", sadece takip mesajı yoktur.
 # Emir açmaz; Telegram sinyali gönderir ve kendi pump_radar_state.json içinde TP/SL takibi yapar.
@@ -15,7 +15,7 @@ from datetime import datetime, timezone, timedelta
 TOKEN = os.getenv("TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
-BOT_NAME = "Net Pump Radar v2"
+BOT_NAME = "Net Pump Radar v3"
 STATE_FILE = "pump_radar_state.json"
 TR_TZ = timezone(timedelta(hours=3))
 
@@ -31,26 +31,39 @@ DUPLICATE_SECONDS = 180 * 60
 # Pump sinyali 6 saat içinde TP1 görmezse takipten çıkar
 SIGNAL_TTL_SECONDS = 6 * 60 * 60
 
-# Net pump işlem filtresi
-MIN_SCORE = 82
+# Skorlar
+MIN_SCORE_BREAKOUT = 82
+MIN_SCORE_EARLY = 78
 
-# Çok erken ama boş hareket olmasın / çok geç de kalmasın
-MIN_5M_CHANGE = 0.60
-MAX_5M_CHANGE = 2.20
-MIN_15M_CHANGE = 0.80
-MAX_15M_CHANGE = 4.50
+# KIRILIM GİRİŞİ şartları
+MIN_5M_CHANGE_BREAKOUT = 0.60
+MAX_5M_CHANGE_BREAKOUT = 2.20
+MIN_15M_CHANGE_BREAKOUT = 0.80
+MAX_15M_CHANGE_BREAKOUT = 4.50
+MIN_5M_VOLUME_RATIO_BREAKOUT = 3.00
+MIN_15M_VOLUME_RATIO_BREAKOUT = 1.80
+MAX_SUPPORT_DISTANCE_BREAKOUT = 2.50
+MAX_EMA20_DISTANCE_BREAKOUT = 1.40
+
+# ERKEN GİRİŞ şartları
+# Amaç: OPG örneğindeki 0.1064 gibi, kırılımdan önce destek/EMA yakınında yakalamak.
+MIN_5M_CHANGE_EARLY = 0.20
+MAX_5M_CHANGE_EARLY = 1.35
+MIN_15M_CHANGE_EARLY = 0.15
+MAX_15M_CHANGE_EARLY = 2.80
+MIN_5M_VOLUME_RATIO_EARLY = 2.50
+MIN_15M_VOLUME_RATIO_EARLY = 1.40
+MAX_SUPPORT_DISTANCE_EARLY = 1.85
+MAX_EMA20_DISTANCE_EARLY = 0.95
+MAX_RESISTANCE_DISTANCE_EARLY = 1.35
+
+# Ortasına gelmiş pump elemesi
 MIN_1H_CHANGE = 0.00
-MAX_1H_CHANGE = 8.00
+MAX_1H_CHANGE_BREAKOUT = 8.00
+MAX_1H_CHANGE_EARLY = 5.00
 MIN_2H_CHANGE = -0.50
-MAX_2H_CHANGE = 12.00
-
-# Hacim şartı
-MIN_5M_VOLUME_RATIO = 3.00
-MIN_15M_VOLUME_RATIO = 1.80
-
-# Risk ve yapı şartı
-MAX_SUPPORT_DISTANCE_PERCENT = 2.50
-MAX_EMA20_DISTANCE_PERCENT = 1.40
+MAX_2H_CHANGE_BREAKOUT = 12.00
+MAX_2H_CHANGE_EARLY = 8.00
 MAX_GREEN_CANDLES = 4
 
 # Hedefler
@@ -223,7 +236,7 @@ def candle_close_strength(candle):
     return (close - low) / (high - low)
 
 
-def analyze_symbol(symbol, o):
+def common_data(symbol, o):
     close = fnum(o[-1][4])
     open_5m = fnum(o[-1][1])
     high_5m = fnum(o[-1][2])
@@ -253,11 +266,13 @@ def analyze_symbol(symbol, o):
 
     prev_high = max(fnum(x[2]) for x in o[-42:-2])
     breakout = close > prev_high
+    resistance_distance = ((prev_high - close) / close) * 100 if close > 0 else 999
+    if resistance_distance < 0:
+        resistance_distance = 0
 
     support = min(fnum(x[3]) for x in o[-18:-2])
     sl = support * (1 - SL_BUFFER_PERCENT / 100)
     risk_distance = close - sl
-
     if risk_distance <= 0:
         return None
 
@@ -266,7 +281,6 @@ def analyze_symbol(symbol, o):
     closes = [fnum(x[4]) for x in o]
     ema20 = ema(closes, 20)
     ema50 = ema(closes, 50)
-
     if ema20 is None or ema50 is None:
         return None
 
@@ -276,111 +290,263 @@ def analyze_symbol(symbol, o):
     body_percent = abs(pct(close, open_5m))
     range_percent = pct(high_5m, low_5m)
 
-    # Kesin eleme:
-    # Gönderdiğin örneklerden:
-    # TRUTH -> 15M hacim 1.40x ve destek %3.78 olduğu için elenir.
-    # ORDI -> Spot olduğu için bu dosyada zaten taranmaz.
-    # BONK -> kırılım yok, 5M hacim zayıf, destek uzak; elenir.
-    # CARDS -> Spot ve kırılım yok, 15M negatif; elenir.
-    # LAB -> kırılım yok; elenir.
-    if not breakout:
-        return None
+    return {
+        "symbol": symbol,
+        "close": close,
+        "open_5m": open_5m,
+        "high_5m": high_5m,
+        "low_5m": low_5m,
+        "ch5": ch5,
+        "ch15": ch15,
+        "ch1h": ch1h,
+        "ch2h": ch2h,
+        "vr5": vr5,
+        "vr15": vr15,
+        "prev_high": prev_high,
+        "breakout": breakout,
+        "resistance_distance": resistance_distance,
+        "support": support,
+        "sl": sl,
+        "risk_distance": risk_distance,
+        "risk_percent": risk_percent,
+        "ema20": ema20,
+        "ema50": ema50,
+        "ema20_distance": ema20_distance,
+        "greens": greens,
+        "close_strength": close_strength,
+        "body_percent": body_percent,
+        "range_percent": range_percent,
+    }
 
-    if ch5 < MIN_5M_CHANGE or ch5 > MAX_5M_CHANGE:
-        return None
 
-    if ch15 < MIN_15M_CHANGE or ch15 > MAX_15M_CHANGE:
-        return None
-
-    if ch1h < MIN_1H_CHANGE or ch1h > MAX_1H_CHANGE:
-        return None
-
-    if ch2h < MIN_2H_CHANGE or ch2h > MAX_2H_CHANGE:
-        return None
-
-    if vr5 < MIN_5M_VOLUME_RATIO:
-        return None
-
-    if vr15 < MIN_15M_VOLUME_RATIO:
-        return None
-
-    if risk_percent > MAX_SUPPORT_DISTANCE_PERCENT:
-        return None
-
-    if ema20_distance > MAX_EMA20_DISTANCE_PERCENT:
-        return None
-
-    if close < ema20 or ema20 < ema50:
-        return None
-
-    if greens > MAX_GREEN_CANDLES:
-        return None
-
-    # Son mum kapanışı güçlü olmalı; fitilden dönmüş hareketleri azaltır.
-    if close_strength < 0.58:
-        return None
-
-    score = 0
+def score_breakout(d):
     reasons = []
+    score = 0
 
     score += 20
     reasons.append("direnç kırılımı var")
 
-    if ch5 >= 1.0:
+    if d["ch5"] >= 1.0:
         score += 18
-        reasons.append(f"5M güçlü hareket %{round(ch5, 2)}")
+        reasons.append(f"5M güçlü hareket %{round(d['ch5'], 2)}")
     else:
         score += 12
-        reasons.append(f"5M erken hareket %{round(ch5, 2)}")
+        reasons.append(f"5M erken hareket %{round(d['ch5'], 2)}")
 
-    if ch15 >= 1.5:
+    if d["ch15"] >= 1.5:
         score += 18
-        reasons.append(f"15M yükseliş %{round(ch15, 2)}")
+        reasons.append(f"15M yükseliş %{round(d['ch15'], 2)}")
     else:
         score += 12
-        reasons.append(f"15M pozitif %{round(ch15, 2)}")
+        reasons.append(f"15M pozitif %{round(d['ch15'], 2)}")
 
-    if vr5 >= 5:
+    if d["vr5"] >= 5:
         score += 22
-        reasons.append(f"5M hacim patlaması {round(vr5, 2)}x")
+        reasons.append(f"5M hacim patlaması {round(d['vr5'], 2)}x")
     else:
         score += 16
-        reasons.append(f"5M hacim güçlü {round(vr5, 2)}x")
+        reasons.append(f"5M hacim güçlü {round(d['vr5'], 2)}x")
 
-    if vr15 >= 2.5:
+    if d["vr15"] >= 2.5:
         score += 18
-        reasons.append(f"15M hacim güçlü {round(vr15, 2)}x")
+        reasons.append(f"15M hacim güçlü {round(d['vr15'], 2)}x")
     else:
         score += 12
-        reasons.append(f"15M hacim yeterli {round(vr15, 2)}x")
+        reasons.append(f"15M hacim yeterli {round(d['vr15'], 2)}x")
 
-    if close > ema20 > ema50:
+    if d["close"] > d["ema20"] > d["ema50"]:
         score += 8
         reasons.append("EMA20/EMA50 yapısı olumlu")
 
-    if 0 <= ch1h <= 4:
+    if 0 <= d["ch1h"] <= 4:
         score += 5
         reasons.append("1H çok şişmemiş")
 
-    if risk_percent <= 1.60:
+    if d["risk_percent"] <= 1.60:
         score += 5
-        reasons.append(f"stop mesafesi iyi %{round(risk_percent, 2)}")
+        reasons.append(f"stop mesafesi iyi %{round(d['risk_percent'], 2)}")
 
-    if close_strength >= 0.70:
+    if d["close_strength"] >= 0.70:
         score += 4
         reasons.append("son mum güçlü kapanmış")
 
-    if score < MIN_SCORE:
+    return score, reasons
+
+
+def score_early(d):
+    reasons = []
+    score = 0
+
+    score += 18
+    reasons.append("erken giriş modu")
+
+    if d["resistance_distance"] <= 0.75:
+        score += 16
+        reasons.append(f"dirence çok yakın %{round(d['resistance_distance'], 2)}")
+    else:
+        score += 10
+        reasons.append(f"dirence yakın %{round(d['resistance_distance'], 2)}")
+
+    if d["risk_percent"] <= 1.35:
+        score += 16
+        reasons.append(f"stop çok yakın %{round(d['risk_percent'], 2)}")
+    else:
+        score += 10
+        reasons.append(f"stop kabul edilebilir %{round(d['risk_percent'], 2)}")
+
+    if d["vr5"] >= 4:
+        score += 20
+        reasons.append(f"5M hacim patlaması {round(d['vr5'], 2)}x")
+    else:
+        score += 14
+        reasons.append(f"5M hacim güçlü {round(d['vr5'], 2)}x")
+
+    if d["vr15"] >= 2:
+        score += 16
+        reasons.append(f"15M hacim güçlü {round(d['vr15'], 2)}x")
+    else:
+        score += 10
+        reasons.append(f"15M hacim yeterli {round(d['vr15'], 2)}x")
+
+    if d["close"] > d["ema20"] >= d["ema50"]:
+        score += 10
+        reasons.append("EMA üstü erken dönüş")
+
+    if d["ema20_distance"] <= 0.55:
+        score += 7
+        reasons.append(f"EMA20 yakın %{round(d['ema20_distance'], 2)}")
+
+    if 0 <= d["ch1h"] <= 3:
+        score += 5
+        reasons.append("1H şişmemiş")
+
+    if d["close_strength"] >= 0.62:
+        score += 4
+        reasons.append("mum kapanışı güçlü")
+
+    return score, reasons
+
+
+def analyze_breakout_mode(d):
+    if not d["breakout"]:
         return None
 
-    tp1 = close + risk_distance * TP1_R
-    tp2 = close + risk_distance * TP2_R
-    tp3 = close + risk_distance * TP3_R
+    if d["ch5"] < MIN_5M_CHANGE_BREAKOUT or d["ch5"] > MAX_5M_CHANGE_BREAKOUT:
+        return None
+
+    if d["ch15"] < MIN_15M_CHANGE_BREAKOUT or d["ch15"] > MAX_15M_CHANGE_BREAKOUT:
+        return None
+
+    if d["ch1h"] < MIN_1H_CHANGE or d["ch1h"] > MAX_1H_CHANGE_BREAKOUT:
+        return None
+
+    if d["ch2h"] < MIN_2H_CHANGE or d["ch2h"] > MAX_2H_CHANGE_BREAKOUT:
+        return None
+
+    if d["vr5"] < MIN_5M_VOLUME_RATIO_BREAKOUT:
+        return None
+
+    if d["vr15"] < MIN_15M_VOLUME_RATIO_BREAKOUT:
+        return None
+
+    if d["risk_percent"] > MAX_SUPPORT_DISTANCE_BREAKOUT:
+        return None
+
+    if d["ema20_distance"] > MAX_EMA20_DISTANCE_BREAKOUT:
+        return None
+
+    if d["close"] < d["ema20"] or d["ema20"] < d["ema50"]:
+        return None
+
+    if d["greens"] > MAX_GREEN_CANDLES:
+        return None
+
+    if d["close_strength"] < 0.58:
+        return None
+
+    score, reasons = score_breakout(d)
+    if score < MIN_SCORE_BREAKOUT:
+        return None
+
+    return "KIRILIM GİRİŞİ", score, reasons
+
+
+def analyze_early_mode(d):
+    # Erken mod, direnç kırılmadan önceki bölgeyi yakalamak içindir.
+    # Direnç kırıldıysa aynı coin kırılım modunda değerlendirilsin.
+    if d["breakout"]:
+        return None
+
+    if d["ch5"] < MIN_5M_CHANGE_EARLY or d["ch5"] > MAX_5M_CHANGE_EARLY:
+        return None
+
+    if d["ch15"] < MIN_15M_CHANGE_EARLY or d["ch15"] > MAX_15M_CHANGE_EARLY:
+        return None
+
+    if d["ch1h"] < MIN_1H_CHANGE or d["ch1h"] > MAX_1H_CHANGE_EARLY:
+        return None
+
+    if d["ch2h"] < MIN_2H_CHANGE or d["ch2h"] > MAX_2H_CHANGE_EARLY:
+        return None
+
+    if d["vr5"] < MIN_5M_VOLUME_RATIO_EARLY:
+        return None
+
+    if d["vr15"] < MIN_15M_VOLUME_RATIO_EARLY:
+        return None
+
+    if d["risk_percent"] > MAX_SUPPORT_DISTANCE_EARLY:
+        return None
+
+    if d["ema20_distance"] > MAX_EMA20_DISTANCE_EARLY:
+        return None
+
+    if d["resistance_distance"] > MAX_RESISTANCE_DISTANCE_EARLY:
+        return None
+
+    if d["close"] < d["ema20"] or d["ema20"] < d["ema50"]:
+        return None
+
+    if d["greens"] > MAX_GREEN_CANDLES:
+        return None
+
+    if d["close_strength"] < 0.55:
+        return None
+
+    score, reasons = score_early(d)
+    if score < MIN_SCORE_EARLY:
+        return None
+
+    return "ERKEN GİRİŞ", score, reasons
+
+
+def analyze_symbol(symbol, o):
+    d = common_data(symbol, o)
+    if not d:
+        return None
+
+    result = analyze_breakout_mode(d)
+    if not result:
+        result = analyze_early_mode(d)
+
+    if not result:
+        return None
+
+    mode, score, reasons = result
+
+    entry = d["close"]
+    sl = d["sl"]
+    risk_distance = d["risk_distance"]
+
+    tp1 = entry + risk_distance * TP1_R
+    tp2 = entry + risk_distance * TP2_R
+    tp3 = entry + risk_distance * TP3_R
 
     return {
         "symbol": symbol,
         "direction": "LONG",
-        "entry": close,
+        "mode": mode,
+        "entry": entry,
         "sl": sl,
         "tp1": tp1,
         "tp2": tp2,
@@ -390,23 +556,27 @@ def analyze_symbol(symbol, o):
         "tp1_hit": False,
         "tp2_hit": False,
         "source": "PUMP_TRADE",
-        "risk_percent": risk_percent,
-        "ch5": ch5,
-        "ch15": ch15,
-        "ch1h": ch1h,
-        "ch2h": ch2h,
-        "vr5": vr5,
-        "vr15": vr15,
-        "support": support,
-        "prev_high": prev_high,
-        "ema20_distance": ema20_distance,
-        "greens": greens,
-        "close_strength": close_strength,
+        "risk_percent": d["risk_percent"],
+        "ch5": d["ch5"],
+        "ch15": d["ch15"],
+        "ch1h": d["ch1h"],
+        "ch2h": d["ch2h"],
+        "vr5": d["vr5"],
+        "vr15": d["vr15"],
+        "support": d["support"],
+        "prev_high": d["prev_high"],
+        "breakout": d["breakout"],
+        "resistance_distance": d["resistance_distance"],
+        "ema20_distance": d["ema20_distance"],
+        "greens": d["greens"],
+        "close_strength": d["close_strength"],
         "reasons": reasons,
     }
 
 
 def signal_key(signal):
+    # Modu key içine koyuyoruz ki aynı coinde erken girişten sonra kırılım girişi gelmesin diye
+    # duplicate blok yine aynı coin üzerinde çalışsın.
     return f"{signal['symbol']}::PUMP_LONG"
 
 
@@ -429,9 +599,18 @@ def mark_signal(signal, state):
 def signal_message(s):
     clean_symbol = s["symbol"].replace(":USDT", "")
 
+    extra = ""
+    if s.get("mode") == "ERKEN GİRİŞ":
+        extra = (
+            "\n📍 Erken giriş notu:\n"
+            f"Direnç henüz kırılmamış olabilir. Yakın direnç: {fmt(s['prev_high'])}\n"
+            "Bu modun avantajı stopun daha yakın olmasıdır; dezavantajı fake hareket riskidir."
+        )
+
     return f"""🚀 {BOT_NAME}
 
 🟢 PUMP RADAR İŞLEM SİNYALİ
+Mod: {s.get('mode', 'KIRILIM GİRİŞİ')}
 Coin: {clean_symbol}
 Yön: LONG
 Skor: %{s['score']}
@@ -453,8 +632,8 @@ TP3: {fmt(s['tp3'])}
 15M Hacim: {round(s['vr15'], 2)}x
 
 📌 Filtre:
-Direnç kırılımı: Evet
-Kırılan seviye: {fmt(s['prev_high'])}
+Direnç kırılımı: {'Evet' if s['breakout'] else 'Hayır'}
+Yakın direnç: {fmt(s['prev_high'])} | Uzaklık: %{round(s['resistance_distance'], 2)}
 Yakın destek: {fmt(s['support'])}
 EMA20 uzaklığı: %{round(s['ema20_distance'], 2)}
 Yeşil mum: {s['greens']}
@@ -462,6 +641,7 @@ Mum kapanış gücü: %{round(s['close_strength'] * 100, 1)}
 
 🧠 Neden geldi:
 {', '.join(s['reasons'])}
+{extra}
 
 📌 Kural:
 Bu spot/takip radarı değildir.
@@ -503,6 +683,7 @@ def update_open_signals(ex, state):
                 send_telegram(
                     f"⏳ PUMP SİNYAL SÜRESİ DOLDU\n"
                     f"Coin: {clean_symbol}\n"
+                    f"Mod: {sig.get('mode', 'PUMP')}\n"
                     f"Giriş: {fmt(entry)} | Güncel: {fmt(close)}"
                 )
                 to_delete.append(key)
@@ -513,6 +694,7 @@ def update_open_signals(ex, state):
                     send_telegram(
                         f"❌ PUMP STOP OLDU\n"
                         f"Coin: {clean_symbol}\n"
+                        f"Mod: {sig.get('mode', 'PUMP')}\n"
                         f"Yön: LONG\n"
                         f"Giriş: {fmt(entry)}\n"
                         f"SL: {fmt(sl)}\n"
@@ -527,6 +709,7 @@ def update_open_signals(ex, state):
                     send_telegram(
                         f"✅ PUMP TP1 GELDİ\n"
                         f"Coin: {clean_symbol}\n"
+                        f"Mod: {sig.get('mode', 'PUMP')}\n"
                         f"Yön: LONG\n"
                         f"Giriş: {fmt(entry)}\n"
                         f"TP1: {fmt(tp1)}\n"
@@ -540,6 +723,7 @@ def update_open_signals(ex, state):
                     send_telegram(
                         f"✅ PUMP TP2 GELDİ\n"
                         f"Coin: {clean_symbol}\n"
+                        f"Mod: {sig.get('mode', 'PUMP')}\n"
                         f"Yön: LONG\n"
                         f"TP2: {fmt(tp2)}"
                     )
@@ -549,6 +733,7 @@ def update_open_signals(ex, state):
                     send_telegram(
                         f"🏁 PUMP TP3 GELDİ\n"
                         f"Coin: {clean_symbol}\n"
+                        f"Mod: {sig.get('mode', 'PUMP')}\n"
                         f"Yön: LONG\n"
                         f"TP3: {fmt(tp3)}"
                     )
@@ -559,6 +744,7 @@ def update_open_signals(ex, state):
                     send_telegram(
                         f"🟡 PUMP GİRİŞTEN KAPANDI\n"
                         f"Coin: {clean_symbol}\n"
+                        f"Mod: {sig.get('mode', 'PUMP')}\n"
                         f"Yön: LONG\n"
                         f"Giriş: {fmt(entry)}\n"
                         f"Güncel: {fmt(close)}"
@@ -612,8 +798,10 @@ def run():
         except Exception as e:
             print("analiz hata", symbol, e)
 
+    # Erken giriş ve kırılım girişini aynı listede skorla sıralar.
+    # Daha düşük riskli sinyaller aynı skorda öne geçer.
     candidates.sort(
-        key=lambda x: (x["score"], x["vr5"], x["vr15"], -x["risk_percent"]),
+        key=lambda x: (x["score"], -x["risk_percent"], x["vr5"], x["vr15"]),
         reverse=True
     )
 
