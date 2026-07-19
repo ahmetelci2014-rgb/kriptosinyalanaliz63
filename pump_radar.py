@@ -15,7 +15,7 @@ from datetime import datetime, timezone, timedelta
 TOKEN = os.getenv("TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
-BOT_NAME = "Net Pump Radar v3.1"
+BOT_NAME = "Net Pump Radar v3.2"
 STATE_FILE = "pump_radar_state.json"
 TR_TZ = timezone(timedelta(hours=3))
 
@@ -42,7 +42,7 @@ MIN_15M_CHANGE_BREAKOUT = 0.80
 MAX_15M_CHANGE_BREAKOUT = 4.50
 MIN_5M_VOLUME_RATIO_BREAKOUT = 3.00
 MIN_15M_VOLUME_RATIO_BREAKOUT = 1.80
-MAX_SUPPORT_DISTANCE_BREAKOUT = 2.50
+MAX_SUPPORT_DISTANCE_BREAKOUT = 2.00
 MAX_EMA20_DISTANCE_BREAKOUT = 1.40
 
 # ERKEN GİRİŞ şartları
@@ -65,6 +65,12 @@ MIN_2H_CHANGE = -0.50
 MAX_2H_CHANGE_BREAKOUT = 12.00
 MAX_2H_CHANGE_EARLY = 8.00
 MAX_GREEN_CANDLES = 4
+
+# OPG dersi: Pump LONG geldiğinde RSI aşırı şişmişse long kovalanmasın.
+MAX_RSI_5M_BREAKOUT = 75.0
+MAX_RSI_15M_BREAKOUT = 72.0
+MAX_RSI_5M_EARLY = 72.0
+MAX_RSI_15M_EARLY = 68.0
 
 # Hedefler
 TP1_R = 0.65
@@ -118,6 +124,44 @@ def ema(values, period):
     for val in vals[period:]:
         e = val * k + e * (1 - k)
     return e
+
+
+def calc_rsi(values, period=14):
+    vals = [fnum(v) for v in values if fnum(v) > 0]
+    if len(vals) < period + 1:
+        return 50.0
+
+    gains = []
+    losses = []
+
+    for i in range(1, period + 1):
+        diff = vals[i] - vals[i - 1]
+        gains.append(max(diff, 0))
+        losses.append(abs(min(diff, 0)))
+
+    avg_gain = sum(gains) / period
+    avg_loss = sum(losses) / period
+
+    for i in range(period + 1, len(vals)):
+        diff = vals[i] - vals[i - 1]
+        gain = max(diff, 0)
+        loss = abs(min(diff, 0))
+        avg_gain = ((avg_gain * (period - 1)) + gain) / period
+        avg_loss = ((avg_loss * (period - 1)) + loss) / period
+
+    if avg_loss == 0:
+        return 100.0
+
+    rs = avg_gain / avg_loss
+    return 100 - (100 / (1 + rs))
+
+
+def aggregate_15m_closes(ohlcv):
+    closes = []
+    start = len(ohlcv) % 3
+    for i in range(start, len(ohlcv) - 2, 3):
+        closes.append(fnum(ohlcv[i + 2][4]))
+    return closes
 
 
 def send_telegram(message):
@@ -279,6 +323,10 @@ def common_data(symbol, o):
     risk_percent = (risk_distance / close) * 100
 
     closes = [fnum(x[4]) for x in o]
+    closes15 = aggregate_15m_closes(o)
+    rsi5 = calc_rsi(closes, 14)
+    rsi15 = calc_rsi(closes15, 14)
+
     ema20 = ema(closes, 20)
     ema50 = ema(closes, 50)
     if ema20 is None or ema50 is None:
@@ -312,6 +360,8 @@ def common_data(symbol, o):
         "ema20": ema20,
         "ema50": ema50,
         "ema20_distance": ema20_distance,
+        "rsi5": rsi5,
+        "rsi15": rsi15,
         "greens": greens,
         "close_strength": close_strength,
         "body_percent": body_percent,
@@ -452,6 +502,11 @@ def analyze_breakout_mode(d):
     if d["risk_percent"] > MAX_SUPPORT_DISTANCE_BREAKOUT:
         return None
 
+    # OPG güvenlik filtresi:
+    # 5M ve 15M RSI aynı anda şişmişse kırılım sonrası long kovalanmasın.
+    if d["rsi5"] >= MAX_RSI_5M_BREAKOUT and d["rsi15"] >= MAX_RSI_15M_BREAKOUT:
+        return None
+
     if d["ema20_distance"] > MAX_EMA20_DISTANCE_BREAKOUT:
         return None
 
@@ -496,6 +551,10 @@ def analyze_early_mode(d):
         return None
 
     if d["risk_percent"] > MAX_SUPPORT_DISTANCE_EARLY:
+        return None
+
+    # Erken girişte RSI daha düşük olmalı; hareket daha başındayken gelsin.
+    if d["rsi5"] >= MAX_RSI_5M_EARLY and d["rsi15"] >= MAX_RSI_15M_EARLY:
         return None
 
     if d["ema20_distance"] > MAX_EMA20_DISTANCE_EARLY:
@@ -568,6 +627,8 @@ def analyze_symbol(symbol, o):
         "breakout": d["breakout"],
         "resistance_distance": d["resistance_distance"],
         "ema20_distance": d["ema20_distance"],
+        "rsi5": d["rsi5"],
+        "rsi15": d["rsi15"],
         "greens": d["greens"],
         "close_strength": d["close_strength"],
         "reasons": reasons,
@@ -636,6 +697,7 @@ Direnç kırılımı: {'Evet' if s['breakout'] else 'Hayır'}
 Yakın direnç: {fmt(s['prev_high'])} | Uzaklık: %{round(s['resistance_distance'], 2)}
 Yakın destek: {fmt(s['support'])}
 EMA20 uzaklığı: %{round(s['ema20_distance'], 2)}
+RSI 5M / 15M: {round(s.get('rsi5', 50), 2)} / {round(s.get('rsi15', 50), 2)}
 Yeşil mum: {s['greens']}
 Mum kapanış gücü: %{round(s['close_strength'] * 100, 1)}
 
@@ -830,3 +892,12 @@ if __name__ == "__main__":
 # 140 coin sınırı kaldırıldı.
 # MAX_COINS_PER_RUN = 999 yapıldı; OKX'teki uygun USDT futures paritelerinin tamamına yakını taranır.
 # MIN_24H_QUOTE_VOLUME = 200_000 yapıldı; çok düşük/boş hacimli pariteler yine elenir.
+
+
+# V3_2_GUVENLIK_NOTU:
+# Ana bot, coin analiz botu, workflow ve JSON dosyaları değiştirilmedi.
+# Sadece pump_radar.py güvenlik filtresi eklendi.
+# OPG dersi:
+# - Kırılım girişinde risk limiti %2.50 -> %2.00 yapıldı.
+# - 5M ve 15M RSI aynı anda çok şişmişse LONG sinyal gönderilmez.
+# - Erken girişte RSI daha düşük tutulur.
