@@ -45,7 +45,7 @@ TRACK_LIMIT = 180
 # =========================
 MAX_TRADE_SIGNALS_PER_RUN = 3
 MAX_RADAR_ALERTS_PER_RUN = 0
-MAX_OPEN_SIGNALS = 3
+MAX_OPEN_SIGNALS = 5
 
 # Stop sayısı artarsa sistem durmaz, sadece daha seçici olur.
 RISK_MODE_STOP_COUNT = 3
@@ -135,3 +135,10 @@ SYSTEM_NOTE = (
 # Pump radar ayrı çalışmaya devam eder; pump_radar.py dosyasına dokunulmadı.
 # Ana bot sadece kendi net işlem sinyallerini ve takip/rapor mesajlarını göndermelidir.
 # MAX_SCAN_COINS = 300 olarak bırakıldı.
+
+
+# ACIK_SINYAL_LIMITI_5_NOTU:
+# Açık sinyal limiti tamamen kaldırılmadı; güvenlik için 3 yerine 5 yapıldı.
+# Amaç: Yeni A kalite fırsatları kaçırmayı azaltmak.
+# Ana bot mantığı, TP/SL takibi, pump_radar.py ve workflow dosyaları değiştirilmedi.
+# Radar/işlem açma aday mesajları kapalı kalır.
