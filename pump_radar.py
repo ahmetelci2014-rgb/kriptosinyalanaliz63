@@ -15,13 +15,13 @@ from datetime import datetime, timezone, timedelta
 TOKEN = os.getenv("TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
-BOT_NAME = "Net Pump Radar v3"
+BOT_NAME = "Net Pump Radar v3.1"
 STATE_FILE = "pump_radar_state.json"
 TR_TZ = timezone(timedelta(hours=3))
 
 # Tarama
-MAX_COINS_PER_RUN = 140
-MIN_24H_QUOTE_VOLUME = 750_000
+MAX_COINS_PER_RUN = 999
+MIN_24H_QUOTE_VOLUME = 200_000
 MAX_NEW_SIGNALS_PER_RUN = 2
 MAX_OPEN_SIGNALS = 2
 
@@ -773,7 +773,7 @@ def run():
         return
 
     symbols = load_okx_futures_symbols(ex)
-    print("Taranacak OKX Futures coin:", len(symbols))
+    print("Taranacak OKX Futures coin:", len(symbols), "| Limit:", MAX_COINS_PER_RUN, "| Min 24h hacim:", MIN_24H_QUOTE_VOLUME)
 
     candidates = []
 
@@ -824,3 +824,9 @@ def run():
 
 if __name__ == "__main__":
     run()
+
+
+# V3_1_TUM_FUTURES_NOTU:
+# 140 coin sınırı kaldırıldı.
+# MAX_COINS_PER_RUN = 999 yapıldı; OKX'teki uygun USDT futures paritelerinin tamamına yakını taranır.
+# MIN_24H_QUOTE_VOLUME = 200_000 yapıldı; çok düşük/boş hacimli pariteler yine elenir.
