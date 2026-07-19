@@ -1,8 +1,13 @@
 # pump_radar.py
-# Net Pump/Dump Radar v3.3
+# Net Pump/Dump Radar v3.3 - TP Takip Fix
 # Sadece OKX USDT Futures tarafında güçlü erken PUMP LONG ve erken DUMP SHORT işlem sinyali üretir.
 # Spot uyarı, zayıf "takip" mesajı, "işlem açma" aday mesajı yoktur.
 # Emir açmaz; Telegram sinyali gönderir ve pump_radar_state.json içinde TP/SL takibi yapar.
+#
+# DÜZELTME:
+# Eski sürüm TP takibinde fetch_ohlcv(limit=8) çağırıyordu.
+# Ama fetch_ohlcv fonksiyonu 60 mumdan az veriyi reddettiği için TP/SL takibi çalışmıyordu.
+# Bu sürüm TP takibinde 90 mum çeker ve sinyal zamanından sonraki mumları kontrol eder.
 
 import os
 import json
@@ -15,7 +20,7 @@ from datetime import datetime, timezone, timedelta
 TOKEN = os.getenv("TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
-BOT_NAME = "Net Pump/Dump Radar v3.3"
+BOT_NAME = "Net Pump/Dump Radar v3.3 - TP Fix"
 STATE_FILE = "pump_radar_state.json"
 TR_TZ = timezone(timedelta(hours=3))
 
@@ -143,15 +148,19 @@ def ema(values, period):
     vals = [fnum(v) for v in values if fnum(v) > 0]
     if len(vals) < period:
         return None
+
     k = 2 / (period + 1)
     e = sum(vals[:period]) / period
+
     for val in vals[period:]:
         e = val * k + e * (1 - k)
+
     return e
 
 
 def calc_rsi(values, period=14):
     vals = [fnum(v) for v in values if fnum(v) > 0]
+
     if len(vals) < period + 1:
         return 50.0
 
@@ -183,8 +192,10 @@ def calc_rsi(values, period=14):
 def aggregate_15m_closes(ohlcv):
     closes = []
     start = len(ohlcv) % 3
+
     for i in range(start, len(ohlcv) - 2, 3):
         closes.append(fnum(ohlcv[i + 2][4]))
+
     return closes
 
 
@@ -211,6 +222,7 @@ def load_state():
     try:
         if not os.path.exists(STATE_FILE):
             return {}
+
         txt = open(STATE_FILE, "r", encoding="utf-8").read().strip()
         return json.loads(txt) if txt else {}
     except Exception as e:
@@ -277,8 +289,10 @@ def load_okx_futures_symbols(ex):
 def fetch_ohlcv(ex, symbol, limit=90):
     try:
         data = ex.fetch_ohlcv(symbol, timeframe="5m", limit=limit)
+
         if not data or len(data) < 60:
             return None
+
         return data
     except Exception as e:
         print("fetch hata", symbol, e)
@@ -287,15 +301,18 @@ def fetch_ohlcv(ex, symbol, limit=90):
 
 def color_count(ohlcv, direction):
     count = 0
+
     for candle in reversed(ohlcv[-7:-1]):
         is_green = fnum(candle[4]) > fnum(candle[1])
         is_red = fnum(candle[4]) < fnum(candle[1])
+
         if direction == "LONG" and is_green:
             count += 1
         elif direction == "SHORT" and is_red:
             count += 1
         else:
             break
+
     return count
 
 
@@ -303,8 +320,10 @@ def candle_close_strength(candle):
     high = fnum(candle[2])
     low = fnum(candle[3])
     close = fnum(candle[4])
+
     if high <= low:
         return 0.5
+
     return (close - low) / (high - low)
 
 
@@ -329,10 +348,12 @@ def common_data(symbol, o):
 
     vol15 = sum(fnum(x[5]) for x in o[-3:])
     prev15 = []
+
     for start in range(6, 36, 3):
         chunk = o[-start:-start + 3]
         if len(chunk) == 3:
             prev15.append(sum(fnum(x[5]) for x in chunk))
+
     avg15 = sum(prev15) / len(prev15) if prev15 else 0
     vr15 = vol15 / avg15 if avg15 > 0 else 0
 
@@ -344,8 +365,10 @@ def common_data(symbol, o):
 
     resistance_distance = ((prev_high - close) / close) * 100 if close > 0 else 999
     support_distance = ((close - prev_low) / close) * 100 if close > 0 else 999
+
     if resistance_distance < 0:
         resistance_distance = 0
+
     if support_distance < 0:
         support_distance = 0
 
@@ -362,11 +385,13 @@ def common_data(symbol, o):
 
     closes = [fnum(x[4]) for x in o]
     closes15 = aggregate_15m_closes(o)
+
     rsi5 = calc_rsi(closes, 14)
     rsi15 = calc_rsi(closes15, 14)
 
     ema20 = ema(closes, 20)
     ema50 = ema(closes, 50)
+
     if ema20 is None or ema50 is None:
         return None
 
@@ -662,8 +687,10 @@ def analyze_long_breakout_mode(d):
         return None
 
     score, reasons = score_long_breakout(d)
+
     if score < MIN_SCORE_BREAKOUT:
         return None
+
     return "KIRILIM PUMP", score, reasons
 
 
@@ -698,8 +725,10 @@ def analyze_long_early_mode(d):
         return None
 
     score, reasons = score_long_early(d)
+
     if score < MIN_SCORE_EARLY:
         return None
+
     return "ERKEN PUMP", score, reasons
 
 
@@ -733,8 +762,10 @@ def analyze_short_breakdown_mode(d):
         return None
 
     score, reasons = score_short_breakdown(d)
+
     if score < MIN_SCORE_BREAKOUT:
         return None
+
     return "KIRILIM DUMP", score, reasons
 
 
@@ -769,8 +800,10 @@ def analyze_short_early_mode(d):
         return None
 
     score, reasons = score_short_early(d)
+
     if score < MIN_SCORE_EARLY:
         return None
+
     return "ERKEN DUMP", score, reasons
 
 
@@ -836,22 +869,27 @@ def make_signal(symbol, direction, mode, score, reasons, d):
 
 def analyze_symbol(symbol, o):
     d = common_data(symbol, o)
+
     if not d:
         return None
 
     candidates = []
 
     result = analyze_long_breakout_mode(d) or analyze_long_early_mode(d)
+
     if result:
         mode, score, reasons = result
         sig = make_signal(symbol, "LONG", mode, score, reasons, d)
+
         if sig:
             candidates.append(sig)
 
     result = analyze_short_breakdown_mode(d) or analyze_short_early_mode(d)
+
     if result:
         mode, score, reasons = result
         sig = make_signal(symbol, "SHORT", mode, score, reasons, d)
+
         if sig:
             candidates.append(sig)
 
@@ -862,6 +900,7 @@ def analyze_symbol(symbol, o):
         key=lambda x: (x["score"], -x["risk_percent"], x["vr5"], x["vr15"]),
         reverse=True
     )
+
     return candidates[0]
 
 
@@ -885,6 +924,7 @@ def mark_signal(signal, state):
     state.setdefault("last_pump_signals", {})[duplicate_key(signal)] = now_ts()
 
     cutoff = now_ts() - 24 * 3600
+
     state["last_pump_signals"] = {
         k: v for k, v in state["last_pump_signals"].items()
         if int(v) >= cutoff
@@ -967,6 +1007,7 @@ Stop şarttır. Otomatik emir açmaz.""".strip()
 
 def update_open_signals(ex, state):
     open_signals = state.setdefault("open_pump_signals", {})
+
     if not open_signals:
         return
 
@@ -976,11 +1017,34 @@ def update_open_signals(ex, state):
         try:
             symbol = sig["symbol"]
             direction = sig.get("direction", "LONG")
-            candles = fetch_ohlcv(ex, symbol, limit=8)
+
+            # TP TAKİP DÜZELTMESİ:
+            # Eski kod burada limit=8 kullanıyordu.
+            # fetch_ohlcv fonksiyonu 60 mumdan az veriyi reddettiği için
+            # TP/SL takibi hiç çalışmıyordu.
+            # Bu yüzden artık 90 mum çekiyoruz.
+            candles = fetch_ohlcv(ex, symbol, limit=90)
+
             if not candles:
                 continue
 
-            recent = candles[-3:]
+            created_ms = int(sig.get("created_ts", now_ts())) * 1000
+
+            # Sinyal zamanından sonraki mumları kontrol et.
+            recent = [
+                c for c in candles
+                if int(c[0]) >= created_ms - (5 * 60 * 1000)
+            ]
+
+            # Saat/veri farkı yüzünden boş kalırsa son 3 mumu kullan.
+            if not recent:
+                recent = candles[-3:]
+
+            # Çok eski muma bakıp yanlış TP/SL mesajı atmamak için
+            # son 12 adet 5M mumu kontrol ediyoruz.
+            # 12 adet 5M mum = yaklaşık 1 saat.
+            recent = recent[-12:]
+
             hi = max(fnum(x[2]) for x in recent)
             lo = min(fnum(x[3]) for x in recent)
             close = fnum(candles[-1][4])
@@ -1026,6 +1090,7 @@ def update_open_signals(ex, state):
                 if tp1_hit:
                     sig["tp1_hit"] = True
                     sig["sl"] = entry
+
                     send_telegram(
                         f"✅ PUMP/DUMP TP1 GELDİ\n"
                         f"Coin: {clean_symbol}\n"
@@ -1044,6 +1109,7 @@ def update_open_signals(ex, state):
 
                 if not sig.get("tp2_hit") and tp2_hit:
                     sig["tp2_hit"] = True
+
                     send_telegram(
                         f"✅ PUMP/DUMP TP2 GELDİ\n"
                         f"Coin: {clean_symbol}\n"
@@ -1097,6 +1163,7 @@ def run():
         return
 
     symbols = load_okx_futures_symbols(ex)
+
     print(
         "Taranacak OKX Futures coin:",
         len(symbols),
@@ -1111,10 +1178,12 @@ def run():
     for symbol in symbols:
         try:
             candles = fetch_ohlcv(ex, symbol)
+
             if not candles:
                 continue
 
             signal = analyze_symbol(symbol, candles)
+
             if not signal:
                 continue
 
@@ -1125,8 +1194,10 @@ def run():
             if open_key(signal) in open_signals:
                 continue
 
-            # Eski v3.2 state uyumluluğu: önceden LONG key böyle tutuluyordu.
+            # Eski v3.2 state uyumluluğu:
+            # Önceden LONG key böyle tutuluyordu.
             legacy_long_key = f"{signal['symbol']}::PUMP_LONG"
+
             if legacy_long_key in open_signals:
                 continue
 
@@ -1147,6 +1218,7 @@ def run():
 
     for signal in candidates[:limit]:
         ok = send_telegram(signal_message(signal))
+
         if ok:
             key = open_key(signal)
             open_signals[key] = signal
@@ -1154,6 +1226,7 @@ def run():
             sent += 1
 
     print("Yeni pump/dump işlem sinyali:", sent)
+
     save_state(state)
 
 
@@ -1161,9 +1234,10 @@ if __name__ == "__main__":
     run()
 
 
-# V3_3_PUMP_DUMP_NOTU:
-# Ana bot, coin analiz botu, workflow ve JSON dosyaları değiştirilmedi.
+# V3_3_PUMP_DUMP_TP_FIX_NOTU:
+# Ana bot, coin analiz botu, workflow ve diğer JSON dosyaları değiştirilmedi.
 # Sadece pump_radar.py güncellendi.
-# Eski LONG pump mantığı korunur.
-# Yeni eklenen: OKX Futures için erken DUMP / SHORT sinyal tarafı.
-# Spot/takip/radar aday mesajı yoktur; sadece işlem sinyali üretir.
+# Eski LONG pump ve DUMP/SHORT mantığı korunur.
+# Düzeltme: TP/SL takibi artık 8 mum değil 90 mum çeker.
+# Düzeltme: Takip kontrolü sinyal zamanından sonraki 5M mumlara göre yapılır.
+# Spot/takip/radar aday mesajı yoktur; sadece OKX Futures işlem sinyali üretir ve takip eder.
