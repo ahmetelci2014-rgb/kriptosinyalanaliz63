@@ -423,7 +423,15 @@ def analyze_mtf_trade(symbol, df15m, df1h, df4h, current_price=None):
 
     signal_class = "TRADE" if strict_trade_ok else "RADAR"
 
-    if score < MIN_SCORE_RADAR:
+    # ÖNEMLİ DÜZELTME:
+    # MIN_SCORE_RADAR = 999 yapınca radar kapansın istiyoruz.
+    # Ama eski kod bu şartı TRADE sinyallerine de uyguluyordu.
+    # Bu yüzden A kalite sinyal bile 999 skor olmadığı için eleniyordu.
+    # Artık MIN_SCORE_RADAR sadece RADAR sınıfına uygulanır.
+    if signal_class == "RADAR" and score < MIN_SCORE_RADAR:
+        return None
+
+    if signal_class == "TRADE" and score < MIN_SCORE_TRADE:
         return None
 
     signal = {
@@ -471,7 +479,6 @@ def analyze_5m_radar(symbol, df5m, df15m, df1h, df4h, current_price=None):
         return None
 
     last5 = df5m.iloc[-2]
-    prev5 = df5m.iloc[-3]
     entry = float(current_price) if current_price is not None and current_price > 0 else float(last5["close"])
 
     move5 = ((float(last5["close"]) - float(last5["open"])) / float(last5["open"])) * 100
@@ -550,7 +557,12 @@ def analyze_5m_radar(symbol, df5m, df15m, df1h, df4h, current_price=None):
 
     signal_class = "TRADE" if can_be_trade else "RADAR"
 
-    if score < MIN_SCORE_RADAR:
+    # Radar tarafı kapalıysa sadece RADAR olanları kapatır.
+    # İleride 5M radar trade açılırsa TRADE sinyalini yanlışlıkla engellemez.
+    if signal_class == "RADAR" and score < MIN_SCORE_RADAR:
+        return None
+
+    if signal_class == "TRADE" and score < RADAR_TRADE_MIN_SCORE:
         return None
 
     signal = {
