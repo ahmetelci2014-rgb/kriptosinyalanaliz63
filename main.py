@@ -1422,6 +1422,9 @@ def main():
 
         watch_message = build_limit_watch_message(signal, current_price=current_price)
         if send_telegram(watch_message):
+            # Limit dolu takip mesajı da TRADE duplicate listesine yazılır.
+            # Böylece BREV / SYRUP / XLM gibi aynı güçlü adaylar 5 dakikada bir tekrar tekrar gelmez.
+            mark_sent(signal, radar=False)
             mark_sent(signal, radar=True)
             time.sleep(1)
 
