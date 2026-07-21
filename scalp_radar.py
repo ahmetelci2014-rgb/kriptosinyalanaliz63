@@ -1,496 +1,1227 @@
 # scalp_radar.py
-# Hızlı Scalp Radar v1
-# Ana MTF bot ve Pump/Dump Radar'dan tamamen ayrı çalışır.
-# Emir açmaz; sadece Telegram sinyali gönderir ve kendi state dosyasında takip eder.
+# Hızlı Scalp Radar v2 - Tüm Coin + Sinyal Yok Analiz Raporu
+# OKX USDT Futures tarar. Emir açmaz, sadece Telegram sinyali gönderir.
+# TOKEN ve CHAT_ID GitHub Secrets içinden okunur.
 
-import os, json, time, math
-from datetime import datetime, timezone, timedelta
+import os
+import time
+import json
+import math
 import requests
+from collections import Counter
+from datetime import datetime, timezone, timedelta
+
 import ccxt
+import pandas as pd
+
+
+# =========================
+# GENEL AYARLAR
+# =========================
+
+BOT_NAME = "Hızlı Scalp Radar v2"
 
 TOKEN = os.getenv("TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
-BOT_NAME = "Hızlı Scalp Radar v1"
 STATE_FILE = "scalp_radar_state.json"
-TR_TZ = timezone(timedelta(hours=3))
 
-MAX_COINS_PER_RUN = 300
-MIN_24H_QUOTE_VOLUME = 500_000
-MAX_NEW_SIGNALS_PER_RUN = 2
-MAX_OPEN_SIGNALS = 3
-DUPLICATE_SECONDS = 90 * 60
-SIGNAL_TTL_SECONDS = 3 * 60 * 60
+TR_TIMEZONE = timezone(timedelta(hours=3))
 
-# LONG: hızlı düşüş + tepki
-LONG_DROP_5M = -1.20
-LONG_DROP_15M = -0.60
-LONG_RSI_1M_MIN = 18.0
-LONG_RSI_1M_MAX = 38.0
-LONG_RSI_5M_MAX = 45.0
-LONG_MIN_LOWER_WICK = 0.42
-LONG_MIN_CLOSE_STRENGTH = 0.50
+# Tüm uygun OKX USDT futures coinleri taransın.
+AUTO_ALL_OKX_USDT_FUTURES = True
+MAX_SCAN_COINS = 9999
+MIN_24H_QUOTE_VOLUME = 100_000
 
-# SHORT: hızlı yükseliş + red
-SHORT_RISE_5M = 1.20
-SHORT_RISE_15M = 0.60
-SHORT_RSI_1M_MIN = 62.0
-SHORT_RSI_5M_MIN = 55.0
-SHORT_MIN_UPPER_WICK = 0.42
-SHORT_MAX_CLOSE_STRENGTH = 0.50
+# Hızlı scalp sinyal limiti
+MAX_NEW_SIGNALS_PER_RUN = 3
+MAX_OPEN_SCALP_SIGNALS = 3
+_NEW_SIGNALS_PER_RUN = 3
+MAX_OPEN_SCDUPLICATE_SECONDS = 90 * 60
 
-MIN_VOLUME_RATIO_1M = 2.00
-MIN_VOLUME_RATIO_5M = 1.30
-MAX_RISK_PERCENT = 1.35
-MAX_ABS_1H_CHANGE = 8.0
-MIN_SCORE = 78
+# Açık scalp takip süresi
+MAX_OPEN_SIGNAL_MINUTES = 180
+TRACK_TIMEFRAME = "1m"
+TRACK_LIMIT = 180
 
-TP1_R = 0.55
-TP2_R = 0.95
-TP3_R = 1.35
+# Sinyal yok raporu
+SEND_NO_SIGNAL_REPORT = True
+NO_SIGNAL_REPORT_EVERY_MINUTES = 20
+
+# Özel test edilecek coinler
+DEBUG_SYMBOLS = ["ONEUSDT"]
+
+# Scalp TP/SL
+TP1_R = 0.65
+TP2_R = 1.15
+TP3_R = 1.70
 SL_BUFFER_PERCENT = 0.08
+
+# Risk
+MIN_RISK_PERCENT = 0.20
+MAX_RISK_PERCENT = 1.65
+
+# Filtreler kontrollü gevşetildi
+MIN_SCORE = 76
+
+# LONG için: hızlı düşüş sonrası tepki
+LONG_MIN_5M_DROP = 0.65
+LONG_MIN_15M_DROP = 0.25
+LONG_RSI_1M_MIN = 16
+LONG_RSI_1M_MAX = 46
+LONG_RSI_5M_MAX = 53
+
+# SHORT için: hızlı yükseliş sonrası red
+SHORT_MIN_5M_PUMP = 0.65
+SHORT_MIN_15M_PUMP = 0.25
+SHORT_RSI_1M_MIN = 54
+SHORT_RSI_1M_MAX = 86
+SHORT_RSI_5M_MIN = 49
+
+# Hacim / fitil
+MIN_1M_VOLUME_RATIO = 1.35
+MIN_5M_VOLUME_RATIO = 1.00
+MIN_WICK_PERCENT = 25
+LONG_MIN_CLOSE_POWER = 43
+SHORT_MAX_CLOSE_POWER = 57
+
+
+# =========================
+# TELEGRAM
+# =========================
+
+def send_telegram(message):
+    if not TOKEN or not CHAT_ID:
+        print("TOKEN veya CHAT_ID eksik.")
+        return False
+
+    try:
+        response = requests.post(
+            f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+            data={"chat_id": CHAT_ID, "text": message},
+            timeout=20,
+        )
+        print("Telegram cevap:", response.status_code, response.text)
+        return response.status_code == 200
+    except Exception as e:
+        print("Telegram gönderim hatası:", e)
+        return False
+
+
+# =========================
+# JSON STATE
+# =========================
+
+def load_state():
+    try:
+        if not os.path.exists(STATE_FILE):
+            return {
+                "open_scalp_signals": {},
+                "last_sent": {},
+                "last_no_signal_report": 0,
+                "stats": {},
+            }
+
+        with open(STATE_FILE, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+            if not content:
+                return {
+                    "open_scalp_signals": {},
+                    "last_sent": {},
+                    "last_no_signal_report": 0,
+                    "stats": {},
+                }
+
+            data = json.loads(content)
+            if not isinstance(data, dict):
+                data = {}
+
+            data.setdefault("open_scalp_signals", {})
+            data.setdefault("last_sent", {})
+            data.setdefault("last_no_signal_report", 0)
+            data.setdefault("stats", {})
+            return data
+
+    except Exception as e:
+        print("State okuma hatası:", e)
+        return {
+            "open_scalp_signals": {},
+            "last_sent": {},
+            "last_no_signal_report": 0,
+            "stats": {},
+        }
+
+
+def save_state(state):
+    try:
+        with open(STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(state, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception as e:
+        print("State kaydetme hatası:", e)
+        return False
 
 
 def now_ts():
     return int(time.time())
 
 
-def fmt(v):
-    v = fnum(v)
-    if v >= 100:
-        return f"{v:.2f}"
-    if v >= 1:
-        return f"{v:.4f}"
-    if v >= 0.01:
-        return f"{v:.6f}"
-    return f"{v:.10f}"
+def tr_now_text():
+    return datetime.now(TR_TIMEZONE).strftime("%Y-%m-%d %H:%M:%S")
 
 
-def fnum(v, default=0.0):
+# =========================
+# OKX / DATA
+# =========================
+
+def get_exchange():
+    return ccxt.okx({
+        "enableRateLimit": True,
+        "options": {"defaultType": "swap"},
+    })
+
+
+def to_okx_symbol(symbol):
+    base = symbol.replace("USDT", "")
+    return f"{base}/USDT:USDT"
+
+
+def okx_symbol_to_bot_symbol(okx_symbol):
+    base = okx_symbol.split("/")[0]
+    return f"{base}USDT".upper()
+
+
+def safe_quote_volume(ticker):
     try:
-        x = float(v)
-        if math.isnan(x) or math.isinf(x):
-            return default
-        return x
+        value = ticker.get("quoteVolume")
+        if value is not None:
+            return float(value)
+
+        info = ticker.get("info", {})
+        for key in ["volCcy24h", "volUsd24h", "vol24h"]:
+            value = info.get(key)
+            if value is not None:
+                return float(value)
     except Exception:
-        return default
+        pass
+
+    return 0.0
 
 
-def pct(new, old):
-    old, new = fnum(old), fnum(new)
-    return ((new - old) / old) * 100 if old else 0.0
-
-
-def calc_rsi(values, period=14):
-    vals = [fnum(v) for v in values if fnum(v) > 0]
-    if len(vals) < period + 1:
-        return 50.0
-    gains, losses = [], []
-    for i in range(1, period + 1):
-        diff = vals[i] - vals[i - 1]
-        gains.append(max(diff, 0))
-        losses.append(abs(min(diff, 0)))
-    avg_gain = sum(gains) / period
-    avg_loss = sum(losses) / period
-    for i in range(period + 1, len(vals)):
-        diff = vals[i] - vals[i - 1]
-        avg_gain = ((avg_gain * (period - 1)) + max(diff, 0)) / period
-        avg_loss = ((avg_loss * (period - 1)) + abs(min(diff, 0))) / period
-    if avg_loss == 0:
-        return 100.0
-    rs = avg_gain / avg_loss
-    return 100 - (100 / (1 + rs))
-
-
-def aggregate_closes(ohlcv, n):
-    closes = []
-    start = len(ohlcv) % n
-    for i in range(start, len(ohlcv) - n + 1, n):
-        closes.append(fnum(ohlcv[i + n - 1][4]))
-    return closes
-
-
-def candle_stats(candle):
-    o, h, l, c = fnum(candle[1]), fnum(candle[2]), fnum(candle[3]), fnum(candle[4])
-    if h <= l:
-        return {"close_strength": 0.5, "lower_wick": 0.0, "upper_wick": 0.0}
-    rng = h - l
-    body_high, body_low = max(o, c), min(o, c)
-    return {
-        "close_strength": (c - l) / rng,
-        "lower_wick": (body_low - l) / rng,
-        "upper_wick": (h - body_high) / rng,
-    }
-
-
-def send_telegram(message):
-    if not TOKEN or not CHAT_ID:
-        print("TOKEN / CHAT_ID yok")
-        return False
+def get_scan_coins(exchange):
     try:
-        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
-        r = requests.post(url, data={"chat_id": CHAT_ID, "text": message}, timeout=20)
-        print("Telegram:", r.status_code, r.text[:200])
-        return r.status_code == 200
-    except Exception as e:
-        print("Telegram hata:", e)
-        return False
+        markets = exchange.load_markets()
+        okx_symbols = []
 
+        stable_bases = {"USDT", "USDC", "DAI", "FDUSD", "TUSD", "USDP", "USD"}
 
-def load_state():
-    try:
-        if not os.path.exists(STATE_FILE):
-            return {}
-        txt = open(STATE_FILE, "r", encoding="utf-8").read().strip()
-        return json.loads(txt) if txt else {}
-    except Exception as e:
-        print("state okuma hata:", e)
-        return {}
-
-
-def save_state(state):
-    try:
-        open(STATE_FILE, "w", encoding="utf-8").write(json.dumps(state, indent=2, ensure_ascii=False))
-    except Exception as e:
-        print("state yazma hata:", e)
-
-
-def make_exchange():
-    return ccxt.okx({"enableRateLimit": True, "options": {"defaultType": "swap"}})
-
-
-def load_symbols(ex):
-    markets = ex.load_markets()
-    tickers = ex.fetch_tickers()
-    rows = []
-    for symbol, market in markets.items():
-        try:
-            if not market.get("swap") or not market.get("linear"):
+        for market in markets.values():
+            if not market.get("active", True):
                 continue
-            if market.get("quote") != "USDT" or not market.get("active", True):
+            if not market.get("swap", False):
                 continue
-            ticker = tickers.get(symbol, {})
-            info = ticker.get("info", {}) or {}
-            qv = fnum(ticker.get("quoteVolume") or info.get("volCcy24h") or info.get("volCcyQuote") or info.get("vol24h") or 0)
-            if qv >= MIN_24H_QUOTE_VOLUME:
-                rows.append((qv, symbol))
-        except Exception:
-            continue
-    rows.sort(reverse=True)
-    return [s for _, s in rows[:MAX_COINS_PER_RUN]]
+            if market.get("quote") != "USDT":
+                continue
+            if market.get("settle") != "USDT":
+                continue
+
+            okx_symbol = market.get("symbol")
+            if not okx_symbol or "/USDT:USDT" not in okx_symbol:
+                continue
+
+            base = str(market.get("base", "")).upper()
+            if not base or base in stable_bases:
+                continue
+
+            okx_symbols.append(okx_symbol)
+
+        tickers = exchange.fetch_tickers(okx_symbols)
+
+        rows = []
+        for okx_symbol in okx_symbols:
+            ticker = tickers.get(okx_symbol, {})
+            volume = safe_quote_volume(ticker)
+
+            if volume < MIN_24H_QUOTE_VOLUME:
+                continue
+
+            rows.append((okx_symbol_to_bot_symbol(okx_symbol), volume))
+
+        rows = sorted(rows, key=lambda x: x[1], reverse=True)
+
+        coins = [coin for coin, _ in rows]
+        if MAX_SCAN_COINS and MAX_SCAN_COINS > 0:
+            coins = coins[:MAX_SCAN_COINS]
+
+        print("Taranacak coin sayısı:", len(coins))
+        print("İlk 20 coin:", coins[:20])
+        return coins
+
+    except Exception as e:
+        print("Coin tarama hatası:", e)
+        return []
 
 
-def fetch_ohlcv(ex, symbol, limit=90):
+def fetch_df(exchange, symbol, timeframe, limit=120, min_len=40):
     try:
-        data = ex.fetch_ohlcv(symbol, timeframe="1m", limit=limit)
-        if not data or len(data) < 60:
+        ohlcv = exchange.fetch_ohlcv(
+            to_okx_symbol(symbol),
+            timeframe=timeframe,
+            limit=limit,
+        )
+
+        if not ohlcv or len(ohlcv) < min_len:
             return None
-        return data
+
+        df = pd.DataFrame(
+            ohlcv,
+            columns=["time", "open", "high", "low", "close", "volume"]
+        )
+
+        for col in ["open", "high", "low", "close", "volume"]:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+        df = df.dropna()
+        if len(df) < min_len:
+            return None
+
+        return df
+
     except Exception as e:
-        print("fetch hata", symbol, e)
+        print(symbol, timeframe, "veri hatası:", e)
         return None
 
 
-def vol_ratio(o, bars):
-    current = sum(fnum(x[5]) for x in o[-bars:])
-    prev = [fnum(x[5]) for x in o[-35:-5]]
-    avg = (sum(prev) / len(prev)) * bars if prev else 0
-    return current / avg if avg > 0 else 0
+def fetch_candles_since(exchange, symbol, timeframe, since_seconds, limit=180):
+    try:
+        ohlcv = exchange.fetch_ohlcv(
+            to_okx_symbol(symbol),
+            timeframe=timeframe,
+            since=max(0, int(since_seconds)) * 1000,
+            limit=limit,
+        )
+
+        candles = []
+        for item in ohlcv:
+            candles.append({
+                "time": int(item[0] / 1000),
+                "open": float(item[1]),
+                "high": float(item[2]),
+                "low": float(item[3]),
+                "close": float(item[4]),
+                "volume": float(item[5]),
+            })
+
+        return candles
+
+    except Exception as e:
+        print(symbol, "mum takip hatası:", e)
+        return []
 
 
-def common(symbol, o):
-    entry = fnum(o[-1][4])
-    if entry <= 0:
+def get_current_price(exchange, symbol):
+    try:
+        ticker = exchange.fetch_ticker(to_okx_symbol(symbol))
+        price = ticker.get("last")
+        return float(price) if price is not None else None
+    except Exception as e:
+        print(symbol, "güncel fiyat hatası:", e)
         return None
-    highs = [fnum(x[2]) for x in o[-35:-2]]
-    lows = [fnum(x[3]) for x in o[-35:-2]]
-    resistance = max(highs)
-    support = min(lows)
-    closes1 = [fnum(x[4]) for x in o]
-    closes5 = aggregate_closes(o, 5)
-    last = candle_stats(o[-1])
-    prev = candle_stats(o[-2])
-    long_sl = min(support, fnum(o[-1][3]), fnum(o[-2][3])) * (1 - SL_BUFFER_PERCENT / 100)
-    short_sl = max(resistance, fnum(o[-1][2]), fnum(o[-2][2])) * (1 + SL_BUFFER_PERCENT / 100)
-    long_risk = entry - long_sl
-    short_risk = short_sl - entry
-    return {
-        "symbol": symbol,
-        "entry": entry,
-        "ch1": pct(entry, fnum(o[-2][4])),
-        "ch3": pct(entry, fnum(o[-3][1])),
-        "ch5": pct(entry, fnum(o[-5][1])),
-        "ch15": pct(entry, fnum(o[-15][1])),
-        "ch1h": pct(entry, fnum(o[-60][1])),
-        "vr1": vol_ratio(o, 1),
-        "vr5": vol_ratio(o, 5),
-        "rsi1": calc_rsi(closes1, 14),
-        "rsi5": calc_rsi(closes5, 14),
-        "support": support,
-        "resistance": resistance,
-        "support_distance": max(0, ((entry - support) / entry) * 100),
-        "resistance_distance": max(0, ((resistance - entry) / entry) * 100),
-        "last_close_strength": last["close_strength"],
-        "lower_wick": max(last["lower_wick"], prev["lower_wick"]),
-        "upper_wick": max(last["upper_wick"], prev["upper_wick"]),
-        "long_sl": long_sl,
-        "short_sl": short_sl,
-        "long_risk": long_risk,
-        "short_risk": short_risk,
-        "long_risk_pct": (long_risk / entry) * 100 if entry else 999,
-        "short_risk_pct": (short_risk / entry) * 100 if entry else 999,
-    }
 
 
-def make_signal(d, direction, mode, score, reasons):
-    entry = d["entry"]
-    if direction == "LONG":
-        sl, risk, risk_pct = d["long_sl"], d["long_risk"], d["long_risk_pct"]
-        tp1, tp2, tp3 = entry + risk * TP1_R, entry + risk * TP2_R, entry + risk * TP3_R
-    else:
-        sl, risk, risk_pct = d["short_sl"], d["short_risk"], d["short_risk_pct"]
-        tp1, tp2, tp3 = entry - risk * TP1_R, entry - risk * TP2_R, entry - risk * TP3_R
-    if risk <= 0 or risk_pct > MAX_RISK_PERCENT:
-        return None
-    return {
-        "symbol": d["symbol"], "direction": direction, "mode": mode,
-        "entry": entry, "sl": sl, "tp1": tp1, "tp2": tp2, "tp3": tp3,
-        "risk_percent": risk_pct, "score": min(100, int(score)), "created_ts": now_ts(),
-        "tp1_hit": False, "tp2_hit": False,
-        "ch1": d["ch1"], "ch3": d["ch3"], "ch5": d["ch5"], "ch15": d["ch15"], "ch1h": d["ch1h"],
-        "vr1": d["vr1"], "vr5": d["vr5"], "rsi1": d["rsi1"], "rsi5": d["rsi5"],
-        "support": d["support"], "resistance": d["resistance"],
-        "support_distance": d["support_distance"], "resistance_distance": d["resistance_distance"],
-        "close_strength": d["last_close_strength"], "lower_wick": d["lower_wick"], "upper_wick": d["upper_wick"],
-        "reasons": reasons, "source": "SCALP_RADAR",
-    }
+# =========================
+# HESAPLAMALAR
+# =========================
+
+def format_price(value):
+    try:
+        value = float(value)
+    except Exception:
+        return str(value)
+
+    if value >= 100:
+        return f"{value:.2f}"
+    if value >= 10:
+        return f"{value:.3f}"
+    if value >= 1:
+        return f"{value:.4f}"
+    if value >= 0.1:
+        return f"{value:.5f}"
+    if value >= 0.01:
+        return f"{value:.6f}"
+    return f"{value:.10f}"
 
 
-def analyze(symbol, o):
-    d = common(symbol, o)
-    if not d or abs(d["ch1h"]) > MAX_ABS_1H_CHANGE:
-        return None
-    candidates = []
+def calc_rsi(series, period=14):
+    delta = series.diff()
+    gain = delta.where(delta > 0, 0.0)
+    loss = -delta.where(delta < 0, 0.0)
 
-    long_ok = (
-        d["ch5"] <= LONG_DROP_5M and d["ch15"] <= LONG_DROP_15M and
-        LONG_RSI_1M_MIN <= d["rsi1"] <= LONG_RSI_1M_MAX and d["rsi5"] <= LONG_RSI_5M_MAX and
-        d["vr1"] >= MIN_VOLUME_RATIO_1M and d["vr5"] >= MIN_VOLUME_RATIO_5M and
-        d["lower_wick"] >= LONG_MIN_LOWER_WICK and d["last_close_strength"] >= LONG_MIN_CLOSE_STRENGTH and
-        d["long_risk_pct"] <= MAX_RISK_PERCENT
-    )
-    if long_ok:
-        score = 35 + min(20, int(abs(d["ch5"]) * 8)) + min(20, int(d["vr1"] * 3)) + min(15, int(d["vr5"] * 4))
-        score += 10 if d["support_distance"] <= 0.45 else 0
-        reasons = [
-            f"5M hızlı düşüş %{round(d['ch5'], 2)}",
-            f"15M geri çekilme %{round(d['ch15'], 2)}",
-            f"RSI düşük {round(d['rsi1'], 2)} / {round(d['rsi5'], 2)}",
-            f"hacim {round(d['vr1'], 2)}x / {round(d['vr5'], 2)}x",
-            "aşağı fitil ve toparlanma var",
-        ]
-        if score >= MIN_SCORE:
-            candidates.append(make_signal(d, "LONG", "HIZLI TEPKİ LONG", score, reasons))
+    avg_gain = gain.ewm(alpha=1 / period, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1 / period, adjust=False).mean()
 
-    short_ok = (
-        d["ch5"] >= SHORT_RISE_5M and d["ch15"] >= SHORT_RISE_15M and
-        d["rsi1"] >= SHORT_RSI_1M_MIN and d["rsi5"] >= SHORT_RSI_5M_MIN and
-        d["vr1"] >= MIN_VOLUME_RATIO_1M and d["vr5"] >= MIN_VOLUME_RATIO_5M and
-        d["upper_wick"] >= SHORT_MIN_UPPER_WICK and d["last_close_strength"] <= SHORT_MAX_CLOSE_STRENGTH and
-        d["short_risk_pct"] <= MAX_RISK_PERCENT
-    )
-    if short_ok:
-        score = 35 + min(20, int(abs(d["ch5"]) * 8)) + min(20, int(d["vr1"] * 3)) + min(15, int(d["vr5"] * 4))
-        score += 10 if d["resistance_distance"] <= 0.45 else 0
-        reasons = [
-            f"5M hızlı yükseliş %{round(d['ch5'], 2)}",
-            f"15M yükseliş %{round(d['ch15'], 2)}",
-            f"RSI yüksek {round(d['rsi1'], 2)} / {round(d['rsi5'], 2)}",
-            f"hacim {round(d['vr1'], 2)}x / {round(d['vr5'], 2)}x",
-            "üst fitil ve red var",
-        ]
-        if score >= MIN_SCORE:
-            candidates.append(make_signal(d, "SHORT", "HIZLI RED SHORT", score, reasons))
-
-    candidates = [c for c in candidates if c]
-    if not candidates:
-        return None
-    candidates.sort(key=lambda x: (x["score"], -x["risk_percent"], x["vr1"]), reverse=True)
-    return candidates[0]
+    rs = avg_gain / avg_loss.replace(0, 0.0000001)
+    rsi = 100 - (100 / (1 + rs))
+    return rsi
 
 
-def signal_message(s):
-    clean = s["symbol"].replace(":USDT", "")
-    if s["direction"] == "LONG":
-        icon = "⚡🟢"
-        title = "HIZLI SCALP LONG"
-        level = f"Yakın destek: {fmt(s['support'])} | Uzaklık: %{round(s['support_distance'], 2)}"
-        wick = f"Alt fitil/tepki: %{round(s['lower_wick'] * 100, 1)}"
-        note = "Hızlı düşüş sonrası tepki arar. Fake tepki riski vardır."
-    else:
-        icon = "⚡🔴"
-        title = "HIZLI SCALP SHORT"
-        level = f"Yakın direnç: {fmt(s['resistance'])} | Uzaklık: %{round(s['resistance_distance'], 2)}"
-        wick = f"Üst fitil/red: %{round(s['upper_wick'] * 100, 1)}"
-        note = "Hızlı yükseliş sonrası red arar. Fake red riski vardır."
-    return f"""{icon} {BOT_NAME}
-
-{title}
-Mod: {s['mode']}
-Coin: {clean}
-Yön: {s['direction']}
-Skor: %{s['score']}
-
-💰 Giriş: {fmt(s['entry'])}
-🛑 Stop: {fmt(s['sl'])} | Risk: %{round(s['risk_percent'], 2)}
-
-🎯 Hedefler:
-TP1: {fmt(s['tp1'])}
-TP2: {fmt(s['tp2'])}
-TP3: {fmt(s['tp3'])}
-
-📊 Hızlı hareket:
-1M: %{round(s['ch1'], 2)}
-3M: %{round(s['ch3'], 2)}
-5M: %{round(s['ch5'], 2)}
-15M: %{round(s['ch15'], 2)}
-1H: %{round(s['ch1h'], 2)}
-
-📊 Hacim / RSI:
-1M Hacim: {round(s['vr1'], 2)}x
-5M Hacim: {round(s['vr5'], 2)}x
-RSI 1M / 5M: {round(s['rsi1'], 2)} / {round(s['rsi5'], 2)}
-
-📌 Seviye:
-{level}
-{wick}
-Mum kapanış gücü: %{round(s['close_strength'] * 100, 1)}
-
-🧠 Neden geldi:
-{', '.join(s['reasons'])}
-
-📌 Kural:
-Bu ayrı hızlı scalp radarıdır.
-Ana MTF bot ve Pump/Dump Radar ile karışmaz.
-Girişten uzaklaştıysa girme.
-TP1 gelirse %50 kâr al, SL'yi girişe çek.
-Stop şarttır. Otomatik emir açmaz.
-Not: {note}""".strip()
+def volume_ratio(df, index=-2, period=20):
+    try:
+        avg = df["volume"].rolling(period).mean().iloc[index]
+        vol = df["volume"].iloc[index]
+        if avg <= 0 or math.isnan(avg):
+            return 0.0
+        return float(vol / avg)
+    except Exception:
+        return 0.0
 
 
-def open_key(sig):
-    return f"{sig['symbol']}::{sig['direction']}"
+def candle_move_percent(row):
+    try:
+        open_price = float(row["open"])
+        close_price = float(row["close"])
+        if open_price <= 0:
+            return 0.0
+        return ((close_price - open_price) / open_price) * 100
+    except Exception:
+        return 0.0
 
 
-def duplicate_key(sig):
-    return f"{sig['symbol']}::{sig['direction']}::SCALP"
+def candle_range(row):
+    try:
+        high = float(row["high"])
+        low = float(row["low"])
+        return max(high - low, 0.0)
+    except Exception:
+        return 0.0
 
 
-def is_duplicate(sig, state):
-    ts = int(state.get("last_scalp_signals", {}).get(duplicate_key(sig), 0))
-    return now_ts() - ts < DUPLICATE_SECONDS
+def lower_wick_percent(row):
+    try:
+        high = float(row["high"])
+        low = float(row["low"])
+        open_price = float(row["open"])
+        close_price = float(row["close"])
+        rng = high - low
+        if rng <= 0:
+            return 0.0
+        wick = min(open_price, close_price) - low
+        return max(0.0, (wick / rng) * 100)
+    except Exception:
+        return 0.0
 
 
-def mark(sig, state):
-    state.setdefault("last_scalp_signals", {})[duplicate_key(sig)] = now_ts()
-    cutoff = now_ts() - 24 * 3600
-    state["last_scalp_signals"] = {k: v for k, v in state["last_scalp_signals"].items() if int(v) >= cutoff}
+def upper_wick_percent(row):
+    try:
+        high = float(row["high"])
+        low = float(row["low"])
+        open_price = float(row["open"])
+        close_price = float(row["close"])
+        rng = high - low
+        if rng <= 0:
+            return 0.0
+        wick = high - max(open_price, close_price)
+        return max(0.0, (wick / rng) * 100)
+    except Exception:
+        return 0.0
 
 
-def update_open(ex, state):
-    open_sigs = state.setdefault("open_scalp_signals", {})
-    if not open_sigs:
-        return
-    remove = []
-    for key, sig in list(open_sigs.items()):
-        try:
-            o = fetch_ohlcv(ex, sig["symbol"], limit=8)
-            if not o:
-                continue
-            hi = max(fnum(x[2]) for x in o[-5:])
-            lo = min(fnum(x[3]) for x in o[-5:])
-            close = fnum(o[-1][4])
-            is_long = sig["direction"] == "LONG"
-            entry, sl, tp1, tp2, tp3 = map(fnum, [sig["entry"], sig["sl"], sig["tp1"], sig["tp2"], sig["tp3"]])
-            clean = sig["symbol"].replace(":USDT", "")
-            age = now_ts() - int(sig.get("created_ts", now_ts()))
-
-            if age > SIGNAL_TTL_SECONDS and not sig.get("tp1_hit"):
-                send_telegram(f"⏳ SCALP SİNYAL SÜRESİ DOLDU\nCoin: {clean}\nYön: {sig['direction']}\nGiriş: {fmt(entry)} | Güncel: {fmt(close)}")
-                remove.append(key); continue
-
-            if not sig.get("tp1_hit"):
-                stop_hit = lo <= sl if is_long else hi >= sl
-                tp1_hit = hi >= tp1 if is_long else lo <= tp1
-                if stop_hit:
-                    send_telegram(f"❌ SCALP STOP OLDU\nCoin: {clean}\nYön: {sig['direction']}\nGiriş: {fmt(entry)}\nSL: {fmt(sl)}\nGüncel: {fmt(close)}")
-                    remove.append(key); continue
-                if tp1_hit:
-                    sig["tp1_hit"] = True
-                    sig["sl"] = entry
-                    send_telegram(f"✅ SCALP TP1 GELDİ\nCoin: {clean}\nYön: {sig['direction']}\nGiriş: {fmt(entry)}\nTP1: {fmt(tp1)}\nKural: %50 kâr al, SL girişe çek.")
-                    continue
-
-            if sig.get("tp1_hit"):
-                tp2_hit = hi >= tp2 if is_long else lo <= tp2
-                tp3_hit = hi >= tp3 if is_long else lo <= tp3
-                be_hit = lo <= entry if is_long else hi >= entry
-                if not sig.get("tp2_hit") and tp2_hit:
-                    sig["tp2_hit"] = True
-                    send_telegram(f"✅ SCALP TP2 GELDİ\nCoin: {clean}\nYön: {sig['direction']}\nTP2: {fmt(tp2)}")
-                    continue
-                if tp3_hit:
-                    send_telegram(f"🏁 SCALP TP3 GELDİ\nCoin: {clean}\nYön: {sig['direction']}\nTP3: {fmt(tp3)}")
-                    remove.append(key); continue
-                if be_hit:
-                    send_telegram(f"🟡 SCALP GİRİŞTEN KAPANDI\nCoin: {clean}\nYön: {sig['direction']}\nGiriş: {fmt(entry)}\nGüncel: {fmt(close)}")
-                    remove.append(key); continue
-        except Exception as e:
-            print("takip hata", key, e)
-    for key in remove:
-        open_sigs.pop(key, None)
+def close_power_percent(row):
+    try:
+        high = float(row["high"])
+        low = float(row["low"])
+        close_price = float(row["close"])
+        rng = high - low
+        if rng <= 0:
+            return 50.0
+        return ((close_price - low) / rng) * 100
+    except Exception:
+        return 50.0
 
 
-def run():
-    state = load_state()
-    ex = make_exchange()
-    update_open(ex, state)
-    open_sigs = state.setdefault("open_scalp_signals", {})
-    if len(open_sigs) >= MAX_OPEN_SIGNALS:
-        print("Maksimum açık scalp sinyaline ulaşıldı.")
-        save_state(state)
-        return
-    symbols = load_symbols(ex)
-    print("Taranacak OKX Futures coin:", len(symbols), "| Limit:", MAX_COINS_PER_RUN, "| Min 24h hacim:", MIN_24H_QUOTE_VOLUME)
-    candidates = []
-    for symbol in symbols:
-        try:
-            o = fetch_ohlcv(ex, symbol)
-            if not o:
-                continue
-            sig = analyze(symbol, o)
-            if not sig or is_duplicate(sig, state) or open_key(sig) in open_sigs:
-                continue
-            candidates.append(sig)
-        except Exception as e:
-            print("analiz hata", symbol, e)
-    candidates.sort(key=lambda x: (x["score"], -x["risk_percent"], x["vr1"], x["vr5"]), reverse=True)
-    slots = max(0, MAX_OPEN_SIGNALS - len(open_sigs))
-    sent = 0
-    for sig in candidates[:min(MAX_NEW_SIGNALS_PER_RUN, slots)]:
-        if send_telegram(signal_message(sig)):
-            open_sigs[open_key(sig)] = sig
-            mark(sig, state)
-            sent += 1
-    print("Yeni hızlı scalp sinyali:", sent)
+def is_recent_duplicate(state, symbol, direction):
+    key = f"{symbol}_{direction}"
+    last_time = int(state.get("last_sent", {}).get(key, 0))
+    return now_ts() - last_time < DUPLICATE_SECONDS
+
+
+def mark_sent(state, symbol, direction):
+    key = f"{symbol}_{direction}"
+    state.setdefault("last_sent", {})
+    state["last_sent"][key] = now_ts()
     save_state(state)
 
 
-if __name__ == "__main__":
-    run()
+def has_open_same_symbol(state, symbol):
+    for signal in state.get("open_scalp_signals", {}).values():
+        if signal.get("symbol") == symbol:
+            return True
+    return False
 
-# HIZLI_SCALP_RADAR_V1_NOTU:
-# Ana bot, pump_radar.py, config.py, main.py ve mevcut JSON dosyaları değiştirilmez.
-# Ayrı dosya: scalp_radar.py
-# Ayrı state: scalp_radar_state.json
-# Ayrı workflow: .github/workflows/scalp-radar.yml
+
+# =========================
+# SCALP ANALİZ
+# =========================
+
+def build_condition_result(label, ok):
+    return {"label": label, "ok": bool(ok)}
+
+
+def score_from_conditions(conditions, bonus=0):
+    ok_count = sum(1 for c in conditions if c["ok"])
+    total = max(1, len(conditions))
+    score = int((ok_count / total) * 100) + int(bonus)
+    return max(0, min(100, score)), ok_count, total
+
+
+def missing_reasons(conditions):
+    return [c["label"] for c in conditions if not c["ok"]]
+
+
+def build_signal_message(signal):
+    icon = "🟢" if signal["direction"] == "LONG" else "🔴"
+
+    return (
+        f"⚡ HIZLI SCALP RADAR v2\n\n"
+        f"{icon} {signal['direction']}\n"
+        f"🟡 Coin: {signal['symbol']}\n"
+        f"⏱️ Kaynak: {signal['source']}\n\n"
+        f"📌 Giriş: {format_price(signal['entry'])}\n"
+        f"🎯 TP1: {format_price(signal['tp1'])}\n"
+        f"🎯 TP2: {format_price(signal['tp2'])}\n"
+        f"🎯 TP3: {format_price(signal['tp3'])}\n"
+        f"🛑 SL: {format_price(signal['sl'])}\n\n"
+        f"📊 Skor: %{signal['score']}\n"
+        f"🛡️ Stop Mesafesi: %{round(signal['risk_percent'], 3)}\n\n"
+        f"📊 Scalp Verileri:\n"
+        f"• 1M RSI: {round(signal['rsi1'], 2)}\n"
+        f"• 5M RSI: {round(signal['rsi5'], 2)}\n"
+        f"• 1M Hacim: {round(signal['vol1'], 2)}x\n"
+        f"• 5M Hacim: {round(signal['vol5'], 2)}x\n"
+        f"• 5M Hareket: %{round(signal['move5'], 2)}\n"
+        f"• 15M Hareket: %{round(signal['move15'], 2)}\n"
+        f"• Alt Fitil: %{round(signal['lower_wick'], 1)}\n"
+        f"• Üst Fitil: %{round(signal['upper_wick'], 1)}\n"
+        f"• Kapanış Gücü: %{round(signal['close_power'], 1)}\n\n"
+        f"📌 İşlem Kuralı:\n"
+        f"• Hızlı scalp sinyalidir, risk yüksektir.\n"
+        f"• TP1 gelirse %50 kâr al, SL girişe çek.\n"
+        f"• Stop mutlaka girilmeli.\n"
+        f"• Marjin: Isolated.\n"
+        f"• Kaldıraç düşük tutulmalı.\n\n"
+        f"⚠️ Finansal tavsiye değildir. Grafikte kontrol etmeden işlem açma."
+    )
+
+
+def analyze_one_side(symbol, direction, df1, df5, df15, current_price):
+    try:
+        if df1 is None or df5 is None or df15 is None or current_price is None:
+            return None, None
+
+        df1 = df1.copy()
+        df5 = df5.copy()
+        df15 = df15.copy()
+
+        df1["rsi"] = calc_rsi(df1["close"])
+        df5["rsi"] = calc_rsi(df5["close"])
+
+        c1 = df1.iloc[-2]
+        c5 = df5.iloc[-2]
+        c15 = df15.iloc[-2]
+
+        entry = float(current_price)
+        rsi1 = float(df1["rsi"].iloc[-2])
+        rsi5 = float(df5["rsi"].iloc[-2])
+
+        vol1 = volume_ratio(df1, index=-2, period=20)
+        vol5 = volume_ratio(df5, index=-2, period=20)
+
+        move1 = candle_move_percent(c1)
+        move5 = candle_move_percent(c5)
+        move15 = candle_move_percent(c15)
+
+        lw = lower_wick_percent(c1)
+        uw = upper_wick_percent(c1)
+        cp = close_power_percent(c1)
+
+        if direction == "LONG":
+            raw_sl = min(float(c1["low"]), float(c5["low"]))
+            sl = raw_sl * (1 - SL_BUFFER_PERCENT / 100)
+            risk = entry - sl
+
+            if risk <= 0:
+                return None, None
+
+            tp1 = entry + risk * TP1_R
+            tp2 = entry + risk * TP2_R
+            tp3 = entry + risk * TP3_R
+
+            risk_percent = (risk / entry) * 100
+
+            conditions = [
+                build_condition_result(f"5M düşüş yetersiz", move5 <= -LONG_MIN_5M_DROP),
+                build_condition_result(f"15M düşüş yetersiz", move15 <= -LONG_MIN_15M_DROP),
+                build_condition_result(f"1M RSI uygun değil", LONG_RSI_1M_MIN <= rsi1 <= LONG_RSI_1M_MAX),
+                build_condition_result(f"5M RSI yüksek", rsi5 <= LONG_RSI_5M_MAX),
+                build_condition_result(f"1M hacim düşük", vol1 >= MIN_1M_VOLUME_RATIO),
+                build_condition_result(f"5M hacim düşük", vol5 >= MIN_5M_VOLUME_RATIO),
+                build_condition_result(f"alt fitil yetersiz", lw >= MIN_WICK_PERCENT),
+                build_condition_result(f"kapanış gücü zayıf", cp >= LONG_MIN_CLOSE_POWER),
+                build_condition_result(f"risk uygun değil", MIN_RISK_PERCENT <= risk_percent <= MAX_RISK_PERCENT),
+            ]
+
+            bonus = 0
+            if vol1 >= 2.0:
+                bonus += 3
+            if lw >= 40:
+                bonus += 3
+            if cp >= 55:
+                bonus += 2
+
+            score, ok_count, total = score_from_conditions(conditions, bonus=bonus)
+
+            hard_ok = (
+                risk_percent <= MAX_RISK_PERCENT
+                and risk_percent >= MIN_RISK_PERCENT
+                and (vol1 >= MIN_1M_VOLUME_RATIO or vol5 >= MIN_5M_VOLUME_RATIO)
+                and (move5 <= -LONG_MIN_5M_DROP or lw >= MIN_WICK_PERCENT)
+            )
+
+            signal = None
+            if score >= MIN_SCORE and hard_ok:
+                signal = {
+                    "symbol": symbol,
+                    "direction": "LONG",
+                    "source": "1M_5M_SCALP",
+                    "entry": entry,
+                    "tp1": tp1,
+                    "tp2": tp2,
+                    "tp3": tp3,
+                    "sl": sl,
+                    "score": score,
+                    "risk_percent": risk_percent,
+                    "rsi1": rsi1,
+                    "rsi5": rsi5,
+                    "vol1": vol1,
+                    "vol5": vol5,
+                    "move1": move1,
+                    "move5": move5,
+                    "move15": move15,
+                    "lower_wick": lw,
+                    "upper_wick": uw,
+                    "close_power": cp,
+                    "ok_count": ok_count,
+                    "total_conditions": total,
+                    "missing": missing_reasons(conditions),
+                }
+                signal["message"] = build_signal_message(signal)
+
+            debug = {
+                "symbol": symbol,
+                "direction": "LONG",
+                "score": score,
+                "ok_count": ok_count,
+                "total_conditions": total,
+                "missing": missing_reasons(conditions),
+                "rsi1": rsi1,
+                "rsi5": rsi5,
+                "vol1": vol1,
+                "vol5": vol5,
+                "move5": move5,
+                "move15": move15,
+                "lower_wick": lw,
+                "upper_wick": uw,
+                "close_power": cp,
+                "risk_percent": risk_percent,
+            }
+
+            return signal, debug
+
+        else:
+            raw_sl = max(float(c1["high"]), float(c5["high"]))
+            sl = raw_sl * (1 + SL_BUFFER_PERCENT / 100)
+            risk = sl - entry
+
+            if risk <= 0:
+                return None, None
+
+            tp1 = entry - risk * TP1_R
+            tp2 = entry - risk * TP2_R
+            tp3 = entry - risk * TP3_R
+
+            risk_percent = (risk / entry) * 100
+
+            conditions = [
+                build_condition_result(f"5M yükseliş yetersiz", move5 >= SHORT_MIN_5M_PUMP),
+                build_condition_result(f"15M yükseliş yetersiz", move15 >= SHORT_MIN_15M_PUMP),
+                build_condition_result(f"1M RSI uygun değil", SHORT_RSI_1M_MIN <= rsi1 <= SHORT_RSI_1M_MAX),
+                build_condition_result(f"5M RSI düşük", rsi5 >= SHORT_RSI_5M_MIN),
+                build_condition_result(f"1M hacim düşük", vol1 >= MIN_1M_VOLUME_RATIO),
+                build_condition_result(f"5M hacim düşük", vol5 >= MIN_5M_VOLUME_RATIO),
+                build_condition_result(f"üst fitil yetersiz", uw >= MIN_WICK_PERCENT),
+                build_condition_result(f"kapanış gücü short için zayıf", cp <= SHORT_MAX_CLOSE_POWER),
+                build_condition_result(f"risk uygun değil", MIN_RISK_PERCENT <= risk_percent <= MAX_RISK_PERCENT),
+            ]
+
+            bonus = 0
+            if vol1 >= 2.0:
+                bonus += 3
+            if uw >= 40:
+                bonus += 3
+            if cp <= 45:
+                bonus += 2
+
+            score, ok_count, total = score_from_conditions(conditions, bonus=bonus)
+
+            hard_ok = (
+                risk_percent <= MAX_RISK_PERCENT
+                and risk_percent >= MIN_RISK_PERCENT
+                and (vol1 >= MIN_1M_VOLUME_RATIO or vol5 >= MIN_5M_VOLUME_RATIO)
+                and (move5 >= SHORT_MIN_5M_PUMP or uw >= MIN_WICK_PERCENT)
+            )
+
+            signal = None
+            if score >= MIN_SCORE and hard_ok:
+                signal = {
+                    "symbol": symbol,
+                    "direction": "SHORT",
+                    "source": "1M_5M_SCALP",
+                    "entry": entry,
+                    "tp1": tp1,
+                    "tp2": tp2,
+                    "tp3": tp3,
+                    "sl": sl,
+                    "score": score,
+                    "risk_percent": risk_percent,
+                    "rsi1": rsi1,
+                    "rsi5": rsi5,
+                    "vol1": vol1,
+                    "vol5": vol5,
+                    "move1": move1,
+                    "move5": move5,
+                    "move15": move15,
+                    "lower_wick": lw,
+                    "upper_wick": uw,
+                    "close_power": cp,
+                    "ok_count": ok_count,
+                    "total_conditions": total,
+                    "missing": missing_reasons(conditions),
+                }
+                signal["message"] = build_signal_message(signal)
+
+            debug = {
+                "symbol": symbol,
+                "direction": "SHORT",
+                "score": score,
+                "ok_count": ok_count,
+                "total_conditions": total,
+                "missing": missing_reasons(conditions),
+                "rsi1": rsi1,
+                "rsi5": rsi5,
+                "vol1": vol1,
+                "vol5": vol5,
+                "move5": move5,
+                "move15": move15,
+                "lower_wick": lw,
+                "upper_wick": uw,
+                "close_power": cp,
+                "risk_percent": risk_percent,
+            }
+
+            return signal, debug
+
+    except Exception as e:
+        print(symbol, direction, "analiz hatası:", e)
+        return None, None
+
+
+def analyze_symbol(exchange, symbol):
+    current_price = get_current_price(exchange, symbol)
+
+    df1 = fetch_df(exchange, symbol, "1m", limit=90, min_len=50)
+    df5 = fetch_df(exchange, symbol, "5m", limit=90, min_len=50)
+    df15 = fetch_df(exchange, symbol, "15m", limit=80, min_len=40)
+
+    long_signal, long_debug = analyze_one_side(symbol, "LONG", df1, df5, df15, current_price)
+    short_signal, short_debug = analyze_one_side(symbol, "SHORT", df1, df5, df15, current_price)
+
+    signals = []
+    if long_signal is not None:
+        signals.append(long_signal)
+    if short_signal is not None:
+        signals.append(short_signal)
+
+    return signals, long_debug, short_debug
+
+
+# =========================
+# AÇIK SCALP TAKİBİ
+# =========================
+
+def save_open_signal(state, signal):
+    key = f"{signal['symbol']}_{signal['direction']}_{signal['source']}"
+    state.setdefault("open_scalp_signals", {})
+    state["open_scalp_signals"][key] = {
+        "symbol": signal["symbol"],
+        "direction": signal["direction"],
+        "source": signal["source"],
+        "entry": signal["entry"],
+        "tp1": signal["tp1"],
+        "tp2": signal["tp2"],
+        "tp3": signal["tp3"],
+        "sl": signal["sl"],
+        "score": signal["score"],
+        "risk_percent": signal["risk_percent"],
+        "opened_at": now_ts(),
+        "last_checked_at": now_ts(),
+        "tp1_hit": False,
+        "tp2_hit": False,
+        "tp3_hit": False,
+        "closed": False,
+    }
+    save_state(state)
+
+
+def check_open_signals(exchange, state):
+    open_signals = state.get("open_scalp_signals", {})
+    if not open_signals:
+        print("Açık scalp sinyali yok.")
+        return
+
+    updated = {}
+    max_age_seconds = MAX_OPEN_SIGNAL_MINUTES * 60
+
+    for key, signal in open_signals.items():
+        try:
+            symbol = signal["symbol"]
+            direction = signal["direction"]
+            entry = float(signal["entry"])
+            tp1 = float(signal["tp1"])
+            tp2 = float(signal["tp2"])
+            tp3 = float(signal["tp3"])
+            sl = float(signal["sl"])
+            opened_at = int(signal.get("opened_at", now_ts()))
+            last_checked_at = int(signal.get("last_checked_at", opened_at))
+
+            if signal.get("closed") or signal.get("tp3_hit"):
+                continue
+
+            if now_ts() - opened_at > max_age_seconds:
+                send_telegram(
+                    f"⏳ SCALP SİNYAL SÜRESİ DOLDU\n\n"
+                    f"Coin: {symbol}\n"
+                    f"Yön: {direction}\n"
+                    f"Giriş: {format_price(entry)}\n\n"
+                    f"{MAX_OPEN_SIGNAL_MINUTES} dakika içinde netleşmediği için takipten çıkarıldı."
+                )
+                continue
+
+            candles = fetch_candles_since(
+                exchange,
+                symbol,
+                TRACK_TIMEFRAME,
+                since_seconds=max(opened_at, last_checked_at - 120),
+                limit=TRACK_LIMIT,
+            )
+
+            if not candles:
+                updated[key] = signal
+                continue
+
+            tp1_hit = bool(signal.get("tp1_hit", False))
+            tp2_hit = bool(signal.get("tp2_hit", False))
+            tp3_hit = bool(signal.get("tp3_hit", False))
+            closed = False
+
+            for candle in candles:
+                high = float(candle["high"])
+                low = float(candle["low"])
+                close = float(candle["close"])
+
+                if direction == "LONG":
+                    if not tp1_hit:
+                        if low <= sl and high >= tp1:
+                            if close >= entry:
+                                tp1_hit = True
+                                signal["tp1_hit"] = True
+                                send_telegram(
+                                    f"✅ SCALP TP1 GELDİ\n\n"
+                                    f"Coin: {symbol}\n"
+                                    f"Yön: LONG 🟢\n"
+                                    f"Giriş: {format_price(entry)}\n"
+                                    f"TP1: {format_price(tp1)}\n"
+                                    f"Öneri: %50 kâr al, SL girişe çek."
+                                )
+                            else:
+                                send_telegram(
+                                    f"❌ SCALP STOP OLDU\n\n"
+                                    f"Coin: {symbol}\n"
+                                    f"Yön: LONG 🟢\n"
+                                    f"Giriş: {format_price(entry)}\n"
+                                    f"SL: {format_price(sl)}\n"
+                                    f"Güncel: {format_price(close)}"
+                                )
+                                closed = True
+                                break
+
+                        elif low <= sl:
+                            send_telegram(
+                                f"❌ SCALP STOP OLDU\n\n"
+                                f"Coin: {symbol}\n"
+                                f"Yön: LONG 🟢\n"
+                                f"Giriş: {format_price(entry)}\n"
+                                f"SL: {format_price(sl)}\n"
+                                f"Güncel: {format_price(close)}"
+                            )
+                            closed = True
+                            break
+
+                        elif high >= tp1:
+                            tp1_hit = True
+                            signal["tp1_hit"] = True
+                            send_telegram(
+                                f"✅ SCALP TP1 GELDİ\n\n"
+                                f"Coin: {symbol}\n"
+                                f"Yön: LONG 🟢\n"
+                                f"Giriş: {format_price(entry)}\n"
+                                f"TP1: {format_price(tp1)}\n"
+                                f"Öneri: %50 kâr al, SL girişe çek."
+                            )
+
+                    if tp1_hit and not tp2_hit and high >= tp2:
+                        tp2_hit = True
+                        signal["tp2_hit"] = True
+                        send_telegram(
+                            f"✅ SCALP TP2 GELDİ\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: LONG 🟢\n"
+                            f"TP2: {format_price(tp2)}"
+                        )
+
+                    if tp1_hit and not tp3_hit and high >= tp3:
+                        tp3_hit = True
+                        signal["tp3_hit"] = True
+                        signal["closed"] = True
+                        send_telegram(
+                            f"🏁 SCALP TP3 GELDİ\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: LONG 🟢\n"
+                            f"TP3: {format_price(tp3)}\n"
+                            f"Scalp maksimum hedefe ulaştı."
+                        )
+                        closed = True
+                        break
+
+                    if tp1_hit and low <= entry:
+                        signal["closed"] = True
+                        send_telegram(
+                            f"🟡 SCALP KALAN GİRİŞTEN KAPANDI\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: LONG 🟢\n"
+                            f"Giriş: {format_price(entry)}"
+                        )
+                        closed = True
+                        break
+
+                else:
+                    if not tp1_hit:
+                        if high >= sl and low <= tp1:
+                            if close <= entry:
+                                tp1_hit = True
+                                signal["tp1_hit"] = True
+                                send_telegram(
+                                    f"✅ SCALP TP1 GELDİ\n\n"
+                                    f"Coin: {symbol}\n"
+                                    f"Yön: SHORT 🔴\n"
+                                    f"Giriş: {format_price(entry)}\n"
+                                    f"TP1: {format_price(tp1)}\n"
+                                    f"Öneri: %50 kâr al, SL girişe çek."
+                                )
+                            else:
+                                send_telegram(
+                                    f"❌ SCALP STOP OLDU\n\n"
+                                    f"Coin: {symbol}\n"
+                                    f"Yön: SHORT 🔴\n"
+                                    f"Giriş: {format_price(entry)}\n"
+                                    f"SL: {format_price(sl)}\n"
+                                    f"Güncel: {format_price(close)}"
+                                )
+                                closed = True
+                                break
+
+                        elif high >= sl:
+                            send_telegram(
+                                f"❌ SCALP STOP OLDU\n\n"
+                                f"Coin: {symbol}\n"
+                                f"Yön: SHORT 🔴\n"
+                                f"Giriş: {format_price(entry)}\n"
+                                f"SL: {format_price(sl)}\n"
+                                f"Güncel: {format_price(close)}"
+                            )
+                            closed = True
+                            break
+
+                        elif low <= tp1:
+                            tp1_hit = True
+                            signal["tp1_hit"] = True
+                            send_telegram(
+                                f"✅ SCALP TP1 GELDİ\n\n"
+                                f"Coin: {symbol}\n"
+                                f"Yön: SHORT 🔴\n"
+                                f"Giriş: {format_price(entry)}\n"
+                                f"TP1: {format_price(tp1)}\n"
+                                f"Öneri: %50 kâr al, SL girişe çek."
+                            )
+
+                    if tp1_hit and not tp2_hit and low <= tp2:
+                        tp2_hit = True
+                        signal["tp2_hit"] = True
+                        send_telegram(
+                            f"✅ SCALP TP2 GELDİ\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: SHORT 🔴\n"
+                            f"TP2: {format_price(tp2)}"
+                        )
+
+                    if tp1_hit and not tp3_hit and low <= tp3:
+                        tp3_hit = True
+                        signal["tp3_hit"] = True
+                        signal["closed"] = True
+                        send_telegram(
+                            f"🏁 SCALP TP3 GELDİ\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: SHORT 🔴\n"
+                            f"TP3: {format_price(tp3)}\n"
+                            f"Scalp maksimum hedefe ulaştı."
+                        )
+                        closed = True
+                        break
+
+                    if tp1_hit and high >= entry:
+                        signal["closed"] = True
+                        send_telegram(
+                            f"🟡 SCALP KALAN GİRİŞTEN KAPANDI\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: SHORT 🔴\n"
+                            f"Giriş: {format_price(entry)}"
+                        )
+                        closed = True
+                        break
+
+            if closed:
+                continue
+
+            signal["tp1_hit"] = tp1_hit
+            signal["tp2_hit"] = tp2_hit
+            signal["tp3_hit"] = tp3_hit
+            signal["last_checked_at"] = now_ts()
+            updated[key] = signal
+
+        except Exception as e:
+            print(key, "scalp takip hatası:", e)
+            updated[key] = signal
+
+    state["open_scalp_signals"] = updated
+    save_state(state)
+
+
+# =========================
+# RAPOR
+# =========================
+
+def top_reasons_text(counter, limit=5):
+    if not counter:
+        return "Veri yok"
+
+    lines = []
+    for reason, count in counter.most_common(limit):
+        lines.append(f"• {reason}: {count}")
+
+    return "\n".join(lines)
+
+
+def candidate_line(debug):
+    if not debug:
+        return ""
+
+    missing = debug.get("missing", [])
+    missing_text = ", ".join(missing[:3]) if missing else "eksik yok"
+
+    return (
+        f"{debug['symbol']} {debug['direction']} | "
+        f"şart {debug['ok_count']}/{debug['total_conditions']} | "
+        f"skor {debug['score']} | "
+        f"eksik: {missing_text}"
+    )
+
+
+def build_no_signal_report(scanned_count, new_signal_count, long_counter, short_counter, top_candidates, debug_map):
+    lines = [
+        f"⚡ HIZLI SCALP RADAR RAPORU\n",
+        f"Bot: {BOT_NAME}",
+        f"Zaman: {tr_now_text()}",
+        f"Taranan coin: {scanned_count}",
+        f"Yeni scalp sinyal: {new_signal_count}\n",
+        f"LONG tarafında en çok elenen:",
+        top_reasons_text(long_counter),
+        f"\nSHORT tarafında en çok elenen:",
+        top_reasons_text(short_counter),
+        f"\nSinyale en yakın adaylar:",
+    ]
+
+    if top_candidates:
+        for item in top_candidates[:8]:
+            lines.append("• " + candidate_line(item))
+    else:
+        lines.append("• Yakın aday yok")
+
+    for debug_symbol in DEBUG_SYMBOLS:
+        if debug_symbol in debug_map:
+            lines.append(f"\n🔎 {debug_symbol} Özel Test:")
+            for item in debug_map[debug_symbol]:
+                lines.append("• " + candidate_line(item))
+
+    lines.append(
+        "\nNot: Bu rapor sinyal değildir. "
+        "Hangi filtrelerin scalp sinyalini kestiğini görmek için gönderilir."
+    )
+
+    return "\n".join(lines)
+
+
+def should_send_no_signal_report(state):
+    if not SEND_NO_SIGNAL_REPORT:
+        return False
+
+    last_report = int(state.get("last_no_signal_report", 0))
+    return now_ts() - last_report >= NO_SIGNAL_REPORT_EVERY_MINUTES * 60
+
+
+def mark_no_signal_report_sent(state):
+    state["last_no_signal_report"] = now_ts()
+    save_state(state)
+
+
+# =========================
+# MAIN
+# =========================
+
+def main():
+    print(BOT_NAME, "başladı.")
+
+    state = load_state()
+    exchange = get_exchange()
+
+    # Önce açık scalp sinyallerini takip et.
+    check_open_signals(exchange, state)
+    state = load_state()
+
+    scan_coins = get_scan_coins(exchange)
+
+    open_count = len(state.get("open_scalp_signals", {}))
+    available_slots = max(0, MAX_OPEN_SCALP_SIGNALS - open_count)
+
+    print("Açık scalp:", open_count)
+    print("Boş scalp slot:", available_slots)
+
+    all_signals = []
+    long_reasons = Counter()
+    short_reasons = Counter()
+    top_candidates = []
+    debug_map = {}
+
+    scanned = 0
+
+    for symbol in scan_coins:
+        try:
+            scanned += 1
+
+            if has_open_same_symbol(state, symbol):
+                print(symbol, "zaten açık scalp var, atlandı.")
+                continue
+
+            signals, long_debug, short_debug = analyze_symbol(exchange, symbol)
+
+            if long_debug:
+                for reason in long_debug.get("missing", []):
+                    long_reasons[reason] += 1
+                top_candidates.append(long_debug)
+
+            if short_debug:
+                for reason in short_debug.get("missing", []):
+                    short_reasons[reason] += 1
+                top_candidates.append(short_debug)
+
+            if symbol in DEBUG_SYMBOLS:
+                debug_map.setdefault(symbol, [])
+                if long_debug:
+                    debug_map[symbol].append(long_debug)
+                if short_debug:
+                    debug_map[symbol].append(short_debug)
+
+            for signal in signals:
+                if is_recent_duplicate(state, signal["symbol"], signal["direction"]):
+                    print(signal["symbol"], signal["direction"], "duplicate, atlandı.")
+                    continue
+
+                all_signals.append(signal)
+
+            time.sleep(0.08)
+
+        except Exception as e:
+            print(symbol, "genel analiz hatası:", e)
+
+    all_signals = sorted(all_signals, key=lambda s: s["score"], reverse=True)
+
+    top_candidates = sorted(
+        top_candidates,
+        key=lambda x: (x.get("score", 0), x.get("ok_count", 0)),
+        reverse=True,
+    )
+
+    selected = all_signals[:min(MAX_NEW_SIGNALS_PER_RUN, available_slots)]
+
+    print("Bulunan scalp sinyal:", len(all_signals))
+    print("Gönderilecek scalp sinyal:", len(selected))
+
+    if selected:
+        send_telegram(
+            f"⚡ {BOT_NAME} çalıştı.\n"
+            f"Taranan coin: {scanned}\n"
+            f"Bulunan scalp sinyal: {len(all_signals)}\n"
+            f"Açık scalp: {open_count}/{MAX_OPEN_SCALP_SIGNALS}\n"
+            f"Gönderilecek sinyal: {len(selected)}"
+        )
+
+    for signal in selected:
+        extra = (
+            f"\n💰 Güncel Fiyat: {format_price(signal['entry'])}\n"
+            f"📌 Son Kontrol: Scalp girişe yakın ✅"
+        )
+
+        if send_telegram(signal["message"] + extra):
+            save_open_signal(state, signal)
+            mark_sent(state, signal["symbol"], signal["direction"])
+            state = load_state()
+            time.sleep(1)
+
+    if not selected:
+        print("Yeni scalp sinyal yok.")
+
+        if should_send_no_signal_report(state):
+            report = build_no_signal_report(
+                scanned_count=scanned,
+                new_signal_count=len(all_signals),
+                long_counter=long_reasons,
+                short_counter=short_reasons,
+                top_candidates=top_candidates,
+                debug_map=debug_map,
+            )
+            send_telegram(report)
+            mark_no_signal_report_sent(state)
+
+    print(BOT_NAME, "tamamlandı.")
+
+
+if __name__ == "__main__":
+    main()
