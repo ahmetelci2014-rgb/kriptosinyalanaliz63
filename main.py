@@ -1,7 +1,7 @@
 # main.py
-# Premium MTF Futures Bot v1
-# GitHub Actions için Telegram sinyal botu.
-# Emir açmaz. Sinyal gönderir, TP/SL takip eder, istatistik raporu yollar.
+# Premium MTF Futures Bot - Akilli Takip v1
+# GitHub Actions icin Telegram sinyal botu.
+# Emir acmaz. Sinyal gonderir, TP/SL takip eder, istatistik raporu yollar.
 
 import os
 import time
@@ -60,7 +60,6 @@ from strategy import (
     format_price,
 )
 
-
 TOKEN = os.getenv("TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
@@ -69,6 +68,15 @@ PERFORMANCE_FILE = "performance.json"
 LAST_SIGNALS_FILE = "last_signals.json"
 
 TR_TIMEZONE = timezone(timedelta(hours=3))
+
+# Yeni takip ayarlari config.py istemeden main.py icinde tutuluyor.
+# Stop olan sinyal 30 / 60 / 120 dakika kontrol edilir.
+SL_AFTER_CHECKPOINT_MINUTES = [30, 60, 120]
+SL_AFTER_MAX_TRACK_MINUTES = 120
+
+# TP3 / BE / kapanan coin ayni gun cok hizli tekrar gelmesin.
+# SL icin zaten STOPPED_COIN_COOLDOWN_HOURS var.
+RECENT_CLOSED_COIN_COOLDOWN_SECONDS = 4 * 60 * 60
 
 
 def send_telegram(message):
@@ -80,7 +88,7 @@ def send_telegram(message):
         response = requests.post(
             f"https://api.telegram.org/bot{TOKEN}/sendMessage",
             data={"chat_id": CHAT_ID, "text": message},
-            timeout=20
+            timeout=20,
         )
         print("Telegram cevap:", response.status_code, response.text)
         return response.status_code == 200
@@ -93,16 +101,12 @@ def load_json_file(filename):
     try:
         if not os.path.exists(filename):
             return {}
-
         with open(filename, "r", encoding="utf-8") as f:
             content = f.read().strip()
-
-        if not content:
-            return {}
-
-        data = json.loads(content)
-        return data if isinstance(data, dict) else {}
-
+            if not content:
+                return {}
+            data = json.loads(content)
+            return data if isinstance(data, dict) else {}
     except Exception as e:
         print(filename, "okuma hatası:", e)
         return {}
@@ -112,9 +116,7 @@ def save_json_file(filename, data):
     try:
         with open(filename, "w", encoding="utf-8") as f:
             json.dump(data if isinstance(data, dict) else {}, f, indent=2, ensure_ascii=False)
-
         return True
-
     except Exception as e:
         print(filename, "kaydetme hatası:", e)
         return False
@@ -154,7 +156,6 @@ def today_key():
 
 def ensure_perf_day(performance):
     today = today_key()
-
     performance.setdefault("days", {})
     performance["days"].setdefault(today, {
         "opened": 0,
@@ -172,16 +173,32 @@ def ensure_perf_day(performance):
         "coins": {},
         "direction_stops": {},
         "stop_times": {},
-        "closed_history": []
+        "closed_times": {},
+        "closed_results": {},
+        "closed_history": [],
+        "sl_after_tp1": 0,
+        "sl_after_tp2": 0,
+        "sl_after_no_return": 0,
     })
 
+    # Eski performance.json dosyalarinda eksik olabilecek alanlari tamamla.
+    day = performance["days"][today]
+    day.setdefault("coins", {})
+    day.setdefault("direction_stops", {})
+    day.setdefault("stop_times", {})
+    day.setdefault("closed_times", {})
+    day.setdefault("closed_results", {})
+    day.setdefault("closed_history", [])
+    day.setdefault("sl_after_tp1", 0)
+    day.setdefault("sl_after_tp2", 0)
+    day.setdefault("sl_after_no_return", 0)
+    performance.setdefault("sl_after_follow", {})
     return performance
 
 
 def add_history(day, item):
     day.setdefault("closed_history", [])
     day["closed_history"].append(item)
-
     if len(day["closed_history"]) > 100:
         day["closed_history"] = day["closed_history"][-100:]
 
@@ -193,7 +210,6 @@ def update_performance(symbol, result, direction=None, source=None, entry=None, 
 
     if result == "OPENED":
         day["opened"] += 1
-
         if direction == "LONG":
             day["long"] += 1
         elif direction == "SHORT":
@@ -217,6 +233,12 @@ def update_performance(symbol, result, direction=None, source=None, entry=None, 
             day.setdefault("stop_times", {})
             day["stop_times"][symbol] = now_ts()
 
+        if result in ["TP3", "BE", "EXPIRED"]:
+            day.setdefault("closed_times", {})
+            day.setdefault("closed_results", {})
+            day["closed_times"][symbol] = now_ts()
+            day["closed_results"][symbol] = result
+
         add_history(day, {
             "time": datetime.now(TR_TIMEZONE).strftime("%H:%M:%S"),
             "symbol": symbol,
@@ -225,7 +247,7 @@ def update_performance(symbol, result, direction=None, source=None, entry=None, 
             "entry": entry,
             "exit": exit_price,
             "source": source,
-            "score": score
+            "score": score,
         })
 
     day.setdefault("coins", {})
@@ -237,11 +259,10 @@ def update_performance(symbol, result, direction=None, source=None, entry=None, 
         "tp3": 0,
         "sl": 0,
         "be": 0,
-        "expired": 0
+        "expired": 0,
     })
 
     coin = day["coins"][symbol]
-
     if result == "OPENED":
         coin["opened"] += 1
     elif result == "RADAR":
@@ -265,17 +286,24 @@ def risk_mode_active():
 def has_recent_stop(symbol):
     day = load_performance().get("days", {}).get(today_key(), {})
     stop_time = int(day.get("stop_times", {}).get(symbol, 0))
-
     if stop_time <= 0:
         return False
-
     return now_ts() - stop_time < STOPPED_COIN_COOLDOWN_HOURS * 60 * 60
+
+
+def has_recent_closed_signal(symbol):
+    """TP3 / BE / expired sonrasi ayni coin cok hizli tekrar gelmesin."""
+    day = load_performance().get("days", {}).get(today_key(), {})
+    closed_time = int(day.get("closed_times", {}).get(symbol, 0))
+    if closed_time <= 0:
+        return False
+    return now_ts() - closed_time < RECENT_CLOSED_COIN_COOLDOWN_SECONDS
 
 
 def get_exchange():
     return ccxt.okx({
         "enableRateLimit": True,
-        "options": {"defaultType": "swap"}
+        "options": {"defaultType": "swap"},
     })
 
 
@@ -292,21 +320,16 @@ def okx_symbol_to_bot_symbol(okx_symbol):
 def safe_quote_volume(ticker):
     try:
         value = ticker.get("quoteVolume")
-
         if value is not None:
             return float(value)
 
         info = ticker.get("info", {})
-
         for key in ["volCcy24h", "volUsd24h", "vol24h"]:
             value = info.get(key)
-
             if value is not None:
                 return float(value)
-
     except Exception:
         pass
-
     return 0.0
 
 
@@ -322,23 +345,18 @@ def get_scan_coins(exchange):
         for market in markets.values():
             if not market.get("active", True):
                 continue
-
             if not market.get("swap", False):
                 continue
-
             if market.get("quote") != "USDT":
                 continue
-
             if market.get("settle") != "USDT":
                 continue
 
             okx_symbol = market.get("symbol")
-
             if not okx_symbol or "/USDT:USDT" not in okx_symbol:
                 continue
 
             base = str(market.get("base", "")).upper()
-
             if not base or base in stable_bases:
                 continue
 
@@ -346,14 +364,11 @@ def get_scan_coins(exchange):
 
         tickers = exchange.fetch_tickers(okx_symbols)
         rows = []
-
         for okx_symbol in okx_symbols:
             ticker = tickers.get(okx_symbol, {})
             volume = safe_quote_volume(ticker)
-
             if volume < MIN_24H_QUOTE_VOLUME:
                 continue
-
             rows.append((okx_symbol_to_bot_symbol(okx_symbol), volume))
 
         if not rows:
@@ -368,7 +383,6 @@ def get_scan_coins(exchange):
         print("Hacimli coin sayısı:", len(rows))
         print("Taranacak coin:", len(scan_coins))
         print("İlk 10:", scan_coins[:10])
-
         return scan_coins
 
     except Exception as e:
@@ -379,12 +393,9 @@ def get_scan_coins(exchange):
 def fetch_df(exchange, symbol, timeframe, limit, min_len=30):
     try:
         ohlcv = exchange.fetch_ohlcv(to_okx_symbol(symbol), timeframe=timeframe, limit=limit)
-
         if not ohlcv or len(ohlcv) < min_len:
             return None
-
         return pd.DataFrame(ohlcv, columns=["time", "open", "high", "low", "close", "volume"])
-
     except Exception as e:
         print(symbol, timeframe, "veri hatası:", e)
         return None
@@ -408,13 +419,11 @@ def get_market_direction_status(exchange):
         try:
             df15 = fetch_df(exchange, ref_symbol, ENTRY_TIMEFRAME, 80, min_len=40)
             df5 = fetch_df(exchange, ref_symbol, RADAR_TIMEFRAME, 40, min_len=20)
-
             if df15 is None or df5 is None:
                 continue
 
             df15 = df15.copy()
             df15["ema20"] = simple_ema(df15["close"], 20)
-
             last15 = df15.iloc[-2]
             close15 = float(last15["close"])
             ema20 = float(last15["ema20"])
@@ -427,13 +436,10 @@ def get_market_direction_status(exchange):
 
             if ref_long_ok:
                 long_ok += 1
-
             if ref_short_ok:
                 short_ok += 1
-
             if move5 <= -MARKET_MAX_COUNTER_5M_MOVE_PERCENT:
                 hard_red += 1
-
             if move5 >= MARKET_MAX_COUNTER_5M_MOVE_PERCENT:
                 hard_green += 1
 
@@ -441,7 +447,6 @@ def get_market_direction_status(exchange):
                 f"{ref_symbol}: 15M {'EMA20 üstü' if close15 >= ema20 else 'EMA20 altı'}, "
                 f"5M %{round(move5, 2)}"
             )
-
         except Exception as e:
             print(ref_symbol, "market koruma veri hatası:", e)
 
@@ -451,12 +456,9 @@ def get_market_direction_status(exchange):
     reason = (
         f"LONG uygun: {long_ok}/{len(MARKET_REFERENCE_COINS)} | "
         f"SHORT uygun: {short_ok}/{len(MARKET_REFERENCE_COINS)} | "
-        f"Sert kırmızı: {hard_red} | Sert yeşil: {hard_green} | "
-        + " | ".join(details)
+        f"Sert kırmızı: {hard_red} | Sert yeşil: {hard_green} | " + " | ".join(details)
     )
-
     print("Market koruma:", reason)
-
     return {"LONG": allow_long, "SHORT": allow_short, "reason": reason}
 
 
@@ -466,20 +468,18 @@ def fetch_candles_since(exchange, symbol, timeframe, since_seconds, limit=180):
             to_okx_symbol(symbol),
             timeframe=timeframe,
             since=max(0, int(since_seconds)) * 1000,
-            limit=limit
+            limit=limit,
         )
-
         return [
             {
                 "time": int(item[0] / 1000),
                 "open": float(item[1]),
                 "high": float(item[2]),
                 "low": float(item[3]),
-                "close": float(item[4])
+                "close": float(item[4]),
             }
             for item in ohlcv
         ]
-
     except Exception as e:
         print(symbol, "takip mum hatası:", e)
         return []
@@ -490,7 +490,6 @@ def get_current_price(exchange, symbol):
         ticker = exchange.fetch_ticker(to_okx_symbol(symbol))
         price = ticker.get("last")
         return float(price) if price is not None else None
-
     except Exception as e:
         print(symbol, "güncel fiyat hatası:", e)
         return None
@@ -507,48 +506,35 @@ def is_entry_still_valid(signal, current_price):
             return False, "güncel fiyat yok"
 
         entry_distance = abs((current_price - entry) / entry) * 100
-
         if entry_distance > MAX_ENTRY_DISTANCE_PERCENT:
             return False, f"girişten uzak: %{round(entry_distance, 2)}"
 
         if direction == "LONG":
             total = tp1 - entry
             progressed = current_price - entry
-
             if total <= 0:
                 return False, "TP1 hatalı"
-
             progress_percent = (progressed / total) * 100
-
             if progress_percent >= MAX_TP1_PROGRESS_PERCENT:
                 return False, f"TP1'e yaklaşmış: %{round(progress_percent, 2)}"
-
             if current_price >= tp1:
                 return False, "TP1 zaten gelmiş"
-
             if current_price <= sl:
                 return False, "SL tarafında"
-
         else:
             total = entry - tp1
             progressed = entry - current_price
-
             if total <= 0:
                 return False, "TP1 hatalı"
-
             progress_percent = (progressed / total) * 100
-
             if progress_percent >= MAX_TP1_PROGRESS_PERCENT:
                 return False, f"TP1'e yaklaşmış: %{round(progress_percent, 2)}"
-
             if current_price <= tp1:
                 return False, "TP1 zaten gelmiş"
-
             if current_price >= sl:
                 return False, "SL tarafında"
 
         return True, "uygun"
-
     except Exception as e:
         return False, f"giriş kontrol hatası: {e}"
 
@@ -559,7 +545,6 @@ def is_duplicate(signal, radar=False):
     key = f"{prefix}_{signal['symbol']}_{signal['direction']}"
     last_time = int(last_signals.get(key, 0))
     wait = RADAR_DUPLICATE_BLOCK_SECONDS if radar else TRADE_DUPLICATE_BLOCK_SECONDS
-
     return now_ts() - last_time < wait
 
 
@@ -575,8 +560,38 @@ def has_open_same_symbol(symbol):
     for signal in load_open_signals().values():
         if signal.get("symbol") == symbol:
             return True
-
     return False
+
+
+def add_sl_after_follow(signal, exit_price):
+    """Stop olan sinyali performance.json icinde takip listesine ekler."""
+    try:
+        performance = ensure_perf_day(load_performance())
+        follow = performance.setdefault("sl_after_follow", {})
+        stopped_at = now_ts()
+        key = f"{signal.get('symbol')}_{signal.get('direction')}_{stopped_at}"
+        follow[key] = {
+            "symbol": signal.get("symbol"),
+            "direction": signal.get("direction"),
+            "source": signal.get("source"),
+            "entry": signal.get("entry"),
+            "tp1": signal.get("tp1"),
+            "tp2": signal.get("tp2"),
+            "tp3": signal.get("tp3"),
+            "sl": signal.get("sl"),
+            "score": signal.get("score"),
+            "risk_percent": signal.get("risk_percent"),
+            "stopped_at": stopped_at,
+            "stop_exit": exit_price,
+            "reported_checkpoints": [],
+            "after_sl_tp1": False,
+            "after_sl_tp2": False,
+            "after_sl_tp3": False,
+            "resolved": False,
+        }
+        save_performance(performance)
+    except Exception as e:
+        print("SL sonrası takip ekleme hatası:", e)
 
 
 def close_signal_result(symbol, signal, result, exit_price):
@@ -587,13 +602,153 @@ def close_signal_result(symbol, signal, result, exit_price):
         source=signal.get("source"),
         entry=signal.get("entry"),
         exit_price=exit_price,
-        score=signal.get("score")
+        score=signal.get("score"),
     )
+
+    if result == "SL":
+        add_sl_after_follow(signal, exit_price)
+
+
+def register_partial_result(symbol, signal, result, exit_price):
+    """TP1 / TP2 icin None hatasi olmadan performans kaydi."""
+    update_performance(
+        symbol=symbol,
+        result=result,
+        direction=signal.get("direction"),
+        source=signal.get("source"),
+        entry=signal.get("entry"),
+        exit_price=exit_price,
+        score=signal.get("score"),
+    )
+
+
+def check_sl_after_follow(exchange):
+    """Stop sonrasi fiyat TP1/TP2'ye dondu mu kontrol eder."""
+    performance = ensure_perf_day(load_performance())
+    follow = performance.setdefault("sl_after_follow", {})
+    if not follow:
+        return
+
+    changed = False
+    for key, item in list(follow.items()):
+        try:
+            if item.get("resolved"):
+                continue
+
+            symbol = item["symbol"]
+            direction = item["direction"]
+            entry = float(item["entry"])
+            tp1 = float(item["tp1"])
+            tp2 = float(item["tp2"])
+            tp3 = float(item["tp3"])
+            sl = float(item["sl"])
+            stopped_at = int(item.get("stopped_at", now_ts()))
+            age_minutes = int((now_ts() - stopped_at) / 60)
+
+            candles = fetch_candles_since(
+                exchange,
+                symbol,
+                TRACK_TIMEFRAME,
+                since_seconds=stopped_at,
+                limit=TRACK_LIMIT,
+            )
+
+            after_tp1 = False
+            after_tp2 = False
+            after_tp3 = False
+
+            for candle in candles:
+                high = float(candle["high"])
+                low = float(candle["low"])
+
+                if direction == "LONG":
+                    if high >= tp1:
+                        after_tp1 = True
+                    if high >= tp2:
+                        after_tp2 = True
+                    if high >= tp3:
+                        after_tp3 = True
+                else:
+                    if low <= tp1:
+                        after_tp1 = True
+                    if low <= tp2:
+                        after_tp2 = True
+                    if low <= tp3:
+                        after_tp3 = True
+
+            # Stop sonrasi TP1/TP2'ye donduyse tek rapor gonder ve kaydet.
+            if after_tp1 and not item.get("after_sl_tp1"):
+                item["after_sl_tp1"] = True
+                item["after_sl_tp2"] = bool(after_tp2)
+                item["after_sl_tp3"] = bool(after_tp3)
+                item["resolved"] = True
+                changed = True
+
+                today = today_key()
+                day = performance["days"].setdefault(today, {})
+                day["sl_after_tp1"] = int(day.get("sl_after_tp1", 0)) + 1
+                if after_tp2:
+                    day["sl_after_tp2"] = int(day.get("sl_after_tp2", 0)) + 1
+
+                level_text = "TP3" if after_tp3 else "TP2" if after_tp2 else "TP1"
+                send_telegram(
+                    f"📊 SL SONRASI TAKİP\n\n"
+                    f"Coin: {symbol}\n"
+                    f"Yön: {direction}\n"
+                    f"Giriş: {format_price(entry)}\n"
+                    f"SL: {format_price(sl)}\n"
+                    f"Stop sonrası geçen süre: {age_minutes} dakika\n\n"
+                    f"Sonuç: Stop sonrası fiyat {level_text} seviyesine döndü.\n"
+                    f"Yorum: Bu sinyalde stop dar kalmış veya fitil stop olmuş olabilir."
+                )
+                continue
+
+            # 30 / 60 / 120 dakika kontrol mesajlari.
+            reported = item.setdefault("reported_checkpoints", [])
+            for checkpoint in SL_AFTER_CHECKPOINT_MINUTES:
+                if age_minutes >= checkpoint and checkpoint not in reported:
+                    reported.append(checkpoint)
+                    changed = True
+
+                    if checkpoint >= SL_AFTER_MAX_TRACK_MINUTES:
+                        item["resolved"] = True
+                        today = today_key()
+                        day = performance["days"].setdefault(today, {})
+                        day["sl_after_no_return"] = int(day.get("sl_after_no_return", 0)) + 1
+
+                    send_telegram(
+                        f"📊 SL SONRASI TAKİP\n\n"
+                        f"Coin: {symbol}\n"
+                        f"Yön: {direction}\n"
+                        f"Giriş: {format_price(entry)}\n"
+                        f"SL: {format_price(sl)}\n"
+                        f"Kontrol: {checkpoint}. dakika\n\n"
+                        f"Sonuç: Stop sonrası henüz TP1 seviyesine dönüş yok.\n"
+                        f"Yorum: Şimdilik stop doğru çalışmış görünüyor; takip devam ediyor."
+                    )
+                    break
+
+        except Exception as e:
+            print(key, "SL sonrası takip hatası:", e)
+
+    # Eski / cozulmus takipleri cok buyumesin diye temizle.
+    for key, item in list(follow.items()):
+        try:
+            stopped_at = int(item.get("stopped_at", 0))
+            age = now_ts() - stopped_at
+            if item.get("resolved") and age > (SL_AFTER_MAX_TRACK_MINUTES + 60) * 60:
+                follow.pop(key, None)
+                changed = True
+        except Exception:
+            pass
+
+    if changed:
+        performance["last_update"] = now_ts()
+        save_performance(performance)
 
 
 def check_open_signals(exchange):
     open_signals = load_open_signals()
-
     if not open_signals:
         print("Açık sinyal yok.")
         return
@@ -613,6 +768,11 @@ def check_open_signals(exchange):
             opened_at = int(signal.get("opened_at", now_ts()))
             last_checked_at = int(signal.get("last_checked_at", opened_at))
 
+            # Eskiden TP3 gormus ama dosyada kalmis sinyal varsa tekrar mesaj atma.
+            if bool(signal.get("tp3_hit", False)) or bool(signal.get("closed", False)):
+                print(symbol, "zaten kapanmış görünüyor, takipten çıkarıldı.")
+                continue
+
             if now_ts() - opened_at > max_age:
                 send_telegram(
                     f"⏳ SİNYAL SÜRESİ DOLDU\n\n"
@@ -629,9 +789,8 @@ def check_open_signals(exchange):
                 symbol,
                 TRACK_TIMEFRAME,
                 since_seconds=max(opened_at, last_checked_at - 10 * 60),
-                limit=TRACK_LIMIT
+                limit=TRACK_LIMIT,
             )
-
             if not candles:
                 updated[key] = signal
                 continue
@@ -645,7 +804,6 @@ def check_open_signals(exchange):
                 high = float(candle["high"])
                 low = float(candle["low"])
                 close = float(candle["close"])
-                open_ = float(candle["open"])
 
                 if direction == "LONG":
                     if not tp1_hit:
@@ -663,7 +821,7 @@ def check_open_signals(exchange):
                                     f"TP1: {format_price(tp1)}\n"
                                     f"Öneri: %50 kâr al, SL girişe çek."
                                 )
-                                update_performance(symbol, "TP1")
+                                register_partial_result(symbol, signal, "TP1", tp1)
                             else:
                                 send_telegram(
                                     f"❌ STOP OLDU\n\n"
@@ -701,22 +859,42 @@ def check_open_signals(exchange):
                                 f"TP1: {format_price(tp1)}\n"
                                 f"Öneri: %50 kâr al, SL girişe çek."
                             )
-                            update_performance(symbol, "TP1")
+                            register_partial_result(symbol, signal, "TP1", tp1)
 
                     if tp1_hit and not tp2_hit and high >= tp2:
                         tp2_hit = True
                         signal["tp2_hit"] = True
-                        send_telegram(f"✅ TP2 GELDİ\n\nCoin: {symbol}\nYön: LONG 🟢\nTP2: {format_price(tp2)}")
-                        update_performance(symbol, "TP2")
+                        send_telegram(
+                            f"✅ TP2 GELDİ\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: LONG 🟢\n"
+                            f"TP2: {format_price(tp2)}"
+                        )
+                        register_partial_result(symbol, signal, "TP2", tp2)
 
                     if tp1_hit and not tp3_hit and high >= tp3:
-                        send_telegram(f"🏁 TP3 GELDİ\n\nCoin: {symbol}\nYön: LONG 🟢\nTP3: {format_price(tp3)}\nSinyal maksimum hedefe ulaştı.")
+                        tp3_hit = True
+                        signal["tp3_hit"] = True
+                        signal["closed"] = True
+                        send_telegram(
+                            f"🏁 TP3 GELDİ\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: LONG 🟢\n"
+                            f"TP3: {format_price(tp3)}\n"
+                            f"Sinyal maksimum hedefe ulaştı."
+                        )
                         close_signal_result(symbol, signal, "TP3", tp3)
                         closed = True
                         break
 
                     if tp1_hit and low <= entry:
-                        send_telegram(f"🟡 KALAN İŞLEM GİRİŞTEN KAPANDI\n\nCoin: {symbol}\nYön: LONG 🟢\nGiriş: {format_price(entry)}")
+                        signal["closed"] = True
+                        send_telegram(
+                            f"🟡 KALAN İŞLEM GİRİŞTEN KAPANDI\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: LONG 🟢\n"
+                            f"Giriş: {format_price(entry)}"
+                        )
                         close_signal_result(symbol, signal, "BE", entry)
                         closed = True
                         break
@@ -735,7 +913,7 @@ def check_open_signals(exchange):
                                     f"TP1: {format_price(tp1)}\n"
                                     f"Öneri: %50 kâr al, SL girişe çek."
                                 )
-                                update_performance(symbol, "TP1")
+                                register_partial_result(symbol, signal, "TP1", tp1)
                             else:
                                 send_telegram(
                                     f"❌ STOP OLDU\n\n"
@@ -773,22 +951,42 @@ def check_open_signals(exchange):
                                 f"TP1: {format_price(tp1)}\n"
                                 f"Öneri: %50 kâr al, SL girişe çek."
                             )
-                            update_performance(symbol, "TP1")
+                            register_partial_result(symbol, signal, "TP1", tp1)
 
                     if tp1_hit and not tp2_hit and low <= tp2:
                         tp2_hit = True
                         signal["tp2_hit"] = True
-                        send_telegram(f"✅ TP2 GELDİ\n\nCoin: {symbol}\nYön: SHORT 🔴\nTP2: {format_price(tp2)}")
-                        update_performance(symbol, "TP2")
+                        send_telegram(
+                            f"✅ TP2 GELDİ\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: SHORT 🔴\n"
+                            f"TP2: {format_price(tp2)}"
+                        )
+                        register_partial_result(symbol, signal, "TP2", tp2)
 
                     if tp1_hit and not tp3_hit and low <= tp3:
-                        send_telegram(f"🏁 TP3 GELDİ\n\nCoin: {symbol}\nYön: SHORT 🔴\nTP3: {format_price(tp3)}\nSinyal maksimum hedefe ulaştı.")
+                        tp3_hit = True
+                        signal["tp3_hit"] = True
+                        signal["closed"] = True
+                        send_telegram(
+                            f"🏁 TP3 GELDİ\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: SHORT 🔴\n"
+                            f"TP3: {format_price(tp3)}\n"
+                            f"Sinyal maksimum hedefe ulaştı."
+                        )
                         close_signal_result(symbol, signal, "TP3", tp3)
                         closed = True
                         break
 
                     if tp1_hit and high >= entry:
-                        send_telegram(f"🟡 KALAN İŞLEM GİRİŞTEN KAPANDI\n\nCoin: {symbol}\nYön: SHORT 🔴\nGiriş: {format_price(entry)}")
+                        signal["closed"] = True
+                        send_telegram(
+                            f"🟡 KALAN İŞLEM GİRİŞTEN KAPANDI\n\n"
+                            f"Coin: {symbol}\n"
+                            f"Yön: SHORT 🔴\n"
+                            f"Giriş: {format_price(entry)}"
+                        )
                         close_signal_result(symbol, signal, "BE", entry)
                         closed = True
                         break
@@ -824,17 +1022,14 @@ def mark_status_sent():
 def maybe_send_open_summary(exchange):
     performance = load_performance()
     last_summary = int(performance.get("last_open_summary", 0))
-
     if now_ts() - last_summary < OPEN_SUMMARY_EVERY_MINUTES * 60:
         return
 
     open_signals = load_open_signals()
-
     if not open_signals:
         return
 
     lines = ["📌 AÇIK SİNYAL ÖZETİ\n"]
-
     for signal in list(open_signals.values())[:10]:
         try:
             symbol = signal["symbol"]
@@ -843,7 +1038,6 @@ def maybe_send_open_summary(exchange):
             tp1 = float(signal["tp1"])
             sl = float(signal["sl"])
             current = get_current_price(exchange, symbol)
-
             if current is None:
                 continue
 
@@ -862,7 +1056,6 @@ def maybe_send_open_summary(exchange):
                 f"TP1: {format_price(tp1)} | SL: {format_price(sl)}\n"
                 f"Durum: %{round(profit, 2)} | TP1 uzaklık: %{round(tp_distance, 2)}\n"
             )
-
         except Exception as e:
             print("Özet satır hatası:", e)
 
@@ -887,6 +1080,9 @@ def build_daily_report():
     short_count = int(day.get("short", 0))
     normal_count = int(day.get("normal", 0))
     radar_trade = int(day.get("radar_trade", 0))
+    sl_after_tp1 = int(day.get("sl_after_tp1", 0))
+    sl_after_tp2 = int(day.get("sl_after_tp2", 0))
+    sl_after_no_return = int(day.get("sl_after_no_return", 0))
     open_count = len(load_open_signals())
 
     closed = tp1 + sl
@@ -902,16 +1098,12 @@ def build_daily_report():
         c_tp1 = int(stats.get("tp1", 0))
         c_sl = int(stats.get("sl", 0))
         c_closed = c_tp1 + c_sl
-
         if c_closed <= 0:
             continue
-
         rate = round((c_tp1 / c_closed) * 100, 2)
-
         if rate > best_rate:
             best_rate = rate
             best_coin = f"{coin} (%{rate})"
-
         if rate < worst_rate:
             worst_rate = rate
             worst_coin = f"{coin} (%{rate})"
@@ -921,24 +1113,24 @@ def build_daily_report():
         recent_lines.append(
             f"{item.get('time')} | {item.get('symbol')} {item.get('direction')} → {item.get('result')}"
         )
-
     recent_text = "\n".join(recent_lines) if recent_lines else "Henüz kapanan işlem yok."
 
     return f"""
 📊 GÜNLÜK PERFORMANS RAPORU
 
-📅 Tarih: {today_key()}
+Tarih: {today_key()}
 
-📈 Açılan İşlem Sinyali: {opened}
-📡 Radar Uyarısı: {radar}
-🟢 LONG: {long_count}
-🔴 SHORT: {short_count}
+Açılan İşlem Sinyali: {opened}
+Radar Uyarısı: {radar}
+LONG: {long_count}
+SHORT: {short_count}
+
 ✅ 15M Giriş: {normal_count}
 ⚡ 5M Radar Trade: {radar_trade}
 
 ✅ TP1 Gelen: {tp1}
 ✅ TP2 Gelen: {tp2}
-✅ TP3 Gelen: {tp3}
+🏁 TP3 Gelen: {tp3}
 🟡 Girişten Kapanan: {be}
 ❌ Stop Olan: {sl}
 ⏳ Süresi Dolan: {expired}
@@ -946,14 +1138,17 @@ def build_daily_report():
 
 📊 TP1 Başarı Oranı: %{success}
 
+🧪 SL Sonrası TP1'e Dönen: {sl_after_tp1}
+🧪 SL Sonrası TP2'ye Dönen: {sl_after_tp2}
+🧪 SL Sonrası Dönmeyen: {sl_after_no_return}
+
 🏆 En İyi Coin: {best_coin}
 ⚠️ En Zayıf Coin: {worst_coin}
 
-🧾 Son Kapananlar:
+Son Kapananlar:
 {recent_text}
 
-📌 Not:
-Radar uyarıları işlem sinyali sayılmaz.
+Not: Radar uyarıları işlem sinyali sayılmaz.
 TP1 sonrası kalan işlem için SL giriş fiyatı kabul edilir.
 Bu bot emir açmaz, sadece sinyal gönderir.
 """
@@ -962,17 +1157,14 @@ Bu bot emir açmaz, sadece sinyal gönderir.
 def maybe_send_daily_report():
     now = datetime.now(TR_TIMEZONE)
     today = today_key()
-
     if now.hour != DAILY_REPORT_HOUR or now.minute < DAILY_REPORT_MINUTE:
         return
 
     performance = load_performance()
-
     if performance.get("last_daily_report") == today:
         return
 
     send_telegram(build_daily_report())
-
     performance["last_daily_report"] = today
     save_performance(performance)
 
@@ -980,7 +1172,6 @@ def maybe_send_daily_report():
 def save_open_signal(signal):
     open_signals = load_open_signals()
     key = f"{signal['symbol']}_{signal['direction']}_{signal.get('source', 'MTF')}"
-
     open_signals[key] = {
         "symbol": signal["symbol"],
         "direction": signal["direction"],
@@ -996,9 +1187,9 @@ def save_open_signal(signal):
         "last_checked_at": now_ts(),
         "tp1_hit": False,
         "tp2_hit": False,
-        "tp3_hit": False
+        "tp3_hit": False,
+        "closed": False,
     }
-
     save_open_signals(open_signals)
 
 
@@ -1006,12 +1197,12 @@ def main():
     print(BOT_NAME, "başladı.")
     exchange = get_exchange()
 
-    # Önce açık sinyal sonuçlarını kontrol et.
+    # Önce açık sinyal sonuçlarını ve stop sonrası takipleri kontrol et.
     check_open_signals(exchange)
+    check_sl_after_follow(exchange)
     maybe_send_open_summary(exchange)
 
     risk_mode = risk_mode_active()
-
     if risk_mode:
         print("Risk modu aktif. Sistem durmadı, daha seçici çalışıyor.")
 
@@ -1039,6 +1230,10 @@ def main():
                 print(symbol, "yakın zamanda stop olduğu için atlandı.")
                 continue
 
+            if has_recent_closed_signal(symbol):
+                print(symbol, "yakın zamanda kapandığı için tekrar sinyal atlandı.")
+                continue
+
             current_price = get_current_price(exchange, symbol)
 
             df15m = fetch_df(exchange, symbol, ENTRY_TIMEFRAME, ENTRY_LIMIT, min_len=120)
@@ -1048,20 +1243,17 @@ def main():
             normal_signal = analyze_mtf_trade(symbol, df15m, df1h, df4h, current_price)
 
             signals = []
-
             if normal_signal is not None:
                 signals.append(normal_signal)
 
             df5m = fetch_df(exchange, symbol, RADAR_TIMEFRAME, RADAR_LIMIT, min_len=50)
             radar_signal = analyze_5m_radar(symbol, df5m, df15m, df1h, df4h, current_price)
-
             if radar_signal is not None:
                 signals.append(radar_signal)
 
             for signal in signals:
                 if signal["direction"] == "LONG" and not ALLOW_LONG:
                     continue
-
                 if signal["direction"] == "SHORT" and not ALLOW_SHORT:
                     continue
 
@@ -1071,11 +1263,15 @@ def main():
                     signal["signal_class"] = "RADAR"
 
                 # Risk modunda radar kaynaklı trade açma.
-                if risk_mode and signal.get("source") == "5M_RADAR" and signal.get("signal_class") == "TRADE" and not RISK_MODE_ALLOW_RADAR_TRADE:
+                if (
+                    risk_mode
+                    and signal.get("source") == "5M_RADAR"
+                    and signal.get("signal_class") == "TRADE"
+                    and not RISK_MODE_ALLOW_RADAR_TRADE
+                ):
                     signal["signal_class"] = "RADAR"
 
                 valid, reason = is_entry_still_valid(signal, current_price)
-
                 if not valid:
                     print(symbol, "giriş elendi ->", reason)
                     continue
@@ -1097,9 +1293,8 @@ def main():
     trade_candidates = sorted(
         trade_candidates,
         key=lambda s: (s["score"], 1 if s.get("source") == "15M_ENTRY" else 0),
-        reverse=True
+        reverse=True,
     )
-
     radar_candidates = sorted(radar_candidates, key=lambda s: s["score"], reverse=True)
 
     max_trade = RISK_MODE_MAX_TRADE_SIGNALS if risk_mode else MAX_TRADE_SIGNALS_PER_RUN
@@ -1118,28 +1313,25 @@ def main():
             f"Sistem: {SYSTEM_NOTE}"
         )
 
-        for signal in selected_trade:
-            current_price = get_current_price(exchange, signal["symbol"])
-            valid, reason = is_entry_still_valid(signal, current_price)
+    for signal in selected_trade:
+        current_price = get_current_price(exchange, signal["symbol"])
+        valid, reason = is_entry_still_valid(signal, current_price)
+        if not valid:
+            print(signal["symbol"], "son kontrol elendi:", reason)
+            continue
 
-            if not valid:
-                print(signal["symbol"], "son kontrol elendi:", reason)
-                continue
-
-            extra = f"\n💰 Güncel Fiyat: {format_price(current_price)}\n📌 Son Kontrol: Girişe yakın ✅"
-
-            if send_telegram(signal["message"] + extra):
-                save_open_signal(signal)
-                mark_sent(signal, radar=False)
-                update_performance(
-                    signal["symbol"],
-                    "OPENED",
-                    direction=signal["direction"],
-                    source=signal.get("source"),
-                    entry=signal.get("entry"),
-                    score=signal.get("score")
-                )
-
+        extra = f"\n💰 Güncel Fiyat: {format_price(current_price)}\n📌 Son Kontrol: Girişe yakın ✅"
+        if send_telegram(signal["message"] + extra):
+            save_open_signal(signal)
+            mark_sent(signal, radar=False)
+            update_performance(
+                signal["symbol"],
+                "OPENED",
+                direction=signal["direction"],
+                source=signal.get("source"),
+                entry=signal.get("entry"),
+                score=signal.get("score"),
+            )
             time.sleep(1)
 
     if selected_radar:
@@ -1149,23 +1341,25 @@ def main():
             f"Bu mesajlar işlem sinyali değildir. A kalite giriş beklenir."
         )
 
-        for signal in selected_radar:
-            radar_message = signal["message"].replace("A KALİTE MTF FUTURES SİNYALİ", "5M / 15M RADAR - İŞLEM AÇMA")
-            if send_telegram(radar_message):
-                mark_sent(signal, radar=True)
-                update_performance(
-                    signal["symbol"],
-                    "RADAR",
-                    direction=signal["direction"],
-                    source=signal.get("source"),
-                    entry=signal.get("entry"),
-                    score=signal.get("score")
-                )
+    for signal in selected_radar:
+        radar_message = signal["message"].replace(
+            "A KALİTE MTF FUTURES SİNYALİ",
+            "5M / 15M RADAR - İŞLEM AÇMA",
+        )
+        if send_telegram(radar_message):
+            mark_sent(signal, radar=True)
+            update_performance(
+                signal["symbol"],
+                "RADAR",
+                direction=signal["direction"],
+                source=signal.get("source"),
+                entry=signal.get("entry"),
+                score=signal.get("score"),
+            )
             time.sleep(1)
 
     if not selected_trade and not selected_radar:
         print("Uygun sinyal yok.")
-
         if should_send_status():
             send_telegram(
                 f"📡 {BOT_NAME} çalıştı.\n\n"
