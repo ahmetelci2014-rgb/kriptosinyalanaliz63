@@ -1,6 +1,9 @@
 # scalp_radar.py
-# Hızlı Scalp Radar v2 - Tüm Coin + Sinyal Yok Analiz Raporu
+# Hızlı Scalp Radar
 # OKX USDT Futures tarar. Emir açmaz, sadece Telegram sinyali gönderir.
+# Mantık:
+# 1) Tepki scalp: sert düşüş/yükseliş sonrası hızlı tepki
+# 2) Atak scalp: güçlü momentum/kırılım ile hızlı yön hareketi
 # TOKEN ve CHAT_ID GitHub Secrets içinden okunur.
 
 import os
@@ -19,13 +22,12 @@ import pandas as pd
 # GENEL AYARLAR
 # =========================
 
-BOT_NAME = "Hızlı Scalp Radar v2"
+BOT_NAME = "Hızlı Scalp Radar"
 
 TOKEN = os.getenv("TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
 STATE_FILE = "scalp_radar_state.json"
-
 TR_TIMEZONE = timezone(timedelta(hours=3))
 
 # Tüm uygun OKX USDT futures coinleri taransın.
@@ -33,11 +35,10 @@ AUTO_ALL_OKX_USDT_FUTURES = True
 MAX_SCAN_COINS = 9999
 MIN_24H_QUOTE_VOLUME = 100_000
 
-# Hızlı scalp sinyal limiti
+# Sinyal limitleri
 MAX_NEW_SIGNALS_PER_RUN = 3
 MAX_OPEN_SCALP_SIGNALS = 3
-_NEW_SIGNALS_PER_RUN = 3
-MAX_OPEN_SCDUPLICATE_SECONDS = 90 * 60
+DUPLICATE_SECONDS = 90 * 60
 
 # Açık scalp takip süresi
 MAX_OPEN_SIGNAL_MINUTES = 180
@@ -47,9 +48,6 @@ TRACK_LIMIT = 180
 # Sinyal yok raporu
 SEND_NO_SIGNAL_REPORT = True
 NO_SIGNAL_REPORT_EVERY_MINUTES = 20
-
-# Özel test edilecek coinler
-DEBUG_SYMBOLS = []
 
 # Scalp TP/SL
 TP1_R = 0.65
@@ -61,29 +59,62 @@ SL_BUFFER_PERCENT = 0.08
 MIN_RISK_PERCENT = 0.20
 MAX_RISK_PERCENT = 1.65
 
-# Filtreler kontrollü gevşetildi
+# Genel skor
 MIN_SCORE = 76
 
-# LONG için: hızlı düşüş sonrası tepki
-LONG_MIN_5M_DROP = 0.65
-LONG_MIN_15M_DROP = 0.25
-LONG_RSI_1M_MIN = 16
-LONG_RSI_1M_MAX = 46
-LONG_RSI_5M_MAX = 53
+# =========================
+# TEPKİ SCALP AYARLARI
+# =========================
+# LONG: hızlı düşüş sonrası tepki
+REACTION_LONG_MIN_5M_DROP = 0.65
+REACTION_LONG_MIN_15M_DROP = 0.25
+REACTION_LONG_RSI_1M_MIN = 16
+REACTION_LONG_RSI_1M_MAX = 46
+REACTION_LONG_RSI_5M_MAX = 53
 
-# SHORT için: hızlı yükseliş sonrası red
-SHORT_MIN_5M_PUMP = 0.65
-SHORT_MIN_15M_PUMP = 0.25
-SHORT_RSI_1M_MIN = 54
-SHORT_RSI_1M_MAX = 86
-SHORT_RSI_5M_MIN = 49
+# SHORT: hızlı yükseliş sonrası red
+REACTION_SHORT_MIN_5M_PUMP = 0.65
+REACTION_SHORT_MIN_15M_PUMP = 0.25
+REACTION_SHORT_RSI_1M_MIN = 54
+REACTION_SHORT_RSI_1M_MAX = 86
+REACTION_SHORT_RSI_5M_MIN = 49
 
-# Hacim / fitil
-MIN_1M_VOLUME_RATIO = 1.35
-MIN_5M_VOLUME_RATIO = 1.00
-MIN_WICK_PERCENT = 25
-LONG_MIN_CLOSE_POWER = 43
-SHORT_MAX_CLOSE_POWER = 57
+# Tepki hacim / fitil
+REACTION_MIN_1M_VOLUME_RATIO = 1.35
+REACTION_MIN_5M_VOLUME_RATIO = 1.00
+REACTION_MIN_WICK_PERCENT = 25
+REACTION_LONG_MIN_CLOSE_POWER = 43
+REACTION_SHORT_MAX_CLOSE_POWER = 57
+
+
+# =========================
+# ATAK / MOMENTUM SCALP AYARLARI
+# =========================
+# LONG: yükseliş atağı / kırılım
+ATTACK_LONG_MIN_1M_MOVE = 0.12
+ATTACK_LONG_MIN_5M_MOVE = 0.35
+ATTACK_LONG_MIN_15M_MOVE = 0.15
+ATTACK_LONG_RSI_1M_MIN = 48
+ATTACK_LONG_RSI_1M_MAX = 78
+ATTACK_LONG_RSI_5M_MIN = 47
+ATTACK_LONG_RSI_5M_MAX = 76
+ATTACK_LONG_MIN_CLOSE_POWER = 62
+
+# SHORT: düşüş atağı / kırılım
+ATTACK_SHORT_MIN_1M_MOVE = 0.12
+ATTACK_SHORT_MIN_5M_MOVE = 0.35
+ATTACK_SHORT_MIN_15M_MOVE = 0.15
+ATTACK_SHORT_RSI_1M_MIN = 22
+ATTACK_SHORT_RSI_1M_MAX = 52
+ATTACK_SHORT_RSI_5M_MIN = 24
+ATTACK_SHORT_RSI_5M_MAX = 53
+ATTACK_SHORT_MAX_CLOSE_POWER = 38
+
+# Atak hacim / kırılım
+ATTACK_MIN_1M_VOLUME_RATIO = 1.35
+ATTACK_MIN_5M_VOLUME_RATIO = 1.00
+ATTACK_BREAKOUT_LOOKBACK_1M = 20
+ATTACK_BREAKOUT_LOOKBACK_5M = 12
 
 
 # =========================
@@ -112,25 +143,24 @@ def send_telegram(message):
 # JSON STATE
 # =========================
 
+def empty_state():
+    return {
+        "open_scalp_signals": {},
+        "last_sent": {},
+        "last_no_signal_report": 0,
+        "stats": {},
+    }
+
+
 def load_state():
     try:
         if not os.path.exists(STATE_FILE):
-            return {
-                "open_scalp_signals": {},
-                "last_sent": {},
-                "last_no_signal_report": 0,
-                "stats": {},
-            }
+            return empty_state()
 
         with open(STATE_FILE, "r", encoding="utf-8") as f:
             content = f.read().strip()
             if not content:
-                return {
-                    "open_scalp_signals": {},
-                    "last_sent": {},
-                    "last_no_signal_report": 0,
-                    "stats": {},
-                }
+                return empty_state()
 
             data = json.loads(content)
             if not isinstance(data, dict):
@@ -144,12 +174,7 @@ def load_state():
 
     except Exception as e:
         print("State okuma hatası:", e)
-        return {
-            "open_scalp_signals": {},
-            "last_sent": {},
-            "last_no_signal_report": 0,
-            "stats": {},
-        }
+        return empty_state()
 
 
 def save_state(state):
@@ -212,7 +237,6 @@ def get_scan_coins(exchange):
     try:
         markets = exchange.load_markets()
         okx_symbols = []
-
         stable_bases = {"USDT", "USDC", "DAI", "FDUSD", "TUSD", "USDP", "USD"}
 
         for market in markets.values():
@@ -241,15 +265,13 @@ def get_scan_coins(exchange):
         for okx_symbol in okx_symbols:
             ticker = tickers.get(okx_symbol, {})
             volume = safe_quote_volume(ticker)
-
             if volume < MIN_24H_QUOTE_VOLUME:
                 continue
-
             rows.append((okx_symbol_to_bot_symbol(okx_symbol), volume))
 
         rows = sorted(rows, key=lambda x: x[1], reverse=True)
-
         coins = [coin for coin, _ in rows]
+
         if MAX_SCAN_COINS and MAX_SCAN_COINS > 0:
             coins = coins[:MAX_SCAN_COINS]
 
@@ -361,8 +383,7 @@ def calc_rsi(series, period=14):
     avg_loss = loss.ewm(alpha=1 / period, adjust=False).mean()
 
     rs = avg_gain / avg_loss.replace(0, 0.0000001)
-    rsi = 100 - (100 / (1 + rs))
-    return rsi
+    return 100 - (100 / (1 + rs))
 
 
 def volume_ratio(df, index=-2, period=20):
@@ -383,15 +404,6 @@ def candle_move_percent(row):
         if open_price <= 0:
             return 0.0
         return ((close_price - open_price) / open_price) * 100
-    except Exception:
-        return 0.0
-
-
-def candle_range(row):
-    try:
-        high = float(row["high"])
-        low = float(row["low"])
-        return max(high - low, 0.0)
     except Exception:
         return 0.0
 
@@ -439,6 +451,29 @@ def close_power_percent(row):
         return 50.0
 
 
+def rolling_previous_high(df, lookback):
+    try:
+        # Son kapanmış mum -2. Öncesindeki lookback mumların en yüksek seviyesi.
+        start = max(0, len(df) - lookback - 2)
+        end = len(df) - 2
+        if end <= start:
+            return None
+        return float(df["high"].iloc[start:end].max())
+    except Exception:
+        return None
+
+
+def rolling_previous_low(df, lookback):
+    try:
+        start = max(0, len(df) - lookback - 2)
+        end = len(df) - 2
+        if end <= start:
+            return None
+        return float(df["low"].iloc[start:end].min())
+    except Exception:
+        return None
+
+
 def is_recent_duplicate(state, symbol, direction):
     key = f"{symbol}_{direction}"
     last_time = int(state.get("last_sent", {}).get(key, 0))
@@ -460,7 +495,7 @@ def has_open_same_symbol(state, symbol):
 
 
 # =========================
-# SCALP ANALİZ
+# SCALP ANALİZ YARDIMCILARI
 # =========================
 
 def build_condition_result(label, ok):
@@ -480,12 +515,14 @@ def missing_reasons(conditions):
 
 def build_signal_message(signal):
     icon = "🟢" if signal["direction"] == "LONG" else "🔴"
+    setup_name = signal.get("setup", "SCALP")
 
     return (
-        f"⚡ HIZLI SCALP RADAR v2\n\n"
+        f"⚡ HIZLI SCALP RADAR\n\n"
         f"{icon} {signal['direction']}\n"
         f"🟡 Coin: {signal['symbol']}\n"
-        f"⏱️ Kaynak: {signal['source']}\n\n"
+        f"⏱️ Kaynak: {signal['source']}\n"
+        f"📌 Kurulum: {setup_name}\n\n"
         f"📌 Giriş: {format_price(signal['entry'])}\n"
         f"🎯 TP1: {format_price(signal['tp1'])}\n"
         f"🎯 TP2: {format_price(signal['tp2'])}\n"
@@ -498,6 +535,7 @@ def build_signal_message(signal):
         f"• 5M RSI: {round(signal['rsi5'], 2)}\n"
         f"• 1M Hacim: {round(signal['vol1'], 2)}x\n"
         f"• 5M Hacim: {round(signal['vol5'], 2)}x\n"
+        f"• 1M Hareket: %{round(signal['move1'], 2)}\n"
         f"• 5M Hareket: %{round(signal['move5'], 2)}\n"
         f"• 15M Hareket: %{round(signal['move15'], 2)}\n"
         f"• Alt Fitil: %{round(signal['lower_wick'], 1)}\n"
@@ -513,61 +551,95 @@ def build_signal_message(signal):
     )
 
 
-def analyze_one_side(symbol, direction, df1, df5, df15, current_price):
+def make_signal(symbol, direction, source, setup, entry, sl, score, risk_percent, market_data, ok_count, total, missing):
+    if direction == "LONG":
+        risk = entry - sl
+        tp1 = entry + risk * TP1_R
+        tp2 = entry + risk * TP2_R
+        tp3 = entry + risk * TP3_R
+    else:
+        risk = sl - entry
+        tp1 = entry - risk * TP1_R
+        tp2 = entry - risk * TP2_R
+        tp3 = entry - risk * TP3_R
+
+    signal = {
+        "symbol": symbol,
+        "direction": direction,
+        "source": source,
+        "setup": setup,
+        "entry": entry,
+        "tp1": tp1,
+        "tp2": tp2,
+        "tp3": tp3,
+        "sl": sl,
+        "score": score,
+        "risk_percent": risk_percent,
+        "ok_count": ok_count,
+        "total_conditions": total,
+        "missing": missing,
+        **market_data,
+    }
+    signal["message"] = build_signal_message(signal)
+    return signal
+
+
+def build_debug(symbol, direction, setup, score, ok_count, total, missing, market_data, risk_percent):
+    return {
+        "symbol": symbol,
+        "direction": direction,
+        "setup": setup,
+        "score": score,
+        "ok_count": ok_count,
+        "total_conditions": total,
+        "missing": missing,
+        "risk_percent": risk_percent,
+        **market_data,
+    }
+
+
+# =========================
+# TEPKİ SCALP
+# =========================
+
+def analyze_reaction_side(symbol, direction, df1, df5, df15, current_price, market_data):
     try:
         if df1 is None or df5 is None or df15 is None or current_price is None:
             return None, None
 
-        df1 = df1.copy()
-        df5 = df5.copy()
-        df15 = df15.copy()
-
-        df1["rsi"] = calc_rsi(df1["close"])
-        df5["rsi"] = calc_rsi(df5["close"])
-
         c1 = df1.iloc[-2]
         c5 = df5.iloc[-2]
-        c15 = df15.iloc[-2]
-
         entry = float(current_price)
-        rsi1 = float(df1["rsi"].iloc[-2])
-        rsi5 = float(df5["rsi"].iloc[-2])
 
-        vol1 = volume_ratio(df1, index=-2, period=20)
-        vol5 = volume_ratio(df5, index=-2, period=20)
-
-        move1 = candle_move_percent(c1)
-        move5 = candle_move_percent(c5)
-        move15 = candle_move_percent(c15)
-
-        lw = lower_wick_percent(c1)
-        uw = upper_wick_percent(c1)
-        cp = close_power_percent(c1)
+        rsi1 = market_data["rsi1"]
+        rsi5 = market_data["rsi5"]
+        vol1 = market_data["vol1"]
+        vol5 = market_data["vol5"]
+        move5 = market_data["move5"]
+        move15 = market_data["move15"]
+        lw = market_data["lower_wick"]
+        uw = market_data["upper_wick"]
+        cp = market_data["close_power"]
 
         if direction == "LONG":
             raw_sl = min(float(c1["low"]), float(c5["low"]))
             sl = raw_sl * (1 - SL_BUFFER_PERCENT / 100)
             risk = entry - sl
-
             if risk <= 0:
                 return None, None
-
-            tp1 = entry + risk * TP1_R
-            tp2 = entry + risk * TP2_R
-            tp3 = entry + risk * TP3_R
 
             risk_percent = (risk / entry) * 100
 
             conditions = [
-                build_condition_result(f"5M düşüş yetersiz", move5 <= -LONG_MIN_5M_DROP),
-                build_condition_result(f"15M düşüş yetersiz", move15 <= -LONG_MIN_15M_DROP),
-                build_condition_result(f"1M RSI uygun değil", LONG_RSI_1M_MIN <= rsi1 <= LONG_RSI_1M_MAX),
-                build_condition_result(f"5M RSI yüksek", rsi5 <= LONG_RSI_5M_MAX),
-                build_condition_result(f"1M hacim düşük", vol1 >= MIN_1M_VOLUME_RATIO),
-                build_condition_result(f"5M hacim düşük", vol5 >= MIN_5M_VOLUME_RATIO),
-                build_condition_result(f"alt fitil yetersiz", lw >= MIN_WICK_PERCENT),
-                build_condition_result(f"kapanış gücü zayıf", cp >= LONG_MIN_CLOSE_POWER),
-                build_condition_result(f"risk uygun değil", MIN_RISK_PERCENT <= risk_percent <= MAX_RISK_PERCENT),
+                build_condition_result("TEPKİ: 5M düşüş yetersiz", move5 <= -REACTION_LONG_MIN_5M_DROP),
+                build_condition_result("TEPKİ: 15M düşüş yetersiz", move15 <= -REACTION_LONG_MIN_15M_DROP),
+                build_condition_result("TEPKİ: 1M RSI uygun değil", REACTION_LONG_RSI_1M_MIN <= rsi1 <= REACTION_LONG_RSI_1M_MAX),
+                build_condition_result("TEPKİ: 5M RSI yüksek", rsi5 <= REACTION_LONG_RSI_5M_MAX),
+                build_condition_result("TEPKİ: 1M hacim düşük", vol1 >= REACTION_MIN_1M_VOLUME_RATIO),
+                build_condition_result("TEPKİ: 5M hacim düşük", vol5 >= REACTION_MIN_5M_VOLUME_RATIO),
+                build_condition_result("TEPKİ: alt fitil yetersiz", lw >= REACTION_MIN_WICK_PERCENT),
+                build_condition_result("TEPKİ: kapanış gücü zayıf", cp >= REACTION_LONG_MIN_CLOSE_POWER),
+                build_condition_result("TEPKİ: risk uygun değil", MIN_RISK_PERCENT <= risk_percent <= MAX_RISK_PERCENT),
             ]
 
             bonus = 0
@@ -579,88 +651,43 @@ def analyze_one_side(symbol, direction, df1, df5, df15, current_price):
                 bonus += 2
 
             score, ok_count, total = score_from_conditions(conditions, bonus=bonus)
+            missing = missing_reasons(conditions)
 
             hard_ok = (
-                risk_percent <= MAX_RISK_PERCENT
-                and risk_percent >= MIN_RISK_PERCENT
-                and (vol1 >= MIN_1M_VOLUME_RATIO or vol5 >= MIN_5M_VOLUME_RATIO)
-                and (move5 <= -LONG_MIN_5M_DROP or lw >= MIN_WICK_PERCENT)
+                MIN_RISK_PERCENT <= risk_percent <= MAX_RISK_PERCENT
+                and (vol1 >= REACTION_MIN_1M_VOLUME_RATIO or vol5 >= REACTION_MIN_5M_VOLUME_RATIO)
+                and (move5 <= -REACTION_LONG_MIN_5M_DROP or lw >= REACTION_MIN_WICK_PERCENT)
             )
 
             signal = None
             if score >= MIN_SCORE and hard_ok:
-                signal = {
-                    "symbol": symbol,
-                    "direction": "LONG",
-                    "source": "1M_5M_SCALP",
-                    "entry": entry,
-                    "tp1": tp1,
-                    "tp2": tp2,
-                    "tp3": tp3,
-                    "sl": sl,
-                    "score": score,
-                    "risk_percent": risk_percent,
-                    "rsi1": rsi1,
-                    "rsi5": rsi5,
-                    "vol1": vol1,
-                    "vol5": vol5,
-                    "move1": move1,
-                    "move5": move5,
-                    "move15": move15,
-                    "lower_wick": lw,
-                    "upper_wick": uw,
-                    "close_power": cp,
-                    "ok_count": ok_count,
-                    "total_conditions": total,
-                    "missing": missing_reasons(conditions),
-                }
-                signal["message"] = build_signal_message(signal)
+                signal = make_signal(
+                    symbol, "LONG", "TEPKI_SCALP", "Tepki Scalp LONG",
+                    entry, sl, score, risk_percent, market_data, ok_count, total, missing
+                )
 
-            debug = {
-                "symbol": symbol,
-                "direction": "LONG",
-                "score": score,
-                "ok_count": ok_count,
-                "total_conditions": total,
-                "missing": missing_reasons(conditions),
-                "rsi1": rsi1,
-                "rsi5": rsi5,
-                "vol1": vol1,
-                "vol5": vol5,
-                "move5": move5,
-                "move15": move15,
-                "lower_wick": lw,
-                "upper_wick": uw,
-                "close_power": cp,
-                "risk_percent": risk_percent,
-            }
-
+            debug = build_debug(symbol, "LONG", "Tepki Scalp LONG", score, ok_count, total, missing, market_data, risk_percent)
             return signal, debug
 
         else:
             raw_sl = max(float(c1["high"]), float(c5["high"]))
             sl = raw_sl * (1 + SL_BUFFER_PERCENT / 100)
             risk = sl - entry
-
             if risk <= 0:
                 return None, None
-
-            tp1 = entry - risk * TP1_R
-            tp2 = entry - risk * TP2_R
-            tp3 = entry - risk * TP3_R
 
             risk_percent = (risk / entry) * 100
 
             conditions = [
-                build_condition_result(f"5M yükseliş yetersiz", move5 >= SHORT_MIN_5M_PUMP),
-                build_condition_result(f"15M yükseliş yetersiz", move15 >= SHORT_MIN_15M_PUMP),
-                build_condition_result(f"1M RSI uygun değil", SHORT_RSI_1M_MIN <= rsi1 <= SHORT_RSI_1M_MAX),
-                build_condition_result(f"5M RSI düşük", rsi5 >= SHORT_RSI_5M_MIN),
-                build_condition_result(f"1M hacim düşük", vol1 >= MIN_1M_VOLUME_RATIO),
-                build_condition_result(f"5M hacim düşük", vol5 >= MIN_5M_VOLUME_RATIO),
-                build_condition_result(f"üst fitil yetersiz", uw >= MIN_WICK_PERCENT),
-                build_condition_result(f"kapanış gücü short için zayıf", cp <= SHORT_MAX_CLOSE_POWER),
-                build_condition_result(f"risk uygun değil", MIN_RISK_PERCENT <= risk_percent <= MAX_RISK_PERCENT),
+                build_condition_result("TEPKİ: 5M yükseliş yetersiz", move5 >= REACTION_SHORT_MIN_5M_PUMP),
+                build_condition_result("TEPKİ: 15M yükseliş yetersiz", move15 >= REACTION_SHORT_MIN_15M_PUMP),
+                build_condition_result("TEPKİ: 1M RSI uygun değil", REACTION_SHORT_RSI_1M_MIN <= rsi1 <= REACTION_SHORT_RSI_1M_MAX),
+                build_condition_result("TEPKİ: 5M RSI düşük", rsi5 >= REACTION_SHORT_RSI_5M_MIN),
+                build_condition_result("TEPKİ: 1M hacim düşük", vol1 >= REACTION_MIN_1M_VOLUME_RATIO),
+                build_condition_result("TEPKİ: 5M hacim düşük", vol5 >= REACTION_MIN_5M_VOLUME_RATIO),
+                build_condition_result("TEPKİ: üst fitil yetersiz", uw >= REACTION_MIN_WICK_PERCENT),
+                build_condition_result("TEPKİ: kapanış gücü short için zayıf", cp <= REACTION_SHORT_MAX_CLOSE_POWER),
+                build_condition_result("TEPKİ: risk uygun değil", MIN_RISK_PERCENT <= risk_percent <= MAX_RISK_PERCENT),
             ]
 
             bonus = 0
@@ -672,86 +699,240 @@ def analyze_one_side(symbol, direction, df1, df5, df15, current_price):
                 bonus += 2
 
             score, ok_count, total = score_from_conditions(conditions, bonus=bonus)
+            missing = missing_reasons(conditions)
 
             hard_ok = (
-                risk_percent <= MAX_RISK_PERCENT
-                and risk_percent >= MIN_RISK_PERCENT
-                and (vol1 >= MIN_1M_VOLUME_RATIO or vol5 >= MIN_5M_VOLUME_RATIO)
-                and (move5 >= SHORT_MIN_5M_PUMP or uw >= MIN_WICK_PERCENT)
+                MIN_RISK_PERCENT <= risk_percent <= MAX_RISK_PERCENT
+                and (vol1 >= REACTION_MIN_1M_VOLUME_RATIO or vol5 >= REACTION_MIN_5M_VOLUME_RATIO)
+                and (move5 >= REACTION_SHORT_MIN_5M_PUMP or uw >= REACTION_MIN_WICK_PERCENT)
             )
 
             signal = None
             if score >= MIN_SCORE and hard_ok:
-                signal = {
-                    "symbol": symbol,
-                    "direction": "SHORT",
-                    "source": "1M_5M_SCALP",
-                    "entry": entry,
-                    "tp1": tp1,
-                    "tp2": tp2,
-                    "tp3": tp3,
-                    "sl": sl,
-                    "score": score,
-                    "risk_percent": risk_percent,
-                    "rsi1": rsi1,
-                    "rsi5": rsi5,
-                    "vol1": vol1,
-                    "vol5": vol5,
-                    "move1": move1,
-                    "move5": move5,
-                    "move15": move15,
-                    "lower_wick": lw,
-                    "upper_wick": uw,
-                    "close_power": cp,
-                    "ok_count": ok_count,
-                    "total_conditions": total,
-                    "missing": missing_reasons(conditions),
-                }
-                signal["message"] = build_signal_message(signal)
+                signal = make_signal(
+                    symbol, "SHORT", "TEPKI_SCALP", "Tepki Scalp SHORT",
+                    entry, sl, score, risk_percent, market_data, ok_count, total, missing
+                )
 
-            debug = {
-                "symbol": symbol,
-                "direction": "SHORT",
-                "score": score,
-                "ok_count": ok_count,
-                "total_conditions": total,
-                "missing": missing_reasons(conditions),
-                "rsi1": rsi1,
-                "rsi5": rsi5,
-                "vol1": vol1,
-                "vol5": vol5,
-                "move5": move5,
-                "move15": move15,
-                "lower_wick": lw,
-                "upper_wick": uw,
-                "close_power": cp,
-                "risk_percent": risk_percent,
-            }
-
+            debug = build_debug(symbol, "SHORT", "Tepki Scalp SHORT", score, ok_count, total, missing, market_data, risk_percent)
             return signal, debug
 
     except Exception as e:
-        print(symbol, direction, "analiz hatası:", e)
+        print(symbol, direction, "tepki analiz hatası:", e)
+        return None, None
+
+
+# =========================
+# ATAK / MOMENTUM SCALP
+# =========================
+
+def analyze_attack_side(symbol, direction, df1, df5, df15, current_price, market_data):
+    try:
+        if df1 is None or df5 is None or df15 is None or current_price is None:
+            return None, None
+
+        c1 = df1.iloc[-2]
+        entry = float(current_price)
+
+        rsi1 = market_data["rsi1"]
+        rsi5 = market_data["rsi5"]
+        vol1 = market_data["vol1"]
+        vol5 = market_data["vol5"]
+        move1 = market_data["move1"]
+        move5 = market_data["move5"]
+        move15 = market_data["move15"]
+        cp = market_data["close_power"]
+
+        prev_high_1m = rolling_previous_high(df1, ATTACK_BREAKOUT_LOOKBACK_1M)
+        prev_high_5m = rolling_previous_high(df5, ATTACK_BREAKOUT_LOOKBACK_5M)
+        prev_low_1m = rolling_previous_low(df1, ATTACK_BREAKOUT_LOOKBACK_1M)
+        prev_low_5m = rolling_previous_low(df5, ATTACK_BREAKOUT_LOOKBACK_5M)
+
+        close1 = float(c1["close"])
+
+        breakout_long = False
+        breakdown_short = False
+
+        if prev_high_1m is not None and close1 >= prev_high_1m:
+            breakout_long = True
+        if prev_high_5m is not None and close1 >= prev_high_5m:
+            breakout_long = True
+
+        if prev_low_1m is not None and close1 <= prev_low_1m:
+            breakdown_short = True
+        if prev_low_5m is not None and close1 <= prev_low_5m:
+            breakdown_short = True
+
+        if direction == "LONG":
+            recent_low = min(
+                float(df1["low"].iloc[-6:-1].min()),
+                float(df5["low"].iloc[-3:-1].min()),
+            )
+            sl = recent_low * (1 - SL_BUFFER_PERCENT / 100)
+            risk = entry - sl
+            if risk <= 0:
+                return None, None
+
+            risk_percent = (risk / entry) * 100
+
+            conditions = [
+                build_condition_result("ATAK: 1M yeşil güç yetersiz", move1 >= ATTACK_LONG_MIN_1M_MOVE),
+                build_condition_result("ATAK: 5M yukarı momentum yok", move5 >= ATTACK_LONG_MIN_5M_MOVE),
+                build_condition_result("ATAK: 15M yukarı momentum zayıf", move15 >= ATTACK_LONG_MIN_15M_MOVE),
+                build_condition_result("ATAK: 1M RSI atak aralığında değil", ATTACK_LONG_RSI_1M_MIN <= rsi1 <= ATTACK_LONG_RSI_1M_MAX),
+                build_condition_result("ATAK: 5M RSI atak aralığında değil", ATTACK_LONG_RSI_5M_MIN <= rsi5 <= ATTACK_LONG_RSI_5M_MAX),
+                build_condition_result("ATAK: 1M hacim düşük", vol1 >= ATTACK_MIN_1M_VOLUME_RATIO),
+                build_condition_result("ATAK: 5M hacim düşük", vol5 >= ATTACK_MIN_5M_VOLUME_RATIO),
+                build_condition_result("ATAK: kırılım yok", breakout_long),
+                build_condition_result("ATAK: kapanış gücü zayıf", cp >= ATTACK_LONG_MIN_CLOSE_POWER),
+                build_condition_result("ATAK: risk uygun değil", MIN_RISK_PERCENT <= risk_percent <= MAX_RISK_PERCENT),
+            ]
+
+            bonus = 0
+            if vol1 >= 2.0:
+                bonus += 3
+            if vol5 >= 1.6:
+                bonus += 2
+            if breakout_long:
+                bonus += 4
+            if cp >= 72:
+                bonus += 2
+
+            score, ok_count, total = score_from_conditions(conditions, bonus=bonus)
+            missing = missing_reasons(conditions)
+
+            hard_ok = (
+                MIN_RISK_PERCENT <= risk_percent <= MAX_RISK_PERCENT
+                and (vol1 >= ATTACK_MIN_1M_VOLUME_RATIO or vol5 >= ATTACK_MIN_5M_VOLUME_RATIO)
+                and (move5 >= ATTACK_LONG_MIN_5M_MOVE or breakout_long)
+                and cp >= 55
+            )
+
+            signal = None
+            if score >= MIN_SCORE and hard_ok:
+                signal = make_signal(
+                    symbol, "LONG", "ATAK_SCALP", "Atak Momentum LONG",
+                    entry, sl, score, risk_percent, market_data, ok_count, total, missing
+                )
+
+            debug = build_debug(symbol, "LONG", "Atak Momentum LONG", score, ok_count, total, missing, market_data, risk_percent)
+            return signal, debug
+
+        else:
+            recent_high = max(
+                float(df1["high"].iloc[-6:-1].max()),
+                float(df5["high"].iloc[-3:-1].max()),
+            )
+            sl = recent_high * (1 + SL_BUFFER_PERCENT / 100)
+            risk = sl - entry
+            if risk <= 0:
+                return None, None
+
+            risk_percent = (risk / entry) * 100
+
+            conditions = [
+                build_condition_result("ATAK: 1M kırmızı güç yetersiz", move1 <= -ATTACK_SHORT_MIN_1M_MOVE),
+                build_condition_result("ATAK: 5M aşağı momentum yok", move5 <= -ATTACK_SHORT_MIN_5M_MOVE),
+                build_condition_result("ATAK: 15M aşağı momentum zayıf", move15 <= -ATTACK_SHORT_MIN_15M_MOVE),
+                build_condition_result("ATAK: 1M RSI short aralığında değil", ATTACK_SHORT_RSI_1M_MIN <= rsi1 <= ATTACK_SHORT_RSI_1M_MAX),
+                build_condition_result("ATAK: 5M RSI short aralığında değil", ATTACK_SHORT_RSI_5M_MIN <= rsi5 <= ATTACK_SHORT_RSI_5M_MAX),
+                build_condition_result("ATAK: 1M hacim düşük", vol1 >= ATTACK_MIN_1M_VOLUME_RATIO),
+                build_condition_result("ATAK: 5M hacim düşük", vol5 >= ATTACK_MIN_5M_VOLUME_RATIO),
+                build_condition_result("ATAK: aşağı kırılım yok", breakdown_short),
+                build_condition_result("ATAK: kapanış gücü short için zayıf", cp <= ATTACK_SHORT_MAX_CLOSE_POWER),
+                build_condition_result("ATAK: risk uygun değil", MIN_RISK_PERCENT <= risk_percent <= MAX_RISK_PERCENT),
+            ]
+
+            bonus = 0
+            if vol1 >= 2.0:
+                bonus += 3
+            if vol5 >= 1.6:
+                bonus += 2
+            if breakdown_short:
+                bonus += 4
+            if cp <= 28:
+                bonus += 2
+
+            score, ok_count, total = score_from_conditions(conditions, bonus=bonus)
+            missing = missing_reasons(conditions)
+
+            hard_ok = (
+                MIN_RISK_PERCENT <= risk_percent <= MAX_RISK_PERCENT
+                and (vol1 >= ATTACK_MIN_1M_VOLUME_RATIO or vol5 >= ATTACK_MIN_5M_VOLUME_RATIO)
+                and (move5 <= -ATTACK_SHORT_MIN_5M_MOVE or breakdown_short)
+                and cp <= 45
+            )
+
+            signal = None
+            if score >= MIN_SCORE and hard_ok:
+                signal = make_signal(
+                    symbol, "SHORT", "ATAK_SCALP", "Atak Momentum SHORT",
+                    entry, sl, score, risk_percent, market_data, ok_count, total, missing
+                )
+
+            debug = build_debug(symbol, "SHORT", "Atak Momentum SHORT", score, ok_count, total, missing, market_data, risk_percent)
+            return signal, debug
+
+    except Exception as e:
+        print(symbol, direction, "atak analiz hatası:", e)
         return None, None
 
 
 def analyze_symbol(exchange, symbol):
     current_price = get_current_price(exchange, symbol)
 
-    df1 = fetch_df(exchange, symbol, "1m", limit=90, min_len=50)
-    df5 = fetch_df(exchange, symbol, "5m", limit=90, min_len=50)
+    df1 = fetch_df(exchange, symbol, "1m", limit=100, min_len=60)
+    df5 = fetch_df(exchange, symbol, "5m", limit=100, min_len=60)
     df15 = fetch_df(exchange, symbol, "15m", limit=80, min_len=40)
 
-    long_signal, long_debug = analyze_one_side(symbol, "LONG", df1, df5, df15, current_price)
-    short_signal, short_debug = analyze_one_side(symbol, "SHORT", df1, df5, df15, current_price)
+    if df1 is None or df5 is None or df15 is None or current_price is None:
+        return [], []
+
+    df1 = df1.copy()
+    df5 = df5.copy()
+
+    df1["rsi"] = calc_rsi(df1["close"])
+    df5["rsi"] = calc_rsi(df5["close"])
+
+    c1 = df1.iloc[-2]
+    c5 = df5.iloc[-2]
+    c15 = df15.iloc[-2]
+
+    market_data = {
+        "rsi1": float(df1["rsi"].iloc[-2]),
+        "rsi5": float(df5["rsi"].iloc[-2]),
+        "vol1": volume_ratio(df1, index=-2, period=20),
+        "vol5": volume_ratio(df5, index=-2, period=20),
+        "move1": candle_move_percent(c1),
+        "move5": candle_move_percent(c5),
+        "move15": candle_move_percent(c15),
+        "lower_wick": lower_wick_percent(c1),
+        "upper_wick": upper_wick_percent(c1),
+        "close_power": close_power_percent(c1),
+    }
 
     signals = []
-    if long_signal is not None:
-        signals.append(long_signal)
-    if short_signal is not None:
-        signals.append(short_signal)
+    debug_items = []
 
-    return signals, long_debug, short_debug
+    analyzers = [
+        analyze_reaction_side,
+        analyze_attack_side,
+    ]
+
+    for analyzer in analyzers:
+        for direction in ["LONG", "SHORT"]:
+            signal, debug = analyzer(symbol, direction, df1, df5, df15, current_price, market_data)
+            if signal is not None:
+                signals.append(signal)
+            if debug is not None:
+                debug_items.append(debug)
+
+    # Aynı coin içinde birden fazla sinyal oluşursa en yüksek skorlu yön/kurulum kalsın.
+    signals = sorted(signals, key=lambda s: s["score"], reverse=True)
+    if signals:
+        signals = [signals[0]]
+
+    return signals, debug_items
 
 
 # =========================
@@ -765,6 +946,7 @@ def save_open_signal(state, signal):
         "symbol": signal["symbol"],
         "direction": signal["direction"],
         "source": signal["source"],
+        "setup": signal.get("setup"),
         "entry": signal["entry"],
         "tp1": signal["tp1"],
         "tp2": signal["tp2"],
@@ -1029,7 +1211,7 @@ def check_open_signals(exchange, state):
 # RAPOR
 # =========================
 
-def top_reasons_text(counter, limit=5):
+def top_reasons_text(counter, limit=6):
     if not counter:
         return "Veri yok"
 
@@ -1049,41 +1231,34 @@ def candidate_line(debug):
 
     return (
         f"{debug['symbol']} {debug['direction']} | "
+        f"{debug.get('setup', 'SCALP')} | "
         f"şart {debug['ok_count']}/{debug['total_conditions']} | "
         f"skor {debug['score']} | "
         f"eksik: {missing_text}"
     )
 
 
-def build_no_signal_report(scanned_count, new_signal_count, long_counter, short_counter, top_candidates, debug_map):
+def build_no_signal_report(scanned_count, new_signal_count, reason_counter, top_candidates):
     lines = [
         f"⚡ HIZLI SCALP RADAR RAPORU\n",
         f"Bot: {BOT_NAME}",
         f"Zaman: {tr_now_text()}",
         f"Taranan coin: {scanned_count}",
         f"Yeni scalp sinyal: {new_signal_count}\n",
-        f"LONG tarafında en çok elenen:",
-        top_reasons_text(long_counter),
-        f"\nSHORT tarafında en çok elenen:",
-        top_reasons_text(short_counter),
+        f"En çok elenen şartlar:",
+        top_reasons_text(reason_counter),
         f"\nSinyale en yakın adaylar:",
     ]
 
     if top_candidates:
-        for item in top_candidates[:8]:
+        for item in top_candidates[:10]:
             lines.append("• " + candidate_line(item))
     else:
         lines.append("• Yakın aday yok")
 
-    for debug_symbol in DEBUG_SYMBOLS:
-        if debug_symbol in debug_map:
-            lines.append(f"\n🔎 {debug_symbol} Özel Test:")
-            for item in debug_map[debug_symbol]:
-                lines.append("• " + candidate_line(item))
-
     lines.append(
         "\nNot: Bu rapor sinyal değildir. "
-        "Hangi filtrelerin scalp sinyalini kestiğini görmek için gönderilir."
+        "Tepki scalp ve atak momentum scalp filtrelerinin neden sinyal üretmediğini gösterir."
     )
 
     return "\n".join(lines)
@@ -1125,10 +1300,8 @@ def main():
     print("Boş scalp slot:", available_slots)
 
     all_signals = []
-    long_reasons = Counter()
-    short_reasons = Counter()
+    reason_counter = Counter()
     top_candidates = []
-    debug_map = {}
 
     scanned = 0
 
@@ -1140,24 +1313,12 @@ def main():
                 print(symbol, "zaten açık scalp var, atlandı.")
                 continue
 
-            signals, long_debug, short_debug = analyze_symbol(exchange, symbol)
+            signals, debug_items = analyze_symbol(exchange, symbol)
 
-            if long_debug:
-                for reason in long_debug.get("missing", []):
-                    long_reasons[reason] += 1
-                top_candidates.append(long_debug)
-
-            if short_debug:
-                for reason in short_debug.get("missing", []):
-                    short_reasons[reason] += 1
-                top_candidates.append(short_debug)
-
-            if symbol in DEBUG_SYMBOLS:
-                debug_map.setdefault(symbol, [])
-                if long_debug:
-                    debug_map[symbol].append(long_debug)
-                if short_debug:
-                    debug_map[symbol].append(short_debug)
+            for debug in debug_items:
+                for reason in debug.get("missing", []):
+                    reason_counter[reason] += 1
+                top_candidates.append(debug)
 
             for signal in signals:
                 if is_recent_duplicate(state, signal["symbol"], signal["direction"]):
@@ -1212,10 +1373,8 @@ def main():
             report = build_no_signal_report(
                 scanned_count=scanned,
                 new_signal_count=len(all_signals),
-                long_counter=long_reasons,
-                short_counter=short_reasons,
+                reason_counter=reason_counter,
                 top_candidates=top_candidates,
-                debug_map=debug_map,
             )
             send_telegram(report)
             mark_no_signal_report_sent(state)
