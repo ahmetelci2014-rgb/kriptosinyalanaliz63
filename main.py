@@ -1,5 +1,5 @@
 # main.py
-# Premium MTF Futures Bot - Akilli Takip v1
+# Premium MTF Futures Bot - Akilli Takip v2
 # GitHub Actions icin Telegram sinyal botu.
 # Emir acmaz. Sinyal gonderir, TP/SL takip eder, istatistik raporu yollar.
 
@@ -561,6 +561,65 @@ def has_open_same_symbol(symbol):
         if signal.get("symbol") == symbol:
             return True
     return False
+
+
+def count_open_signal_risk():
+    """
+    TP1 gelmemis acik sinyaller gercek riskli acik islem sayilir.
+    TP1 gelmis sinyallerde kullanici kuralina gore %50 kar alinip SL girise cekildigi icin
+    bunlar takipte/riski azaltilmis sinyal sayilir ve yeni firsatlari tamamen bloklamaz.
+    """
+    open_signals = load_open_signals()
+    risky = 0
+    reduced = 0
+
+    for signal in open_signals.values():
+        if bool(signal.get("tp1_hit", False)):
+            reduced += 1
+        else:
+            risky += 1
+
+    return risky, reduced, len(open_signals)
+
+
+def risk_slot_available():
+    risky, _, _ = count_open_signal_risk()
+    return risky < MAX_OPEN_SIGNALS
+
+
+def build_limit_watch_message(signal, current_price=None):
+    """Limit doluysa guclu sinyali islem olarak kaydetmeden takip mesaji yapar."""
+    try:
+        direction_icon = "🟢" if signal.get("direction") == "LONG" else "🔴"
+        price_line = ""
+        if current_price is not None:
+            price_line = f"\n💰 Güncel Fiyat: {format_price(current_price)}"
+
+        return (
+            f"⚠️ AÇIK SİNYAL SINIRI DOLU - TAKİP\n\n"
+            f"{direction_icon} {signal.get('direction')}\n"
+            f"🟡 Coin: {signal.get('symbol')}\n"
+            f"⏱️ Kaynak: {signal.get('source')}\n\n"
+            f"📌 Giriş: {format_price(float(signal.get('entry')))}\n"
+            f"🎯 TP1: {format_price(float(signal.get('tp1')))}\n"
+            f"🎯 TP2: {format_price(float(signal.get('tp2')))}\n"
+            f"🎯 TP3: {format_price(float(signal.get('tp3')))}\n"
+            f"🛑 SL: {format_price(float(signal.get('sl')))}\n\n"
+            f"📊 Skor: %{signal.get('score')}\n"
+            f"🛡️ Stop Mesafesi: %{signal.get('risk_percent')}"
+            f"{price_line}\n\n"
+            f"📌 Not: TP1 görmemiş açık işlem sınırı dolu olduğu için bu sinyal işlem olarak kaydedilmedi.\n"
+            f"Grafikte sadece takip et. Yeni işlem açma konusunda acele etme.\n"
+            f"TP1 görmüş eski işlemler riskten düştükçe bot normal sinyal göndermeye devam eder."
+        )
+    except Exception:
+        return (
+            f"⚠️ AÇIK SİNYAL SINIRI DOLU - TAKİP\n\n"
+            f"Coin: {signal.get('symbol')}\n"
+            f"Yön: {signal.get('direction')}\n"
+            f"Skor: {signal.get('score')}\n\n"
+            f"Bu sinyal işlem olarak kaydedilmedi, sadece takip uyarısıdır."
+        )
 
 
 def add_sl_after_follow(signal, exit_price):
@@ -1209,19 +1268,20 @@ def main():
     scan_coins = get_scan_coins(exchange)
     market_status = get_market_direction_status(exchange)
 
+    risky_open, reduced_open, total_open = count_open_signal_risk()
     print("Taranan coin:", len(scan_coins))
-    print("Açık sinyal:", len(load_open_signals()))
+    print("Açık sinyal:", total_open)
+    print("Riskli açık sinyal:", risky_open)
+    print("TP1 görmüş takipte sinyal:", reduced_open)
     print("Risk modu:", risk_mode)
 
     trade_candidates = []
     radar_candidates = []
 
+    # Akilli limit: Açık sinyal sayisi dolu olsa bile tarama durmaz.
+    # Sadece TP1 gormemis riskli acik sinyal sayisi yeni islem kaydini sınırlar.
     for symbol in scan_coins:
         try:
-            if len(load_open_signals()) >= MAX_OPEN_SIGNALS:
-                print("Maksimum açık sinyal sınırı doldu.")
-                break
-
             if has_open_same_symbol(symbol):
                 print(symbol, "zaten açık sinyal var, atlandı.")
                 continue
@@ -1300,7 +1360,16 @@ def main():
     max_trade = RISK_MODE_MAX_TRADE_SIGNALS if risk_mode else MAX_TRADE_SIGNALS_PER_RUN
     max_radar = RISK_MODE_MAX_RADAR_ALERTS if risk_mode else MAX_RADAR_ALERTS_PER_RUN
 
-    selected_trade = trade_candidates[:max_trade]
+    risky_open, reduced_open, total_open = count_open_signal_risk()
+    available_trade_slots = max(0, MAX_OPEN_SIGNALS - risky_open)
+    allowed_trade_count = min(max_trade, available_trade_slots)
+
+    selected_trade = trade_candidates[:allowed_trade_count]
+    selected_limit_watch = []
+    if available_trade_slots <= 0 and trade_candidates:
+        # Limit doluysa en guclu 1 adayi islem olarak kaydetmeden takip uyarisi yap.
+        selected_limit_watch = trade_candidates[:1]
+
     selected_radar = radar_candidates[:max_radar]
 
     if selected_trade:
@@ -1308,9 +1377,19 @@ def main():
             f"✅ {BOT_NAME} çalıştı.\n"
             f"Taranan coin: {len(scan_coins)}\n"
             f"A kalite aday: {len(trade_candidates)}\n"
+            f"Riskli açık sinyal: {risky_open}/{MAX_OPEN_SIGNALS}\n"
+            f"TP1 görmüş takipte sinyal: {reduced_open}\n"
             f"Gönderilen işlem sinyali: {len(selected_trade)}\n"
             f"Risk Modu: {'AKTİF' if risk_mode else 'Kapalı'}\n"
             f"Sistem: {SYSTEM_NOTE}"
+        )
+
+    if selected_limit_watch:
+        send_telegram(
+            f"⚠️ {BOT_NAME} güçlü aday buldu ama riskli açık sinyal sınırı dolu.\n"
+            f"Riskli açık sinyal: {risky_open}/{MAX_OPEN_SIGNALS}\n"
+            f"TP1 görmüş takipte sinyal: {reduced_open}\n"
+            f"Bu yüzden yeni işlem kaydı açılmadı; sadece takip uyarısı gönderilecek."
         )
 
     for signal in selected_trade:
@@ -1332,6 +1411,18 @@ def main():
                 entry=signal.get("entry"),
                 score=signal.get("score"),
             )
+            time.sleep(1)
+
+    for signal in selected_limit_watch:
+        current_price = get_current_price(exchange, signal["symbol"])
+        valid, reason = is_entry_still_valid(signal, current_price)
+        if not valid:
+            print(signal["symbol"], "limit takip son kontrol elendi:", reason)
+            continue
+
+        watch_message = build_limit_watch_message(signal, current_price=current_price)
+        if send_telegram(watch_message):
+            mark_sent(signal, radar=True)
             time.sleep(1)
 
     if selected_radar:
@@ -1358,13 +1449,16 @@ def main():
             )
             time.sleep(1)
 
-    if not selected_trade and not selected_radar:
+    if not selected_trade and not selected_radar and not selected_limit_watch:
         print("Uygun sinyal yok.")
         if should_send_status():
+            risky_open, reduced_open, _ = count_open_signal_risk()
             send_telegram(
                 f"📡 {BOT_NAME} çalıştı.\n\n"
                 f"Taranan coin: {len(scan_coins)}\n"
                 f"Uygun MTF sinyali yok.\n"
+                f"Riskli açık sinyal: {risky_open}/{MAX_OPEN_SIGNALS}\n"
+                f"TP1 görmüş takipte sinyal: {reduced_open}\n"
                 f"Risk Modu: {'AKTİF' if risk_mode else 'Kapalı'}\n"
                 f"Sistem durmadı, taramaya devam ediyor."
             )
