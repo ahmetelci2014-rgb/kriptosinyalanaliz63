@@ -49,7 +49,7 @@ SEND_NO_SIGNAL_REPORT = True
 NO_SIGNAL_REPORT_EVERY_MINUTES = 20
 
 # Özel test edilecek coinler
-DEBUG_SYMBOLS = ["ONEUSDT"]
+DEBUG_SYMBOLS = []
 
 # Scalp TP/SL
 TP1_R = 0.65
