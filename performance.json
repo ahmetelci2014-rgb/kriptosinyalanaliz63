@@ -2016,17 +2016,17 @@
       "sl_after_no_return": 5
     },
     "2026-07-22": {
-      "opened": 5,
+      "opened": 6,
       "radar": 0,
       "tp1": 0,
       "tp2": 0,
       "tp3": 0,
-      "sl": 5,
+      "sl": 6,
       "be": 0,
       "expired": 0,
-      "long": 2,
+      "long": 3,
       "short": 3,
-      "normal": 5,
+      "normal": 6,
       "radar_trade": 0,
       "coins": {
         "2ZUSDT": {
@@ -2105,20 +2105,32 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
+          "sl": 1,
+          "be": 0,
+          "expired": 0
+        },
+        "SNXUSDT": {
+          "opened": 1,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
           "sl": 0,
           "be": 0,
           "expired": 0
         }
       },
       "direction_stops": {
-        "SHORT": 5
+        "SHORT": 5,
+        "LONG": 1
       },
       "stop_times": {
         "2ZUSDT": 1784667671,
         "MEGAUSDT": 1784670350,
         "JUPUSDT": 1784672148,
         "ACUUSDT": 1784674871,
-        "WUSDT": 1784679347
+        "WUSDT": 1784679347,
+        "KGENUSDT": 1784682949
       },
       "closed_times": {},
       "closed_results": {},
@@ -2172,41 +2184,28 @@
           "exit": 0.00924,
           "source": "15M_ENTRY",
           "score": 92
+        },
+        {
+          "time": "04:15:49",
+          "symbol": "KGENUSDT",
+          "direction": "LONG",
+          "result": "SL",
+          "entry": 0.1802,
+          "exit": 0.1788,
+          "source": "15M_ENTRY",
+          "score": 96
         }
       ],
       "sl_after_tp1": 1,
       "sl_after_tp2": 0,
-      "sl_after_no_return": 4
+      "sl_after_no_return": 5
     }
   },
-  "last_update": 1784681151,
+  "last_update": 1784683291,
   "last_open_summary": 1784681152,
   "last_status_message": 1784656280,
   "last_daily_report": "2026-07-21",
   "sl_after_follow": {
-    "JUPUSDT_SHORT_1784672148": {
-      "symbol": "JUPUSDT",
-      "direction": "SHORT",
-      "source": "15M_ENTRY",
-      "entry": 0.1966,
-      "tp1": 0.1952116385,
-      "tp2": 0.1939494916,
-      "tp3": 0.1925611301,
-      "sl": 0.1991242937,
-      "score": 90,
-      "risk_percent": 1.284,
-      "stopped_at": 1784672148,
-      "stop_exit": 0.1995,
-      "reported_checkpoints": [
-        30,
-        60,
-        120
-      ],
-      "after_sl_tp1": false,
-      "after_sl_tp2": false,
-      "after_sl_tp3": false,
-      "resolved": true
-    },
     "ACUUSDT_SHORT_1784674871": {
       "symbol": "ACUUSDT",
       "direction": "SHORT",
@@ -2222,12 +2221,13 @@
       "stop_exit": 0.07421,
       "reported_checkpoints": [
         30,
-        60
+        60,
+        120
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true
     },
     "WUSDT_SHORT_1784679347": {
       "symbol": "WUSDT",
@@ -2243,8 +2243,28 @@
       "stopped_at": 1784679347,
       "stop_exit": 0.00924,
       "reported_checkpoints": [
-        30
+        30,
+        60
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "KGENUSDT_LONG_1784682949": {
+      "symbol": "KGENUSDT",
+      "direction": "LONG",
+      "source": "15M_ENTRY",
+      "entry": 0.1802,
+      "tp1": 0.1809738034,
+      "tp2": 0.1816772611,
+      "tp3": 0.1824510645,
+      "sl": 0.1787930847,
+      "score": 96,
+      "risk_percent": 0.781,
+      "stopped_at": 1784682949,
+      "stop_exit": 0.1788,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
