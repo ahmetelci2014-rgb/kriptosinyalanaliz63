@@ -1,13 +1,15 @@
 # strategy.py
-# Premium MTF TP Odaklı v2 - Akıllı Kalite v2
+# Premium MTF TP Odaklı v2 - Stabil Geri Dönüş
 # Ana mantık:
 # 4H = ana trend
 # 1H = yön onayı
 # 15M = giriş mumu / pullback / dönüş
 # 5M = erken radar / momentum uyarısı
 #
+# ÖNEMLİ:
 # Bu sürüm sinyal üretme mantığını bozmaz.
-# Eklenen ana yenilik: A+ / A / A- / TP1 odaklı akıllı kalite ayrımı.
+# Akıllı kalite sadece mesajda uyarı olarak gösterilir.
+# Sinyal kesen / TP azaltan akıllı filtreler pasif hale getirildi.
 
 from ta.momentum import RSIIndicator
 from ta.trend import EMAIndicator, MACD, ADXIndicator
@@ -202,87 +204,12 @@ def leverage_suggestion(risk_percent):
     return "1x veya pas geç"
 
 
-def is_weak_trade_block(direction, volume_ratio, adx_15m, adx_4h, adx_1h):
-    """Çok zayıf sinyalleri işlem sinyali olmadan eler.
-
-    Bu bölüm özellikle WLFI tipi zayıf shortları engellemek için eklendi.
-    Kör filtre değildir; düşük hacimli ama güçlü ADX'li INJ/RAY/ZIL tarzı sinyalleri silmez.
-    """
-    volume_ratio = safe_float(volume_ratio)
-    adx_15m = safe_float(adx_15m)
-    adx_4h = safe_float(adx_4h)
-    adx_1h = safe_float(adx_1h)
-
-    if volume_ratio < 0.65 and adx_4h < 12:
-        return True, "hacim çok düşük + 4H ADX çok zayıf"
-
-    if direction == "SHORT" and volume_ratio < 0.75 and adx_15m < 18 and adx_4h < 12:
-        return True, "zayıf short: düşük hacim + zayıf 15M/4H ADX"
-
-    return False, ""
-
-
-def smart_score_adjustment(direction, score, volume_ratio, rsi, adx_15m, adx_4h, adx_1h, risk_percent):
-    """Canlı sonuçlardan öğrenilen riskleri skora yumuşak şekilde yansıtır."""
-    score = int(score)
-    notes = []
-
-    volume_ratio = safe_float(volume_ratio)
-    rsi = safe_float(rsi)
-    adx_15m = safe_float(adx_15m)
-    adx_4h = safe_float(adx_4h)
-    adx_1h = safe_float(adx_1h)
-    risk_percent = safe_float(risk_percent)
-
-    # PENDLE / ikinci ENA tarzı: RSI yüksek + stop genişse A+ olmasın.
-    if direction == "LONG":
-        if rsi >= 67 and risk_percent >= 1.50:
-            score -= 12
-            notes.append("RSI yüksek + stop geniş; TP1 odaklı dikkat")
-        elif rsi >= 65:
-            score -= 5
-            notes.append("RSI yüksek; devam gücü kontrol edilmeli")
-
-    # SHORT tarafında çok düşük RSI bazen devam edebilir; sadece zayıf HTF varsa uyar.
-    if direction == "SHORT":
-        if rsi <= 33 and risk_percent >= 1.60 and adx_4h < 25:
-            score -= 6
-            notes.append("SHORT RSI düşük + stop geniş; geç giriş riski")
-
-        # GALA / BIGTIME tipi: hacim düşük, HTF tam güçlü değilse A+ olmasın.
-        if volume_ratio < 0.80 and adx_4h < 22 and adx_1h < 22:
-            score -= 10
-            notes.append("SHORT hacim düşük + HTF güç sınırlı")
-
-    # Genel zayıflık: hacim düşük ve yüksek zaman dilimi çok güçlü değilse kalite düşer.
-    if volume_ratio < 0.80 and adx_4h < 18 and adx_1h < 18:
-        score -= 7
-        notes.append("hacim düşük + 1H/4H destek sınırlı")
-
-    # AZTEC tipi yakın TP1 dönüş riskine karşı: 15M çok güçlü değil ve hacim düşükse dikkat.
-    if volume_ratio < 0.90 and adx_15m < 20:
-        score -= 6
-        notes.append("15M devam gücü zayıf; TP1 öncesi dönüş riski")
-
-    # UP / ADA / LINK / ENA ilk sinyal tipi: sağlıklı RSI + güçlü ADX + makul stop.
-    healthy_long_rsi = direction == "LONG" and 52 <= rsi <= 63
-    healthy_short_rsi = direction == "SHORT" and 37 <= rsi <= 54
-    strong_structure = volume_ratio >= 1.25 and adx_15m >= 25 and adx_1h >= 20 and adx_4h >= 18
-
-    if strong_structure and risk_percent <= 1.50 and (healthy_long_rsi or healthy_short_rsi):
-        score += 5
-        notes.append("sağlıklı RSI + güçlü ADX + makul stop")
-
-    # Dar stop + güçlü momentum avantajdır ama tek başına yeterli değildir.
-    if risk_percent <= 0.85 and adx_15m >= 25 and adx_1h >= 20:
-        score += 3
-        notes.append("dar stop + güçlü momentum")
-
-    score = max(0, min(100, int(score)))
-    return score, notes
-
-
 def smart_quality_label(signal_class, direction, score, volume_ratio, rsi, adx_15m, adx_4h, adx_1h, risk_percent):
+    """
+    Bu fonksiyon sadece mesaj etiketi üretir.
+    Sinyal silmez, trade kararını bozmaz.
+    """
+
     if signal_class != "TRADE":
         return "RADAR", "İşlem değil, sadece takip radarı."
 
@@ -300,37 +227,30 @@ def smart_quality_label(signal_class, direction, score, volume_ratio, rsi, adx_1
     good_volume = volume_ratio >= 1.25
     good_risk = risk_percent <= 1.50
 
-    caution_count = 0
     cautions = []
 
     if volume_ratio < 0.80:
-        caution_count += 1
         cautions.append("hacim düşük")
 
     if adx_4h < 18:
-        caution_count += 1
         cautions.append("4H ADX sınırda")
 
     if adx_1h < 18:
-        caution_count += 1
         cautions.append("1H ADX sınırda")
 
     if direction == "LONG" and rsi >= 65:
-        caution_count += 1
         cautions.append("LONG RSI yüksek")
 
     if direction == "SHORT" and rsi <= 34:
-        caution_count += 1
         cautions.append("SHORT RSI düşük")
 
     if risk_percent >= 1.60:
-        caution_count += 1
         cautions.append("stop geniş")
 
     if score >= 92 and good_volume and strong_adx and good_risk and (healthy_long_rsi or healthy_short_rsi):
         return "A+ ANA", "Ana aday profili: güçlü ADX, yeterli hacim, sağlıklı RSI ve makul stop."
 
-    if score >= 88 and caution_count <= 1:
+    if score >= 88 and len(cautions) <= 1:
         note = "Güçlü sinyal ama tam A+ değil."
         if cautions:
             note += " Dikkat: " + ", ".join(cautions) + "."
@@ -535,17 +455,6 @@ def analyze_mtf_trade(symbol, df15m, df1h, df4h, current_price=None):
     adx_4h = safe_float(trend_info.get("adx_4h", 0))
     adx_1h = safe_float(confirm_info.get("adx_1h", 0))
 
-    weak_block, weak_reason = is_weak_trade_block(
-        direction,
-        volume_ratio,
-        adx,
-        adx_4h,
-        adx_1h,
-    )
-    if weak_block:
-        print(symbol, "akıllı kalite elendi ->", weak_reason)
-        return None
-
     score = 40
 
     if trend_supports_direction(direction, trend, confirm, strict=True):
@@ -581,24 +490,19 @@ def analyze_mtf_trade(symbol, df15m, df1h, df4h, current_price=None):
     elif targets["rr_tp2"] >= 1.10:
         score += 5
 
-    score, score_notes = smart_score_adjustment(
-        direction,
-        score,
-        volume_ratio,
-        rsi,
-        adx,
-        adx_4h,
-        adx_1h,
-        targets["risk_percent"],
-    )
+    score = max(0, min(100, int(score)))
+
+    # STABİL GERİ DÖNÜŞ:
+    # Burada artık akıllı kalite skoru düşürmez.
+    # Çünkü skor düşürme bazı çalışan sinyalleri RADAR'a çevirip kapatıyordu.
+    score_notes = []
 
     strict_trade_ok = (
         (
             trend_supports_direction(direction, trend, confirm, strict=True)
             or (
                 trend_supports_direction(direction, trend, confirm, strict=False)
-                and score >= MIN_SCORE_TRADE + 6
-                and volume_ratio >= 1.00
+                and score >= MIN_SCORE_TRADE
             )
         )
         and volume_ratio >= MIN_VOLUME_RATIO_15M
@@ -749,16 +653,11 @@ def analyze_5m_radar(symbol, df5m, df15m, df1h, df4h, current_price=None):
     else:
         score += 4
 
-    score, score_notes = smart_score_adjustment(
-        direction,
-        score,
-        volume_ratio,
-        rsi,
-        adx,
-        adx_4h,
-        adx_1h,
-        targets["risk_percent"],
-    )
+    score = max(0, min(100, int(score)))
+
+    # STABİL GERİ DÖNÜŞ:
+    # 5M radar tarafında da skor düşürme kapalı.
+    score_notes = []
 
     can_be_trade = (
         score >= RADAR_TRADE_MIN_SCORE
