@@ -2016,17 +2016,17 @@
       "sl_after_no_return": 5
     },
     "2026-07-22": {
-      "opened": 22,
+      "opened": 23,
       "radar": 0,
-      "tp1": 9,
-      "tp2": 5,
-      "tp3": 1,
-      "sl": 12,
+      "tp1": 10,
+      "tp2": 6,
+      "tp3": 2,
+      "sl": 13,
       "be": 5,
-      "expired": 1,
-      "long": 8,
+      "expired": 2,
+      "long": 9,
       "short": 14,
-      "normal": 22,
+      "normal": 23,
       "radar_trade": 0,
       "coins": {
         "2ZUSDT": {
@@ -2047,7 +2047,7 @@
           "tp3": 0,
           "sl": 0,
           "be": 0,
-          "expired": 0
+          "expired": 1
         },
         "MEGAUSDT": {
           "opened": 0,
@@ -2165,7 +2165,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -2253,8 +2253,8 @@
           "opened": 1,
           "radar": 0,
           "tp1": 1,
-          "tp2": 0,
-          "tp3": 0,
+          "tp2": 1,
+          "tp3": 1,
           "sl": 0,
           "be": 0,
           "expired": 0
@@ -2272,6 +2272,16 @@
         "SAPIENUSDT": {
           "opened": 1,
           "radar": 0,
+          "tp1": 1,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 0,
+          "be": 0,
+          "expired": 0
+        },
+        "SKYUSDT": {
+          "opened": 1,
+          "radar": 0,
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
@@ -2281,7 +2291,7 @@
         }
       },
       "direction_stops": {
-        "SHORT": 9,
+        "SHORT": 10,
         "LONG": 3
       },
       "stop_times": {
@@ -2296,7 +2306,8 @@
         "SPCXUSDT": 1784711752,
         "TIAUSDT": 1784716263,
         "DOGEUSDT": 1784727950,
-        "ETHWUSDT": 1784729755
+        "ETHWUSDT": 1784729755,
+        "AVAXUSDT": 1784733359
       },
       "closed_times": {
         "ZETAUSDT": 1784707300,
@@ -2305,7 +2316,9 @@
         "INTCUSDT": 1784722551,
         "KMNOUSDT": 1784726163,
         "LDOUSDT": 1784729757,
-        "ENAUSDT": 1784730660
+        "ENAUSDT": 1784730660,
+        "AVNTUSDT": 1784733356,
+        "HBARUSDT": 1784733360
       },
       "closed_results": {
         "ZETAUSDT": "BE",
@@ -2314,7 +2327,9 @@
         "INTCUSDT": "TP3",
         "KMNOUSDT": "BE",
         "LDOUSDT": "BE",
-        "ENAUSDT": "BE"
+        "ENAUSDT": "BE",
+        "AVNTUSDT": "EXPIRED",
+        "HBARUSDT": "TP3"
       },
       "closed_history": [
         {
@@ -2646,6 +2661,56 @@
           "exit": 0.072023887,
           "source": "15M_ENTRY",
           "score": 96
+        },
+        {
+          "time": "18:15:56",
+          "symbol": "AVNTUSDT",
+          "direction": "SHORT",
+          "result": "EXPIRED",
+          "entry": 0.0937,
+          "exit": null,
+          "source": "15M_ENTRY",
+          "score": 84
+        },
+        {
+          "time": "18:15:59",
+          "symbol": "AVAXUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 6.471,
+          "exit": 6.632,
+          "source": "15M_ENTRY",
+          "score": 95
+        },
+        {
+          "time": "18:15:59",
+          "symbol": "HBARUSDT",
+          "direction": "LONG",
+          "result": "TP2",
+          "entry": 0.07151,
+          "exit": 0.0724910571,
+          "source": "15M_ENTRY",
+          "score": 96
+        },
+        {
+          "time": "18:16:00",
+          "symbol": "HBARUSDT",
+          "direction": "LONG",
+          "result": "TP3",
+          "entry": 0.07151,
+          "exit": 0.0730049441,
+          "source": "15M_ENTRY",
+          "score": 96
+        },
+        {
+          "time": "18:16:01",
+          "symbol": "SAPIENUSDT",
+          "direction": "LONG",
+          "result": "TP1",
+          "entry": 0.07915,
+          "exit": 0.0796685596,
+          "source": "15M_ENTRY",
+          "score": 94
         }
       ],
       "sl_after_tp1": 2,
@@ -2653,7 +2718,7 @@
       "sl_after_no_return": 10
     }
   },
-  "last_update": 1784732839,
+  "last_update": 1784733689,
   "last_open_summary": 1784728879,
   "last_status_message": 1784694107,
   "last_daily_report": "2026-07-21",
@@ -2694,8 +2759,28 @@
       "stopped_at": 1784729755,
       "stop_exit": 0.2425,
       "reported_checkpoints": [
-        30
+        30,
+        60
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "AVAXUSDT_SHORT_1784733359": {
+      "symbol": "AVAXUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 6.471,
+      "tp1": 6.4003422767,
+      "tp2": 6.3361079827,
+      "tp3": 6.2654502594,
+      "sl": 6.5994685879,
+      "score": 95,
+      "risk_percent": 1.985,
+      "stopped_at": 1784733359,
+      "stop_exit": 6.632,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
