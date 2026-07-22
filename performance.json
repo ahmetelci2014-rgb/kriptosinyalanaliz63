@@ -2016,17 +2016,17 @@
       "sl_after_no_return": 5
     },
     "2026-07-22": {
-      "opened": 13,
+      "opened": 14,
       "radar": 0,
       "tp1": 5,
       "tp2": 3,
       "tp3": 0,
-      "sl": 8,
+      "sl": 9,
       "be": 2,
-      "expired": 0,
+      "expired": 1,
       "long": 3,
-      "short": 10,
-      "normal": 13,
+      "short": 11,
+      "normal": 14,
       "radar_trade": 0,
       "coins": {
         "2ZUSDT": {
@@ -2185,13 +2185,33 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
+          "sl": 1,
+          "be": 0,
+          "expired": 0
+        },
+        "AUSDT": {
+          "opened": 0,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 0,
+          "be": 0,
+          "expired": 1
+        },
+        "TIAUSDT": {
+          "opened": 1,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
           "sl": 0,
           "be": 0,
           "expired": 0
         }
       },
       "direction_stops": {
-        "SHORT": 5,
+        "SHORT": 6,
         "LONG": 3
       },
       "stop_times": {
@@ -2202,15 +2222,18 @@
         "WUSDT": 1784679347,
         "KGENUSDT": 1784682949,
         "SNXUSDT": 1784692866,
-        "MINAUSDT": 1784699151
+        "MINAUSDT": 1784699151,
+        "SPCXUSDT": 1784711752
       },
       "closed_times": {
         "ZETAUSDT": 1784707300,
-        "YGGUSDT": 1784708153
+        "YGGUSDT": 1784708153,
+        "AUSDT": 1784711749
       },
       "closed_results": {
         "ZETAUSDT": "BE",
-        "YGGUSDT": "BE"
+        "YGGUSDT": "BE",
+        "AUSDT": "EXPIRED"
       },
       "closed_history": [
         {
@@ -2392,6 +2415,26 @@
           "exit": 0.01865,
           "source": "15M_ENTRY",
           "score": 100
+        },
+        {
+          "time": "12:15:49",
+          "symbol": "AUSDT",
+          "direction": "SHORT",
+          "result": "EXPIRED",
+          "entry": 0.06651,
+          "exit": null,
+          "source": "15M_ENTRY",
+          "score": 90
+        },
+        {
+          "time": "12:15:52",
+          "symbol": "SPCXUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 124.19,
+          "exit": 124.95,
+          "source": "15M_ENTRY",
+          "score": 94
         }
       ],
       "sl_after_tp1": 2,
@@ -2399,9 +2442,29 @@
       "sl_after_no_return": 8
     }
   },
-  "last_update": 1784710873,
+  "last_update": 1784712108,
   "last_open_summary": 1784710875,
   "last_status_message": 1784694107,
   "last_daily_report": "2026-07-21",
-  "sl_after_follow": {}
+  "sl_after_follow": {
+    "SPCXUSDT_SHORT_1784711752": {
+      "symbol": "SPCXUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 124.19,
+      "tp1": 123.7803484385,
+      "tp2": 123.4079379281,
+      "tp3": 122.9982863666,
+      "sl": 124.9348210209,
+      "score": 94,
+      "risk_percent": 0.6,
+      "stopped_at": 1784711752,
+      "stop_exit": 124.95,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    }
+  }
 }
