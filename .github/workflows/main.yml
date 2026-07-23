@@ -10,11 +10,12 @@ permissions:
 
 concurrency:
   group: premium-mtf-futures-bot
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   signal-bot:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     steps:
       - name: Repo indir
@@ -40,13 +41,34 @@ jobs:
 
       - name: Durum dosyalarını kaydet
         run: |
+          set -e
+
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git pull --rebase --autostash origin main || echo "Pull skipped"
-
           git add open_signals.json performance.json last_signals.json
-          git diff --cached --quiet || git commit -m "Update bot state"
 
-          git pull --rebase --autostash origin main || echo "Pull skipped before push"
-          git push || echo "Push skipped"
+          if git diff --cached --quiet; then
+            echo "Kaydedilecek yeni durum değişikliği yok."
+            exit 0
+          fi
+
+          git commit -m "Update main bot state"
+
+          for attempt in 1 2 3
+          do
+            echo "Push denemesi: $attempt"
+
+            git pull --rebase --autostash origin main
+
+            if git push origin HEAD:main
+            then
+              echo "Durum dosyaları başarıyla kaydedildi."
+              exit 0
+            fi
+
+            sleep 10
+          done
+
+          echo "Durum dosyaları üç denemede de kaydedilemedi."
+          exit 1
