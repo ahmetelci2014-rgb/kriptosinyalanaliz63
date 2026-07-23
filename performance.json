@@ -2898,17 +2898,17 @@
       "sl_after_no_return": 16
     },
     "2026-07-23": {
-      "opened": 11,
+      "opened": 12,
       "radar": 0,
-      "tp1": 2,
-      "tp2": 1,
+      "tp1": 3,
+      "tp2": 2,
       "tp3": 0,
-      "sl": 7,
-      "be": 2,
+      "sl": 8,
+      "be": 3,
       "expired": 0,
       "long": 4,
-      "short": 7,
-      "normal": 11,
+      "short": 8,
+      "normal": 12,
       "radar_trade": 0,
       "coins": {
         "SEIUSDT": {
@@ -2947,7 +2947,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -2975,7 +2975,7 @@
           "opened": 0,
           "radar": 0,
           "tp1": 1,
-          "tp2": 0,
+          "tp2": 1,
           "tp3": 0,
           "sl": 0,
           "be": 0,
@@ -3014,11 +3014,11 @@
         "USELESSUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
+          "tp1": 1,
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
-          "be": 0,
+          "be": 1,
           "expired": 0
         },
         "CCUSDT": {
@@ -3070,11 +3070,21 @@
           "sl": 0,
           "be": 0,
           "expired": 0
+        },
+        "BONKUSDT": {
+          "opened": 1,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 0,
+          "be": 0,
+          "expired": 0
         }
       },
       "direction_stops": {
         "SHORT": 6,
-        "LONG": 1
+        "LONG": 2
       },
       "stop_times": {
         "LUNAUSDT": 1784767550,
@@ -3083,15 +3093,18 @@
         "ASTERUSDT": 1784782871,
         "BERAUSDT": 1784786470,
         "CCUSDT": 1784790069,
-        "ZORAUSDT": 1784790070
+        "ZORAUSDT": 1784790070,
+        "BOMEUSDT": 1784790951
       },
       "closed_times": {
         "SEIUSDT": 1784755858,
-        "COREUSDT": 1784780147
+        "COREUSDT": 1784780147,
+        "USELESSUSDT": 1784790952
       },
       "closed_results": {
         "SEIUSDT": "BE",
-        "COREUSDT": "BE"
+        "COREUSDT": "BE",
+        "USELESSUSDT": "BE"
       },
       "closed_history": [
         {
@@ -3213,14 +3226,54 @@
           "exit": 0.006416,
           "source": "15M_ENTRY",
           "score": 96
+        },
+        {
+          "time": "10:15:50",
+          "symbol": "CHZUSDT",
+          "direction": "SHORT",
+          "result": "TP2",
+          "entry": 0.01484,
+          "exit": 0.0146455966,
+          "source": "15M_ENTRY",
+          "score": 86
+        },
+        {
+          "time": "10:15:51",
+          "symbol": "BOMEUSDT",
+          "direction": "LONG",
+          "result": "SL",
+          "entry": 0.000429,
+          "exit": 0.0004207,
+          "source": "15M_ENTRY",
+          "score": 91
+        },
+        {
+          "time": "10:15:52",
+          "symbol": "USELESSUSDT",
+          "direction": "SHORT",
+          "result": "TP1",
+          "entry": 0.06063,
+          "exit": 0.0601731322,
+          "source": "15M_ENTRY",
+          "score": 96
+        },
+        {
+          "time": "10:15:52",
+          "symbol": "USELESSUSDT",
+          "direction": "SHORT",
+          "result": "BE",
+          "entry": 0.06063,
+          "exit": 0.06063,
+          "source": "15M_ENTRY",
+          "score": 96
         }
       ],
-      "sl_after_tp1": 1,
-      "sl_after_tp2": 0,
-      "sl_after_no_return": 3
+      "sl_after_tp1": 2,
+      "sl_after_tp2": 1,
+      "sl_after_no_return": 4
     }
   },
-  "last_update": 1784790401,
+  "last_update": 1784791217,
   "last_open_summary": 1784789182,
   "last_status_message": 1784748998,
   "last_daily_report": "2026-07-22",
@@ -3240,12 +3293,13 @@
       "stop_exit": 0.6226,
       "reported_checkpoints": [
         30,
-        60
+        60,
+        120
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true
     },
     "BERAUSDT_SHORT_1784786470": {
       "symbol": "BERAUSDT",
@@ -3283,10 +3337,10 @@
       "stopped_at": 1784790069,
       "stop_exit": 0.12184,
       "reported_checkpoints": [],
-      "after_sl_tp1": false,
-      "after_sl_tp2": false,
+      "after_sl_tp1": true,
+      "after_sl_tp2": true,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true
     },
     "ZORAUSDT_SHORT_1784790070": {
       "symbol": "ZORAUSDT",
@@ -3301,6 +3355,25 @@
       "risk_percent": 0.662,
       "stopped_at": 1784790070,
       "stop_exit": 0.006416,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "BOMEUSDT_LONG_1784790951": {
+      "symbol": "BOMEUSDT",
+      "direction": "LONG",
+      "source": "15M_ENTRY",
+      "entry": 0.000429,
+      "tp1": 0.0004333417,
+      "tp2": 0.0004372887,
+      "tp3": 0.0004416305,
+      "sl": 0.000421106,
+      "score": 91,
+      "risk_percent": 1.84,
+      "stopped_at": 1784790951,
+      "stop_exit": 0.0004207,
       "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
