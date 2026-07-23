@@ -2898,17 +2898,17 @@
       "sl_after_no_return": 16
     },
     "2026-07-23": {
-      "opened": 0,
+      "opened": 1,
       "radar": 0,
       "tp1": 0,
       "tp2": 0,
       "tp3": 0,
-      "sl": 0,
+      "sl": 1,
       "be": 1,
       "expired": 0,
-      "long": 0,
+      "long": 1,
       "short": 0,
-      "normal": 0,
+      "normal": 1,
       "radar_trade": 0,
       "coins": {
         "SEIUSDT": {
@@ -2920,10 +2920,34 @@
           "sl": 0,
           "be": 1,
           "expired": 0
+        },
+        "LUNAUSDT": {
+          "opened": 0,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 1,
+          "be": 0,
+          "expired": 0
+        },
+        "CFXUSDT": {
+          "opened": 1,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 0,
+          "be": 0,
+          "expired": 0
         }
       },
-      "direction_stops": {},
-      "stop_times": {},
+      "direction_stops": {
+        "SHORT": 1
+      },
+      "stop_times": {
+        "LUNAUSDT": 1784767550
+      },
       "closed_times": {
         "SEIUSDT": 1784755858
       },
@@ -2940,6 +2964,16 @@
           "exit": 0.0462,
           "source": "15M_ENTRY",
           "score": 86
+        },
+        {
+          "time": "03:45:50",
+          "symbol": "LUNAUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.04552,
+          "exit": 0.04624,
+          "source": "15M_ENTRY",
+          "score": 92
         }
       ],
       "sl_after_tp1": 0,
@@ -2947,9 +2981,29 @@
       "sl_after_no_return": 1
     }
   },
-  "last_update": 1784760353,
+  "last_update": 1784767851,
   "last_open_summary": 1784764867,
   "last_status_message": 1784748998,
   "last_daily_report": "2026-07-22",
-  "sl_after_follow": {}
+  "sl_after_follow": {
+    "LUNAUSDT_SHORT_1784767550": {
+      "symbol": "LUNAUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.04552,
+      "tp1": 0.0452813065,
+      "tp2": 0.0450643124,
+      "tp3": 0.0448256189,
+      "sl": 0.0459539882,
+      "score": 92,
+      "risk_percent": 0.953,
+      "stopped_at": 1784767550,
+      "stop_exit": 0.04624,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    }
+  }
 }
