@@ -90,7 +90,7 @@ def send_telegram(message):
             data={"chat_id": CHAT_ID, "text": message},
             timeout=20,
         )
-        print("Telegram cevap:", response.status_code, response.text)
+        print("Telegram cevap:", response.status_code)
         return response.status_code == 200
     except Exception as e:
         print("Telegram gönderim hatası:", e)

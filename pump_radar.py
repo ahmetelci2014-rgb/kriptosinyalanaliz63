@@ -123,7 +123,7 @@ def send_telegram(message):
             },
             timeout=20,
         )
-        print("Telegram cevap:", response.status_code, response.text)
+        print("Telegram cevap:", response.status_code)
         return response.status_code == 200
     except Exception as exc:
         print("Telegram gönderim hatası:", exc)
@@ -1065,10 +1065,9 @@ def build_long_signal(
                 move1 >= MIN_1M_MOVE,
             ),
             condition(
-                "PUMP: 5M hareket veya kırılım yok",
+                "PUMP: 5M hareket veya direnç kırılımı yok",
                 (
-                    move5 >= MIN_5M_MOVE
-                    or breakout
+                    move5 >= MIN_5M_MOVE and breakout
                 ),
             ),
             condition(
@@ -1140,8 +1139,7 @@ def build_long_signal(
             targets is not None
             and move1 >= MIN_1M_MOVE
             and (
-                move5 >= MIN_5M_MOVE
-                or breakout
+                move5 >= MIN_5M_MOVE and breakout
             )
             and move15 >= MIN_15M_MOVE
             and vol1 >= MIN_1M_VOLUME_RATIO
@@ -1345,10 +1343,9 @@ def build_short_signal(
                 move1 <= -MIN_1M_MOVE,
             ),
             condition(
-                "DUMP: 5M hareket veya kırılım yok",
+                "DUMP: 5M hareket veya destek kırılımı yok",
                 (
-                    move5 <= -MIN_5M_MOVE
-                    or breakdown
+                    move5 <= -MIN_5M_MOVE and breakdown
                 ),
             ),
             condition(
@@ -1420,8 +1417,7 @@ def build_short_signal(
             targets is not None
             and move1 <= -MIN_1M_MOVE
             and (
-                move5 <= -MIN_5M_MOVE
-                or breakdown
+                move5 <= -MIN_5M_MOVE and breakdown
             )
             and move15 <= -MIN_15M_MOVE
             and vol1 >= MIN_1M_VOLUME_RATIO
