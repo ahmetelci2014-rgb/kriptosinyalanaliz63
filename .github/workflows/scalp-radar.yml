@@ -10,11 +10,12 @@ permissions:
 
 concurrency:
   group: hizli-scalp-radar
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   scalp-radar:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
 
     steps:
       - name: Repo indir
@@ -38,15 +39,36 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python scalp_radar.py
 
-      - name: Scalp durum dosyasını kaydet
+      - name: Scalp durum dosyasını güvenli kaydet
         run: |
+          set -e
+
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git pull --rebase --autostash origin main || echo "Pull skipped"
-
           git add scalp_radar_state.json
-          git diff --cached --quiet || git commit -m "Update scalp radar state"
 
-          git pull --rebase --autostash origin main || echo "Pull skipped before push"
-          git push || echo "Push skipped"
+          if git diff --cached --quiet; then
+            echo "Scalp durum dosyasında kaydedilecek değişiklik yok."
+            exit 0
+          fi
+
+          git commit -m "Update scalp radar state"
+
+          for attempt in 1 2 3
+          do
+            echo "Push denemesi: $attempt"
+
+            git pull --rebase --autostash origin main
+
+            if git push origin HEAD:main
+            then
+              echo "Scalp durum dosyası başarıyla kaydedildi."
+              exit 0
+            fi
+
+            sleep 10
+          done
+
+          echo "Scalp durum dosyası üç denemede de kaydedilemedi."
+          exit 1
