@@ -2900,11 +2900,11 @@
     "2026-07-23": {
       "opened": 18,
       "radar": 0,
-      "tp1": 5,
-      "tp2": 3,
+      "tp1": 7,
+      "tp2": 4,
       "tp3": 1,
       "sl": 11,
-      "be": 4,
+      "be": 5,
       "expired": 0,
       "long": 5,
       "short": 13,
@@ -3084,7 +3084,7 @@
         "AXSUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
+          "tp1": 1,
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
@@ -3134,11 +3134,11 @@
         "ENSOUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
-          "tp2": 0,
+          "tp1": 1,
+          "tp2": 1,
           "tp3": 0,
           "sl": 0,
-          "be": 0,
+          "be": 1,
           "expired": 0
         }
       },
@@ -3164,14 +3164,16 @@
         "COREUSDT": 1784780147,
         "USELESSUSDT": 1784790952,
         "BASEDUSDT": 1784794548,
-        "MUBARAKUSDT": 1784799502
+        "MUBARAKUSDT": 1784799502,
+        "ENSOUSDT": 1784801752
       },
       "closed_results": {
         "SEIUSDT": "BE",
         "COREUSDT": "BE",
         "USELESSUSDT": "BE",
         "BASEDUSDT": "BE",
-        "MUBARAKUSDT": "TP3"
+        "MUBARAKUSDT": "TP3",
+        "ENSOUSDT": "BE"
       },
       "closed_history": [
         {
@@ -3413,83 +3415,58 @@
           "exit": 0.0104075324,
           "source": "15M_ENTRY",
           "score": 91
+        },
+        {
+          "time": "13:15:50",
+          "symbol": "AXSUSDT",
+          "direction": "SHORT",
+          "result": "TP1",
+          "entry": 0.9086,
+          "exit": 0.9059936897,
+          "source": "15M_ENTRY",
+          "score": 94
+        },
+        {
+          "time": "13:15:51",
+          "symbol": "ENSOUSDT",
+          "direction": "LONG",
+          "result": "TP1",
+          "entry": 0.7521,
+          "exit": 0.7558127625,
+          "source": "15M_ENTRY",
+          "score": 92
+        },
+        {
+          "time": "13:15:52",
+          "symbol": "ENSOUSDT",
+          "direction": "LONG",
+          "result": "TP2",
+          "entry": 0.7521,
+          "exit": 0.7591880011,
+          "source": "15M_ENTRY",
+          "score": 92
+        },
+        {
+          "time": "13:15:52",
+          "symbol": "ENSOUSDT",
+          "direction": "LONG",
+          "result": "BE",
+          "entry": 0.7521,
+          "exit": 0.7521,
+          "source": "15M_ENTRY",
+          "score": 92
         }
       ],
       "sl_after_tp1": 3,
       "sl_after_tp2": 1,
-      "sl_after_no_return": 7
+      "sl_after_no_return": 8
     }
   },
-  "last_update": 1784800073,
-  "last_open_summary": 1784795464,
+  "last_update": 1784801753,
+  "last_open_summary": 1784801755,
   "last_status_message": 1784800319,
   "last_daily_report": "2026-07-22",
   "sl_after_follow": {
-    "CCUSDT_SHORT_1784790069": {
-      "symbol": "CCUSDT",
-      "direction": "SHORT",
-      "source": "15M_ENTRY",
-      "entry": 0.12141,
-      "tp1": 0.1210173002,
-      "tp2": 0.1206603004,
-      "tp3": 0.1202676006,
-      "sl": 0.1221239996,
-      "score": 95,
-      "risk_percent": 0.588,
-      "stopped_at": 1784790069,
-      "stop_exit": 0.12184,
-      "reported_checkpoints": [],
-      "after_sl_tp1": true,
-      "after_sl_tp2": true,
-      "after_sl_tp3": false,
-      "resolved": true
-    },
-    "ZORAUSDT_SHORT_1784790070": {
-      "symbol": "ZORAUSDT",
-      "direction": "SHORT",
-      "source": "15M_ENTRY",
-      "entry": 0.006342,
-      "tp1": 0.0063189089,
-      "tp2": 0.006297917,
-      "tp3": 0.0062748259,
-      "sl": 0.0063839838,
-      "score": 96,
-      "risk_percent": 0.662,
-      "stopped_at": 1784790070,
-      "stop_exit": 0.006416,
-      "reported_checkpoints": [
-        30,
-        60,
-        120
-      ],
-      "after_sl_tp1": false,
-      "after_sl_tp2": false,
-      "after_sl_tp3": false,
-      "resolved": true
-    },
-    "BOMEUSDT_LONG_1784790951": {
-      "symbol": "BOMEUSDT",
-      "direction": "LONG",
-      "source": "15M_ENTRY",
-      "entry": 0.000429,
-      "tp1": 0.0004333417,
-      "tp2": 0.0004372887,
-      "tp3": 0.0004416305,
-      "sl": 0.000421106,
-      "score": 91,
-      "risk_percent": 1.84,
-      "stopped_at": 1784790951,
-      "stop_exit": 0.0004207,
-      "reported_checkpoints": [
-        30,
-        60,
-        120
-      ],
-      "after_sl_tp1": false,
-      "after_sl_tp2": false,
-      "after_sl_tp3": false,
-      "resolved": true
-    },
     "COAIUSDT_LONG_1784791861": {
       "symbol": "COAIUSDT",
       "direction": "LONG",
@@ -3527,12 +3504,13 @@
       "stop_exit": 1.0454,
       "reported_checkpoints": [
         30,
-        60
+        60,
+        120
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true
     },
     "HMSTRUSDT_SHORT_1784798150": {
       "symbol": "HMSTRUSDT",
@@ -3548,7 +3526,8 @@
       "stopped_at": 1784798150,
       "stop_exit": 0.0001789,
       "reported_checkpoints": [
-        30
+        30,
+        60
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
