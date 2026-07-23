@@ -1,5 +1,5 @@
 # config.py
-# Premium MTF TP Odaklı v2 - Stabil TP Geri Dönüş
+# Premium MTF TP Odaklı v2 - Canlı Para Dengeli Filtre
 # 5M + 15M + 1H + 4H çoklu zaman dilimi futures sinyal botu.
 # Emir açmaz. Sadece Telegram sinyali gönderir ve TP/SL takibi yapar.
 
@@ -10,8 +10,13 @@ BOT_NAME = "Premium MTF TP Odaklı v2"
 # =========================
 
 AUTO_TOP_VOLUME_SCAN = True
-MAX_SCAN_COINS = 300
-MIN_24H_QUOTE_VOLUME = 200_000
+
+# 300 coin yerine daha hacimli ilk 180 coin taranır.
+# Böylece tarama süresi ve düşük kaliteli coin sayısı azalır.
+MAX_SCAN_COINS = 180
+
+# Çok düşük hacimli ve kolay manipüle edilen coinleri azaltır.
+MIN_24H_QUOTE_VOLUME = 1_000_000
 
 # Öncelikli coinler önce taranır, sonra hacimli diğer coinler eklenir.
 PRIORITY_COINS = [
@@ -46,26 +51,26 @@ TRACK_LIMIT = 180
 # SİNYAL SAYISI
 # =========================
 
-# Eski TP akışını öldürmemek için 3 korunuyor.
-MAX_TRADE_SIGNALS_PER_RUN = 3
+# Her çalıştırmada yalnızca en güçlü 1 yeni sinyal gönderilir.
+# Aynı anda çok sayıda işlem yığılmasını önler.
+MAX_TRADE_SIGNALS_PER_RUN = 1
 
 # Ana bot içi radar kapalı kalacak.
 MAX_RADAR_ALERTS_PER_RUN = 0
 
-# 4 çok dar kalıyordu.
-# TP1 görmüş işlemler hâlâ takipte kaldığı için yeni sinyali kesebiliyordu.
+# Bu değer botun takip ettiği riskli sinyallerin sınırıdır.
+# Canlı hesapta aynı anda en fazla 2 gerçek işlem açılması önerilir.
 MAX_OPEN_SIGNALS = 6
 
 # =========================
 # RİSK MODU
 # =========================
 
-# 3 stop sonrası risk modu erken devreye giriyordu.
-# Bu da 39 aday bulsa bile 1 sinyal göndermesine sebep olabiliyordu.
+# Aynı gün 5 stop sonrası risk modu devreye girer.
 RISK_MODE_STOP_COUNT = 5
 
-# Risk modu aktif olsa bile 1 sinyal çok az kalıyordu.
-RISK_MODE_MAX_TRADE_SIGNALS = 2
+# Normal modda olduğu gibi risk modunda da yalnızca 1 sinyal gönderilir.
+RISK_MODE_MAX_TRADE_SIGNALS = 1
 
 RISK_MODE_MAX_RADAR_ALERTS = 0
 RISK_MODE_ALLOW_RADAR_TRADE = False
@@ -74,19 +79,21 @@ RISK_MODE_ALLOW_RADAR_TRADE = False
 # FİLTRELER
 # =========================
 
-# 72 TP odaklı v2 için dengeli.
+# Skoru şimdilik değiştirmiyoruz.
+# Önce ADX, hacim, risk ve geç giriş filtrelerinin sonucunu gözlemleyeceğiz.
 MIN_SCORE_TRADE = 72
 
 # Ana bot içi radar kapalı.
 MIN_SCORE_RADAR = 999
 
-# 4H / 1H trend şartı dengeli.
-MIN_ADX_4H = 10
-MIN_ADX_1H = 10
+# ADX 10 yerine 15:
+# Çok zayıf ve yönsüz trendlerin elenmesini sağlar.
+MIN_ADX_4H = 15
+MIN_ADX_1H = 15
 
-# 0.60 korunuyor.
-# INJ / RAY gibi düşük hacimli ama TP yapan sinyaller kaçmasın.
-MIN_VOLUME_RATIO_15M = 0.60
+# 15M hacmi kendi ortalamasının en az %75'i olmalı.
+# Hacimsiz hareketler azaltılır.
+MIN_VOLUME_RATIO_15M = 0.75
 
 LONG_RSI_MIN = 40
 LONG_RSI_MAX = 70
@@ -111,19 +118,22 @@ RADAR_TRADE_MIN_VOLUME_RATIO = 999
 # =========================
 
 MIN_RISK_PERCENT = 0.35
-MAX_RISK_PERCENT = 2.40
 
-# TP odaklı ayar:
-# TP1 yakın kalsın, çünkü sistemde en iyi çalışan kural bu.
+# Stop mesafesi %1.80'den fazlaysa sinyal kabul edilmez.
+# Çok geniş stoplu işlemler azaltılır.
+MAX_RISK_PERCENT = 1.80
+
+# TP odaklı ayarlar korunuyor.
+# Önce mevcut TP üretme yapısını bozmadan filtreleri güçlendiriyoruz.
 TP1_R_MULTIPLIER = 0.55
 TP2_R_MULTIPLIER = 1.05
 TP3_R_MULTIPLIER = 1.60
 
-# Giriş geç kalmışsa sinyal gönderme.
-MAX_ENTRY_DISTANCE_PERCENT = 0.45
+# Fiyat hesaplanan girişten %0.35'ten fazla uzaklaşmışsa sinyal gönderilmez.
+MAX_ENTRY_DISTANCE_PERCENT = 0.35
 
-# TP1'e yaklaşmış sinyali hemen elemesin.
-MAX_TP1_PROGRESS_PERCENT = 55
+# Fiyat TP1 yolunun %45'inden fazlasını gitmişse geç giriş kabul edilir.
+MAX_TP1_PROGRESS_PERCENT = 45
 
 # =========================
 # KALDIRAÇ ÖNERİSİ
@@ -131,7 +141,9 @@ MAX_TP1_PROGRESS_PERCENT = 55
 
 LEVERAGE_RISK_3X_MAX = 0.85
 LEVERAGE_RISK_2X_MAX = 1.60
-LEVERAGE_RISK_1X2X_MAX = 2.40
+
+# Yeni maksimum risk sınırıyla uyumlu hâle getirildi.
+LEVERAGE_RISK_1X2X_MAX = 1.80
 
 # =========================
 # MARKET KORUMA
@@ -148,14 +160,12 @@ MARKET_MAX_COUNTER_5M_MOVE_PERCENT = 0.40
 # TEKRAR / COOLDOWN
 # =========================
 
-# 90 dakika korunuyor.
-# Çok uzatırsak çalışan tekrar sinyaller kaçabilir.
+# Aynı coin ve aynı yön için 90 dakika tekrar engeli.
 TRADE_DUPLICATE_BLOCK_SECONDS = 90 * 60
 
 RADAR_DUPLICATE_BLOCK_SECONDS = 45 * 60
 
-# 8 saat biraz sert kalabilir.
-# Stop olan coin tamamen gün boyu ölmesin ama hemen de tekrar gelmesin.
+# Stop olan coin 6 saat boyunca yeniden işlem sinyali üretemez.
 STOPPED_COIN_COOLDOWN_HOURS = 6
 
 # =========================
@@ -175,10 +185,10 @@ DAILY_REPORT_MINUTE = 45
 # =========================
 
 SYSTEM_NOTE = (
-    "TP odaklı MTF stabil geri dönüş sürümü. "
+    "Canlı para için dengeli filtrelenmiş TP odaklı MTF sürümü. "
     "4H ana trend + 1H onay + 15M giriş mantığı korunur. "
     "Ana bot içi radar kapalıdır. "
-    "TP1 daha yakındır. "
-    "Risk modu yumuşatıldı. "
-    "Amaç eski TP akışına yaklaşmaktır; kâr garantisi yoktur."
+    "Düşük hacimli, zayıf trendli, geniş stoplu ve geç kalmış girişler azaltılmıştır. "
+    "Her çalıştırmada yalnızca en güçlü 1 yeni işlem sinyali gönderilir. "
+    "TP hedef yapısı korunmuştur; kâr garantisi yoktur."
 )
