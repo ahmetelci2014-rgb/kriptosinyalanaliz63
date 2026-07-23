@@ -1,5 +1,5 @@
 # pump_radar.py
-# Erken Pump/Dump Radar v2 - Dengeli Canlı Para
+# Erken Pump/Dump Radar v2 - Dengeli Canlı Para + Sessiz Trend Gözlemi
 #
 # OKX USDT perpetual futures paritelerini tarar.
 # Emir açmaz; Telegram uyarısı gönderir ve TP/SL takibi yapar.
@@ -10,6 +10,7 @@
 # 3) 5M hacim ve gerçek momentum şartlarını zorunlu yapmak.
 # 4) Çok geniş stoplu ve girişten uzaklaşmış adayları elemek.
 # 5) Eski pump_radar_state.json yapısıyla uyumlu çalışmak.
+# 6) XLM benzeri büyük ama hacim patlamasız hareketleri sessizce ölçmek.
 
 import json
 import math
@@ -104,6 +105,33 @@ PUMP_RSI_5M_MAX = 72
 DUMP_RSI_5M_MIN = 34
 DUMP_RSI_5M_MAX = 56
 
+# =========================================================
+# SESSİZ TREND DEVAM GÖZLEMİ
+# =========================================================
+# Bu mod yeni Telegram işlem sinyali göndermez.
+# XLM benzeri, hacim patlaması olmadan devam eden büyük hareketleri
+# pump_radar_state.json içinde kaydeder.
+SHADOW_TREND_ENABLED = True
+
+# Son 15 veya 30 dakikadaki minimum hareket.
+SHADOW_MIN_15M_MOVE_PERCENT = 0.60
+SHADOW_MIN_30M_MOVE_PERCENT = 0.90
+
+# Aynı coin/yön için yeni gözlem kaydı aralığı.
+SHADOW_DUPLICATE_MINUTES = 30
+
+# State dosyasında en fazla kaç kayıt saklansın.
+SHADOW_MAX_RECORDS = 300
+SHADOW_KEEP_DAYS = 7
+
+# Trend devam kalitesi için yumuşak ama ölçülebilir eşikler.
+SHADOW_MIN_5M_VOLUME_RATIO = 0.70
+SHADOW_MAX_EMA20_DISTANCE_PERCENT = 0.55
+SHADOW_LONG_RSI_MIN = 50
+SHADOW_LONG_RSI_MAX = 74
+SHADOW_SHORT_RSI_MIN = 26
+SHADOW_SHORT_RSI_MAX = 50
+
 
 # =========================================================
 # TELEGRAM
@@ -176,6 +204,13 @@ def default_state():
         "last_sent": {},
         "last_no_signal_report": 0,
         "stats": empty_stats(),
+        "shadow_moves": [],
+        "shadow_last_seen": {},
+        "shadow_stats": {
+            "recorded": 0,
+            "ready": 0,
+            "not_ready": 0,
+        },
     }
 
 
@@ -207,6 +242,16 @@ def load_state():
         state.setdefault("last_sent", {})
         state.setdefault("last_no_signal_report", 0)
         state.setdefault("stats", {})
+        state.setdefault("shadow_moves", [])
+        state.setdefault("shadow_last_seen", {})
+        state.setdefault("shadow_stats", {})
+
+        for key, value in {
+            "recorded": 0,
+            "ready": 0,
+            "not_ready": 0,
+        }.items():
+            state["shadow_stats"].setdefault(key, value)
 
         for key, value in empty_stats().items():
             state["stats"].setdefault(key, value)
@@ -1504,6 +1549,492 @@ def build_short_signal(
         return None, None
 
 
+
+def ema_series(series, span):
+    return series.ewm(
+        span=span,
+        adjust=False,
+    ).mean()
+
+
+def signed_move_percent(current, reference):
+    current = safe_float(current)
+    reference = safe_float(reference)
+
+    if current <= 0 or reference <= 0:
+        return 0.0
+
+    return (
+        (current - reference)
+        / reference
+        * 100
+    )
+
+
+def build_shadow_trend_events(
+    symbol,
+    current_price,
+    frame1,
+    frame5,
+    long_debug,
+    short_debug,
+    real_signals,
+):
+    """
+    Büyük ama mevcut ani Pump/Dump filtresini geçmeyen hareketleri
+    sessizce kaydeder. Telegram sinyali üretmez.
+    """
+    if not SHADOW_TREND_ENABLED:
+        return []
+
+    try:
+        data = frame5.copy()
+
+        if len(data) < 55:
+            return []
+
+        data["ema20_shadow"] = ema_series(
+            data["close"],
+            20,
+        )
+        data["ema50_shadow"] = ema_series(
+            data["close"],
+            50,
+        )
+        data["rsi_shadow"] = calc_rsi(
+            data["close"],
+        )
+
+        # Son satır oluşan mum; -2 son kapanmış 5M mumdur.
+        last_index = len(data) - 2
+        start_15_index = last_index - 3
+        start_30_index = last_index - 6
+
+        if start_30_index < 0:
+            return []
+
+        last = data.iloc[last_index]
+        previous = data.iloc[last_index - 1]
+
+        close_now = safe_float(last["close"])
+        close_15_ago = safe_float(
+            data.iloc[start_15_index]["close"]
+        )
+        close_30_ago = safe_float(
+            data.iloc[start_30_index]["close"]
+        )
+
+        move15_window = signed_move_percent(
+            close_now,
+            close_15_ago,
+        )
+        move30_window = signed_move_percent(
+            close_now,
+            close_30_ago,
+        )
+
+        last_four = data.iloc[
+            last_index - 3:last_index + 1
+        ]
+
+        green_count = int(
+            (
+                last_four["close"]
+                > last_four["open"]
+            ).sum()
+        )
+        red_count = int(
+            (
+                last_four["close"]
+                < last_four["open"]
+            ).sum()
+        )
+
+        ema20_now = safe_float(
+            last["ema20_shadow"]
+        )
+        ema50_now = safe_float(
+            last["ema50_shadow"]
+        )
+        ema20_old = safe_float(
+            data.iloc[last_index - 3][
+                "ema20_shadow"
+            ]
+        )
+
+        ema20_slope = signed_move_percent(
+            ema20_now,
+            ema20_old,
+        )
+        ema_distance = percent_distance(
+            current_price,
+            ema20_now,
+        )
+
+        rsi5 = safe_float(
+            last["rsi_shadow"]
+        )
+        vol5 = volume_ratio(
+            data,
+            index=-2,
+            period=20,
+        )
+        vol1 = volume_ratio(
+            frame1,
+            index=-2,
+            period=20,
+        )
+
+        last_green = (
+            safe_float(last["close"])
+            > safe_float(last["open"])
+        )
+        last_red = (
+            safe_float(last["close"])
+            < safe_float(last["open"])
+        )
+        previous_green = (
+            safe_float(previous["close"])
+            > safe_float(previous["open"])
+        )
+        previous_red = (
+            safe_float(previous["close"])
+            < safe_float(previous["open"])
+        )
+
+        previous_touched_ema = (
+            safe_float(previous["low"])
+            <= safe_float(
+                previous["ema20_shadow"]
+            ) * 1.003
+            and safe_float(previous["high"])
+            >= safe_float(
+                previous["ema20_shadow"]
+            ) * 0.997
+        )
+
+        long_resume = (
+            last_green
+            and safe_float(last["close"])
+            >= safe_float(previous["high"])
+            and (
+                previous_red
+                or previous_touched_ema
+            )
+        )
+        short_resume = (
+            last_red
+            and safe_float(last["close"])
+            <= safe_float(previous["low"])
+            and (
+                previous_green
+                or previous_touched_ema
+            )
+        )
+
+        real_directions = {
+            str(item.get("direction", ""))
+            for item in real_signals
+        }
+
+        events = []
+
+        long_big_move = (
+            move15_window
+            >= SHADOW_MIN_15M_MOVE_PERCENT
+            or move30_window
+            >= SHADOW_MIN_30M_MOVE_PERCENT
+        )
+        short_big_move = (
+            move15_window
+            <= -SHADOW_MIN_15M_MOVE_PERCENT
+            or move30_window
+            <= -SHADOW_MIN_30M_MOVE_PERCENT
+        )
+
+        if long_big_move and "LONG" not in real_directions:
+            long_checks = {
+                "EMA20 EMA50 üstünde değil": (
+                    ema20_now > ema50_now
+                ),
+                "EMA20 eğimi yukarı değil": (
+                    ema20_slope >= 0.03
+                ),
+                "Son dört 5M mumun üçü yeşil değil": (
+                    green_count >= 3
+                ),
+                "İlk geri çekilme sonrası devam onayı yok": (
+                    long_resume
+                ),
+                "5M RSI trend için uygun değil": (
+                    SHADOW_LONG_RSI_MIN
+                    <= rsi5
+                    <= SHADOW_LONG_RSI_MAX
+                ),
+                "5M hacim çok düşük": (
+                    vol5
+                    >= SHADOW_MIN_5M_VOLUME_RATIO
+                ),
+                "Fiyat EMA20'den fazla uzak": (
+                    ema_distance
+                    <= SHADOW_MAX_EMA20_DISTANCE_PERCENT
+                ),
+            }
+
+            long_ready = all(
+                long_checks.values()
+            )
+
+            events.append({
+                "recorded_at": now_ts(),
+                "time_tr": tr_now_text(),
+                "symbol": symbol,
+                "direction": "LONG",
+                "source": "SHADOW_TREND_CONTINUATION",
+                "shadow_ready": long_ready,
+                "move15_percent": round(
+                    move15_window,
+                    4,
+                ),
+                "move30_percent": round(
+                    move30_window,
+                    4,
+                ),
+                "price": safe_float(
+                    current_price,
+                ),
+                "ema20": ema20_now,
+                "ema50": ema50_now,
+                "ema20_slope_percent": round(
+                    ema20_slope,
+                    4,
+                ),
+                "ema20_distance_percent": round(
+                    ema_distance,
+                    4,
+                ),
+                "green_5m_count": green_count,
+                "red_5m_count": red_count,
+                "resume_confirmed": long_resume,
+                "rsi5": round(rsi5, 4),
+                "vol1": round(vol1, 4),
+                "vol5": round(vol5, 4),
+                "existing_filter_missing": (
+                    list(
+                        (long_debug or {}).get(
+                            "missing",
+                            [],
+                        )
+                    )[:6]
+                ),
+                "trend_missing": [
+                    label
+                    for label, ok
+                    in long_checks.items()
+                    if not ok
+                ],
+            })
+
+        if short_big_move and "SHORT" not in real_directions:
+            short_checks = {
+                "EMA20 EMA50 altında değil": (
+                    ema20_now < ema50_now
+                ),
+                "EMA20 eğimi aşağı değil": (
+                    ema20_slope <= -0.03
+                ),
+                "Son dört 5M mumun üçü kırmızı değil": (
+                    red_count >= 3
+                ),
+                "İlk tepki sonrası devam onayı yok": (
+                    short_resume
+                ),
+                "5M RSI trend için uygun değil": (
+                    SHADOW_SHORT_RSI_MIN
+                    <= rsi5
+                    <= SHADOW_SHORT_RSI_MAX
+                ),
+                "5M hacim çok düşük": (
+                    vol5
+                    >= SHADOW_MIN_5M_VOLUME_RATIO
+                ),
+                "Fiyat EMA20'den fazla uzak": (
+                    ema_distance
+                    <= SHADOW_MAX_EMA20_DISTANCE_PERCENT
+                ),
+            }
+
+            short_ready = all(
+                short_checks.values()
+            )
+
+            events.append({
+                "recorded_at": now_ts(),
+                "time_tr": tr_now_text(),
+                "symbol": symbol,
+                "direction": "SHORT",
+                "source": "SHADOW_TREND_CONTINUATION",
+                "shadow_ready": short_ready,
+                "move15_percent": round(
+                    move15_window,
+                    4,
+                ),
+                "move30_percent": round(
+                    move30_window,
+                    4,
+                ),
+                "price": safe_float(
+                    current_price,
+                ),
+                "ema20": ema20_now,
+                "ema50": ema50_now,
+                "ema20_slope_percent": round(
+                    ema20_slope,
+                    4,
+                ),
+                "ema20_distance_percent": round(
+                    ema_distance,
+                    4,
+                ),
+                "green_5m_count": green_count,
+                "red_5m_count": red_count,
+                "resume_confirmed": short_resume,
+                "rsi5": round(rsi5, 4),
+                "vol1": round(vol1, 4),
+                "vol5": round(vol5, 4),
+                "existing_filter_missing": (
+                    list(
+                        (short_debug or {}).get(
+                            "missing",
+                            [],
+                        )
+                    )[:6]
+                ),
+                "trend_missing": [
+                    label
+                    for label, ok
+                    in short_checks.items()
+                    if not ok
+                ],
+            })
+
+        return events
+
+    except Exception as exc:
+        print(
+            symbol,
+            "sessiz trend gözlem hatası:",
+            exc,
+        )
+        return []
+
+
+def save_shadow_events(state, events):
+    if not SHADOW_TREND_ENABLED or not events:
+        return 0
+
+    state.setdefault("shadow_moves", [])
+    state.setdefault("shadow_last_seen", {})
+    state.setdefault("shadow_stats", {
+        "recorded": 0,
+        "ready": 0,
+        "not_ready": 0,
+    })
+
+    cutoff = (
+        now_ts()
+        - SHADOW_KEEP_DAYS
+        * 24
+        * 60
+        * 60
+    )
+    duplicate_seconds = (
+        SHADOW_DUPLICATE_MINUTES
+        * 60
+    )
+
+    cleaned = [
+        item
+        for item in state["shadow_moves"]
+        if int(
+            item.get("recorded_at", 0)
+        ) >= cutoff
+    ]
+
+    added = 0
+
+    for event in events:
+        key = (
+            f"{event['symbol']}_"
+            f"{event['direction']}"
+        )
+        last_seen = int(
+            state["shadow_last_seen"].get(
+                key,
+                0,
+            )
+        )
+
+        if (
+            now_ts() - last_seen
+            < duplicate_seconds
+        ):
+            continue
+
+        cleaned.append(event)
+        state["shadow_last_seen"][key] = (
+            now_ts()
+        )
+
+        state["shadow_stats"]["recorded"] = (
+            int(
+                state["shadow_stats"].get(
+                    "recorded",
+                    0,
+                )
+            )
+            + 1
+        )
+
+        stat_key = (
+            "ready"
+            if event.get("shadow_ready")
+            else "not_ready"
+        )
+        state["shadow_stats"][stat_key] = (
+            int(
+                state["shadow_stats"].get(
+                    stat_key,
+                    0,
+                )
+            )
+            + 1
+        )
+
+        added += 1
+
+    cleaned.sort(
+        key=lambda item: int(
+            item.get("recorded_at", 0)
+        )
+    )
+    state["shadow_moves"] = (
+        cleaned[-SHADOW_MAX_RECORDS:]
+    )
+
+    state["shadow_last_seen"] = {
+        key: value
+        for key, value
+        in state["shadow_last_seen"].items()
+        if int(value) >= cutoff
+    }
+
+    if added:
+        save_state(state)
+
+    return added
+
+
 def analyze_symbol(exchange, symbol):
     current_price = get_current_price(
         exchange,
@@ -1511,7 +2042,7 @@ def analyze_symbol(exchange, symbol):
     )
 
     if current_price is None:
-        return [], None, None
+        return [], None, None, []
 
     frame1 = fetch_df(
         exchange,
@@ -1542,7 +2073,7 @@ def analyze_symbol(exchange, symbol):
         or frame5 is None
         or frame15 is None
     ):
-        return [], None, None
+        return [], None, None, []
 
     long_signal, long_debug = build_long_signal(
         symbol,
@@ -1578,10 +2109,21 @@ def analyze_symbol(exchange, symbol):
         reverse=True,
     )
 
+    shadow_events = build_shadow_trend_events(
+        symbol,
+        current_price,
+        frame1,
+        frame5,
+        long_debug,
+        short_debug,
+        signals,
+    )
+
     return (
         signals[:1],
         long_debug,
         short_debug,
+        shadow_events,
     )
 
 
@@ -2227,6 +2769,7 @@ def main():
     pump_counter = Counter()
     dump_counter = Counter()
     top_candidates = []
+    shadow_events = []
 
     scanned = 0
 
@@ -2244,11 +2787,18 @@ def main():
                 )
                 continue
 
-            signals, long_debug, short_debug = (
-                analyze_symbol(
-                    exchange,
-                    symbol,
-                )
+            (
+                signals,
+                long_debug,
+                short_debug,
+                symbol_shadow_events,
+            ) = analyze_symbol(
+                exchange,
+                symbol,
+            )
+
+            shadow_events.extend(
+                symbol_shadow_events
             )
 
             if long_debug:
@@ -2296,6 +2846,67 @@ def main():
                 "genel analiz hatası:",
                 exc,
             )
+
+    added_shadow_count = save_shadow_events(
+        state,
+        shadow_events,
+    )
+
+    ready_shadow_count = sum(
+        1
+        for item in shadow_events
+        if item.get("shadow_ready")
+    )
+
+    print(
+        "Sessiz büyük hareket gözlemi:",
+        len(shadow_events),
+        "| yeni kayıt:",
+        added_shadow_count,
+        "| trend devam hazır:",
+        ready_shadow_count,
+    )
+
+    for event in sorted(
+        shadow_events,
+        key=lambda item: max(
+            abs(
+                safe_float(
+                    item.get(
+                        "move15_percent",
+                        0,
+                    )
+                )
+            ),
+            abs(
+                safe_float(
+                    item.get(
+                        "move30_percent",
+                        0,
+                    )
+                )
+            ),
+        ),
+        reverse=True,
+    )[:5]:
+        print(
+            "SHADOW",
+            event.get("symbol"),
+            event.get("direction"),
+            "15M:",
+            event.get("move15_percent"),
+            "30M:",
+            event.get("move30_percent"),
+            "hazır:",
+            event.get("shadow_ready"),
+            "eksik:",
+            ", ".join(
+                event.get(
+                    "trend_missing",
+                    [],
+                )[:3]
+            ),
+        )
 
     all_signals.sort(
         key=lambda item: (
