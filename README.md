@@ -1,131 +1,211 @@
-# Premium MTF Futures Bot v1
+# Kripto Sinyal Analiz Sistemi
 
-Bu sistem sıfırdan hazırlanmıştır.
+OKX USDT perpetual futures piyasasını analiz eden ve sonuçları Telegram'a gönderen çoklu radar sistemidir.
 
-Eski V2 / V3 / V4 / V5 dosyalarına bağlı değildir.
+Sistem otomatik emir açmaz. Yalnızca piyasa verisini analiz eder, işlem adaylarını bildirir ve gönderilen sinyallerin TP/SL sonuçlarını takip eder.
 
-## Ana Mantık
+## Aktif Sistemler
 
-- 4H ana trend belirler.
-- 1H yönü onaylar.
-- 15M giriş fırsatını arar.
-- 5M erken radar / momentum uyarısı verir.
+### 1. Premium MTF Futures Bot
 
-## Sinyal Tipleri
+Ana işlem sinyali sistemidir.
 
-### A Kalite MTF Futures Sinyali
+- 4H ana trend
+- 1H yön onayı
+- 15M işlem kurulumu
+- 5M erken dönüş ve giriş kontrolü
+- LONG ve SHORT analizi
+- Geç giriş engeli
+- Market koruma
+- Risk modu
+- TP1, TP2, TP3 ve stop takibi
+- TP1 sonrası kalan işlemi girişten kapatma takibi
 
-İşlem adayıdır. Açık sinyal takibine alınır.
+Dosyalar:
 
-Telegram'da gelir:
+- `main.py`
+- `strategy.py`
+- `config.py`
+- `.github/workflows/main.yml`
+
+Workflow yaklaşık her 5 dakikada çalışır.
+
+### 2. Hızlı Scalp Radar v2
+
+Kısa süreli ve hızlı hareketleri tarar.
+
+- 1M ve 5M hacim onayı
+- Kısa vadeli momentum
+- Girişe yakınlık kontrolü
+- Maksimum açık sinyal sınırı
+- Duplicate koruması
+- TP/SL takibi
+
+Dosyalar:
+
+- `scalp_radar.py`
+- `scalp_radar_state.json`
+- `.github/workflows/scalp-radar.yml`
+
+### 3. Erken Pump/Dump Radar v2
+
+Ani hacim ve fiyat hareketlerini yakalamaya çalışır.
+
+LONG için:
+
+- 1M, 5M ve 15M hareket uyumu
+- 1M ve 5M hacim onayı
+- Direnç kırılımı
+- Giriş sapması kontrolü
+
+SHORT için:
+
+- 1M, 5M ve 15M düşüş uyumu
+- 1M ve 5M hacim onayı
+- Destek kırılımı
+- Giriş sapması kontrolü
+
+Dosyalar:
+
+- `pump_radar.py`
+- `pump_radar_state.json`
+- `.github/workflows/pump-radar.yml`
+
+### 4. Swing Radar v2
+
+Daha uzun süreli işlemler için çalışır.
+
+- 1D ana trend
+- 4H yapı ve trend
+- 1H giriş onayı
+- Maksimum %3 stop mesafesi
+- Kalite, düşük risk, ADX ve hacme göre sıralama
+- Tek çalışmada en fazla 1 yeni sinyal
+- En fazla 3 açık Swing sinyali
+- TP/SL takibi
+
+Dosyalar:
+
+- `swing_radar.py`
+- `swing_radar_state.json`
+- `.github/workflows/swing-radar.yml`
+
+Swing workflow yaklaşık 2 saatte bir çalışır.
+
+### 5. Coin Analyzer
+
+Belirli coinlerin ayrıntılı teknik analizini yapmak için kullanılan yardımcı sistemdir.
+
+Dosyalar:
+
+- `coin_analyzer.py`
+- `.github/workflows/coin-analysis.yml`
+
+## Telegram Bildirimleri
+
+Sistem şartlar tamamlandığında aşağıdaki bilgileri gönderebilir:
 
 - Coin
-- Yön
-- Giriş
-- TP1
-- TP2
-- TP3
-- SL
-- Kaldıraç önerisi
+- LONG veya SHORT yönü
+- Giriş fiyatı
+- Giriş bölgesi
+- TP1, TP2 ve TP3
+- Stop fiyatı
 - Stop mesafesi
-- 4H / 1H / 15M / 5M açıklaması
-- Hacim, RSI, ADX
+- Kalite skoru
+- Hacim, RSI ve ADX verileri
+- Güncel fiyat ve giriş sapması
+- TP/SL sonuçları
 
-### Radar Uyarısı
+## İşlem Kuralları
 
-İşlem sinyali değildir. Coin hareketleniyor diye haber verir.
-
-## TP / SL Takibi
-
-Bot her çalıştığında açık sinyalleri kontrol eder.
-
-Şunları bildirir:
-
-- TP1 geldi
-- TP2 geldi
-- TP3 geldi
-- Stop oldu
-- TP1 sonrası kalan işlem girişten kapandı
-- Sinyal süresi doldu
-
-TP1 gelince varsayılan kural:
-
-- %50 kâr al
-- Kalan işlem için SL girişe çek
-
-## İstatistik Sistemi
-
-performance.json içinde günlük istatistik tutulur.
-
-Günlük raporda şunlar gelir:
-
-- Açılan işlem sinyali
-- Radar uyarısı
-- LONG / SHORT sayısı
-- TP1 / TP2 / TP3
-- Stop sayısı
-- Girişten kapanan
-- Süresi dolan
-- Açık sinyal
-- TP1 başarı oranı
-- En iyi coin
-- En zayıf coin
-- Son kapanan işlemler
-
-## Risk Modu
-
-Sistem tamamen durmaz.
-
-Günlük stop sayısı yükselirse risk moduna geçer:
-
-- İşlem sinyali azalır
-- Radar uyarısı azalır
-- Bot taramaya devam eder
+- Stop mutlaka kullanılmalıdır.
+- Marjin tercihi `Isolated` olmalıdır.
+- Kaldıraç düşük tutulmalıdır.
+- Fiyat sinyal girişinden fazla uzaklaştıysa işlem açılmamalıdır.
+- TP1 gelince varsayılan yaklaşım:
+  - Pozisyonun yaklaşık %50'sinde kâr almak
+  - Kalan işlemin stopunu giriş fiyatına çekmek
+- Grafik kontrol edilmeden yalnızca Telegram mesajına göre işlem açılmamalıdır.
 
 ## Kurulum
 
-Zip içindeki dosyaları GitHub repo ana dizinine yükle:
+Gerekli Python sürümü:
 
-- config.py
-- strategy.py
-- main.py
-- requirements.txt
-- README.md
-- .github/workflows/main.yml
-- open_signals.json
-- performance.json
-- last_signals.json
+```text
+Python 3.11
+```
 
-GitHub Secrets:
+Bağımlılıkları kurmak için:
 
-- TOKEN
-- CHAT_ID
+```bash
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
 
-Telegram'da şu isim görünmelidir:
+## GitHub Secrets
 
-Premium MTF Futures Bot v1
+Repository ayarlarında aşağıdaki Actions Secrets bulunmalıdır:
 
-## Uyarı
+```text
+TOKEN
+CHAT_ID
+```
 
-Bu bot finansal tavsiye değildir.
-Kâr garantisi vermez.
-Otomatik emir açmaz.
-Futures işlemler yüksek risklidir.
-Stop mutlaka kullanılmalıdır.
+Bu değerler hiçbir Python, JSON, YAML veya README dosyasına düz metin olarak yazılmamalıdır.
 
+## Bağımlılık Sürümleri
 
-## Radar Kapalı Sürüm
+`requirements.txt` dosyasındaki paket sürümleri sabitlenmiştir.
 
-Bu sürümde işlem olmayan radar mesajları kapatıldı.
+Amaç:
 
-Telegram'a gelecek mesajlar:
+- Her GitHub Actions çalışmasında aynı ortamı kurmak
+- Yeni paket sürümünün botu habersiz bozmasını önlemek
+- Hatalı bir güncellemede kolay geri dönüş sağlamak
 
-- A kalite işlem sinyali
-- TP1 / TP2 / TP3 bildirimi
-- Stop bildirimi
-- TP1 sonrası girişten kapanma
-- Açık sinyal özeti
-- Günlük performans raporu
-- Saatlik durum mesajı
+Sürümler tek tek rastgele yükseltilmemelidir. Yeni sürüm kullanılmadan önce bütün botlar test edilmelidir.
 
-Radar verisi tamamen silinmedi. 5M hareketler sistem içinde analiz desteği olarak kalır, fakat "işlem açma" radar kalabalığı gönderilmez.
+## State ve Performans Dosyaları
+
+Botlar açık sinyalleri ve sonuçları JSON dosyalarında tutar:
+
+- `open_signals.json`
+- `performance.json`
+- `last_signals.json`
+- `scalp_radar_state.json`
+- `pump_radar_state.json`
+- `swing_radar_state.json`
+
+Bu dosyalar silinirse açık sinyal takibi ve geçmiş veriler kaybolabilir.
+
+Gerçek açık işlemler varken state dosyalarını elle temizlemeyin.
+
+## Güvenlik
+
+- Telegram tokenı yalnızca GitHub Secrets içinde tutulmalıdır.
+- OKX API anahtarı bu sistem için gerekli değildir.
+- Sistem otomatik alım-satım emri açmaz.
+- Actions loglarında Telegram yanıt gövdesi yazdırılmaz; yalnızca HTTP durum kodu gösterilir.
+- Public repoda kaynak kodu ve state JSON verileri herkes tarafından görülebilir.
+- Repository private yapılacaksa GitHub Actions dakika kotası kontrol edilmelidir.
+- Token geçmişte yanlışlıkla commit edildiyse dosyadan silmek yetmez; token yenilenmelidir.
+
+## Workflow Güvenliği
+
+Ana workflow'larda:
+
+- `concurrency` koruması
+- `cancel-in-progress: false`
+- Çalışma zaman aşımı
+- Güvenli `git pull --rebase`
+- Üç denemeli state push
+- Push başarısız olursa kırmızı workflow sonucu
+
+kullanılır.
+
+## Önemli Uyarı
+
+Bu sistem finansal tavsiye değildir ve kâr garantisi vermez.
+
+Kripto futures işlemleri yüksek risklidir. Stop kullanmadan, yüksek kaldıraçla veya kaybetmeyi göze alamayacağınız parayla işlem açmayın.
