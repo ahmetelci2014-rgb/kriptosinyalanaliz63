@@ -497,15 +497,19 @@ def analyze_mtf_trade(symbol, df15m, df1h, df4h, current_price=None):
     # Çünkü skor düşürme bazı çalışan sinyalleri RADAR'a çevirip kapatıyordu.
     score_notes = []
 
+    # CANLI PARA GÜVENLİK FİLTRESİ:
+    # İşlem sinyali için 4H ve 1H aynı yönde güçlü onay vermelidir.
+    # Zayıf veya nötr zaman dilimi onayları artık TRADE olamaz.
+    # 15M giriş trendinin de minimum ADX gücüne sahip olması gerekir.
     strict_trade_ok = (
-        (
-            trend_supports_direction(direction, trend, confirm, strict=True)
-            or (
-                trend_supports_direction(direction, trend, confirm, strict=False)
-                and score >= MIN_SCORE_TRADE
-            )
+        trend_supports_direction(
+            direction,
+            trend,
+            confirm,
+            strict=True,
         )
         and volume_ratio >= MIN_VOLUME_RATIO_15M
+        and adx >= 15
         and score >= MIN_SCORE_TRADE
     )
 
