@@ -36,129 +36,173 @@ jobs:
           import compileall
           import re
 
-          def replace_once(path: str, old: str, new: str, label: str) -> None:
+          def replace_text(path: str, old: str, new: str, label: str) -> None:
               file_path = Path(path)
               if not file_path.exists():
                   raise SystemExit(f"{path} bulunamadı: {label}")
 
               text = file_path.read_text(encoding="utf-8")
 
-              if new in text and old not in text:
+              if old in text:
+                  count = text.count(old)
+                  file_path.write_text(
+                      text.replace(old, new),
+                      encoding="utf-8",
+                  )
+                  print(f"Uygulandı: {label} ({count} eşleşme)")
+                  return
+
+              if new in text:
                   print(f"Zaten uygulanmış: {label}")
                   return
 
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(
-                      f"{path}: '{label}' için beklenen eşleşme 1, bulunan {count}"
-                  )
-
-              file_path.write_text(
-                  text.replace(old, new, 1),
-                  encoding="utf-8",
+              raise SystemExit(
+                  f"{path}: '{label}' için eski veya yeni metin bulunamadı"
               )
-              print(f"Uygulandı: {label}")
 
-          # Telegram API yanıt gövdesi Actions loguna yazılmasın.
-          replace_once(
-              "main.py",
-              'print("Telegram cevap:", response.status_code, response.text)',
-              'print("Telegram cevap:", response.status_code)',
-              "main.py Telegram log gizliliği",
-          )
+          def regex_replace_expected(
+              path: str,
+              pattern: str,
+              replacement: str,
+              already_pattern: str,
+              expected_count: int,
+              label: str,
+          ) -> None:
+              file_path = Path(path)
+              if not file_path.exists():
+                  raise SystemExit(f"{path} bulunamadı: {label}")
 
-          replace_once(
-              "scalp_radar.py",
-              'print("Telegram cevap:", response.status_code, response.text)',
-              'print("Telegram cevap:", response.status_code)',
-              "scalp_radar.py Telegram log gizliliği",
-          )
+              text = file_path.read_text(encoding="utf-8")
+              updated, count = re.subn(
+                  pattern,
+                  replacement,
+                  text,
+                  flags=re.MULTILINE,
+              )
 
-          replace_once(
+              if count == expected_count:
+                  file_path.write_text(updated, encoding="utf-8")
+                  print(f"Uygulandı: {label} ({count} eşleşme)")
+                  return
+
+              if count == 0:
+                  already_count = len(
+                      re.findall(
+                          already_pattern,
+                          text,
+                          flags=re.MULTILINE,
+                      )
+                  )
+                  if already_count >= expected_count:
+                      print(f"Zaten uygulanmış: {label}")
+                      return
+
+              raise SystemExit(
+                  f"{path}: '{label}' için beklenen {expected_count}, "
+                  f"bulunan {count} eşleşme"
+              )
+
+          # Telegram yanıtının tüm JSON gövdesini Actions loguna yazma.
+          for path, old, new in [
+              (
+                  "main.py",
+                  'print("Telegram cevap:", response.status_code, response.text)',
+                  'print("Telegram cevap:", response.status_code)',
+              ),
+              (
+                  "scalp_radar.py",
+                  'print("Telegram cevap:", response.status_code, response.text)',
+                  'print("Telegram cevap:", response.status_code)',
+              ),
+              (
+                  "pump_radar.py",
+                  'print("Telegram cevap:", response.status_code, response.text)',
+                  'print("Telegram cevap:", response.status_code)',
+              ),
+              (
+                  "swing_radar.py",
+                  'print("Telegram cevap:", response.status_code, response.text)',
+                  'print("Telegram cevap:", response.status_code)',
+              ),
+              (
+                  "coin_analyzer.py",
+                  'print("Telegram cevap:", r.status_code, r.text)',
+                  'print("Telegram cevap:", r.status_code)',
+              ),
+          ]:
+              replace_text(
+                  path,
+                  old,
+                  new,
+                  f"{path} Telegram log gizliliği",
+              )
+
+          # Pump/Dump: rapor şartı ile gerçek hard filter aynı olsun.
+          # LONG için hem 5M hareket hem direnç kırılımı zorunlu.
+          regex_replace_expected(
               "pump_radar.py",
-              'print("Telegram cevap:", response.status_code, response.text)',
-              'print("Telegram cevap:", response.status_code)',
-              "pump_radar.py Telegram log gizliliği",
+              r"move5\s*>=\s*MIN_5M_MOVE\s*or\s*breakout",
+              "move5 >= MIN_5M_MOVE and breakout",
+              r"move5\s*>=\s*MIN_5M_MOVE\s*and\s*breakout",
+              2,
+              "Pump LONG 5M hareket + direnç kırılımı",
           )
 
-          replace_once(
-              "swing_radar.py",
-              'print("Telegram cevap:", response.status_code, response.text)',
-              'print("Telegram cevap:", response.status_code)',
-              "swing_radar.py Telegram log gizliliği",
-          )
-
-          replace_once(
-              "coin_analyzer.py",
-              'print("Telegram cevap:", r.status_code, r.text)',
-              'print("Telegram cevap:", r.status_code)',
-              "coin_analyzer.py Telegram log gizliliği",
-          )
-
-          # Pump LONG: 5M hareket ve direnç kırılımı ikisi de zorunlu.
-          replace_once(
+          # SHORT için hem 5M hareket hem destek kırılımı zorunlu.
+          regex_replace_expected(
               "pump_radar.py",
-              '''            condition(
-                "PUMP: 5M hareket veya kırılım yok",
-                (
-                    move5 >= MIN_5M_MOVE
-                    or breakout
-                ),
-            ),''',
-              '''            condition(
-                "PUMP: 5M hareket yetersiz",
-                move5 >= MIN_5M_MOVE,
-            ),''',
-              "Pump LONG 5M hareket şartı",
+              r"move5\s*<=\s*-MIN_5M_MOVE\s*or\s*breakdown",
+              "move5 <= -MIN_5M_MOVE and breakdown",
+              r"move5\s*<=\s*-MIN_5M_MOVE\s*and\s*breakdown",
+              2,
+              "Dump SHORT 5M hareket + destek kırılımı",
           )
 
-          replace_once(
+          replace_text(
               "pump_radar.py",
-              '''            and (
-                move5 >= MIN_5M_MOVE
-                or breakout
-            )
-            and move15 >= MIN_15M_MOVE''',
-              '''            and move5 >= MIN_5M_MOVE
-            and breakout
-            and move15 >= MIN_15M_MOVE''',
-              "Pump LONG direnç kırılımı zorunluluğu",
+              "PUMP: 5M hareket veya kırılım yok",
+              "PUMP: 5M hareket veya direnç kırılımı yok",
+              "Pump rapor açıklaması",
           )
 
-          # Dump SHORT: 5M hareket ve destek kırılımı ikisi de zorunlu.
-          replace_once(
+          replace_text(
               "pump_radar.py",
-              '''            condition(
-                "DUMP: 5M hareket veya kırılım yok",
-                (
-                    move5 <= -MIN_5M_MOVE
-                    or breakdown
-                ),
-            ),''',
-              '''            condition(
-                "DUMP: 5M hareket yetersiz",
-                move5 <= -MIN_5M_MOVE,
-            ),''',
-              "Dump SHORT 5M hareket şartı",
+              "DUMP: 5M hareket veya kırılım yok",
+              "DUMP: 5M hareket veya destek kırılımı yok",
+              "Dump rapor açıklaması",
           )
 
-          replace_once(
-              "pump_radar.py",
-              '''            and (
-                move5 <= -MIN_5M_MOVE
-                or breakdown
-            )
-            and move15 <= -MIN_15M_MOVE''',
-              '''            and move5 <= -MIN_5M_MOVE
-            and breakdown
-            and move15 <= -MIN_15M_MOVE''',
-              "Dump SHORT destek kırılımı zorunluluğu",
-          )
+          pump_text = Path("pump_radar.py").read_text(encoding="utf-8")
 
-          # Güncel çalışma ağacında düz metin Telegram tokenı veya
-          # sayısal CHAT_ID sabiti bulunuyorsa commit etmeden dur.
+          if re.search(
+              r"move5\s*>=\s*MIN_5M_MOVE\s*or\s*breakout",
+              pump_text,
+          ):
+              raise SystemExit("Pump LONG gevşek OR şartı hâlâ mevcut.")
+
+          if re.search(
+              r"move5\s*<=\s*-MIN_5M_MOVE\s*or\s*breakdown",
+              pump_text,
+          ):
+              raise SystemExit("Dump SHORT gevşek OR şartı hâlâ mevcut.")
+
+          if len(re.findall(
+              r"move5\s*>=\s*MIN_5M_MOVE\s*and\s*breakout",
+              pump_text,
+          )) < 2:
+              raise SystemExit("Pump LONG zorunlu kırılım doğrulanamadı.")
+
+          if len(re.findall(
+              r"move5\s*<=\s*-MIN_5M_MOVE\s*and\s*breakdown",
+              pump_text,
+          )) < 2:
+              raise SystemExit("Dump SHORT zorunlu kırılım doğrulanamadı.")
+
+          # Güncel dosyalarda düz metin Telegram tokenı veya
+          # Python içinde sabit sayısal CHAT_ID varsa commit etmeden dur.
           token_pattern = re.compile(
-              r"(?<![A-Za-z0-9_])\d{8,12}:[A-Za-z0-9_-]{25,}(?![A-Za-z0-9_])"
+              r"(?<![A-Za-z0-9_])\d{8,12}:[A-Za-z0-9_-]{25,}"
+              r"(?![A-Za-z0-9_])"
           )
           chat_id_pattern = re.compile(
               r"^\s*CHAT_ID\s*=\s*[\"']?\d{6,}[\"']?\s*$",
@@ -184,10 +228,17 @@ jobs:
               )
 
               if token_pattern.search(text):
-                  findings.append(f"{path}: olası düz metin Telegram tokenı")
+                  findings.append(
+                      f"{path}: olası düz metin Telegram tokenı"
+                  )
 
-              if path.suffix.lower() == ".py" and chat_id_pattern.search(text):
-                  findings.append(f"{path}: sayısal CHAT_ID sabiti")
+              if (
+                  path.suffix.lower() == ".py"
+                  and chat_id_pattern.search(text)
+              ):
+                  findings.append(
+                      f"{path}: sayısal CHAT_ID sabiti"
+                  )
 
           if findings:
               print("GÜVENLİK TARAMASI BAŞARISIZ:")
@@ -198,11 +249,15 @@ jobs:
           if not compileall.compile_dir(".", quiet=1):
               raise SystemExit("Python sözdizimi kontrolü başarısız.")
 
-          # Başarılı yamadan sonra kendisini repodan siler.
-          self_path = Path(".github/workflows/security-hardening.yml")
+          # Başarılı olunca tek kullanımlık workflow kendisini siler.
+          self_path = Path(
+              ".github/workflows/security-hardening.yml"
+          )
           if self_path.exists():
               self_path.unlink()
-              print("Tek kullanımlık workflow silinmek üzere işaretlendi.")
+              print(
+                  "Tek kullanımlık workflow silinmek üzere işaretlendi."
+              )
 
           print("Güvenlik sertleştirmesi ve kontroller başarılı.")
           PY
