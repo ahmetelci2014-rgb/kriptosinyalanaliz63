@@ -1,0 +1,248 @@
+name: Tek Seferlik Güvenlik Sertleştirmesi
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: security-hardening-once
+  cancel-in-progress: false
+
+jobs:
+  harden:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Repo indir
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Güvenlik yamalarını uygula ve doğrula
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python - <<'PY'
+          from pathlib import Path
+          import compileall
+          import re
+
+          def replace_once(path: str, old: str, new: str, label: str) -> None:
+              file_path = Path(path)
+              if not file_path.exists():
+                  raise SystemExit(f"{path} bulunamadı: {label}")
+
+              text = file_path.read_text(encoding="utf-8")
+
+              if new in text and old not in text:
+                  print(f"Zaten uygulanmış: {label}")
+                  return
+
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(
+                      f"{path}: '{label}' için beklenen eşleşme 1, bulunan {count}"
+                  )
+
+              file_path.write_text(
+                  text.replace(old, new, 1),
+                  encoding="utf-8",
+              )
+              print(f"Uygulandı: {label}")
+
+          # Telegram API yanıt gövdesi Actions loguna yazılmasın.
+          replace_once(
+              "main.py",
+              'print("Telegram cevap:", response.status_code, response.text)',
+              'print("Telegram cevap:", response.status_code)',
+              "main.py Telegram log gizliliği",
+          )
+
+          replace_once(
+              "scalp_radar.py",
+              'print("Telegram cevap:", response.status_code, response.text)',
+              'print("Telegram cevap:", response.status_code)',
+              "scalp_radar.py Telegram log gizliliği",
+          )
+
+          replace_once(
+              "pump_radar.py",
+              'print("Telegram cevap:", response.status_code, response.text)',
+              'print("Telegram cevap:", response.status_code)',
+              "pump_radar.py Telegram log gizliliği",
+          )
+
+          replace_once(
+              "swing_radar.py",
+              'print("Telegram cevap:", response.status_code, response.text)',
+              'print("Telegram cevap:", response.status_code)',
+              "swing_radar.py Telegram log gizliliği",
+          )
+
+          replace_once(
+              "coin_analyzer.py",
+              'print("Telegram cevap:", r.status_code, r.text)',
+              'print("Telegram cevap:", r.status_code)',
+              "coin_analyzer.py Telegram log gizliliği",
+          )
+
+          # Pump LONG: 5M hareket ve direnç kırılımı ikisi de zorunlu.
+          replace_once(
+              "pump_radar.py",
+              '''            condition(
+                "PUMP: 5M hareket veya kırılım yok",
+                (
+                    move5 >= MIN_5M_MOVE
+                    or breakout
+                ),
+            ),''',
+              '''            condition(
+                "PUMP: 5M hareket yetersiz",
+                move5 >= MIN_5M_MOVE,
+            ),''',
+              "Pump LONG 5M hareket şartı",
+          )
+
+          replace_once(
+              "pump_radar.py",
+              '''            and (
+                move5 >= MIN_5M_MOVE
+                or breakout
+            )
+            and move15 >= MIN_15M_MOVE''',
+              '''            and move5 >= MIN_5M_MOVE
+            and breakout
+            and move15 >= MIN_15M_MOVE''',
+              "Pump LONG direnç kırılımı zorunluluğu",
+          )
+
+          # Dump SHORT: 5M hareket ve destek kırılımı ikisi de zorunlu.
+          replace_once(
+              "pump_radar.py",
+              '''            condition(
+                "DUMP: 5M hareket veya kırılım yok",
+                (
+                    move5 <= -MIN_5M_MOVE
+                    or breakdown
+                ),
+            ),''',
+              '''            condition(
+                "DUMP: 5M hareket yetersiz",
+                move5 <= -MIN_5M_MOVE,
+            ),''',
+              "Dump SHORT 5M hareket şartı",
+          )
+
+          replace_once(
+              "pump_radar.py",
+              '''            and (
+                move5 <= -MIN_5M_MOVE
+                or breakdown
+            )
+            and move15 <= -MIN_15M_MOVE''',
+              '''            and move5 <= -MIN_5M_MOVE
+            and breakdown
+            and move15 <= -MIN_15M_MOVE''',
+              "Dump SHORT destek kırılımı zorunluluğu",
+          )
+
+          # Güncel çalışma ağacında düz metin Telegram tokenı veya
+          # sayısal CHAT_ID sabiti bulunuyorsa commit etmeden dur.
+          token_pattern = re.compile(
+              r"(?<![A-Za-z0-9_])\d{8,12}:[A-Za-z0-9_-]{25,}(?![A-Za-z0-9_])"
+          )
+          chat_id_pattern = re.compile(
+              r"^\s*CHAT_ID\s*=\s*[\"']?\d{6,}[\"']?\s*$",
+              re.MULTILINE,
+          )
+
+          scan_extensions = {
+              ".py", ".yml", ".yaml", ".json", ".md", ".txt",
+          }
+          findings = []
+
+          for path in Path(".").rglob("*"):
+              if (
+                  not path.is_file()
+                  or ".git" in path.parts
+                  or path.suffix.lower() not in scan_extensions
+              ):
+                  continue
+
+              text = path.read_text(
+                  encoding="utf-8",
+                  errors="ignore",
+              )
+
+              if token_pattern.search(text):
+                  findings.append(f"{path}: olası düz metin Telegram tokenı")
+
+              if path.suffix.lower() == ".py" and chat_id_pattern.search(text):
+                  findings.append(f"{path}: sayısal CHAT_ID sabiti")
+
+          if findings:
+              print("GÜVENLİK TARAMASI BAŞARISIZ:")
+              for finding in findings:
+                  print("-", finding)
+              raise SystemExit(1)
+
+          if not compileall.compile_dir(".", quiet=1):
+              raise SystemExit("Python sözdizimi kontrolü başarısız.")
+
+          # Başarılı yamadan sonra kendisini repodan siler.
+          self_path = Path(".github/workflows/security-hardening.yml")
+          if self_path.exists():
+              self_path.unlink()
+              print("Tek kullanımlık workflow silinmek üzere işaretlendi.")
+
+          print("Güvenlik sertleştirmesi ve kontroller başarılı.")
+          PY
+
+      - name: Değişiklikleri güvenli kaydet
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          git add \
+            main.py \
+            coin_analyzer.py \
+            scalp_radar.py \
+            pump_radar.py \
+            swing_radar.py \
+            .github/workflows/security-hardening.yml
+
+          if git diff --cached --quiet; then
+            echo "Kaydedilecek güvenlik değişikliği yok."
+            exit 0
+          fi
+
+          git commit -m "Harden Telegram logs and pump dump filters"
+
+          for attempt in 1 2 3
+          do
+            echo "Push denemesi: $attempt"
+            git pull --rebase --autostash origin main
+
+            if git push origin HEAD:main
+            then
+              echo "Güvenlik sertleştirmesi başarıyla kaydedildi."
+              exit 0
+            fi
+
+            sleep 10
+          done
+
+          echo "Güvenlik değişiklikleri üç denemede de kaydedilemedi."
+          exit 1
