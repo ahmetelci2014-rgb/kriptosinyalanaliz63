@@ -46,7 +46,7 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add open_signals.json performance.json last_signals.json
+          git add open_signals.json performance.json last_signals.json trade_ledger.json
 
           if git diff --cached --quiet; then
             echo "Kaydedilecek yeni durum değişikliği yok."
@@ -61,8 +61,7 @@ jobs:
 
             git pull --rebase --autostash origin main
 
-            if git push origin HEAD:main
-            then
+            if git push origin HEAD:main; then
               echo "Durum dosyaları başarıyla kaydedildi."
               exit 0
             fi
