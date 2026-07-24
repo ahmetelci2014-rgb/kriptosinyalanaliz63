@@ -4040,8 +4040,8 @@
       "tp1": 9,
       "tp2": 5,
       "tp3": 1,
-      "sl": 0,
-      "be": 5,
+      "sl": 2,
+      "be": 6,
       "expired": 0,
       "long": 0,
       "short": 9,
@@ -4085,7 +4085,7 @@
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
-          "be": 0,
+          "be": 1,
           "expired": 0
         },
         "DOGEUSDT": {
@@ -4154,7 +4154,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -4194,20 +4194,26 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         }
       },
-      "direction_stops": {},
-      "stop_times": {},
+      "direction_stops": {
+        "SHORT": 2
+      },
+      "stop_times": {
+        "NOTUSDT": 1784857555,
+        "CHIPUSDT": 1784857556
+      },
       "closed_times": {
         "AXSUSDT": 1784846750,
         "DOGEUSDT": 1784852158,
         "WCTUSDT": 1784853951,
         "BONKUSDT": 1784853951,
         "CLUSDT": 1784854865,
-        "TIAUSDT": 1784854866
+        "TIAUSDT": 1784854866,
+        "UMAUSDT": 1784857554
       },
       "closed_results": {
         "AXSUSDT": "BE",
@@ -4215,7 +4221,8 @@
         "WCTUSDT": "BE",
         "BONKUSDT": "BE",
         "CLUSDT": "BE",
-        "TIAUSDT": "BE"
+        "TIAUSDT": "BE",
+        "UMAUSDT": "BE"
       },
       "closed_history": [
         {
@@ -4417,6 +4424,36 @@
           "exit": 0.3473,
           "source": "15M_ENTRY",
           "score": 100
+        },
+        {
+          "time": "04:45:54",
+          "symbol": "UMAUSDT",
+          "direction": "SHORT",
+          "result": "BE",
+          "entry": 0.3609,
+          "exit": 0.3609,
+          "source": "15M_ENTRY",
+          "score": 100
+        },
+        {
+          "time": "04:45:55",
+          "symbol": "NOTUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.0003535,
+          "exit": 0.0003556,
+          "source": "15M_ENTRY",
+          "score": 98
+        },
+        {
+          "time": "04:45:56",
+          "symbol": "CHIPUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.02928,
+          "exit": 0.02946,
+          "source": "15M_ENTRY",
+          "score": 100
         }
       ],
       "sl_after_tp1": 0,
@@ -4424,9 +4461,48 @@
       "sl_after_no_return": 1
     }
   },
-  "last_update": 1784855138,
+  "last_update": 1784857556,
   "last_open_summary": 1784855766,
-  "last_status_message": 1784847075,
+  "last_status_message": 1784857820,
   "last_daily_report": "2026-07-23",
-  "sl_after_follow": {}
+  "sl_after_follow": {
+    "NOTUSDT_SHORT_1784857555": {
+      "symbol": "NOTUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.0003535,
+      "tp1": 0.0003522148,
+      "tp2": 0.0003510463,
+      "tp3": 0.0003497611,
+      "sl": 0.0003558368,
+      "score": 98,
+      "risk_percent": 0.661,
+      "stopped_at": 1784857555,
+      "stop_exit": 0.0003556,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "CHIPUSDT_SHORT_1784857556": {
+      "symbol": "CHIPUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.02928,
+      "tp1": 0.0291733302,
+      "tp2": 0.0290763576,
+      "tp3": 0.0289696878,
+      "sl": 0.0294739451,
+      "score": 100,
+      "risk_percent": 0.662,
+      "stopped_at": 1784857556,
+      "stop_exit": 0.02946,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    }
+  }
 }
