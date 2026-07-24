@@ -3,7 +3,9 @@ name: Swing Radar
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 */2 * * *"
+    # 15M erken zamanlamayı kaçırmamak için 30 dakikada bir.
+    # Diğer workflow'larla aynı dakikaya yığılmaması için 12 ve 42.
+    - cron: "12,42 * * * *"
 
 permissions:
   contents: write
@@ -65,8 +67,7 @@ jobs:
 
             git pull --rebase --autostash origin main
 
-            if git push origin HEAD:main
-            then
+            if git push origin HEAD:main; then
               echo "Swing durum dosyası başarıyla kaydedildi."
               exit 0
             fi
