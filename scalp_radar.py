@@ -1,5 +1,5 @@
 # scalp_radar.py
-# Hızlı Scalp Radar v2 - Dengeli Canlı Para + Teknik Teşhis
+# Hızlı Scalp Radar v2 - Sessiz Ön İzleme + Gerçek İşlem Bildirimi + Teknik Teşhis
 #
 # Ana MTF, Swing ve Pump/Dump sistemlerinden tamamen ayrı çalışır.
 # OKX USDT perpetual futures paritelerini tarar.
@@ -75,7 +75,11 @@ MAX_OPEN_SIGNAL_MINUTES = 180
 TRACK_TIMEFRAME = "1m"
 TRACK_LIMIT = 180
 
-SEND_NO_SIGNAL_REPORT = True
+# Telegram'a yalnız gerçek işlem girişleri ve TP/SL sonuçları gönderilir.
+# Ön İzleme ve Erken Fırsat arka planda ledger'a kaydedilir.
+SEND_NO_SIGNAL_REPORT = False
+SEND_EARLY_ALERTS_TO_TELEGRAM = False
+SEND_PREWATCH_ALERTS_TO_TELEGRAM = False
 NO_SIGNAL_REPORT_EVERY_MINUTES = 30
 
 # Sinyal gönderilene kadar fiyat çok uzaklaşmışsa iptal edilir.
@@ -3890,9 +3894,9 @@ def main():
     print("Bulunan kaliteli scalp sinyal:", len(all_signals))
     print("Gönderilecek scalp sinyal:", len(selected))
     print("Bulunan erken fırsat:", len(all_early_alerts))
-    print("Gönderilecek erken fırsat:", len(selected_early))
+    print("Arka planda izlenecek erken fırsat:", len(selected_early))
     print("Bulunan ön izleme:", len(all_prewatch_alerts))
-    print("Gönderilecek ön izleme:", len(selected_prewatch))
+    print("Arka planda izlenecek ön izleme:", len(selected_prewatch))
 
     if selected:
         send_telegram(
@@ -3927,70 +3931,57 @@ def main():
             state = load_state()
             time.sleep(1)
 
-    if selected_early:
-        send_telegram(
-            f"⚠️ ERKEN SCALP FIRSATLARI BULUNDU\n"
-            f"Taranan coin: {scanned}\n"
-            f"Erken aday: {len(all_early_alerts)}\n"
-            f"Gönderilecek uyarı: {len(selected_early)}\n"
-            f"Bu mesajlar işlem sinyali değildir."
-        )
-
+    # Erken Fırsatlar Telegram'a gönderilmez.
+    # Yön performansı ve teknik teşhis için arka planda kaydedilir.
     for alert in selected_early:
-        extra = (
-            f"\n\n💰 Gönderim Anı Futures Fiyatı: "
-            f"{format_price(alert['current_price'])}\n"
-            f"📏 İzleme Fiyatı Sapması: "
-            f"%{round(alert['entry_drift_percent'], 3)}"
+        record_id = record_scalp_performance(
+            "EARLY",
+            alert,
         )
 
-        if send_telegram(
-            alert["message"] + extra
-        ):
-            record_scalp_performance("EARLY", alert)
+        if record_id:
             mark_early_alert_sent(
                 state,
                 alert["symbol"],
                 alert["direction"],
             )
             state = load_state()
-            time.sleep(1)
+            print(
+                "Arka plan Erken Fırsat kaydı:",
+                alert["symbol"],
+                alert["direction"],
+                "| kayıt:",
+                record_id,
+            )
 
-    if selected_prewatch:
-        send_telegram(
-            f"👀 SCALP ÖN İZLEME ADAYLARI\n"
-            f"Taranan coin: {scanned}\n"
-            f"Ön izleme adayı: {len(all_prewatch_alerts)}\n"
-            f"Gönderilecek uyarı: {len(selected_prewatch)}\n"
-            f"Bu mesajlar işlem sinyali değildir."
-        )
-
+    # Ön İzleme adayları Telegram'a gönderilmez.
+    # Yön performansı ve teknik teşhis için arka planda kaydedilir.
     for alert in selected_prewatch:
-        extra = (
-            f"\n\n💰 Gönderim Anı Futures Fiyatı: "
-            f"{format_price(alert['current_price'])}\n"
-            f"📏 İzleme Fiyatı Sapması: "
-            f"%{round(alert['entry_drift_percent'], 3)}"
+        record_id = record_scalp_performance(
+            "PREWATCH",
+            alert,
         )
 
-        if send_telegram(
-            alert["message"] + extra
-        ):
-            record_scalp_performance("PREWATCH", alert)
+        if record_id:
             mark_prewatch_sent(
                 state,
                 alert["symbol"],
                 alert["direction"],
             )
             state = load_state()
-            time.sleep(1)
+            print(
+                "Arka plan Ön İzleme kaydı:",
+                alert["symbol"],
+                alert["direction"],
+                "| kayıt:",
+                record_id,
+            )
 
-    if (
-        not selected
-        and not selected_early
-        and not selected_prewatch
-    ):
-        print("Yeni kaliteli scalp sinyali yok.")
+    if not selected:
+        print(
+            "Yeni gerçek scalp işlem sinyali yok. "
+            "Ön İzleme ve Erken Fırsatlar arka planda takip edildi."
+        )
 
         if should_send_no_signal_report(state):
             send_telegram(
