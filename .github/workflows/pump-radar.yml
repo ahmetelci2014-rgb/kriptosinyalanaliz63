@@ -39,36 +39,35 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python pump_radar.py
 
-      - name: Pump/Dump durum dosyasını güvenli kaydet
+      - name: Pump/Dump durum ve performans dosyalarını güvenli kaydet
         run: |
           set -e
 
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add pump_radar_state.json
+          git add             pump_radar_state.json             pump_performance_ledger.json
 
           if git diff --cached --quiet; then
-            echo "Pump/Dump durum dosyasında kaydedilecek değişiklik yok."
+            echo "Pump/Dump dosyalarında kaydedilecek değişiklik yok."
             exit 0
           fi
 
-          git commit -m "Update pump dump radar state"
+          git commit -m "Update pump dump state and performance ledger"
 
           for attempt in 1 2 3
           do
             echo "Push denemesi: $attempt"
 
             git pull --rebase --autostash origin main
-
             if git push origin HEAD:main
             then
-              echo "Pump/Dump durum dosyası başarıyla kaydedildi."
+              echo "Pump/Dump durum ve performans dosyaları kaydedildi."
               exit 0
             fi
 
             sleep 10
           done
 
-          echo "Pump/Dump durum dosyası üç denemede de kaydedilemedi."
+          echo "Pump/Dump dosyaları üç denemede de kaydedilemedi."
           exit 1
