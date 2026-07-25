@@ -33,7 +33,19 @@ TOKEN = os.getenv("TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
 STATE_FILE = "scalp_radar_state.json"
+PERFORMANCE_FILE = "scalp_performance_ledger.json"
 TR_TIMEZONE = timezone(timedelta(hours=3))
+
+# Ön İzleme, Erken Fırsat ve gerçek Scalp mesajlarının
+# gönderim sonrası yön performansı ayrı kaydedilir.
+PERFORMANCE_WINDOWS_MINUTES = (5, 15, 30, 60)
+PERFORMANCE_MAX_TRACK_MINUTES = 90
+PERFORMANCE_KEEP_DAYS = 14
+PERFORMANCE_MAX_RECORDS = 600
+
+# 60 dakika sonunda yaklaşık yön sınıflandırması.
+PERFORMANCE_DIRECTION_THRESHOLD_PERCENT = 0.50
+PERFORMANCE_MIXED_THRESHOLD_PERCENT = 0.25
 
 # Hacmi en yüksek uygun OKX USDT futures pariteleri.
 MAX_SCAN_COINS = 300
@@ -337,6 +349,287 @@ def save_state(state):
 def increment_stat(state, key):
     state.setdefault("stats", empty_stats())
     state["stats"][key] = int(state["stats"].get(key, 0)) + 1
+
+
+
+# =========================================================
+# SCALP PERFORMANS KAYDI
+# =========================================================
+
+def load_performance_ledger():
+    try:
+        if not os.path.exists(PERFORMANCE_FILE):
+            return {"records": [], "summary": {}}
+
+        with open(PERFORMANCE_FILE, "r", encoding="utf-8") as handle:
+            raw = handle.read().strip()
+
+        if not raw:
+            return {"records": [], "summary": {}}
+
+        ledger = json.loads(raw)
+        if not isinstance(ledger, dict):
+            ledger = {}
+
+        ledger.setdefault("records", [])
+        ledger.setdefault("summary", {})
+        return ledger
+
+    except Exception as exc:
+        print("Scalp performans dosyası okuma hatası:", exc)
+        return {"records": [], "summary": {}}
+
+
+def rebuild_performance_summary(ledger):
+    records = ledger.get("records", [])
+    summary = {
+        "total": len(records),
+        "open": 0,
+        "direction_correct": 0,
+        "direction_wrong": 0,
+        "mixed": 0,
+        "prewatch": 0,
+        "early": 0,
+        "real_signal": 0,
+    }
+
+    for record in records:
+        stage = str(record.get("stage", "")).upper()
+        if stage == "PREWATCH":
+            summary["prewatch"] += 1
+        elif stage == "EARLY":
+            summary["early"] += 1
+        elif stage == "REAL_SIGNAL":
+            summary["real_signal"] += 1
+
+        status = str(record.get("status", "OPEN")).upper()
+        if status == "OPEN":
+            summary["open"] += 1
+        elif status == "DIRECTION_CORRECT":
+            summary["direction_correct"] += 1
+        elif status == "DIRECTION_WRONG":
+            summary["direction_wrong"] += 1
+        elif status == "MIXED":
+            summary["mixed"] += 1
+
+    ledger["summary"] = summary
+    ledger["updated_at"] = now_ts()
+    ledger["updated_at_tr"] = tr_now_text()
+
+
+def save_performance_ledger(ledger):
+    try:
+        rebuild_performance_summary(ledger)
+        with open(PERFORMANCE_FILE, "w", encoding="utf-8") as handle:
+            json.dump(ledger, handle, indent=2, ensure_ascii=False)
+        return True
+    except Exception as exc:
+        print("Scalp performans dosyası kayıt hatası:", exc)
+        return False
+
+
+def directional_move_percent(direction, current_price, reference_price):
+    current = safe_float(current_price)
+    reference = safe_float(reference_price)
+    if current <= 0 or reference <= 0:
+        return 0.0
+
+    raw_move = (current - reference) / reference * 100
+    return raw_move if str(direction).upper() == "LONG" else -raw_move
+
+
+def classify_performance_record(record):
+    snapshots = record.get("snapshots", {})
+    move_60 = safe_float(snapshots.get("60m"))
+    best_favorable = safe_float(record.get("best_favorable_percent"))
+    worst_adverse = safe_float(record.get("worst_adverse_percent"))
+    threshold = PERFORMANCE_DIRECTION_THRESHOLD_PERCENT
+    mixed_threshold = PERFORMANCE_MIXED_THRESHOLD_PERCENT
+
+    if move_60 >= threshold or (
+        best_favorable >= threshold and worst_adverse < threshold
+    ):
+        return "DIRECTION_CORRECT", "60 dakika içinde yön lehine hareket"
+
+    if move_60 <= -threshold or (
+        worst_adverse >= threshold and best_favorable < threshold
+    ):
+        return "DIRECTION_WRONG", "60 dakika içinde yön tersine hareket"
+
+    if abs(move_60) <= mixed_threshold:
+        return "MIXED", "60 dakika sonunda belirgin yön oluşmadı"
+
+    return (
+        "DIRECTION_CORRECT" if move_60 > 0 else "DIRECTION_WRONG",
+        "60 dakika son fiyat yönüne göre sınıflandırıldı",
+    )
+
+
+def record_scalp_performance(stage, item):
+    try:
+        ledger = load_performance_ledger()
+        records = ledger.setdefault("records", [])
+        sent_at = now_ts()
+        symbol = normalize_bot_symbol(item.get("symbol"))
+        direction = str(item.get("direction", "")).upper()
+        reference_price = safe_float(
+            item.get("current_price", item.get("entry"))
+        )
+
+        if (
+            not symbol
+            or direction not in ("LONG", "SHORT")
+            or reference_price <= 0
+        ):
+            return False
+
+        record = {
+            "id": f"{symbol}_{direction}_{str(stage).upper()}_{sent_at}",
+            "stage": str(stage).upper(),
+            "symbol": symbol,
+            "direction": direction,
+            "sent_at": sent_at,
+            "sent_at_tr": tr_now_text(),
+            "reference_price": reference_price,
+            "analysis_price": safe_float(item.get("entry")),
+            "score": safe_float(item.get("score")),
+            "source": item.get("source"),
+            "setup": item.get("setup"),
+            "tp1": safe_float(item.get("tp1")),
+            "tp2": safe_float(item.get("tp2")),
+            "tp3": safe_float(item.get("tp3")),
+            "sl": safe_float(item.get("sl")),
+            "risk_percent": safe_float(item.get("risk_percent")),
+            "snapshots": {},
+            "latest_price": reference_price,
+            "latest_directional_move_percent": 0.0,
+            "best_favorable_percent": 0.0,
+            "worst_adverse_percent": 0.0,
+            "status": "OPEN",
+            "status_reason": "Gönderim sonrası performans izleniyor",
+        }
+        records.append(record)
+
+        cutoff = now_ts() - PERFORMANCE_KEEP_DAYS * 24 * 60 * 60
+        records = [
+            candidate
+            for candidate in records
+            if int(candidate.get("sent_at", 0)) >= cutoff
+        ]
+        records.sort(key=lambda candidate: int(candidate.get("sent_at", 0)))
+        ledger["records"] = records[-PERFORMANCE_MAX_RECORDS:]
+        return save_performance_ledger(ledger)
+
+    except Exception as exc:
+        print("Scalp performans kaydı oluşturma hatası:", exc)
+        return False
+
+
+def update_scalp_performance(exchange):
+    ledger = load_performance_ledger()
+    records = ledger.setdefault("records", [])
+
+    if not records:
+        save_performance_ledger(ledger)
+        print("Scalp performans kaydı: açık gözlem yok.")
+        return
+
+    active_records = [
+        record
+        for record in records
+        if str(record.get("status", "OPEN")).upper() == "OPEN"
+    ]
+    symbols = sorted({
+        normalize_bot_symbol(record.get("symbol"))
+        for record in active_records
+        if normalize_bot_symbol(record.get("symbol"))
+    })
+    price_map = {}
+
+    if symbols:
+        try:
+            okx_symbols = [to_okx_symbol(symbol) for symbol in symbols]
+            tickers = exchange.fetch_tickers(okx_symbols)
+            for symbol in symbols:
+                ticker = tickers.get(to_okx_symbol(symbol), {})
+                price = ticker.get("last")
+                if price is not None:
+                    price_map[symbol] = float(price)
+        except Exception as exc:
+            print("Scalp performans toplu fiyat hatası:", exc)
+
+    updated_count = 0
+    finalized_count = 0
+
+    for record in active_records:
+        symbol = normalize_bot_symbol(record.get("symbol"))
+        current_price = price_map.get(symbol)
+        if current_price is None:
+            continue
+
+        sent_at = int(record.get("sent_at", now_ts()))
+        age_minutes = max(0, (now_ts() - sent_at) / 60)
+        reference_price = safe_float(record.get("reference_price"))
+        move = directional_move_percent(
+            record.get("direction"), current_price, reference_price
+        )
+
+        record["latest_price"] = current_price
+        record["latest_directional_move_percent"] = round(move, 4)
+        record["last_updated_at"] = now_ts()
+        record["last_updated_at_tr"] = tr_now_text()
+        record["best_favorable_percent"] = round(
+            max(
+                safe_float(record.get("best_favorable_percent")),
+                move,
+                0.0,
+            ),
+            4,
+        )
+        record["worst_adverse_percent"] = round(
+            max(
+                safe_float(record.get("worst_adverse_percent")),
+                -move,
+                0.0,
+            ),
+            4,
+        )
+
+        snapshots = record.setdefault("snapshots", {})
+        for window in PERFORMANCE_WINDOWS_MINUTES:
+            key = f"{window}m"
+            if age_minutes >= window and key not in snapshots:
+                snapshots[key] = round(move, 4)
+
+        if age_minutes >= 60:
+            status, reason = classify_performance_record(record)
+            record["status"] = status
+            record["status_reason"] = reason
+            record["finalized_at"] = now_ts()
+            record["finalized_at_tr"] = tr_now_text()
+            finalized_count += 1
+        elif age_minutes >= PERFORMANCE_MAX_TRACK_MINUTES:
+            record["status"] = "MIXED"
+            record["status_reason"] = "Takip süresi doldu; net yön oluşmadı"
+            record["finalized_at"] = now_ts()
+            record["finalized_at_tr"] = tr_now_text()
+            finalized_count += 1
+
+        updated_count += 1
+
+    cutoff = now_ts() - PERFORMANCE_KEEP_DAYS * 24 * 60 * 60
+    ledger["records"] = [
+        record
+        for record in records
+        if int(record.get("sent_at", 0)) >= cutoff
+    ][-PERFORMANCE_MAX_RECORDS:]
+    save_performance_ledger(ledger)
+    print(
+        "Scalp performans güncellendi:",
+        updated_count,
+        "| sonuçlanan:",
+        finalized_count,
+    )
 
 
 # =========================================================
@@ -2566,6 +2859,10 @@ def main():
     state = load_state()
     exchange = get_exchange()
 
+    # Önce eski Ön İzleme / Erken / gerçek sinyallerin
+    # gönderim sonrası performansı güncellenir.
+    update_scalp_performance(exchange)
+
     check_open_signals(exchange, state)
     state = load_state()
 
@@ -2842,6 +3139,7 @@ def main():
         )
 
         if send_telegram(signal["message"] + extra):
+            record_scalp_performance("REAL_SIGNAL", signal)
             save_open_signal(state, signal)
             mark_sent(
                 state,
@@ -2871,6 +3169,7 @@ def main():
         if send_telegram(
             alert["message"] + extra
         ):
+            record_scalp_performance("EARLY", alert)
             mark_early_alert_sent(
                 state,
                 alert["symbol"],
@@ -2899,6 +3198,7 @@ def main():
         if send_telegram(
             alert["message"] + extra
         ):
+            record_scalp_performance("PREWATCH", alert)
             mark_prewatch_sent(
                 state,
                 alert["symbol"],
