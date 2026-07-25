@@ -1,28 +1,31 @@
 # coin_analyzer.py
-# Tek coin detay analiz programı - Multi Borsa sürüm
+# Tek coin detay analiz programı - Futures odaklı güvenli sürüm
 #
 # Kullanım:
 #   python coin_analyzer.py BTCUSDT
-# veya GitHub Actions Run workflow ekranında SYMBOL alanına BTCUSDT yaz.
+# veya GitHub Actions > Coin Detay Analizi > Run workflow.
 #
-# Emir açmaz. Sadece analiz raporu üretir ve TOKEN/CHAT_ID varsa Telegram'a gönderir.
+# Emir açmaz. Yalnızca analiz raporu üretir ve TOKEN / CHAT_ID varsa
+# Telegram'a gönderir.
 #
-# Veri sırası:
-# 1) OKX USDT Futures / Swap
-# 2) OKX Spot
-# 3) Binance USDT Futures
-# 4) Binance Spot
+# Veri önceliği:
+#   1) OKX USDT Perpetual Futures (Swap)
+#   2) Binance USDT Perpetual Futures
 #
-# Coin OKX futures tarafında yoksa program artık farklı kaynaklardan analiz dener.
+# Spot veri özellikle kullanılmaz. Futures işlemi için futures fiyatı,
+# hacmi ve mum yapısı esas alınır.
+
+from __future__ import annotations
 
 import os
 import sys
-import requests
-import pandas as pd
-import ccxt
+from typing import Any
 
+import ccxt
+import pandas as pd
+import requests
 from ta.momentum import RSIIndicator
-from ta.trend import EMAIndicator, MACD, ADXIndicator
+from ta.trend import ADXIndicator, EMAIndicator, MACD
 from ta.volatility import AverageTrueRange
 
 
@@ -37,327 +40,244 @@ TIMEFRAMES = {
     "4H": ("4h", 350),
 }
 
+MIN_TRADE_SCORE = 78
+MIN_STOP_PERCENT = 0.15
+MAX_STOP_PERCENT = 2.50
+MAX_LATE_ENTRY_ATR = 0.40
+INVALIDATION_ATR = 0.20
 
-def send_telegram(message):
+
+def send_telegram(message: str) -> bool:
     if not TOKEN or not CHAT_ID:
         print("TOKEN / CHAT_ID yok. Telegram gönderilmedi.")
         return False
 
     try:
-        r = requests.post(
+        response = requests.post(
             f"https://api.telegram.org/bot{TOKEN}/sendMessage",
             data={"chat_id": CHAT_ID, "text": message},
-            timeout=20
+            timeout=20,
         )
-        print("Telegram cevap:", r.status_code)
-        return r.status_code == 200
-    except Exception as e:
-        print("Telegram hatası:", e)
+        print("Telegram cevap:", response.status_code)
+        return response.status_code == 200
+    except Exception as exc:
+        print("Telegram hatası:", exc)
         return False
 
 
-def normalize_symbol(symbol):
-    symbol = str(symbol).upper().replace("/", "").replace("-", "").replace("_", "").strip()
-
-    if not symbol.endswith("USDT"):
-        symbol = symbol + "USDT"
-
-    return symbol
-
-
-def base_from_symbol(symbol):
-    return normalize_symbol(symbol).replace("USDT", "")
-
-
-def fmt(value):
-    try:
-        value = float(value)
-    except Exception:
-        return "-"
-
-    if value >= 100:
-        return f"{value:.2f}"
-    if value >= 1:
-        return f"{value:.4f}"
-    if value >= 0.01:
-        return f"{value:.6f}"
-
-    return f"{value:.10f}"
+def normalize_symbol(symbol: str) -> str:
+    normalized = (
+        str(symbol)
+        .upper()
+        .replace("/", "")
+        .replace("-", "")
+        .replace("_", "")
+        .replace(":", "")
+        .strip()
+    )
+    if not normalized.endswith("USDT"):
+        normalized += "USDT"
+    return normalized
 
 
-def pct(a, b):
-    if b == 0:
-        return 0
-    return ((a - b) / b) * 100
+def base_from_symbol(symbol: str) -> str:
+    normalized = normalize_symbol(symbol)
+    return normalized[:-4]
 
 
-def abs_pct(a, b):
-    return abs(pct(a, b))
+def pct(current: float, reference: float) -> float:
+    if reference == 0:
+        return 0.0
+    return ((current - reference) / reference) * 100.0
 
 
-def make_exchange(exchange_id, market_type):
+def abs_pct(current: float, reference: float) -> float:
+    return abs(pct(current, reference))
+
+
+def make_exchange(exchange_id: str, market_type: str) -> ccxt.Exchange:
+    common = {
+        "enableRateLimit": True,
+        "timeout": 30000,
+        "options": {"defaultType": market_type},
+    }
+
     if exchange_id == "okx":
-        return ccxt.okx({
-            "enableRateLimit": True,
-            "options": {"defaultType": market_type}
-        })
-
+        return ccxt.okx(common)
     if exchange_id == "binance":
-        return ccxt.binance({
-            "enableRateLimit": True,
-            "options": {"defaultType": market_type}
-        })
-
-    raise RuntimeError("Bilinmeyen borsa")
+        return ccxt.binance(common)
+    raise RuntimeError(f"Bilinmeyen borsa: {exchange_id}")
 
 
-def find_market(exchange, base, quote="USDT", want_swap=False, want_spot=False):
+def find_linear_usdt_swap(exchange: ccxt.Exchange, base: str) -> str | None:
     markets = exchange.load_markets()
-
-    candidates = []
+    candidates: list[str] = []
 
     for market_symbol, market in markets.items():
         try:
             if not market.get("active", True):
                 continue
-
             if str(market.get("base", "")).upper() != base:
                 continue
-
-            if str(market.get("quote", "")).upper() != quote:
+            if str(market.get("quote", "")).upper() != "USDT":
+                continue
+            if not bool(market.get("swap", False)):
+                continue
+            if market.get("linear") is False:
                 continue
 
-            if want_swap:
-                is_swap = bool(market.get("swap", False))
-                is_linear = market.get("linear", True)
-                settle = str(market.get("settle", quote) or quote).upper()
+            settle = str(market.get("settle", "USDT") or "USDT").upper()
+            if settle != "USDT":
+                continue
 
-                if is_swap and is_linear and settle == quote:
-                    candidates.append(market_symbol)
-
-            if want_spot:
-                if bool(market.get("spot", False)):
-                    candidates.append(market_symbol)
-
+            candidates.append(market_symbol)
         except Exception:
             continue
 
-    if candidates:
-        return candidates[0]
+    if not candidates:
+        return None
 
-    return None
+    # CCXT'de genellikle BASE/USDT:USDT biçimi gelir.
+    preferred = f"{base}/USDT:USDT"
+    if preferred in candidates:
+        return preferred
+    return sorted(candidates)[0]
 
 
-def resolve_data_source(symbol):
-    symbol = normalize_symbol(symbol)
-    base = base_from_symbol(symbol)
+def resolve_data_source(symbol: str) -> dict[str, Any]:
+    normalized = normalize_symbol(symbol)
+    base = base_from_symbol(normalized)
 
+    # Spot bilerek yoktur. Kullanıcı futures işlem yaptığı için aynı piyasanın
+    # futures mumları, futures hacmi ve futures son fiyatı kullanılmalıdır.
     sources = [
         {
             "name": "OKX USDT Futures",
             "exchange_id": "okx",
             "market_type": "swap",
-            "want_swap": True,
-            "want_spot": False,
-            "trade_note": "OKX futures tarafında işlem açılabilir."
-        },
-        {
-            "name": "OKX Spot",
-            "exchange_id": "okx",
-            "market_type": "spot",
-            "want_swap": False,
-            "want_spot": True,
-            "trade_note": "OKX spot verisidir. Futures sinyali değildir."
+            "trade_note": "OKX perpetual futures verisi kullanılıyor.",
+            "execution_note": "OKX üzerinde aynı futures kontratıyla karşılaştırılabilir.",
         },
         {
             "name": "Binance USDT Futures",
             "exchange_id": "binance",
             "market_type": "future",
-            "want_swap": True,
-            "want_spot": False,
-            "trade_note": "Binance futures verisidir. OKX üzerinde aynı market olmayabilir."
-        },
-        {
-            "name": "Binance Spot",
-            "exchange_id": "binance",
-            "market_type": "spot",
-            "want_swap": False,
-            "want_spot": True,
-            "trade_note": "Binance spot verisidir. Futures sinyali değildir."
+            "trade_note": "OKX futures bulunamadığı için Binance perpetual futures verisi kullanılıyor.",
+            "execution_note": "OKX'te aynı kontrat yoksa bu raporla OKX işlemi açma.",
         },
     ]
 
-    errors = []
-
+    errors: list[str] = []
     for source in sources:
         try:
             exchange = make_exchange(source["exchange_id"], source["market_type"])
-            market_symbol = find_market(
-                exchange,
-                base,
-                quote="USDT",
-                want_swap=source["want_swap"],
-                want_spot=source["want_spot"]
-            )
-
+            market_symbol = find_linear_usdt_swap(exchange, base)
             if market_symbol:
                 return {
                     "exchange": exchange,
                     "market_symbol": market_symbol,
                     "source_name": source["name"],
                     "trade_note": source["trade_note"],
-                    "is_futures": source["want_swap"],
-                    "symbol": symbol,
+                    "execution_note": source["execution_note"],
+                    "symbol": normalized,
                 }
+        except Exception as exc:
+            errors.append(f"{source['name']}: {type(exc).__name__}")
 
-        except Exception as e:
-            errors.append(f"{source['name']}: {e}")
-
+    error_text = ", ".join(errors) if errors else "market bulunamadı"
     raise RuntimeError(
-        f"{symbol} için OKX/Binance USDT futures veya spot market bulunamadı. "
-        f"Coin başka borsada olabilir ya da USDT paritesi olmayabilir. "
-        f"Kontrol edilen kaynaklar: OKX Futures, OKX Spot, Binance Futures, Binance Spot."
+        f"{normalized} için OKX veya Binance üzerinde aktif lineer USDT perpetual futures "
+        f"kontratı bulunamadı. Spot veriye düşülmedi. Kontrol: {error_text}"
     )
 
 
-def fetch_df(exchange, market_symbol, timeframe, limit):
-    ohlcv = exchange.fetch_ohlcv(
-        market_symbol,
-        timeframe=timeframe,
-        limit=limit
-    )
-
-    if not ohlcv or len(ohlcv) < 60:
+def fetch_df(
+    exchange: ccxt.Exchange,
+    market_symbol: str,
+    timeframe: str,
+    limit: int,
+) -> pd.DataFrame | None:
+    ohlcv = exchange.fetch_ohlcv(market_symbol, timeframe=timeframe, limit=limit)
+    if not ohlcv or len(ohlcv) < 220:
         return None
 
-    return pd.DataFrame(
+    df = pd.DataFrame(
         ohlcv,
-        columns=["time", "open", "high", "low", "close", "volume"]
+        columns=["time", "open", "high", "low", "close", "volume"],
     )
+    numeric_columns = ["open", "high", "low", "close", "volume"]
+    df[numeric_columns] = df[numeric_columns].apply(pd.to_numeric, errors="coerce")
+    df = df.dropna(subset=numeric_columns).reset_index(drop=True)
+    return df if len(df) >= 220 else None
 
 
-def add_indicators(df):
-    """
-    Güvenli indikatör hesabı.
-    Bazı borsalar 5M veride istenen kadar mum döndürmeyebiliyor.
-    Eski sürüm EMA200 yüzünden 5M'de veri silip "indikatör verisi yetersiz" hatası verebiliyordu.
-    Bu sürümde uzun EMA, eldeki mum sayısına göre dinamik hesaplanır.
-    """
-    if df is None or df.empty or len(df) < 60:
+def add_indicators(df: pd.DataFrame | None) -> pd.DataFrame | None:
+    if df is None or df.empty or len(df) < 220:
         return None
 
-    df = df.copy().reset_index(drop=True)
-    length = len(df)
+    result = df.copy().reset_index(drop=True)
+    result["rsi"] = RSIIndicator(result["close"], window=14).rsi()
+    result["ema20"] = EMAIndicator(result["close"], window=20).ema_indicator()
+    result["ema50"] = EMAIndicator(result["close"], window=50).ema_indicator()
+    result["ema100"] = EMAIndicator(result["close"], window=100).ema_indicator()
+    result["ema200"] = EMAIndicator(result["close"], window=200).ema_indicator()
 
-    long_window = 200 if length >= 220 else 100 if length >= 120 else 50
+    macd = MACD(result["close"])
+    result["macd"] = macd.macd()
+    result["macd_signal"] = macd.macd_signal()
+    result["macd_hist"] = result["macd"] - result["macd_signal"]
 
-    df["rsi"] = RSIIndicator(df["close"], window=14).rsi()
-
-    df["ema20"] = EMAIndicator(df["close"], window=20).ema_indicator()
-    df["ema50"] = EMAIndicator(df["close"], window=50).ema_indicator()
-    df["ema100"] = EMAIndicator(df["close"], window=100 if length >= 120 else 50).ema_indicator()
-    df["ema200"] = EMAIndicator(df["close"], window=long_window).ema_indicator()
-
-    macd = MACD(df["close"])
-    df["macd"] = macd.macd()
-    df["macd_signal"] = macd.macd_signal()
-    df["macd_hist"] = df["macd"] - df["macd_signal"]
-
-    df["atr"] = AverageTrueRange(
-        df["high"],
-        df["low"],
-        df["close"],
-        window=14
+    result["atr"] = AverageTrueRange(
+        result["high"], result["low"], result["close"], window=14
     ).average_true_range()
-
-    df["adx"] = ADXIndicator(
-        df["high"],
-        df["low"],
-        df["close"],
-        window=14
+    result["adx"] = ADXIndicator(
+        result["high"], result["low"], result["close"], window=14
     ).adx()
 
-    df["volume_avg"] = df["volume"].rolling(20).mean()
-    df["volume_ratio"] = df["volume"] / df["volume_avg"]
-    df["ema20_slope"] = df["ema20"] - df["ema20"].shift(3)
+    result["volume_avg"] = result["volume"].rolling(20).mean()
+    result["volume_ratio"] = result["volume"] / result["volume_avg"]
+    result["ema20_slope"] = result["ema20"] - result["ema20"].shift(3)
 
-    needed = [
-        "rsi", "ema20", "ema50", "ema100", "ema200",
-        "macd", "macd_signal", "macd_hist",
-        "atr", "adx", "volume_avg", "volume_ratio", "ema20_slope"
+    required = [
+        "rsi",
+        "ema20",
+        "ema50",
+        "ema100",
+        "ema200",
+        "macd",
+        "macd_signal",
+        "macd_hist",
+        "atr",
+        "adx",
+        "volume_avg",
+        "volume_ratio",
+        "ema20_slope",
     ]
-
-    df = df.dropna(subset=needed).reset_index(drop=True)
-
-    if len(df) < 5:
-        return None
-
-    return df
+    result = result.dropna(subset=required).reset_index(drop=True)
+    return result if len(result) >= 5 else None
 
 
-def nearest_support_resistance(df, price, lookback=80):
-    if df is None or len(df) < 5:
-        return {
-            "support1": price,
-            "support2": price,
-            "resistance1": price,
-            "resistance2": price,
-            "support_distance": 0,
-            "resistance_distance": 0,
-        }
-
-    usable_lookback = min(lookback, max(5, len(df) - 2))
-    recent = df.iloc[-usable_lookback - 1:-1].copy()
-
-    if recent.empty:
-        recent = df.copy()
-
-    lows = sorted([float(x) for x in recent["low"] if float(x) < price], reverse=True)
-    highs = sorted([float(x) for x in recent["high"] if float(x) > price])
-
-    support1 = lows[0] if len(lows) >= 1 else float(recent["low"].min())
-    support2 = lows[1] if len(lows) >= 2 else support1
-
-    resistance1 = highs[0] if len(highs) >= 1 else float(recent["high"].max())
-    resistance2 = highs[1] if len(highs) >= 2 else resistance1
-
-    return {
-        "support1": support1,
-        "support2": support2,
-        "resistance1": resistance1,
-        "resistance2": resistance2,
-        "support_distance": abs_pct(price, support1),
-        "resistance_distance": abs_pct(resistance1, price),
-    }
-
-
-def trend_status(df, label):
-    if df is None or len(df) < 2:
+def trend_status(df: pd.DataFrame | None, label: str) -> dict[str, Any]:
+    if df is None or len(df) < 3:
         return {
             "direction": "NEUTRAL",
             "text": f"{label}: veri yetersiz",
-            "close": 0,
             "rsi": "-",
             "adx": "-",
             "volume_ratio": "-",
-            "ema20": 0,
-            "ema50": 0,
-            "ema200": 0,
-            "macd_ok": False,
+            "ema20": 0.0,
+            "ema50": 0.0,
+            "ema200": 0.0,
         }
 
-    row = df.iloc[-2]
-
+    row = df.iloc[-2]  # Son kapanmış mum
     close = float(row["close"])
     ema20 = float(row["ema20"])
     ema50 = float(row["ema50"])
     ema200 = float(row["ema200"])
     slope = float(row["ema20_slope"])
-    rsi = float(row["rsi"])
-    adx = float(row["adx"])
     macd = float(row["macd"])
     macd_signal = float(row["macd_signal"])
-    volume_ratio = float(row["volume_ratio"])
 
     if close > ema200 and ema20 > ema50 and slope > 0 and macd >= macd_signal:
         direction = "LONG"
@@ -372,270 +292,431 @@ def trend_status(df, label):
     return {
         "direction": direction,
         "text": text,
-        "close": close,
-        "rsi": round(rsi, 2),
-        "adx": round(adx, 2),
-        "volume_ratio": round(volume_ratio, 2),
+        "rsi": round(float(row["rsi"]), 2),
+        "adx": round(float(row["adx"]), 2),
+        "volume_ratio": round(float(row["volume_ratio"]), 2),
         "ema20": ema20,
         "ema50": ema50,
         "ema200": ema200,
-        "macd_ok": macd >= macd_signal,
     }
 
 
-def candle_signal_15m(df):
-    if df is None or len(df) < 3:
+def candle_signal_15m(df: pd.DataFrame | None) -> tuple[str, str]:
+    if df is None or len(df) < 4:
         return "NEUTRAL", "15M veri yetersiz"
 
     last = df.iloc[-2]
-    prev = df.iloc[-3]
+    previous = df.iloc[-3]
 
     close = float(last["close"])
-    open_ = float(last["open"])
+    open_price = float(last["open"])
     ema20 = float(last["ema20"])
     rsi = float(last["rsi"])
     macd_hist = float(last["macd_hist"])
-    prev_macd_hist = float(prev["macd_hist"])
+    previous_macd_hist = float(previous["macd_hist"])
 
-    green = close > open_
-    red = close < open_
+    green = close > open_price
+    red = close < open_price
 
-    long_reclaim = green and close >= ema20 and close > float(prev["close"]) and macd_hist >= prev_macd_hist
-    short_reject = red and close <= ema20 and close < float(prev["close"]) and macd_hist <= prev_macd_hist
+    long_reclaim = (
+        green
+        and close >= ema20
+        and close > float(previous["close"])
+        and macd_hist >= previous_macd_hist
+        and 40 <= rsi <= 70
+    )
+    short_reject = (
+        red
+        and close <= ema20
+        and close < float(previous["close"])
+        and macd_hist <= previous_macd_hist
+        and 30 <= rsi <= 60
+    )
 
-    if long_reclaim and 40 <= rsi <= 70:
+    if long_reclaim:
         return "LONG", "15M yeşil dönüş / EMA20 üstü"
-    if short_reject and 30 <= rsi <= 60:
+    if short_reject:
         return "SHORT", "15M kırmızı dönüş / EMA20 altı"
-
     return "NEUTRAL", "15M net giriş dönüşü yok"
 
 
-def radar_5m(df):
+def radar_5m(df: pd.DataFrame | None) -> tuple[str, str]:
     if df is None or len(df) < 25:
         return "NEUTRAL", "5M veri yetersiz"
 
     last = df.iloc[-2]
-
     move = pct(float(last["close"]), float(last["open"]))
-    vol_avg = float(df["volume"].iloc[-22:-2].mean())
-    vol_ratio = float(last["volume"]) / vol_avg if vol_avg > 0 else 0
+    volume_average = float(df["volume"].iloc[-22:-2].mean())
+    volume_ratio = float(last["volume"]) / volume_average if volume_average > 0 else 0.0
 
-    if move >= 0.30 and vol_ratio >= 1.15:
-        return "LONG", f"5M yukarı hareket %{round(move, 2)} / hacim {round(vol_ratio, 2)}x"
-
-    if move <= -0.30 and vol_ratio >= 1.15:
-        return "SHORT", f"5M aşağı hareket %{round(move, 2)} / hacim {round(vol_ratio, 2)}x"
-
-    return "NEUTRAL", f"5M sakin / hareket %{round(move, 2)} / hacim {round(vol_ratio, 2)}x"
+    if move >= 0.30 and volume_ratio >= 1.15:
+        return "LONG", f"5M yukarı hareket %{move:.2f} / hacim {volume_ratio:.2f}x"
+    if move <= -0.30 and volume_ratio >= 1.15:
+        return "SHORT", f"5M aşağı hareket %{move:.2f} / hacim {volume_ratio:.2f}x"
+    return "NEUTRAL", f"5M sakin / hareket %{move:.2f} / hacim {volume_ratio:.2f}x"
 
 
-def leverage_suggestion(risk_percent, is_futures):
-    if not is_futures:
-        return "Spot veri: kaldıraç önerilmez"
-
-    if risk_percent <= 0.85:
-        return "3x"
-    if risk_percent <= 1.60:
-        return "2x"
-    if risk_percent <= 2.40:
-        return "1x-2x"
-
-    return "1x veya pas geç"
-
-
-def build_trade_plan(direction, price, df15, is_futures):
-    if df15 is None or len(df15) < 20:
-        return None
-
-    row = df15.iloc[-2]
-    atr = float(row["atr"])
-
-    recent = df15.iloc[-14:-2]
-
-    if recent.empty or atr <= 0:
-        return None
-
-    if direction == "LONG":
-        swing_low = float(recent["low"].min())
-        sl = min(swing_low - atr * 0.10, price - atr * 1.10)
-        risk = price - sl
-
-        if risk <= 0:
-            return None
-
-        tp1 = price + risk * 0.75
-        tp2 = price + risk * 1.35
-        tp3 = price + risk * 2.00
-
-    elif direction == "SHORT":
-        swing_high = float(recent["high"].max())
-        sl = max(swing_high + atr * 0.10, price + atr * 1.10)
-        risk = sl - price
-
-        if risk <= 0:
-            return None
-
-        tp1 = price - risk * 0.75
-        tp2 = price - risk * 1.35
-        tp3 = price - risk * 2.00
-
-        if tp1 <= 0 or tp2 <= 0 or tp3 <= 0:
-            return None
-
-    else:
-        return None
-
-    risk_percent = (risk / price) * 100
-
-    rr1 = abs(tp1 - price) / risk
-    rr2 = abs(tp2 - price) / risk
-    rr3 = abs(tp3 - price) / risk
-
-    return {
-        "entry": price,
-        "sl": sl,
-        "tp1": tp1,
-        "tp2": tp2,
-        "tp3": tp3,
-        "risk_percent": risk_percent,
-        "rr1": rr1,
-        "rr2": rr2,
-        "rr3": rr3,
-        "leverage": leverage_suggestion(risk_percent, is_futures),
-    }
-
-
-def score_direction(direction, s4h, s1h, entry15, radar5, df15):
-    score = 0
-    reasons = []
-
-    if df15 is None or len(df15) < 2:
-        return score, ["veri yetersiz"]
-
+def score_direction(
+    direction: str,
+    s4h: dict[str, Any],
+    s1h: dict[str, Any],
+    entry15: tuple[str, str],
+    radar5: tuple[str, str],
+    df15: pd.DataFrame,
+) -> tuple[int, list[str]]:
+    """0-100 aralığında kalite skoru üretir; başarı yüzdesi değildir."""
     row = df15.iloc[-2]
     rsi = float(row["rsi"])
     adx = float(row["adx"])
     volume_ratio = float(row["volume_ratio"])
 
-    if direction == s4h["direction"]:
+    score = 0
+    reasons: list[str] = []
+
+    if s4h["direction"] == direction:
         score += 25
         reasons.append("4H aynı yön")
-    elif s4h["direction"] != "NEUTRAL":
-        score -= 15
+    elif s4h["direction"] not in ("NEUTRAL", direction):
         reasons.append("4H ters")
 
-    if direction == s1h["direction"]:
+    if s1h["direction"] == direction:
         score += 25
         reasons.append("1H aynı yön")
-    elif s1h["direction"] != "NEUTRAL":
-        score -= 15
+    elif s1h["direction"] not in ("NEUTRAL", direction):
         reasons.append("1H ters")
 
-    if direction == entry15[0]:
+    if entry15[0] == direction:
         score += 20
         reasons.append("15M giriş onayı")
 
-    if direction == radar5[0]:
+    if radar5[0] == direction:
         score += 10
-        reasons.append("5M radar destekli")
+        reasons.append("5M momentum destekli")
+    elif radar5[0] not in ("NEUTRAL", direction):
+        reasons.append("5M ters momentum")
 
     if volume_ratio >= 1.30:
-        score += 12
-        reasons.append("hacim güçlü")
+        score += 8
+        reasons.append("15M hacim güçlü")
     elif volume_ratio >= 0.75:
-        score += 7
-        reasons.append("hacim yeterli")
+        score += 5
+        reasons.append("15M hacim yeterli")
+    else:
+        reasons.append("15M hacim zayıf")
 
     if adx >= 25:
-        score += 8
-        reasons.append("ADX güçlü")
+        score += 6
+        reasons.append("15M ADX güçlü")
     elif adx >= 15:
-        score += 4
-        reasons.append("ADX orta")
+        score += 3
+        reasons.append("15M ADX orta")
+    else:
+        reasons.append("15M ADX zayıf")
 
     if direction == "LONG":
         if 42 <= rsi <= 68:
-            score += 8
+            score += 6
             reasons.append("RSI LONG için uygun")
         elif rsi > 72:
-            score -= 10
             reasons.append("RSI şişmiş")
+        else:
+            reasons.append("RSI LONG için zayıf")
     else:
         if 32 <= rsi <= 58:
-            score += 8
+            score += 6
             reasons.append("RSI SHORT için uygun")
         elif rsi < 28:
-            score -= 10
             reasons.append("RSI çok dip")
+        else:
+            reasons.append("RSI SHORT için zayıf")
 
-    return score, reasons
-
-
-def final_verdict(long_score, short_score):
-    if long_score >= 70 and long_score >= short_score + 10:
-        return "LONG", "LONG tarafı daha güçlü"
-    if short_score >= 70 and short_score >= long_score + 10:
-        return "SHORT", "SHORT tarafı daha güçlü"
-    if max(long_score, short_score) >= 55:
-        return "WAIT", "Takip et, tam işlem onayı zayıf"
-
-    return "WAIT", "Net işlem şartı yok"
+    return max(0, min(100, int(score))), reasons
 
 
-def plan_text(title, plan):
-    if not plan:
-        return f"\n{title}\nPlan üretilemedi."
+def final_verdict(
+    long_score: int,
+    short_score: int,
+    s4h: dict[str, Any],
+    s1h: dict[str, Any],
+    entry15: tuple[str, str],
+    radar5: tuple[str, str],
+) -> tuple[str, str]:
+    # Canlı para için ana yön zorunluluğu.
+    if s4h["direction"] == "NEUTRAL" or s1h["direction"] == "NEUTRAL":
+        return "WAIT", "4H ve 1H yönü net değil"
 
+    if s4h["direction"] != s1h["direction"]:
+        return "WAIT", "4H ve 1H aynı yönde değil"
+
+    direction = s4h["direction"]
+    selected_score = long_score if direction == "LONG" else short_score
+    opposite_score = short_score if direction == "LONG" else long_score
+
+    if entry15[0] != direction:
+        return "WAIT", f"Ana yön {direction}, fakat 15M giriş onayı yok"
+
+    if radar5[0] not in ("NEUTRAL", direction):
+        return "WAIT", "5M momentum ana yöne ters"
+
+    if selected_score < MIN_TRADE_SCORE:
+        return "WAIT", f"{direction} kalite skoru yetersiz: {selected_score}/100"
+
+    if selected_score < opposite_score + 10:
+        return "WAIT", "LONG ve SHORT tarafı yeterince ayrışmadı"
+
+    return direction, f"4H + 1H + 15M {direction} uyumu var"
+
+
+def _cluster_levels(levels: list[float], tolerance: float) -> list[float]:
+    if not levels:
+        return []
+
+    ordered = sorted(levels)
+    clusters: list[list[float]] = [[ordered[0]]]
+    for level in ordered[1:]:
+        current_average = sum(clusters[-1]) / len(clusters[-1])
+        if abs(level - current_average) <= tolerance:
+            clusters[-1].append(level)
+        else:
+            clusters.append([level])
+
+    # Daha çok dokunulan kümeler önce; eşitlikte fiyat sırası korunur.
+    weighted = sorted(
+        ((sum(cluster) / len(cluster), len(cluster)) for cluster in clusters),
+        key=lambda item: (-item[1], item[0]),
+    )
+    return [item[0] for item in weighted]
+
+
+def pivot_support_resistance(
+    df: pd.DataFrame | None,
+    price: float,
+    lookback: int = 120,
+) -> dict[str, float]:
+    if df is None or len(df) < 15:
+        return {
+            "support1": price,
+            "support2": price,
+            "resistance1": price,
+            "resistance2": price,
+            "support_distance": 0.0,
+            "resistance_distance": 0.0,
+        }
+
+    # Tamamlanmamış son mumu dışarıda bırak.
+    recent = df.iloc[:-1].tail(lookback).reset_index(drop=True)
+    atr = float(recent["atr"].iloc[-1])
+    tolerance = max(atr * 0.25, price * 0.0003)
+
+    pivot_lows: list[float] = []
+    pivot_highs: list[float] = []
+
+    for index in range(2, len(recent) - 2):
+        window = recent.iloc[index - 2 : index + 3]
+        low = float(recent.iloc[index]["low"])
+        high = float(recent.iloc[index]["high"])
+        if low <= float(window["low"].min()):
+            pivot_lows.append(low)
+        if high >= float(window["high"].max()):
+            pivot_highs.append(high)
+
+    supports = [level for level in _cluster_levels(pivot_lows, tolerance) if level < price]
+    resistances = [level for level in _cluster_levels(pivot_highs, tolerance) if level > price]
+
+    supports = sorted(supports, reverse=True)
+    resistances = sorted(resistances)
+
+    fallback_low = float(recent["low"].min())
+    fallback_high = float(recent["high"].max())
+
+    support1 = supports[0] if supports else min(fallback_low, price)
+    support2 = supports[1] if len(supports) > 1 else support1
+    resistance1 = resistances[0] if resistances else max(fallback_high, price)
+    resistance2 = resistances[1] if len(resistances) > 1 else resistance1
+
+    return {
+        "support1": support1,
+        "support2": support2,
+        "resistance1": resistance1,
+        "resistance2": resistance2,
+        "support_distance": abs_pct(price, support1),
+        "resistance_distance": abs_pct(resistance1, price),
+    }
+
+
+def leverage_suggestion(risk_percent: float) -> str:
+    if risk_percent <= 0.85:
+        return "3x"
+    if risk_percent <= 1.60:
+        return "2x"
+    if risk_percent <= 2.50:
+        return "1x-2x"
+    return "PAS GEÇ"
+
+
+def build_trade_plan(
+    direction: str,
+    price: float,
+    df15: pd.DataFrame,
+) -> tuple[dict[str, float | str] | None, str | None]:
+    if len(df15) < 20:
+        return None, "15M işlem planı için veri yetersiz"
+
+    row = df15.iloc[-2]
+    signal_close = float(row["close"])
+    ema20 = float(row["ema20"])
+    atr = float(row["atr"])
+    recent = df15.iloc[-14:-2]
+
+    if recent.empty or atr <= 0 or price <= 0:
+        return None, "ATR veya fiyat verisi geçersiz"
+
+    if direction == "LONG":
+        if price > signal_close + atr * MAX_LATE_ENTRY_ATR:
+            return None, "LONG girişi kaçmış; fiyat 15M sinyal mumundan fazla uzaklaştı"
+        if price < ema20 - atr * INVALIDATION_ATR:
+            return None, "LONG kurulumu bozulmuş; fiyat EMA20 altına indi"
+
+        swing_low = float(recent["low"].min())
+        stop = min(swing_low - atr * 0.10, price - atr * 1.10)
+        risk = price - stop
+        tp1 = price + risk * 0.75
+        tp2 = price + risk * 1.35
+        tp3 = price + risk * 2.00
+
+    elif direction == "SHORT":
+        if price < signal_close - atr * MAX_LATE_ENTRY_ATR:
+            return None, "SHORT girişi kaçmış; fiyat 15M sinyal mumundan fazla uzaklaştı"
+        if price > ema20 + atr * INVALIDATION_ATR:
+            return None, "SHORT kurulumu bozulmuş; fiyat EMA20 üstüne çıktı"
+
+        swing_high = float(recent["high"].max())
+        stop = max(swing_high + atr * 0.10, price + atr * 1.10)
+        risk = stop - price
+        tp1 = price - risk * 0.75
+        tp2 = price - risk * 1.35
+        tp3 = price - risk * 2.00
+
+        if min(tp1, tp2, tp3) <= 0:
+            return None, "Hedef fiyatlardan biri geçersiz"
+    else:
+        return None, "Yön geçersiz"
+
+    if risk <= 0:
+        return None, "Stop mesafesi geçersiz"
+
+    risk_percent = (risk / price) * 100.0
+    if risk_percent < MIN_STOP_PERCENT:
+        return None, f"Stop çok dar: %{risk_percent:.2f}"
+    if risk_percent > MAX_STOP_PERCENT:
+        return None, f"Stop çok geniş: %{risk_percent:.2f}"
+
+    return {
+        "entry": price,
+        "sl": stop,
+        "tp1": tp1,
+        "tp2": tp2,
+        "tp3": tp3,
+        "risk_percent": risk_percent,
+        "rr1": 0.75,
+        "rr2": 1.35,
+        "rr3": 2.00,
+        "leverage": leverage_suggestion(risk_percent),
+    }, None
+
+
+def format_price(exchange: ccxt.Exchange, market_symbol: str, value: float) -> str:
+    try:
+        return exchange.price_to_precision(market_symbol, float(value))
+    except Exception:
+        number = float(value)
+        if number >= 100:
+            return f"{number:.2f}"
+        if number >= 1:
+            return f"{number:.4f}"
+        if number >= 0.01:
+            return f"{number:.6f}"
+        return f"{number:.10f}"
+
+
+def plan_text(
+    direction: str,
+    plan: dict[str, float | str],
+    exchange: ccxt.Exchange,
+    market_symbol: str,
+) -> str:
+    icon = "🟢" if direction == "LONG" else "🔴"
     return f"""
-{title}
-Giriş: {fmt(plan["entry"])}
-TP1: {fmt(plan["tp1"])}
-TP2: {fmt(plan["tp2"])}
-TP3: {fmt(plan["tp3"])}
-SL: {fmt(plan["sl"])}
-Risk: %{round(plan["risk_percent"], 2)}
-R/R TP1: {round(plan["rr1"], 2)}
-R/R TP2: {round(plan["rr2"], 2)}
-Kaldıraç Önerisi: {plan["leverage"]}
+{icon} ONAYLI {direction} İŞLEM PLANI
+Giriş: {format_price(exchange, market_symbol, float(plan['entry']))}
+TP1: {format_price(exchange, market_symbol, float(plan['tp1']))}
+TP2: {format_price(exchange, market_symbol, float(plan['tp2']))}
+TP3: {format_price(exchange, market_symbol, float(plan['tp3']))}
+SL: {format_price(exchange, market_symbol, float(plan['sl']))}
+Stop Mesafesi: %{float(plan['risk_percent']):.2f}
+R/R TP1: {float(plan['rr1']):.2f}
+R/R TP2: {float(plan['rr2']):.2f}
+R/R TP3: {float(plan['rr3']):.2f}
+Kaldıraç Önerisi: {plan['leverage']}
 """
 
 
-def analyze_coin(symbol):
-    symbol = normalize_symbol(symbol)
-    source = resolve_data_source(symbol)
+def waiting_conditions(
+    s4h: dict[str, Any],
+    s1h: dict[str, Any],
+    entry15: tuple[str, str],
+    radar5: tuple[str, str],
+) -> str:
+    conditions: list[str] = []
 
-    exchange = source["exchange"]
-    market_symbol = source["market_symbol"]
-    source_name = source["source_name"]
-    trade_note = source["trade_note"]
-    is_futures = source["is_futures"]
+    if s4h["direction"] == "NEUTRAL":
+        conditions.append("4H yönünün netleşmesi")
+    if s1h["direction"] == "NEUTRAL":
+        conditions.append("1H yönünün netleşmesi")
+    if (
+        s4h["direction"] != "NEUTRAL"
+        and s1h["direction"] != "NEUTRAL"
+        and s4h["direction"] != s1h["direction"]
+    ):
+        conditions.append("4H ve 1H yönlerinin aynı tarafa dönmesi")
+    if entry15[0] == "NEUTRAL":
+        conditions.append("15M kapanmış mum giriş onayı")
+    if radar5[0] == "NEUTRAL":
+        conditions.append("5M hacimli momentum desteği")
 
-    dfs = {}
+    if not conditions:
+        conditions.append("skor, giriş uzaklığı ve stop mesafesinin uygunlaşması")
 
-    for label, (tf, limit) in TIMEFRAMES.items():
-        raw_df = fetch_df(exchange, market_symbol, tf, limit)
+    return "\n".join(f"• {condition}" for condition in conditions[:4])
 
+
+def analyze_coin(symbol: str) -> str:
+    normalized = normalize_symbol(symbol)
+    source = resolve_data_source(normalized)
+
+    exchange: ccxt.Exchange = source["exchange"]
+    market_symbol: str = source["market_symbol"]
+
+    dfs: dict[str, pd.DataFrame] = {}
+    for label, (timeframe, limit) in TIMEFRAMES.items():
+        raw_df = fetch_df(exchange, market_symbol, timeframe, limit)
         if raw_df is None:
-            raise RuntimeError(f"{symbol} için {label} verisi alınamadı veya veri yetersiz.")
-
-        df = add_indicators(raw_df)
-
-        if df is None:
             raise RuntimeError(
-                f"{symbol} için {label} indikatör verisi yetersiz. "
-                f"Borsa yeterli mum verisi döndürmedi veya coin çok yeni olabilir."
+                f"{normalized} için {label} futures verisi yetersiz. En az 220 mum gerekli."
             )
 
+        df = add_indicators(raw_df)
+        if df is None:
+            raise RuntimeError(
+                f"{normalized} için {label} indikatör verisi üretilemedi. Coin çok yeni olabilir."
+            )
         dfs[label] = df
 
     ticker = exchange.fetch_ticker(market_symbol)
-    price = ticker.get("last")
-
-    if price is None:
-        raise RuntimeError(f"{symbol} güncel fiyat alınamadı.")
-
-    price = float(price)
+    price_value = ticker.get("last")
+    if price_value is None:
+        raise RuntimeError(f"{normalized} futures güncel fiyatı alınamadı.")
+    price = float(price_value)
 
     df5 = dfs["5M"]
     df15 = dfs["15M"]
@@ -650,96 +731,110 @@ def analyze_coin(symbol):
     entry15 = candle_signal_15m(df15)
     radar5 = radar_5m(df5)
 
-    sr15 = nearest_support_resistance(df15, price, lookback=80)
-    sr1h = nearest_support_resistance(df1h, price, lookback=80)
-    sr4h = nearest_support_resistance(df4h, price, lookback=80)
+    sr15 = pivot_support_resistance(df15, price, lookback=120)
+    sr1h = pivot_support_resistance(df1h, price, lookback=120)
+    sr4h = pivot_support_resistance(df4h, price, lookback=120)
 
     long_score, long_reasons = score_direction("LONG", s4h, s1h, entry15, radar5, df15)
     short_score, short_reasons = score_direction("SHORT", s4h, s1h, entry15, radar5, df15)
 
-    verdict, verdict_reason = final_verdict(long_score, short_score)
+    verdict, verdict_reason = final_verdict(
+        long_score,
+        short_score,
+        s4h,
+        s1h,
+        entry15,
+        radar5,
+    )
 
-    long_plan = build_trade_plan("LONG", price, df15, is_futures)
-    short_plan = build_trade_plan("SHORT", price, df15, is_futures)
+    plan: dict[str, float | str] | None = None
+    plan_error: str | None = None
+    if verdict in ("LONG", "SHORT"):
+        plan, plan_error = build_trade_plan(verdict, price, df15)
+        if plan is None:
+            verdict = "WAIT"
+            verdict_reason = plan_error or "Giriş veya stop şartı uygun değil"
 
     row15 = df15.iloc[-2]
-
-    futures_warning = ""
-    if not is_futures:
-        futures_warning = (
-            "\n⚠️ Bu coin futures kaynağından değil, spot veriden analiz edildi.\n"
-            "Bu yüzden SHORT/kaldıraç kısmı sadece teknik senaryo olarak düşünülmelidir.\n"
-        )
-
     report = f"""
 📊 TEK COIN DETAY ANALİZİ
 
-Coin: {symbol}
-Veri Kaynağı: {source_name}
+Coin: {normalized}
+Veri Kaynağı: {source['source_name']}
 Market: {market_symbol}
-Güncel Fiyat: {fmt(price)}
-Not: {trade_note}
-{futures_warning}
-🧭 Çoklu Zaman Dilimi:
-• {s4h["text"]} | RSI: {s4h["rsi"]} | ADX: {s4h["adx"]}
-• {s1h["text"]} | RSI: {s1h["rsi"]} | ADX: {s1h["adx"]}
-• {s15["text"]} | RSI: {s15["rsi"]} | ADX: {s15["adx"]}
-• {s5["text"]} | RSI: {s5["rsi"]} | ADX: {s5["adx"]}
+Güncel Futures Fiyatı: {format_price(exchange, market_symbol, price)}
+Not: {source['trade_note']}
+Uygulama: {source['execution_note']}
 
-📌 Giriş / Radar:
+🧭 Çoklu Zaman Dilimi
+• {s4h['text']} | RSI: {s4h['rsi']} | ADX: {s4h['adx']}
+• {s1h['text']} | RSI: {s1h['rsi']} | ADX: {s1h['adx']}
+• {s15['text']} | RSI: {s15['rsi']} | ADX: {s15['adx']}
+• {s5['text']} | RSI: {s5['rsi']} | ADX: {s5['adx']}
+
+📌 Giriş / Radar
 • 15M: {entry15[1]}
 • 5M: {radar5[1]}
 
-📊 Hacim:
-• 15M Hacim Oranı: {round(float(row15["volume_ratio"]), 2)}x
+📊 Hacim
+• 15M Hacim Oranı: {float(row15['volume_ratio']):.2f}x
 
-🟢 Destekler:
-• 15M Destek 1: {fmt(sr15["support1"])} | Uzaklık: %{round(sr15["support_distance"], 2)}
-• 15M Destek 2: {fmt(sr15["support2"])}
-• 1H Destek: {fmt(sr1h["support1"])}
-• 4H Destek: {fmt(sr4h["support1"])}
+🟢 Destek Bölgeleri
+• 15M Destek 1: {format_price(exchange, market_symbol, sr15['support1'])} | Uzaklık: %{sr15['support_distance']:.2f}
+• 15M Destek 2: {format_price(exchange, market_symbol, sr15['support2'])}
+• 1H Destek: {format_price(exchange, market_symbol, sr1h['support1'])}
+• 4H Destek: {format_price(exchange, market_symbol, sr4h['support1'])}
 
-🔴 Dirençler:
-• 15M Direnç 1: {fmt(sr15["resistance1"])} | Uzaklık: %{round(sr15["resistance_distance"], 2)}
-• 15M Direnç 2: {fmt(sr15["resistance2"])}
-• 1H Direnç: {fmt(sr1h["resistance1"])}
-• 4H Direnç: {fmt(sr4h["resistance1"])}
+🔴 Direnç Bölgeleri
+• 15M Direnç 1: {format_price(exchange, market_symbol, sr15['resistance1'])} | Uzaklık: %{sr15['resistance_distance']:.2f}
+• 15M Direnç 2: {format_price(exchange, market_symbol, sr15['resistance2'])}
+• 1H Direnç: {format_price(exchange, market_symbol, sr1h['resistance1'])}
+• 4H Direnç: {format_price(exchange, market_symbol, sr4h['resistance1'])}
 
-🟢 LONG Skoru: %{long_score}
-Nedenler: {", ".join(long_reasons) if long_reasons else "Yeterli neden yok"}
+🟢 LONG Kalite Skoru: {long_score}/100
+Nedenler: {', '.join(long_reasons) if long_reasons else 'Yeterli neden yok'}
 
-🔴 SHORT Skoru: %{short_score}
-Nedenler: {", ".join(short_reasons) if short_reasons else "Yeterli neden yok"}
+🔴 SHORT Kalite Skoru: {short_score}/100
+Nedenler: {', '.join(short_reasons) if short_reasons else 'Yeterli neden yok'}
 
-📌 Genel Karar:
+📌 Genel Karar
 {verdict} → {verdict_reason}
 """
 
-    report += plan_text("🟢 LONG Senaryosu:", long_plan)
-    report += plan_text("🔴 SHORT Senaryosu:", short_plan)
+    if verdict in ("LONG", "SHORT") and plan is not None:
+        report += plan_text(verdict, plan, exchange, market_symbol)
+    else:
+        report += f"""
+
+⏳ İŞLEM PLANI ÜRETİLMEDİ
+WAIT kararında giriş, TP ve SL gösterilmez.
+
+Beklenen Onaylar
+{waiting_conditions(s4h, s1h, entry15, radar5)}
+"""
 
     report += """
 
-📌 Not:
+📌 Risk Notu
 Bu rapor işlem emri değildir.
 Grafikte kontrol etmeden işlem açma.
-TP1 gelirse %50 kâr alıp SL'yi girişe çekmek daha güvenlidir.
+Fiyat girişten uzaklaşmışsa peşinden koşma.
+TP1 gelirse yaklaşık %50 kâr alıp kalan stopu girişe çekmek daha güvenlidir.
 """
 
     return report.strip()
 
 
-def main():
+def main() -> None:
     symbol = normalize_symbol(SYMBOL)
-    print("Analiz ediliyor:", symbol)
+    print("Futures coin analizi yapılıyor:", symbol)
 
     try:
         report = analyze_coin(symbol)
         print(report)
         send_telegram(report)
-
-    except Exception as e:
-        message = f"❌ Coin analiz hatası\n\nCoin: {symbol}\nHata: {e}"
+    except Exception as exc:
+        message = f"❌ Coin analiz hatası\n\nCoin: {symbol}\nHata: {exc}"
         print(message)
         send_telegram(message)
         raise
