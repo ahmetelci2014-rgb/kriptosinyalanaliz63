@@ -84,8 +84,12 @@ TRADE_LEDGER_FILE = "trade_ledger.json"
 
 TR_TIMEZONE = timezone(timedelta(hours=3))
 
-SL_AFTER_CHECKPOINT_MINUTES = [30, 60, 120]
-SL_AFTER_MAX_TRACK_MINUTES = 120
+# Stop sonrası takip: 30 / 60 / 120 / 180 / 240 dakika.
+# 1M mum kullanıldığında 240 dakikanın tamamını görebilmek için
+# ana TRACK_LIMIT değerinden bağımsız daha geniş veri limiti kullanılır.
+SL_AFTER_CHECKPOINT_MINUTES = [30, 60, 120, 180, 240]
+SL_AFTER_MAX_TRACK_MINUTES = 240
+SL_AFTER_TRACK_LIMIT = 300
 
 RECENT_CLOSED_COIN_COOLDOWN_SECONDS = 4 * 60 * 60
 
@@ -766,7 +770,10 @@ def ledger_update_post_stop_diagnosis(
                 "factors",
                 [],
             ).append(
-                "Stop sonrasi 120 dakika icinde TP1'e donus olmadi."
+                (
+                    f"Stop sonrasi {SL_AFTER_MAX_TRACK_MINUTES} "
+                    f"dakika icinde TP1'e donus olmadi."
+                )
             )
 
             trade["post_stop_follow"] = {
@@ -2142,6 +2149,228 @@ def register_partial_result(
     )
 
 
+
+def restore_recent_sl_follow_for_extended_window(
+    performance,
+):
+    """
+    Eski 120 dakikalık sürümde NO_TP1_RETURN olarak kapatılmış,
+    fakat yeni 240 dakikalık pencere içinde kalan SL işlemlerini
+    yeniden takibe alır.
+
+    trade_ledger.json içinde yakın tarihli bir SL kaydı varsa ve
+    takip kaydı performance.json'dan temizlenmişse de yeniden kurar.
+    """
+    follow = performance.setdefault(
+        "sl_after_follow",
+        {},
+    )
+    ledger = load_trade_ledger()
+    trades = ledger.get("trades", {})
+
+    current_time = now_ts()
+    existing_by_trade_id = {
+        str(item.get("trade_id")): (key, item)
+        for key, item in follow.items()
+        if item.get("trade_id")
+    }
+
+    restored = 0
+
+    for trade_id, trade in trades.items():
+        try:
+            if str(
+                trade.get("final_result", "")
+            ).upper() != "SL":
+                continue
+
+            stopped_at = int(
+                trade.get("closed_at")
+                or trade.get("trade_closed_at")
+                or 0
+            )
+
+            if stopped_at <= 0:
+                continue
+
+            age_minutes = int(
+                max(
+                    0,
+                    (current_time - stopped_at) / 60,
+                )
+            )
+
+            if (
+                age_minutes
+                > SL_AFTER_MAX_TRACK_MINUTES
+            ):
+                continue
+
+            post_stop = (
+                trade.get("post_stop_follow")
+                or {}
+            )
+
+            if str(
+                post_stop.get("status", "")
+            ).upper() == "RETURNED_TO_TARGET":
+                continue
+
+            existing = existing_by_trade_id.get(
+                str(trade_id)
+            )
+
+            if existing:
+                _, item = existing
+
+                if (
+                    item.get("resolved")
+                    and not item.get("after_sl_tp1")
+                    and age_minutes
+                    < SL_AFTER_MAX_TRACK_MINUTES
+                ):
+                    item["resolved"] = False
+                    item["extended_to_240"] = True
+                    item.setdefault(
+                        "reported_checkpoints",
+                        [],
+                    )
+
+                    # Eski 120 dakika sonucu zaten sayılmış olabilir.
+                    if (
+                        str(
+                            post_stop.get("status", "")
+                        ).upper() == "NO_TP1_RETURN"
+                    ):
+                        item["no_return_counted"] = True
+                        item["no_return_counted_day"] = (
+                            day_key_from_ts(
+                                int(
+                                    post_stop.get(
+                                        "updated_at"
+                                    )
+                                    or stopped_at
+                                )
+                            )
+                        )
+
+                    restored += 1
+
+                continue
+
+            # Takip kaydı daha önce temizlendiyse ledger'dan yeniden kur.
+            key = (
+                f"{trade.get('symbol')}_"
+                f"{trade.get('direction')}_"
+                f"{stopped_at}"
+            )
+
+            reported = []
+
+            for checkpoint in (
+                SL_AFTER_CHECKPOINT_MINUTES
+            ):
+                if (
+                    checkpoint <= 120
+                    and age_minutes >= checkpoint
+                ):
+                    reported.append(checkpoint)
+
+            item = {
+                "trade_id": trade_id,
+                "symbol": trade.get("symbol"),
+                "direction": trade.get("direction"),
+                "source": trade.get("source"),
+                "entry": trade.get("entry"),
+                "tp1": trade.get("tp1"),
+                "tp2": trade.get("tp2"),
+                "tp3": trade.get("tp3"),
+                "sl": trade.get("sl"),
+                "score": trade.get("score"),
+                "risk_percent": trade.get(
+                    "risk_percent"
+                ),
+                "stopped_at": stopped_at,
+                "stop_exit": trade.get("exit_price"),
+                "reported_checkpoints": reported,
+                "after_sl_tp1": False,
+                "after_sl_tp2": False,
+                "after_sl_tp3": False,
+                "resolved": False,
+                "extended_to_240": True,
+            }
+
+            if (
+                str(
+                    post_stop.get("status", "")
+                ).upper() == "NO_TP1_RETURN"
+            ):
+                item["no_return_counted"] = True
+                item["no_return_counted_day"] = (
+                    day_key_from_ts(
+                        int(
+                            post_stop.get(
+                                "updated_at"
+                            )
+                            or stopped_at
+                        )
+                    )
+                )
+
+            follow[key] = item
+            existing_by_trade_id[
+                str(trade_id)
+            ] = (key, item)
+            restored += 1
+
+        except Exception as exc:
+            print(
+                trade_id,
+                "Uzatılmış SL takibi geri yükleme hatası:",
+                exc,
+            )
+
+    return restored
+
+
+def undo_early_no_return_count(
+    performance,
+    item,
+):
+    """
+    Eski 120 dakikalık sürümde 'dönmedi' sayılmış bir işlem,
+    240 dakika içinde TP1'e dönerse eski sayımı geri alır.
+    """
+    if not item.get("no_return_counted"):
+        return
+
+    day_key = item.get(
+        "no_return_counted_day"
+    )
+
+    if not day_key:
+        day_key = today_key()
+
+    day = performance.setdefault(
+        "days",
+        {},
+    ).setdefault(
+        day_key,
+        {},
+    )
+
+    current = int(
+        day.get("sl_after_no_return", 0)
+    )
+
+    if current > 0:
+        day["sl_after_no_return"] = (
+            current - 1
+        )
+
+    item["no_return_counted"] = False
+
+
 def check_sl_after_follow(exchange):
     performance = ensure_perf_day(
         load_performance()
@@ -2152,10 +2381,27 @@ def check_sl_after_follow(exchange):
         {},
     )
 
+    restored_count = (
+        restore_recent_sl_follow_for_extended_window(
+            performance
+        )
+    )
+
+    follow = performance.setdefault(
+        "sl_after_follow",
+        {},
+    )
+
     if not follow:
         return
 
-    changed = False
+    changed = restored_count > 0
+
+    if restored_count:
+        print(
+            "240 dakikalık pencereye yeniden alınan SL kaydı:",
+            restored_count,
+        )
 
     for key, item in list(follow.items()):
         try:
@@ -2190,7 +2436,10 @@ def check_sl_after_follow(exchange):
                 symbol,
                 TRACK_TIMEFRAME,
                 since_seconds=stopped_at,
-                limit=TRACK_LIMIT,
+                limit=max(
+                    TRACK_LIMIT,
+                    SL_AFTER_TRACK_LIMIT,
+                ),
             )
 
             after_tp1 = False
@@ -2241,6 +2490,11 @@ def check_sl_after_follow(exchange):
                 )
                 item["resolved"] = True
                 changed = True
+
+                undo_early_no_return_count(
+                    performance,
+                    item,
+                )
 
                 day = performance["days"].setdefault(
                     today_key(),
@@ -2327,15 +2581,24 @@ def check_sl_after_follow(exchange):
                             )
                         )
 
-                        day["sl_after_no_return"] = (
-                            int(
-                                day.get(
-                                    "sl_after_no_return",
-                                    0,
+                        if not item.get(
+                            "no_return_counted"
+                        ):
+                            day["sl_after_no_return"] = (
+                                int(
+                                    day.get(
+                                        "sl_after_no_return",
+                                        0,
+                                    )
                                 )
+                                + 1
                             )
-                            + 1
-                        )
+                            item[
+                                "no_return_counted"
+                            ] = True
+                            item[
+                                "no_return_counted_day"
+                            ] = today_key()
 
                         ledger_update_post_stop_diagnosis(
                             item.get("trade_id"),
@@ -2351,7 +2614,9 @@ def check_sl_after_follow(exchange):
                         f"SL: {format_price(sl)}\n"
                         f"Kontrol: {checkpoint}. dakika\n\n"
                         f"Sonuç: Stop sonrası henüz "
-                        f"TP1 seviyesine dönüş yok."
+                        f"TP1 seviyesine dönüş yok.\n"
+                        f"Takip penceresi: "
+                        f"{SL_AFTER_MAX_TRACK_MINUTES} dakika."
                     )
                     break
 
