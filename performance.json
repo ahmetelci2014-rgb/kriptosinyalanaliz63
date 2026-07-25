@@ -5196,7 +5196,7 @@
       "tp1": 18,
       "tp2": 2,
       "tp3": 0,
-      "sl": 5,
+      "sl": 7,
       "be": 15,
       "expired": 1,
       "long": 0,
@@ -5430,7 +5430,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -5450,7 +5450,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -5466,14 +5466,16 @@
         }
       },
       "direction_stops": {
-        "SHORT": 5
+        "SHORT": 7
       },
       "stop_times": {
         "AIXBTUSDT": 1784934161,
         "APEUSDT": 1784943954,
         "FILUSDT": 1784954823,
         "RLSUSDT": 1784965915,
-        "SOXLUSDT": 1784976414
+        "SOXLUSDT": 1784976414,
+        "SOPHUSDT": 1784984465,
+        "GALAUSDT": 1784984465
       },
       "closed_times": {
         "2ZUSDT": 1784934949,
@@ -5921,14 +5923,34 @@
           "exit": 0.04397,
           "source": "15M_ENTRY",
           "score": 100
+        },
+        {
+          "time": "16:01:05",
+          "symbol": "SOPHUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.004378,
+          "exit": 0.004443,
+          "source": "15M_ENTRY",
+          "score": 99
+        },
+        {
+          "time": "16:01:05",
+          "symbol": "GALAUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.00196,
+          "exit": 0.001978,
+          "source": "15M_ENTRY",
+          "score": 93
         }
       ],
       "sl_after_tp1": 0,
       "sl_after_tp2": 0,
-      "sl_after_no_return": 4
+      "sl_after_no_return": 5
     }
   },
-  "last_update": 1784980954,
+  "last_update": 1784984467,
   "last_open_summary": 1784983551,
   "last_status_message": 1784983889,
   "last_daily_report": "2026-07-24",
@@ -5948,8 +5970,47 @@
       "stop_exit": 139.02,
       "reported_checkpoints": [
         30,
-        60
+        60,
+        120
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": true
+    },
+    "SOPHUSDT_SHORT_1784984465": {
+      "symbol": "SOPHUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.004378,
+      "tp1": 0.0043553825,
+      "tp2": 0.0043348212,
+      "tp3": 0.0043122037,
+      "sl": 0.0044191227,
+      "score": 99,
+      "risk_percent": 0.939,
+      "stopped_at": 1784984465,
+      "stop_exit": 0.004443,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "GALAUSDT_SHORT_1784984465": {
+      "symbol": "GALAUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.00196,
+      "tp1": 0.0019531137,
+      "tp2": 0.0019468534,
+      "tp3": 0.001939967,
+      "sl": 0.0019725206,
+      "score": 93,
+      "risk_percent": 0.639,
+      "stopped_at": 1784984465,
+      "stop_exit": 0.001978,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
