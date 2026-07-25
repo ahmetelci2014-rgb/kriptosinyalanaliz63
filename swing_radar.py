@@ -1,5 +1,5 @@
 # swing_radar.py
-# Swing Radar v3 - 15M Erken Giris + Dengeli Canli Para
+# Swing Radar v3 - 15M Erken Giris + Performans + Teknik Teshis
 #
 # OKX USDT perpetual futures:
 # - 1D ana trend
@@ -60,6 +60,13 @@ PERFORMANCE_KEEP_DAYS = 45
 PERFORMANCE_MAX_RECORDS = 400
 PERFORMANCE_DIRECTION_THRESHOLD_PERCENT = 1.00
 PERFORMANCE_MIXED_THRESHOLD_PERCENT = 0.40
+
+# Swing teknik teshisi:
+# Stop sonrasi yonun gecikmeli gelmesi 48 saate kadar izlenir.
+SWING_DIAGNOSIS_VERSION = "SWING_DIAGNOSIS_V1"
+POST_STOP_CHECKPOINT_MINUTES = (60, 240, 720, 1440, 2880)
+POST_STOP_MAX_TRACK_MINUTES = 2880
+POST_STOP_KEEP_HOURS = 72
 
 MAX_SCAN_COINS = 220
 MIN_24H_QUOTE_VOLUME = 500_000
@@ -192,6 +199,7 @@ def empty_state():
         "open_swing_signals": {},
         "last_sent": {},
         "last_no_signal_report": 0,
+        "post_stop_follow": {},
         "stats": empty_stats(),
     }
 
@@ -219,6 +227,7 @@ def load_state():
         state.setdefault("open_swing_signals", {})
         state.setdefault("last_sent", {})
         state.setdefault("last_no_signal_report", 0)
+        state.setdefault("post_stop_follow", {})
         state.setdefault("stats", {})
 
         for key, value in empty_stats().items():
@@ -249,9 +258,14 @@ def load_state():
                 or opened_at
             )
             item.setdefault("tp1_hit", False)
+            item.setdefault("tp1_hit_at", 0)
             item.setdefault("tp2_hit", False)
             item.setdefault("tp3_hit", False)
             item.setdefault("closed", False)
+            item.setdefault("best_favorable_percent", 0.0)
+            item.setdefault("worst_adverse_percent", 0.0)
+            item.setdefault("best_favorable_r", 0.0)
+            item.setdefault("worst_adverse_r", 0.0)
             item.setdefault(
                 "timing_mode",
                 "1H_ONAYLI",
@@ -372,6 +386,12 @@ def rebuild_swing_performance_summary(ledger):
         "confirmed_1h": 0,
         "long": 0,
         "short": 0,
+        "diagnosis_open": 0,
+        "diagnosis_success": 0,
+        "diagnosis_early_failed": 0,
+        "diagnosis_delayed_direction": 0,
+        "diagnosis_weak_trend": 0,
+        "diagnosis_setup_failed": 0,
     }
 
     for record in records:
@@ -433,6 +453,31 @@ def rebuild_swing_performance_summary(ledger):
             summary["breakeven"] += 1
         elif trade_outcome == "EXPIRED":
             summary["expired"] += 1
+
+        diagnosis = record.get("diagnosis") or {}
+        diagnosis_code = str(
+            diagnosis.get("code", "OPEN")
+        ).upper()
+
+        if diagnosis_code == "OPEN":
+            summary["diagnosis_open"] += 1
+        elif diagnosis_code == "SWING_SUCCESS":
+            summary["diagnosis_success"] += 1
+        elif diagnosis_code == "EARLY_ENTRY_FAILED":
+            summary["diagnosis_early_failed"] += 1
+        elif diagnosis_code in (
+            "DIRECTION_RIGHT_ENTRY_EARLY",
+            "DIRECTION_RECOVERED_LATE",
+            "DIRECTION_RIGHT_STOP_TIGHT",
+        ):
+            summary["diagnosis_delayed_direction"] += 1
+        elif diagnosis_code == "WEAK_TREND_OR_VOLUME":
+            summary["diagnosis_weak_trend"] += 1
+        elif diagnosis_code in (
+            "SETUP_FAILED",
+            "NO_SWING_CONTINUATION",
+        ):
+            summary["diagnosis_setup_failed"] += 1
 
     ledger["summary"] = summary
     ledger["updated_at"] = now_ts()
@@ -555,6 +600,691 @@ def classify_swing_direction(record):
     )
 
 
+
+def swing_record_by_id(ledger, record_id):
+    if not record_id:
+        return None
+
+    for record in ledger.get("records", []):
+        if str(record.get("id")) == str(record_id):
+            return record
+
+    return None
+
+
+def apply_signal_metrics_to_swing_record(record, signal):
+    if record is None or not isinstance(signal, dict):
+        return
+
+    fields = (
+        "timing_mode",
+        "setup",
+        "zone_drift",
+        "direction_check",
+        "rsi_d1",
+        "rsi_4h",
+        "rsi_1h",
+        "rsi_15m",
+        "adx_4h",
+        "adx_1h",
+        "vol_4h",
+        "vol_1h",
+        "vol_15m",
+        "dist_1h_ema20",
+        "dist_4h_ema20",
+        "dist_15m_ema20",
+        "d1_note",
+        "h4_note",
+        "h1_note",
+        "m15_note",
+        "ok_count",
+        "total_conditions",
+        "missing",
+        "best_favorable_percent",
+        "worst_adverse_percent",
+        "best_favorable_r",
+        "worst_adverse_r",
+        "best_favorable_price",
+        "worst_adverse_price",
+        "last_market_price",
+        "last_tracking_at",
+        "tp1_hit_at",
+    )
+
+    for field in fields:
+        value = signal.get(field)
+
+        if value is not None:
+            record[field] = value
+
+    record["tp1_hit"] = bool(
+        signal.get(
+            "tp1_hit",
+            record.get("tp1_hit", False),
+        )
+    )
+    record["tp2_hit"] = bool(
+        signal.get(
+            "tp2_hit",
+            record.get("tp2_hit", False),
+        )
+    )
+    record["tp3_hit"] = bool(
+        signal.get(
+            "tp3_hit",
+            record.get("tp3_hit", False),
+        )
+    )
+
+
+def update_swing_excursion(signal, high, low, candle_time=None):
+    entry = safe_float(signal.get("entry"))
+    sl = safe_float(signal.get("sl"))
+    high = safe_float(high)
+    low = safe_float(low)
+
+    if (
+        entry <= 0
+        or sl <= 0
+        or high <= 0
+        or low <= 0
+    ):
+        return
+
+    risk = abs(entry - sl)
+
+    if risk <= 0:
+        return
+
+    direction = str(
+        signal.get("direction", "")
+    ).upper()
+
+    if direction == "LONG":
+        favorable_price = high
+        adverse_price = low
+        favorable_percent = max(
+            0.0,
+            (high - entry) / entry * 100,
+        )
+        adverse_percent = max(
+            0.0,
+            (entry - low) / entry * 100,
+        )
+        favorable_r = max(
+            0.0,
+            (high - entry) / risk,
+        )
+        adverse_r = max(
+            0.0,
+            (entry - low) / risk,
+        )
+
+    elif direction == "SHORT":
+        favorable_price = low
+        adverse_price = high
+        favorable_percent = max(
+            0.0,
+            (entry - low) / entry * 100,
+        )
+        adverse_percent = max(
+            0.0,
+            (high - entry) / entry * 100,
+        )
+        favorable_r = max(
+            0.0,
+            (entry - low) / risk,
+        )
+        adverse_r = max(
+            0.0,
+            (high - entry) / risk,
+        )
+
+    else:
+        return
+
+    if favorable_percent > safe_float(
+        signal.get("best_favorable_percent")
+    ):
+        signal["best_favorable_percent"] = round(
+            favorable_percent,
+            4,
+        )
+        signal["best_favorable_r"] = round(
+            favorable_r,
+            4,
+        )
+        signal["best_favorable_price"] = favorable_price
+
+    if adverse_percent > safe_float(
+        signal.get("worst_adverse_percent")
+    ):
+        signal["worst_adverse_percent"] = round(
+            adverse_percent,
+            4,
+        )
+        signal["worst_adverse_r"] = round(
+            adverse_r,
+            4,
+        )
+        signal["worst_adverse_price"] = adverse_price
+
+    signal["last_tracking_at"] = int(
+        candle_time or now_ts()
+    )
+
+
+def build_swing_diagnosis(record):
+    outcome = str(
+        record.get("trade_outcome", "OPEN")
+    ).upper()
+    timing_mode = str(
+        record.get("timing_mode", "1H_ONAYLI")
+    ).upper()
+
+    sent_at = int(
+        record.get("sent_at") or now_ts()
+    )
+    closed_at = int(
+        record.get("trade_closed_at")
+        or record.get("trade_last_updated_at")
+        or now_ts()
+    )
+    duration_minutes = int(
+        max(0, (closed_at - sent_at) / 60)
+    )
+
+    mfe_r = safe_float(
+        record.get("best_favorable_r")
+    )
+    mae_r = safe_float(
+        record.get("worst_adverse_r")
+    )
+    adx_4h = safe_float(record.get("adx_4h"))
+    adx_1h = safe_float(record.get("adx_1h"))
+    vol_4h = safe_float(record.get("vol_4h"))
+    vol_1h = safe_float(record.get("vol_1h"))
+    vol_15m = safe_float(record.get("vol_15m"))
+    zone_drift = safe_float(
+        record.get("zone_drift")
+    )
+    dist_15m = safe_float(
+        record.get("dist_15m_ema20")
+    )
+
+    diagnosis = {
+        "version": SWING_DIAGNOSIS_VERSION,
+        "code": "OPEN",
+        "primary": "Swing işlem sonucu bekleniyor",
+        "confidence": "DÜŞÜK",
+        "factors": [],
+        "duration_minutes": duration_minutes,
+        "best_favorable_r": round(mfe_r, 4),
+        "worst_adverse_r": round(mae_r, 4),
+        "provisional": outcome in (
+            "OPEN",
+            "TP1",
+            "TP2",
+            "STOP",
+        ),
+        "note": (
+            "Bu teşhis kesin piyasa sebebi değildir; "
+            "kayıtlı zamanlama, trend, hacim ve fiyat "
+            "hareketine dayalı teknik değerlendirmedir."
+        ),
+    }
+    factors = diagnosis["factors"]
+
+    if outcome == "TP3":
+        diagnosis["code"] = "SWING_SUCCESS"
+        diagnosis["primary"] = (
+            "SWING YÖNÜ VE ZAMANLAMASI BAŞARILI"
+        )
+        diagnosis["confidence"] = "YÜKSEK"
+        diagnosis["provisional"] = False
+        factors.append(
+            "İşlem maksimum hedef TP3'e ulaştı."
+        )
+        return diagnosis
+
+    if outcome == "BREAKEVEN":
+        diagnosis["code"] = "DIRECTION_CORRECT"
+        diagnosis["primary"] = (
+            "YÖN DOĞRUYDU, DEVAM GÜCÜ ZAYIFLADI"
+        )
+        diagnosis["confidence"] = "YÜKSEK"
+        diagnosis["provisional"] = False
+        factors.append(
+            "TP1 sonrası kalan bölüm girişten kapandı."
+        )
+        return diagnosis
+
+    if outcome in ("TP1", "TP2"):
+        diagnosis["code"] = "DIRECTION_CORRECT"
+        diagnosis["primary"] = (
+            "SWING YÖNÜ DOĞRU, İŞLEM DEVAM EDİYOR"
+        )
+        diagnosis["confidence"] = "YÜKSEK"
+        factors.append(
+            f"İşlem {outcome} seviyesine ulaştı."
+        )
+        return diagnosis
+
+    if outcome == "EXPIRED":
+        result_r = safe_float(
+            record.get("trade_result_r")
+        )
+
+        if result_r > 0:
+            diagnosis["code"] = "DIRECTION_RECOVERED_LATE"
+            diagnosis["primary"] = (
+                "YÖN KISMEN DOĞRUYDU, HEDEF GEÇ KALDI"
+            )
+        else:
+            diagnosis["code"] = "NO_SWING_CONTINUATION"
+            diagnosis["primary"] = (
+                "120 SAATTE BELİRGİN SWING DEVAMI OLUŞMADI"
+            )
+
+        diagnosis["confidence"] = "ORTA"
+        diagnosis["provisional"] = False
+        factors.append(
+            "Maksimum Swing takip süresi tamamlandı."
+        )
+        return diagnosis
+
+    if outcome != "STOP":
+        return diagnosis
+
+    diagnosis["confidence"] = "ORTA"
+
+    if (
+        timing_mode == "15M_ERKEN"
+        and duration_minutes <= 360
+        and mfe_r < 0.20
+    ):
+        diagnosis["code"] = "EARLY_ENTRY_FAILED"
+        diagnosis["primary"] = (
+            "15M ERKEN GİRİŞ BAŞARISIZ / 1H ONAYI GELMEDİ"
+        )
+        factors.append(
+            "Erken giriş ilk 6 saatte anlamlı lehe hareket yapmadan stop oldu."
+        )
+
+    elif mfe_r >= 0.35:
+        diagnosis["code"] = "DIRECTION_CORRECT"
+        diagnosis["primary"] = (
+            "ÖNCE LEHE GİTTİ, SONRA SWING YAPISI BOZULDU"
+        )
+        factors.append(
+            "Stop öncesinde işlem en az 0.35R lehe hareket etti."
+        )
+
+    elif (
+        min(adx_4h, adx_1h) < 16
+        or max(vol_4h, vol_1h) < 0.85
+    ):
+        diagnosis["code"] = "WEAK_TREND_OR_VOLUME"
+        diagnosis["primary"] = (
+            "TREND / HACİM DEVAMI ZAYIF KALDI"
+        )
+        factors.append(
+            "Üst zaman trend gücü veya hacim devamı sınırdaydı."
+        )
+
+    else:
+        diagnosis["code"] = "SETUP_FAILED"
+        diagnosis["primary"] = (
+            "SWING KURULUMU DEVAM ETMEDİ"
+        )
+        factors.append(
+            "Kurulum yeterli lehe hareket oluşturmadan stop oldu."
+        )
+
+    if zone_drift > 0.30:
+        factors.append(
+            "Gönderim anında fiyat giriş bölgesinden uzaklaşmıştı."
+        )
+
+    if timing_mode == "15M_ERKEN":
+        if vol_15m < 0.90:
+            factors.append(
+                "15M erken giriş hacmi devam için sınırdaydı."
+            )
+
+        if dist_15m > 0.80:
+            factors.append(
+                "15M erken giriş EMA20'den göreceli olarak uzaktı."
+            )
+
+    if mae_r >= 1.0 and duration_minutes <= 360:
+        factors.append(
+            "Stop mesafesi ilk 6 saat içinde tamamen tüketildi."
+        )
+
+    return diagnosis
+
+
+def sync_swing_open_metrics(signal):
+    record_id = signal.get("performance_record_id")
+
+    if not record_id:
+        return False
+
+    try:
+        ledger = load_swing_performance()
+        record = swing_record_by_id(
+            ledger,
+            record_id,
+        )
+
+        if record is None:
+            return False
+
+        apply_signal_metrics_to_swing_record(
+            record,
+            signal,
+        )
+        return save_swing_performance(ledger)
+
+    except Exception as exc:
+        print(
+            "Swing açık metrik senkron hatası:",
+            exc,
+        )
+        return False
+
+
+def update_swing_post_stop_diagnosis(
+    record_id,
+    status,
+    returned_level=None,
+    age_minutes=None,
+):
+    if not record_id:
+        return False
+
+    try:
+        ledger = load_swing_performance()
+        record = swing_record_by_id(
+            ledger,
+            record_id,
+        )
+
+        if record is None:
+            return False
+
+        diagnosis = (
+            record.get("diagnosis")
+            or build_swing_diagnosis(record)
+        )
+        diagnosis.setdefault("factors", [])
+
+        timing_mode = str(
+            record.get("timing_mode", "1H_ONAYLI")
+        ).upper()
+
+        if status == "TARGET_RETURN":
+            if timing_mode == "15M_ERKEN":
+                diagnosis["code"] = (
+                    "DIRECTION_RIGHT_ENTRY_EARLY"
+                )
+                diagnosis["primary"] = (
+                    "YÖN DOĞRUYDU, 15M GİRİŞ ERKEN KALDI"
+                )
+            else:
+                diagnosis["code"] = (
+                    "DIRECTION_RIGHT_STOP_TIGHT"
+                )
+                diagnosis["primary"] = (
+                    "YÖN DOĞRUYDU, STOP ERKEN / DAR KALDI"
+                )
+
+            diagnosis["confidence"] = "YÜKSEK"
+            diagnosis["provisional"] = False
+            diagnosis["factors"].append(
+                f"Stop sonrası fiyat {returned_level} seviyesine ulaştı."
+            )
+
+        elif status == "ENTRY_RECOVERY":
+            diagnosis["code"] = (
+                "DIRECTION_RECOVERED_LATE"
+            )
+            diagnosis["primary"] = (
+                "YÖN SONRADAN TOPARLANDI, TP1 GELMEDİ"
+            )
+            diagnosis["confidence"] = "ORTA"
+            diagnosis["provisional"] = False
+            diagnosis["factors"].append(
+                "Stop sonrası fiyat giriş seviyesini geri aldı fakat TP1'e ulaşmadı."
+            )
+
+        else:
+            diagnosis["provisional"] = False
+            diagnosis["factors"].append(
+                "Stop sonrası 48 saat içinde giriş veya TP1 yönlü dönüş oluşmadı."
+            )
+
+        record["post_stop_follow"] = {
+            "status": status,
+            "returned_level": returned_level,
+            "age_minutes": age_minutes,
+            "updated_at": now_ts(),
+            "updated_at_tr": tr_now_text(),
+        }
+        record["diagnosis"] = diagnosis
+        return save_swing_performance(ledger)
+
+    except Exception as exc:
+        print(
+            "Swing stop sonrası teşhis güncelleme hatası:",
+            exc,
+        )
+        return False
+
+
+def add_swing_post_stop_follow(state, signal, exit_price):
+    record_id = signal.get("performance_record_id")
+
+    if not record_id:
+        return
+
+    state.setdefault("post_stop_follow", {})
+    stopped_at = now_ts()
+
+    state["post_stop_follow"][str(record_id)] = {
+        "record_id": record_id,
+        "symbol": normalize_bot_symbol(
+            signal.get("symbol")
+        ),
+        "direction": signal.get("direction"),
+        "timing_mode": signal.get(
+            "timing_mode",
+            "1H_ONAYLI",
+        ),
+        "entry": signal.get("entry"),
+        "tp1": signal.get("tp1"),
+        "tp2": signal.get("tp2"),
+        "tp3": signal.get("tp3"),
+        "sl": signal.get("sl"),
+        "stop_exit": exit_price,
+        "stopped_at": stopped_at,
+        "last_checked_at": stopped_at,
+        "reported_checkpoints": [],
+        "recovered_entry": False,
+        "reached_tp1": False,
+        "reached_tp2": False,
+        "reached_tp3": False,
+        "resolved": False,
+    }
+    save_state(state)
+
+
+def check_swing_post_stop_follow(exchange, state):
+    follow = state.setdefault(
+        "post_stop_follow",
+        {},
+    )
+
+    if not follow:
+        return
+
+    changed = False
+
+    for key, item in list(follow.items()):
+        try:
+            if item.get("resolved"):
+                continue
+
+            symbol = normalize_bot_symbol(
+                item.get("symbol")
+            )
+            direction = str(
+                item.get("direction", "")
+            ).upper()
+            entry = safe_float(item.get("entry"))
+            tp1 = safe_float(item.get("tp1"))
+            tp2 = safe_float(item.get("tp2"))
+            tp3 = safe_float(item.get("tp3"))
+            stopped_at = int(
+                item.get("stopped_at") or now_ts()
+            )
+            last_checked_at = int(
+                item.get("last_checked_at")
+                or stopped_at
+            )
+            age_minutes = int(
+                max(
+                    0,
+                    (now_ts() - stopped_at) / 60,
+                )
+            )
+
+            candles = fetch_candles_since(
+                exchange,
+                symbol,
+                TRACK_TIMEFRAME,
+                since_seconds=max(
+                    stopped_at,
+                    last_checked_at - 30 * 60,
+                ),
+                limit=TRACK_LIMIT,
+            )
+
+            for candle in candles:
+                high = safe_float(candle.get("high"))
+                low = safe_float(candle.get("low"))
+
+                if direction == "LONG":
+                    item["recovered_entry"] = bool(
+                        item.get("recovered_entry")
+                        or high >= entry
+                    )
+                    item["reached_tp1"] = bool(
+                        item.get("reached_tp1")
+                        or high >= tp1
+                    )
+                    item["reached_tp2"] = bool(
+                        item.get("reached_tp2")
+                        or high >= tp2
+                    )
+                    item["reached_tp3"] = bool(
+                        item.get("reached_tp3")
+                        or high >= tp3
+                    )
+
+                elif direction == "SHORT":
+                    item["recovered_entry"] = bool(
+                        item.get("recovered_entry")
+                        or low <= entry
+                    )
+                    item["reached_tp1"] = bool(
+                        item.get("reached_tp1")
+                        or low <= tp1
+                    )
+                    item["reached_tp2"] = bool(
+                        item.get("reached_tp2")
+                        or low <= tp2
+                    )
+                    item["reached_tp3"] = bool(
+                        item.get("reached_tp3")
+                        or low <= tp3
+                    )
+
+            item["last_checked_at"] = now_ts()
+
+            if item.get("reached_tp1"):
+                returned_level = (
+                    "TP3"
+                    if item.get("reached_tp3")
+                    else "TP2"
+                    if item.get("reached_tp2")
+                    else "TP1"
+                )
+                update_swing_post_stop_diagnosis(
+                    item.get("record_id"),
+                    status="TARGET_RETURN",
+                    returned_level=returned_level,
+                    age_minutes=age_minutes,
+                )
+                item["resolved"] = True
+                item["returned_level"] = returned_level
+                item["resolved_at"] = now_ts()
+                changed = True
+                continue
+
+            reported = item.setdefault(
+                "reported_checkpoints",
+                [],
+            )
+
+            for checkpoint in POST_STOP_CHECKPOINT_MINUTES:
+                if (
+                    age_minutes >= checkpoint
+                    and checkpoint not in reported
+                ):
+                    reported.append(checkpoint)
+                    changed = True
+
+            if age_minutes >= POST_STOP_MAX_TRACK_MINUTES:
+                if item.get("recovered_entry"):
+                    status = "ENTRY_RECOVERY"
+                else:
+                    status = "NO_RETURN"
+
+                update_swing_post_stop_diagnosis(
+                    item.get("record_id"),
+                    status=status,
+                    returned_level=None,
+                    age_minutes=age_minutes,
+                )
+                item["resolved"] = True
+                item["resolved_at"] = now_ts()
+                changed = True
+
+        except Exception as exc:
+            print(
+                key,
+                "Swing stop sonrası takip hatası:",
+                exc,
+            )
+
+    keep_seconds = POST_STOP_KEEP_HOURS * 60 * 60
+
+    for key, item in list(follow.items()):
+        stopped_at = int(item.get("stopped_at", 0))
+
+        if (
+            item.get("resolved")
+            and now_ts() - stopped_at > keep_seconds
+        ):
+            follow.pop(key, None)
+            changed = True
+
+    if changed:
+        save_state(state)
+
+
 def record_swing_performance(signal):
     try:
         ledger = load_swing_performance()
@@ -585,12 +1315,14 @@ def record_swing_performance(signal):
         ):
             return False
 
+        record_id = (
+            f"{symbol}_{direction}_"
+            f"{signal.get('timing_mode', '1H_ONAYLI')}_"
+            f"{sent_at}"
+        )
+
         record = {
-            "id": (
-                f"{symbol}_{direction}_"
-                f"{signal.get('timing_mode', '1H_ONAYLI')}_"
-                f"{sent_at}"
-            ),
+            "id": record_id,
             "stage": "REAL_SIGNAL",
             "symbol": symbol,
             "direction": direction,
@@ -633,6 +1365,35 @@ def record_swing_performance(signal):
             "score": safe_float(
                 signal.get("score")
             ),
+            "minimum_score": safe_float(
+                signal.get("minimum_score")
+            ),
+            "rsi_d1": safe_float(
+                signal.get("rsi_d1")
+            ),
+            "rsi_4h": safe_float(
+                signal.get("rsi_4h")
+            ),
+            "dist_1h_ema20": safe_float(
+                signal.get("dist_1h_ema20")
+            ),
+            "dist_4h_ema20": safe_float(
+                signal.get("dist_4h_ema20")
+            ),
+            "dist_15m_ema20": safe_float(
+                signal.get("dist_15m_ema20")
+            ),
+            "d1_note": signal.get("d1_note"),
+            "h4_note": signal.get("h4_note"),
+            "h1_note": signal.get("h1_note"),
+            "m15_note": signal.get("m15_note"),
+            "ok_count": signal.get("ok_count"),
+            "total_conditions": signal.get(
+                "total_conditions"
+            ),
+            "missing": list(
+                signal.get("missing") or []
+            ),
             "zone_drift": safe_float(
                 signal.get("zone_drift")
             ),
@@ -665,6 +1426,11 @@ def record_swing_performance(signal):
             "latest_directional_move_percent": 0.0,
             "best_favorable_percent": 0.0,
             "worst_adverse_percent": 0.0,
+            "best_favorable_r": 0.0,
+            "worst_adverse_r": 0.0,
+            "best_favorable_price": reference_price,
+            "worst_adverse_price": reference_price,
+            "last_market_price": reference_price,
             "direction_status": "OPEN",
             "direction_reason": (
                 "Gönderim sonrası Swing yönü izleniyor"
@@ -672,6 +1438,15 @@ def record_swing_performance(signal):
             "trade_outcome": "OPEN",
             "trade_result_r": None,
             "milestones": [],
+            "diagnosis": {
+                "version": SWING_DIAGNOSIS_VERSION,
+                "code": "OPEN",
+                "primary": "Swing işlem sonucu bekleniyor",
+                "confidence": "DÜŞÜK",
+                "factors": [],
+                "provisional": True,
+            },
+            "post_stop_follow": None,
         }
 
         records.append(record)
@@ -702,9 +1477,10 @@ def record_swing_performance(signal):
             -PERFORMANCE_MAX_RECORDS:
         ]
 
-        return save_swing_performance(
-            ledger
-        )
+        if save_swing_performance(ledger):
+            return record_id
+
+        return False
 
     except Exception as exc:
         print(
@@ -818,9 +1594,11 @@ def update_swing_trade_outcome(
                 tr_now_text()
             )
 
-        return save_swing_performance(
-            ledger
+        record["diagnosis"] = build_swing_diagnosis(
+            record
         )
+
+        return save_swing_performance(ledger)
 
     except Exception as exc:
         print(
@@ -2985,6 +3763,9 @@ def analyze_direction(
             "vol_4h": vol_4h,
             "vol_1h": vol_1h,
             "vol_15m": vol_15m,
+            "dist_1h_ema20": dist_1h_ema20,
+            "dist_4h_ema20": dist_4h_ema20,
+            "dist_15m_ema20": dist_15m_ema20,
             "support": support,
             "resistance": resistance,
             "h1_ema50_reference": h1_ema50,
@@ -3211,9 +3992,57 @@ def save_open_signal(
         "risk_percent": signal[
             "risk_percent"
         ],
+        "performance_record_id": signal.get(
+            "performance_record_id"
+        ),
+        "setup": signal.get("setup"),
+        "entry_low": signal.get("entry_low"),
+        "entry_high": signal.get("entry_high"),
+        "zone_drift": signal.get("zone_drift"),
+        "direction_check": signal.get(
+            "direction_check"
+        ),
+        "rsi_d1": signal.get("rsi_d1"),
+        "rsi_4h": signal.get("rsi_4h"),
+        "rsi_1h": signal.get("rsi_1h"),
+        "rsi_15m": signal.get("rsi_15m"),
+        "adx_4h": signal.get("adx_4h"),
+        "adx_1h": signal.get("adx_1h"),
+        "vol_4h": signal.get("vol_4h"),
+        "vol_1h": signal.get("vol_1h"),
+        "vol_15m": signal.get("vol_15m"),
+        "dist_1h_ema20": signal.get(
+            "dist_1h_ema20"
+        ),
+        "dist_4h_ema20": signal.get(
+            "dist_4h_ema20"
+        ),
+        "dist_15m_ema20": signal.get(
+            "dist_15m_ema20"
+        ),
+        "d1_note": signal.get("d1_note"),
+        "h4_note": signal.get("h4_note"),
+        "h1_note": signal.get("h1_note"),
+        "m15_note": signal.get("m15_note"),
+        "ok_count": signal.get("ok_count"),
+        "total_conditions": signal.get(
+            "total_conditions"
+        ),
+        "missing": list(signal.get("missing") or []),
+        "best_favorable_percent": 0.0,
+        "worst_adverse_percent": 0.0,
+        "best_favorable_r": 0.0,
+        "worst_adverse_r": 0.0,
+        "best_favorable_price": signal.get("entry"),
+        "worst_adverse_price": signal.get("entry"),
+        "last_market_price": signal.get(
+            "current_price",
+            signal.get("entry"),
+        ),
         "opened_at": opened_at,
         "last_checked_at": opened_at,
         "tp1_hit": False,
+        "tp1_hit_at": 0,
         "tp2_hit": False,
         "tp3_hit": False,
         "closed": False,
@@ -3517,6 +4346,9 @@ def check_open_signals(
                     expiry_price,
                 )
 
+                sync_swing_open_metrics(signal)
+
+
                 notify_expired(
                     state,
                     symbol,
@@ -3555,6 +4387,13 @@ def check_open_signals(
                     False,
                 )
             )
+            tp1_hit_at = int(
+                signal.get(
+                    "tp1_hit_at",
+                    0,
+                )
+                or 0
+            )
             tp2_hit = bool(
                 signal.get(
                     "tp2_hit",
@@ -3580,6 +4419,18 @@ def check_open_signals(
                 close = float(
                     candle["close"]
                 )
+                candle_time = int(
+                    candle.get("time", 0)
+                    or 0
+                )
+
+                update_swing_excursion(
+                    signal,
+                    high,
+                    low,
+                    candle_time=candle_time,
+                )
+                signal["last_market_price"] = close
 
                 # TP1'in ilk geldigi mumda
                 # BE kontrol edilmez.
@@ -3594,6 +4445,14 @@ def check_open_signals(
                             if close >= entry:
                                 tp1_hit = True
                                 just_hit_tp1 = True
+                                tp1_hit_at = (
+                                    candle_time or now_ts()
+                                )
+                                signal["tp1_hit"] = True
+                                signal["tp1_hit_at"] = tp1_hit_at
+
+                                sync_swing_open_metrics(signal)
+
 
                                 notify_tp1(
                                     state,
@@ -3603,6 +4462,14 @@ def check_open_signals(
                                     tp1,
                                 )
                             else:
+                                sync_swing_open_metrics(signal)
+
+                                add_swing_post_stop_follow(
+                                    state,
+                                    signal,
+                                    close,
+                                )
+
                                 notify_stop(
                                     state,
                                     symbol,
@@ -3615,6 +4482,14 @@ def check_open_signals(
                                 break
 
                         elif low <= sl:
+                            sync_swing_open_metrics(signal)
+
+                            add_swing_post_stop_follow(
+                                state,
+                                signal,
+                                close,
+                            )
+
                             notify_stop(
                                 state,
                                 symbol,
@@ -3629,6 +4504,14 @@ def check_open_signals(
                         elif high >= tp1:
                             tp1_hit = True
                             just_hit_tp1 = True
+                            tp1_hit_at = (
+                                candle_time or now_ts()
+                            )
+                            signal["tp1_hit"] = True
+                            signal["tp1_hit_at"] = tp1_hit_at
+
+                            sync_swing_open_metrics(signal)
+
 
                             notify_tp1(
                                 state,
@@ -3645,6 +4528,9 @@ def check_open_signals(
                     ):
                         tp2_hit = True
 
+                        sync_swing_open_metrics(signal)
+
+
                         notify_tp2(
                             state,
                             symbol,
@@ -3659,6 +4545,9 @@ def check_open_signals(
                     ):
                         tp3_hit = True
 
+                        sync_swing_open_metrics(signal)
+
+
                         notify_tp3(
                             state,
                             symbol,
@@ -3672,8 +4561,14 @@ def check_open_signals(
                     if (
                         tp1_hit
                         and not just_hit_tp1
+                        and (
+                            tp1_hit_at <= 0
+                            or candle_time > tp1_hit_at
+                        )
                         and low <= entry
                     ):
+                        sync_swing_open_metrics(signal)
+
                         notify_breakeven(
                             state,
                             symbol,
@@ -3693,6 +4588,14 @@ def check_open_signals(
                             if close <= entry:
                                 tp1_hit = True
                                 just_hit_tp1 = True
+                                tp1_hit_at = (
+                                    candle_time or now_ts()
+                                )
+                                signal["tp1_hit"] = True
+                                signal["tp1_hit_at"] = tp1_hit_at
+
+                                sync_swing_open_metrics(signal)
+
 
                                 notify_tp1(
                                     state,
@@ -3702,6 +4605,14 @@ def check_open_signals(
                                     tp1,
                                 )
                             else:
+                                sync_swing_open_metrics(signal)
+
+                                add_swing_post_stop_follow(
+                                    state,
+                                    signal,
+                                    close,
+                                )
+
                                 notify_stop(
                                     state,
                                     symbol,
@@ -3714,6 +4625,14 @@ def check_open_signals(
                                 break
 
                         elif high >= sl:
+                            sync_swing_open_metrics(signal)
+
+                            add_swing_post_stop_follow(
+                                state,
+                                signal,
+                                close,
+                            )
+
                             notify_stop(
                                 state,
                                 symbol,
@@ -3728,6 +4647,14 @@ def check_open_signals(
                         elif low <= tp1:
                             tp1_hit = True
                             just_hit_tp1 = True
+                            tp1_hit_at = (
+                                candle_time or now_ts()
+                            )
+                            signal["tp1_hit"] = True
+                            signal["tp1_hit_at"] = tp1_hit_at
+
+                            sync_swing_open_metrics(signal)
+
 
                             notify_tp1(
                                 state,
@@ -3744,6 +4671,9 @@ def check_open_signals(
                     ):
                         tp2_hit = True
 
+                        sync_swing_open_metrics(signal)
+
+
                         notify_tp2(
                             state,
                             symbol,
@@ -3758,6 +4688,9 @@ def check_open_signals(
                     ):
                         tp3_hit = True
 
+                        sync_swing_open_metrics(signal)
+
+
                         notify_tp3(
                             state,
                             symbol,
@@ -3771,8 +4704,14 @@ def check_open_signals(
                     if (
                         tp1_hit
                         and not just_hit_tp1
+                        and (
+                            tp1_hit_at <= 0
+                            or candle_time > tp1_hit_at
+                        )
                         and high >= entry
                     ):
+                        sync_swing_open_metrics(signal)
+
                         notify_breakeven(
                             state,
                             symbol,
@@ -3792,8 +4731,11 @@ def check_open_signals(
                 now_ts()
             )
             signal["tp1_hit"] = tp1_hit
+            signal["tp1_hit_at"] = tp1_hit_at
             signal["tp2_hit"] = tp2_hit
             signal["tp3_hit"] = tp3_hit
+
+            sync_swing_open_metrics(signal)
 
             updated[key] = signal
 
@@ -4051,6 +4993,13 @@ def main():
     )
 
     state = load_state()
+
+    check_swing_post_stop_follow(
+        exchange,
+        state,
+    )
+
+    state = load_state()
     scan_coins = get_scan_coins(
         exchange
     )
@@ -4295,9 +5244,14 @@ def main():
         )
 
         if send_telegram(message):
-            record_swing_performance(
+            record_id = record_swing_performance(
                 signal
             )
+
+            if record_id:
+                signal["performance_record_id"] = (
+                    record_id
+                )
 
             save_open_signal(
                 state,
