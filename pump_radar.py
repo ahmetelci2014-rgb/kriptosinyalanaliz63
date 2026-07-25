@@ -34,7 +34,16 @@ TOKEN = os.getenv("TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
 STATE_FILE = "pump_radar_state.json"
+PERFORMANCE_FILE = "pump_performance_ledger.json"
 TR_TIMEZONE = timezone(timedelta(hours=3))
+
+# Gönderilen gerçek Pump/Dump sinyallerinin yön performansı
+# ve TP/SL sonucu ayrı bir dosyada saklanır.
+PERFORMANCE_WINDOWS_MINUTES = (5, 15, 30, 60)
+PERFORMANCE_KEEP_DAYS = 21
+PERFORMANCE_MAX_RECORDS = 500
+PERFORMANCE_DIRECTION_THRESHOLD_PERCENT = 0.50
+PERFORMANCE_MIXED_THRESHOLD_PERCENT = 0.25
 
 # Hacmi yüksek uygun OKX USDT futures pariteleri taranır.
 MAX_SCAN_COINS = 300
@@ -338,6 +347,696 @@ def increment_stat(state, key):
     state["stats"][key] = int(
         state["stats"].get(key, 0)
     ) + 1
+
+
+
+# =========================================================
+# PUMP / DUMP PERFORMANS KAYDI
+# =========================================================
+
+def load_pump_performance():
+    try:
+        if not os.path.exists(PERFORMANCE_FILE):
+            return {
+                "records": [],
+                "summary": {},
+            }
+
+        with open(
+            PERFORMANCE_FILE,
+            "r",
+            encoding="utf-8",
+        ) as handle:
+            raw = handle.read().strip()
+
+        if not raw:
+            return {
+                "records": [],
+                "summary": {},
+            }
+
+        ledger = json.loads(raw)
+
+        if not isinstance(ledger, dict):
+            ledger = {}
+
+        ledger.setdefault("records", [])
+        ledger.setdefault("summary", {})
+        return ledger
+
+    except Exception as exc:
+        print(
+            "Pump performans dosyası okuma hatası:",
+            exc,
+        )
+        return {
+            "records": [],
+            "summary": {},
+        }
+
+
+def rebuild_pump_performance_summary(ledger):
+    records = ledger.get("records", [])
+
+    summary = {
+        "total": len(records),
+        "direction_open": 0,
+        "direction_correct": 0,
+        "direction_wrong": 0,
+        "direction_mixed": 0,
+        "trade_open": 0,
+        "tp1": 0,
+        "tp2": 0,
+        "tp3": 0,
+        "stop": 0,
+        "breakeven": 0,
+        "expired": 0,
+        "long": 0,
+        "short": 0,
+    }
+
+    for record in records:
+        direction = str(
+            record.get("direction", "")
+        ).upper()
+
+        if direction == "LONG":
+            summary["long"] += 1
+        elif direction == "SHORT":
+            summary["short"] += 1
+
+        direction_status = str(
+            record.get(
+                "direction_status",
+                "OPEN",
+            )
+        ).upper()
+
+        if direction_status == "OPEN":
+            summary["direction_open"] += 1
+        elif direction_status == "DIRECTION_CORRECT":
+            summary["direction_correct"] += 1
+        elif direction_status == "DIRECTION_WRONG":
+            summary["direction_wrong"] += 1
+        elif direction_status == "MIXED":
+            summary["direction_mixed"] += 1
+
+        trade_outcome = str(
+            record.get(
+                "trade_outcome",
+                "OPEN",
+            )
+        ).upper()
+
+        if trade_outcome == "OPEN":
+            summary["trade_open"] += 1
+        elif trade_outcome == "TP1":
+            summary["tp1"] += 1
+        elif trade_outcome == "TP2":
+            summary["tp2"] += 1
+        elif trade_outcome == "TP3":
+            summary["tp3"] += 1
+        elif trade_outcome == "STOP":
+            summary["stop"] += 1
+        elif trade_outcome == "BREAKEVEN":
+            summary["breakeven"] += 1
+        elif trade_outcome == "EXPIRED":
+            summary["expired"] += 1
+
+    ledger["summary"] = summary
+    ledger["updated_at"] = now_ts()
+    ledger["updated_at_tr"] = tr_now_text()
+
+
+def save_pump_performance(ledger):
+    try:
+        rebuild_pump_performance_summary(
+            ledger
+        )
+
+        with open(
+            PERFORMANCE_FILE,
+            "w",
+            encoding="utf-8",
+        ) as handle:
+            json.dump(
+                ledger,
+                handle,
+                indent=2,
+                ensure_ascii=False,
+            )
+
+        return True
+
+    except Exception as exc:
+        print(
+            "Pump performans dosyası kayıt hatası:",
+            exc,
+        )
+        return False
+
+
+def pump_directional_move_percent(
+    direction,
+    current_price,
+    reference_price,
+):
+    current = safe_float(current_price)
+    reference = safe_float(reference_price)
+
+    if current <= 0 or reference <= 0:
+        return 0.0
+
+    raw_move = (
+        current - reference
+    ) / reference * 100
+
+    if str(direction).upper() == "LONG":
+        return raw_move
+
+    return -raw_move
+
+
+def classify_pump_direction(record):
+    snapshots = record.get(
+        "snapshots",
+        {},
+    )
+
+    move_60 = safe_float(
+        snapshots.get("60m")
+    )
+    best_favorable = safe_float(
+        record.get(
+            "best_favorable_percent"
+        )
+    )
+    worst_adverse = safe_float(
+        record.get(
+            "worst_adverse_percent"
+        )
+    )
+
+    threshold = (
+        PERFORMANCE_DIRECTION_THRESHOLD_PERCENT
+    )
+    mixed_threshold = (
+        PERFORMANCE_MIXED_THRESHOLD_PERCENT
+    )
+
+    if (
+        move_60 >= threshold
+        or (
+            best_favorable >= threshold
+            and worst_adverse < threshold
+        )
+    ):
+        return (
+            "DIRECTION_CORRECT",
+            "60 dakika içinde sinyal yönü desteklendi",
+        )
+
+    if (
+        move_60 <= -threshold
+        or (
+            worst_adverse >= threshold
+            and best_favorable < threshold
+        )
+    ):
+        return (
+            "DIRECTION_WRONG",
+            "60 dakika içinde fiyat sinyalin tersine gitti",
+        )
+
+    if abs(move_60) <= mixed_threshold:
+        return (
+            "MIXED",
+            "60 dakika sonunda belirgin yön oluşmadı",
+        )
+
+    return (
+        (
+            "DIRECTION_CORRECT"
+            if move_60 > 0
+            else "DIRECTION_WRONG"
+        ),
+        "60 dakika son fiyatına göre sınıflandırıldı",
+    )
+
+
+def record_pump_performance(signal):
+    try:
+        ledger = load_pump_performance()
+        records = ledger.setdefault(
+            "records",
+            [],
+        )
+
+        sent_at = now_ts()
+        symbol = normalize_bot_symbol(
+            signal.get("symbol")
+        )
+        direction = str(
+            signal.get("direction", "")
+        ).upper()
+
+        reference_price = safe_float(
+            signal.get(
+                "current_price",
+                signal.get("entry"),
+            )
+        )
+
+        if (
+            not symbol
+            or direction not in ("LONG", "SHORT")
+            or reference_price <= 0
+        ):
+            return False
+
+        record = {
+            "id": (
+                f"{symbol}_{direction}_"
+                f"PUMP_DUMP_{sent_at}"
+            ),
+            "stage": "REAL_SIGNAL",
+            "symbol": symbol,
+            "direction": direction,
+            "source": signal.get("source"),
+            "setup_name": signal.get(
+                "setup_name"
+            ),
+            "sent_at": sent_at,
+            "sent_at_tr": tr_now_text(),
+            "reference_price": reference_price,
+            "analysis_entry": safe_float(
+                signal.get("entry")
+            ),
+            "entry": safe_float(
+                signal.get("entry")
+            ),
+            "tp1": safe_float(
+                signal.get("tp1")
+            ),
+            "tp2": safe_float(
+                signal.get("tp2")
+            ),
+            "tp3": safe_float(
+                signal.get("tp3")
+            ),
+            "sl": safe_float(
+                signal.get("sl")
+            ),
+            "risk_percent": safe_float(
+                signal.get("risk_percent")
+            ),
+            "score": safe_float(
+                signal.get("score")
+            ),
+            "break_level": safe_float(
+                signal.get("break_level")
+            ),
+            "entry_drift_percent": safe_float(
+                signal.get(
+                    "entry_drift_percent"
+                )
+            ),
+            "break_level_distance_percent": safe_float(
+                signal.get(
+                    "break_level_distance_percent"
+                )
+            ),
+            "snapshots": {},
+            "latest_price": reference_price,
+            "latest_directional_move_percent": 0.0,
+            "best_favorable_percent": 0.0,
+            "worst_adverse_percent": 0.0,
+            "direction_status": "OPEN",
+            "direction_reason": (
+                "Gönderim sonrası yön performansı izleniyor"
+            ),
+            "trade_outcome": "OPEN",
+            "trade_result_r": None,
+            "milestones": [],
+        }
+
+        records.append(record)
+
+        cutoff = (
+            now_ts()
+            - PERFORMANCE_KEEP_DAYS
+            * 24
+            * 60
+            * 60
+        )
+
+        records = [
+            item
+            for item in records
+            if int(
+                item.get("sent_at", 0)
+            ) >= cutoff
+        ]
+
+        records.sort(
+            key=lambda item: int(
+                item.get("sent_at", 0)
+            )
+        )
+
+        ledger["records"] = records[
+            -PERFORMANCE_MAX_RECORDS:
+        ]
+
+        return save_pump_performance(
+            ledger
+        )
+
+    except Exception as exc:
+        print(
+            "Pump performans kaydı oluşturma hatası:",
+            exc,
+        )
+        return False
+
+
+def update_pump_trade_outcome(
+    symbol,
+    direction,
+    outcome,
+    current_price=None,
+    result_r=None,
+):
+    try:
+        ledger = load_pump_performance()
+        records = ledger.setdefault(
+            "records",
+            [],
+        )
+
+        symbol = normalize_bot_symbol(
+            symbol
+        )
+        direction = str(
+            direction
+        ).upper()
+        outcome = str(outcome).upper()
+
+        eligible = [
+            record
+            for record in records
+            if normalize_bot_symbol(
+                record.get("symbol")
+            ) == symbol
+            and str(
+                record.get("direction", "")
+            ).upper() == direction
+            and str(
+                record.get(
+                    "trade_outcome",
+                    "OPEN",
+                )
+            ).upper()
+            not in (
+                "TP3",
+                "STOP",
+                "BREAKEVEN",
+                "EXPIRED",
+            )
+        ]
+
+        if not eligible:
+            return False
+
+        record = max(
+            eligible,
+            key=lambda item: int(
+                item.get("sent_at", 0)
+            ),
+        )
+
+        current = safe_float(
+            current_price
+        )
+
+        if result_r is None and current > 0:
+            result_r = calculate_open_r(
+                direction,
+                record.get("entry"),
+                record.get("sl"),
+                current,
+            )
+
+        milestone = {
+            "outcome": outcome,
+            "time": now_ts(),
+            "time_tr": tr_now_text(),
+            "price": (
+                current
+                if current > 0
+                else None
+            ),
+            "result_r": result_r,
+        }
+
+        record.setdefault(
+            "milestones",
+            [],
+        ).append(milestone)
+
+        record["trade_outcome"] = outcome
+        record["trade_result_r"] = result_r
+        record["trade_last_updated_at"] = (
+            now_ts()
+        )
+        record["trade_last_updated_at_tr"] = (
+            tr_now_text()
+        )
+
+        if outcome in (
+            "TP3",
+            "STOP",
+            "BREAKEVEN",
+            "EXPIRED",
+        ):
+            record["trade_closed_at"] = now_ts()
+            record["trade_closed_at_tr"] = (
+                tr_now_text()
+            )
+
+        return save_pump_performance(
+            ledger
+        )
+
+    except Exception as exc:
+        print(
+            "Pump işlem sonucu kayıt hatası:",
+            exc,
+        )
+        return False
+
+
+def update_pump_performance(exchange):
+    ledger = load_pump_performance()
+    records = ledger.setdefault(
+        "records",
+        [],
+    )
+
+    if not records:
+        save_pump_performance(ledger)
+        print(
+            "Pump performans kaydı: açık gözlem yok."
+        )
+        return
+
+    active_records = [
+        record
+        for record in records
+        if str(
+            record.get(
+                "direction_status",
+                "OPEN",
+            )
+        ).upper() == "OPEN"
+    ]
+
+    symbols = sorted({
+        normalize_bot_symbol(
+            record.get("symbol")
+        )
+        for record in active_records
+        if normalize_bot_symbol(
+            record.get("symbol")
+        )
+    })
+
+    price_map = {}
+
+    if symbols:
+        try:
+            okx_symbols = [
+                to_okx_symbol(symbol)
+                for symbol in symbols
+            ]
+
+            tickers = exchange.fetch_tickers(
+                okx_symbols
+            )
+
+            for symbol in symbols:
+                ticker = tickers.get(
+                    to_okx_symbol(symbol),
+                    {},
+                )
+                price = ticker.get("last")
+
+                if price is not None:
+                    price_map[symbol] = float(price)
+
+        except Exception as exc:
+            print(
+                "Pump performans toplu fiyat hatası:",
+                exc,
+            )
+
+    updated_count = 0
+    finalized_count = 0
+
+    for record in active_records:
+        symbol = normalize_bot_symbol(
+            record.get("symbol")
+        )
+        current_price = price_map.get(
+            symbol
+        )
+
+        if current_price is None:
+            continue
+
+        sent_at = int(
+            record.get("sent_at", now_ts())
+        )
+        age_minutes = max(
+            0,
+            (now_ts() - sent_at) / 60,
+        )
+
+        move = pump_directional_move_percent(
+            record.get("direction"),
+            current_price,
+            record.get("reference_price"),
+        )
+
+        record["latest_price"] = (
+            current_price
+        )
+        record[
+            "latest_directional_move_percent"
+        ] = round(move, 4)
+        record["last_updated_at"] = (
+            now_ts()
+        )
+        record["last_updated_at_tr"] = (
+            tr_now_text()
+        )
+
+        record[
+            "best_favorable_percent"
+        ] = round(
+            max(
+                safe_float(
+                    record.get(
+                        "best_favorable_percent"
+                    )
+                ),
+                move,
+                0.0,
+            ),
+            4,
+        )
+
+        record[
+            "worst_adverse_percent"
+        ] = round(
+            max(
+                safe_float(
+                    record.get(
+                        "worst_adverse_percent"
+                    )
+                ),
+                -move,
+                0.0,
+            ),
+            4,
+        )
+
+        snapshots = record.setdefault(
+            "snapshots",
+            {},
+        )
+
+        for window in (
+            PERFORMANCE_WINDOWS_MINUTES
+        ):
+            key = f"{window}m"
+
+            if (
+                age_minutes >= window
+                and key not in snapshots
+            ):
+                snapshots[key] = round(
+                    move,
+                    4,
+                )
+
+        if age_minutes >= 60:
+            status, reason = (
+                classify_pump_direction(
+                    record
+                )
+            )
+
+            record["direction_status"] = (
+                status
+            )
+            record["direction_reason"] = (
+                reason
+            )
+            record[
+                "direction_finalized_at"
+            ] = now_ts()
+            record[
+                "direction_finalized_at_tr"
+            ] = tr_now_text()
+            finalized_count += 1
+
+        updated_count += 1
+
+    cutoff = (
+        now_ts()
+        - PERFORMANCE_KEEP_DAYS
+        * 24
+        * 60
+        * 60
+    )
+
+    ledger["records"] = [
+        record
+        for record in records
+        if int(
+            record.get("sent_at", 0)
+        ) >= cutoff
+    ][-PERFORMANCE_MAX_RECORDS:]
+
+    save_pump_performance(ledger)
+
+    print(
+        "Pump performans güncellendi:",
+        updated_count,
+        "| yönü sonuçlanan:",
+        finalized_count,
+    )
 
 
 # =========================================================
@@ -2306,6 +3005,13 @@ def notify_tp1(
 
     increment_stat(state, "tp1")
 
+    update_pump_trade_outcome(
+        symbol,
+        direction,
+        "TP1",
+        current_price=tp1,
+    )
+
 
 def notify_tp2(
     state,
@@ -2322,6 +3028,13 @@ def notify_tp2(
     )
 
     increment_stat(state, "tp2")
+
+    update_pump_trade_outcome(
+        symbol,
+        direction,
+        "TP2",
+        current_price=tp2,
+    )
 
 
 def notify_tp3(
@@ -2340,6 +3053,13 @@ def notify_tp3(
     )
 
     increment_stat(state, "tp3")
+
+    update_pump_trade_outcome(
+        symbol,
+        direction,
+        "TP3",
+        current_price=tp3,
+    )
 
 
 def notify_stop(
@@ -2362,6 +3082,13 @@ def notify_stop(
 
     increment_stat(state, "stop")
 
+    update_pump_trade_outcome(
+        symbol,
+        direction,
+        "STOP",
+        current_price=close,
+    )
+
 
 def notify_breakeven(
     state,
@@ -2379,6 +3106,14 @@ def notify_breakeven(
     )
 
     increment_stat(state, "breakeven")
+
+    update_pump_trade_outcome(
+        symbol,
+        direction,
+        "BREAKEVEN",
+        current_price=entry,
+        result_r=0.0,
+    )
 
 
 def check_open_signals(exchange, state):
@@ -2496,6 +3231,14 @@ def check_open_signals(exchange, state):
                 increment_stat(
                     state,
                     "expired",
+                )
+
+                update_pump_trade_outcome(
+                    symbol,
+                    direction,
+                    "EXPIRED",
+                    current_price=expiry_price,
+                    result_r=expiry_r,
                 )
 
                 continue
@@ -2893,6 +3636,10 @@ def main():
     state = load_state()
     exchange = get_exchange()
 
+    # Önce daha önce gönderilmiş Pump/Dump sinyallerinin
+    # 5M/15M/30M/60M yön performansı güncellenir.
+    update_pump_performance(exchange)
+
     check_open_signals(
         exchange,
         state,
@@ -3171,6 +3918,10 @@ def main():
         if send_telegram(
             signal["message"] + extra
         ):
+            record_pump_performance(
+                signal
+            )
+
             save_open_signal(
                 state,
                 signal,
