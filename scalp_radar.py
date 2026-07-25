@@ -1,5 +1,5 @@
 # scalp_radar.py
-# Hızlı Scalp Radar v2 - Dengeli Canlı Para
+# Hızlı Scalp Radar v2 - Dengeli Canlı Para + Teknik Teşhis
 #
 # Ana MTF, Swing ve Pump/Dump sistemlerinden tamamen ayrı çalışır.
 # OKX USDT perpetual futures paritelerini tarar.
@@ -10,6 +10,10 @@
 # 2) Düşük hacimli ve geniş stoplu scalp işlemlerini elemek.
 # 3) Aynı anda çok fazla hızlı işlem birikmesini önlemek.
 # 4) Eski state kayıtlarıyla uyumluluğu korumak.
+# 5) Ön İzleme, Erken Fırsat ve gerçek sinyallerin neden doğru/yanlış
+#    çalıştığını performans ledger içinde olasılık temelli teşhis etmek.
+# 6) Gerçek scalp stop olduktan sonra 120 dakika içinde yönüne dönüp
+#    dönmediğini izleyerek fitil/dar stop olasılığını ayırmak.
 
 import json
 import math
@@ -38,12 +42,22 @@ TR_TIMEZONE = timezone(timedelta(hours=3))
 
 # Ön İzleme, Erken Fırsat ve gerçek Scalp mesajlarının
 # gönderim sonrası yön performansı ayrı kaydedilir.
-PERFORMANCE_WINDOWS_MINUTES = (5, 15, 30, 60)
-PERFORMANCE_MAX_TRACK_MINUTES = 90
+PERFORMANCE_WINDOWS_MINUTES = (
+    5,
+    15,
+    30,
+    60,
+    90,
+    120,
+)
+PERFORMANCE_DIRECTION_FINAL_MINUTES = 120
+POST_STOP_TRACK_WINDOWS_MINUTES = (15, 30, 60, 120)
+POST_STOP_MAX_TRACK_MINUTES = 120
+PERFORMANCE_MAX_TRACK_MINUTES = 120
 PERFORMANCE_KEEP_DAYS = 14
 PERFORMANCE_MAX_RECORDS = 600
 
-# 60 dakika sonunda yaklaşık yön sınıflandırması.
+# 120 dakika sonunda yaklaşık yön sınıflandırması.
 PERFORMANCE_DIRECTION_THRESHOLD_PERCENT = 0.50
 PERFORMANCE_MIXED_THRESHOLD_PERCENT = 0.25
 
@@ -391,6 +405,15 @@ def rebuild_performance_summary(ledger):
         "prewatch": 0,
         "early": 0,
         "real_signal": 0,
+        "trade_open": 0,
+        "tp1": 0,
+        "tp2": 0,
+        "tp3": 0,
+        "stop": 0,
+        "breakeven": 0,
+        "expired": 0,
+        "stopped_but_direction_later_correct": 0,
+        "diagnosis_counts": {},
     }
 
     for record in records:
@@ -411,6 +434,32 @@ def rebuild_performance_summary(ledger):
             summary["direction_wrong"] += 1
         elif status == "MIXED":
             summary["mixed"] += 1
+
+        outcome = str(record.get("trade_outcome", "")).upper()
+        if stage == "REAL_SIGNAL":
+            if not outcome or outcome == "OPEN":
+                summary["trade_open"] += 1
+            elif outcome == "TP1":
+                summary["tp1"] += 1
+            elif outcome == "TP2":
+                summary["tp2"] += 1
+            elif outcome == "TP3":
+                summary["tp3"] += 1
+            elif outcome == "STOP":
+                summary["stop"] += 1
+            elif outcome == "BREAKEVEN":
+                summary["breakeven"] += 1
+            elif outcome == "EXPIRED":
+                summary["expired"] += 1
+
+        diagnosis = record.get("diagnosis", {})
+        primary = str(diagnosis.get("primary", "")).strip()
+        if primary:
+            counts = summary["diagnosis_counts"]
+            counts[primary] = int(counts.get(primary, 0)) + 1
+
+        if primary == "YON DOGRUYDU, STOP ERKEN / DAR KALDI":
+            summary["stopped_but_direction_later_correct"] += 1
 
     ledger["summary"] = summary
     ledger["updated_at"] = now_ts()
@@ -438,31 +487,290 @@ def directional_move_percent(direction, current_price, reference_price):
     return raw_move if str(direction).upper() == "LONG" else -raw_move
 
 
+def scalp_r_from_percent(record, move_percent):
+    risk_percent = safe_float(record.get("risk_percent"))
+    if risk_percent <= 0:
+        return None
+    return round(safe_float(move_percent) / risk_percent, 4)
+
+
 def classify_performance_record(record):
     snapshots = record.get("snapshots", {})
     move_60 = safe_float(snapshots.get("60m"))
+    move_120 = safe_float(
+        snapshots.get(
+            "120m",
+            record.get("latest_directional_move_percent"),
+        )
+    )
     best_favorable = safe_float(record.get("best_favorable_percent"))
     worst_adverse = safe_float(record.get("worst_adverse_percent"))
     threshold = PERFORMANCE_DIRECTION_THRESHOLD_PERCENT
     mixed_threshold = PERFORMANCE_MIXED_THRESHOLD_PERCENT
 
-    if move_60 >= threshold or (
-        best_favorable >= threshold and worst_adverse < threshold
+    if move_120 >= threshold or (
+        best_favorable >= threshold
+        and worst_adverse < threshold
     ):
-        return "DIRECTION_CORRECT", "60 dakika içinde yön lehine hareket"
+        return (
+            "DIRECTION_CORRECT",
+            "120 dakika içinde yön lehine hareket",
+        )
 
-    if move_60 <= -threshold or (
-        worst_adverse >= threshold and best_favorable < threshold
+    if move_120 <= -threshold or (
+        worst_adverse >= threshold
+        and best_favorable < threshold
     ):
-        return "DIRECTION_WRONG", "60 dakika içinde yön tersine hareket"
+        return (
+            "DIRECTION_WRONG",
+            "120 dakika içinde yön tersine hareket",
+        )
 
-    if abs(move_60) <= mixed_threshold:
-        return "MIXED", "60 dakika sonunda belirgin yön oluşmadı"
+    # İlk saat doğru, ikinci saat yatay kalmışsa tamamen yanlış sayma.
+    if move_60 >= threshold and move_120 > -mixed_threshold:
+        return (
+            "DIRECTION_CORRECT",
+            "İlk 60 dakikada yön doğrulandı, sonra hareket zayıfladı",
+        )
+
+    if abs(move_120) <= mixed_threshold:
+        return (
+            "MIXED",
+            "120 dakika sonunda belirgin yön oluşmadı",
+        )
 
     return (
-        "DIRECTION_CORRECT" if move_60 > 0 else "DIRECTION_WRONG",
-        "60 dakika son fiyat yönüne göre sınıflandırıldı",
+        "DIRECTION_CORRECT" if move_120 > 0 else "DIRECTION_WRONG",
+        "120 dakika son fiyat yönüne göre sınıflandırıldı",
     )
+
+
+def build_scalp_diagnosis(record):
+    stage = str(record.get("stage", "")).upper()
+    status = str(record.get("status", "OPEN")).upper()
+    outcome = str(record.get("trade_outcome", "OPEN")).upper()
+    source = str(record.get("source", "")).upper()
+    setup = str(record.get("setup", "")).upper()
+
+    score = safe_float(record.get("score"))
+    vol1 = safe_float(record.get("vol1"))
+    vol5 = safe_float(record.get("vol5"))
+    rolling_vol3 = safe_float(record.get("rolling_vol3"))
+    rolling_vol5 = safe_float(record.get("rolling_vol5"))
+    rsi1 = safe_float(record.get("rsi1"))
+    rsi5 = safe_float(record.get("rsi5"))
+    move15 = safe_float(record.get("move15"))
+    live_move15 = safe_float(record.get("live_move15"))
+    close_power = safe_float(record.get("close_power"))
+    entry_drift = safe_float(record.get("entry_drift_percent"))
+    breakout = bool(record.get("breakout", False))
+    best_favorable = safe_float(record.get("best_favorable_percent"))
+    worst_adverse = safe_float(record.get("worst_adverse_percent"))
+    best_favorable_r = scalp_r_from_percent(
+        record,
+        best_favorable,
+    )
+    worst_adverse_r = scalp_r_from_percent(
+        record,
+        worst_adverse,
+    )
+    post_stop_best = safe_float(
+        record.get("post_stop_best_favorable_percent")
+    )
+
+    factors = []
+    primary = "TAKIP DEVAM EDIYOR"
+    confidence = "DUSUK"
+    provisional = status == "OPEN"
+
+    if stage == "PREWATCH":
+        if status == "DIRECTION_CORRECT":
+            primary = "ON IZLEME YONU DOGRU"
+            confidence = "YUKSEK"
+            factors.append(
+                "Hareket erken aşamada işaret edilen yönde devam etti."
+            )
+        elif status == "DIRECTION_WRONG":
+            primary = "ON IZLEME YONU BASARISIZ"
+            confidence = "YUKSEK"
+            factors.append(
+                "İlk hızlanma kalıcı olmadı ve fiyat ters yöne gitti."
+            )
+        elif status == "MIXED":
+            primary = "ON IZLEME SONRASI NET HAREKET OLMADI"
+            confidence = "ORTA"
+
+        if not breakout:
+            factors.append(
+                "Uyarı anında kırılım henüz tamamlanmamıştı."
+            )
+        if max(vol1, rolling_vol3) < 1.20:
+            factors.append(
+                "Kısa vadeli hacim artışı sınırlıydı."
+            )
+        if entry_drift > 0.20:
+            factors.append(
+                "Gönderim anında fiyat izleme seviyesinden uzaklaşmıştı."
+            )
+
+    elif stage == "EARLY":
+        if status == "DIRECTION_CORRECT":
+            primary = "ERKEN FIRSAT YONU DOGRU"
+            confidence = "YUKSEK"
+        elif status == "DIRECTION_WRONG":
+            if breakout:
+                primary = "SAHTE KIRILIM / MOMENTUM SONDU"
+            else:
+                primary = "ERKEN MOMENTUM DEVAM ETMEDI"
+            confidence = "YUKSEK"
+        elif status == "MIXED":
+            primary = "ERKEN FIRSAT SONRASI NET YON OLMADI"
+            confidence = "ORTA"
+
+        if not breakout:
+            factors.append(
+                "Net kırılım teyidi olmadan güçlü harekete dayanıyordu."
+            )
+        if max(vol1, rolling_vol5) < 1.30:
+            factors.append(
+                "Hacim devamlılığı güçlü değildi."
+            )
+        if abs(live_move15) >= 2.0:
+            factors.append(
+                "Uyarı anında 15 dakikalık hareketin önemli kısmı ilerlemişti."
+            )
+        if entry_drift > 0.25:
+            factors.append(
+                "Gönderim fiyatı analiz seviyesinden uzaklaşmıştı."
+            )
+
+    elif stage == "REAL_SIGNAL":
+        provisional = (
+            outcome in ("OPEN", "STOP")
+            and status == "OPEN"
+        )
+
+        if outcome == "TP3":
+            primary = "SCALP KURULUMU BASARILI"
+            confidence = "YUKSEK"
+            factors.append("Maksimum hedef TP3 görüldü.")
+
+        elif outcome in ("TP1", "TP2"):
+            primary = "YON DOGRU, ISLEM HEDEF GORDU"
+            confidence = "YUKSEK"
+
+        elif outcome == "BREAKEVEN":
+            primary = "YON DOGRUYDU, DEVAM GUCU ZAYIFLADI"
+            confidence = "YUKSEK"
+            factors.append(
+                "TP1 sonrası kalan pozisyon girişten kapandı."
+            )
+
+        elif outcome == "EXPIRED":
+            if status == "DIRECTION_CORRECT":
+                primary = "YON DOGRUYDU, HEDEF ZAMANINDA GELMEDI"
+            elif status == "DIRECTION_WRONG":
+                primary = "SCALP YONU DEVAM ETMEDI"
+            else:
+                primary = "SCALP SONRASI NET HAREKET OLMADI"
+            confidence = "ORTA"
+
+        elif outcome == "STOP":
+            if (
+                post_stop_best
+                >= PERFORMANCE_DIRECTION_THRESHOLD_PERCENT
+            ):
+                primary = "YON DOGRUYDU, STOP ERKEN / DAR KALDI"
+                confidence = "YUKSEK"
+                factors.append(
+                    "Stop sonrasında fiyat tekrar sinyal yönüne döndü."
+                )
+                provisional = False
+            elif (
+                best_favorable_r is not None
+                and best_favorable_r >= 0.35
+            ):
+                primary = "ONCE LEHE GITTI, SONRA TERS DONDU"
+                confidence = "YUKSEK"
+                factors.append(
+                    "Stop öncesinde işlem en az 0.35R lehe hareket etti."
+                )
+            elif source == "ATAK_SCALP" or "ATAK" in setup:
+                primary = (
+                    "ATAK MOMENTUMU DEVAM ETMEDI"
+                    if not breakout
+                    else "KIRILIM SONRASI MOMENTUM SONDU"
+                )
+                confidence = "ORTA"
+            elif source == "TEPKI_SCALP" or "TEPKI" in setup:
+                primary = "TEPKI BASARISIZ, ANA HAREKET DEVAM ETTI"
+                confidence = "ORTA"
+            else:
+                primary = "KISA VADELI YON UYUMSUZLUGU"
+                confidence = "ORTA"
+
+            if status == "DIRECTION_WRONG":
+                factors.append(
+                    "120 dakikalık takipte fiyat sinyalin ters yönünde kaldı."
+                )
+
+        elif outcome == "OPEN":
+            if status == "DIRECTION_CORRECT":
+                primary = "ACIK ISLEM YONU DESTEKLENIYOR"
+                confidence = "ORTA"
+            elif status == "DIRECTION_WRONG":
+                primary = "ACIK ISLEM YONU ZAYIF"
+                confidence = "ORTA"
+
+        if vol1 < 1.50:
+            factors.append("1M hacim sınırdaydı.")
+        if vol5 < 1.15:
+            factors.append("5M hacim sınırdaydı.")
+        if entry_drift > 0.18:
+            factors.append(
+                "Gönderim anında giriş sapması yükselmişti."
+            )
+
+        if source == "ATAK_SCALP":
+            direction = str(record.get("direction", "")).upper()
+            if direction == "LONG" and close_power < 70:
+                factors.append(
+                    "LONG atak mumunun kapanış gücü çok yüksek değildi."
+                )
+            if direction == "SHORT" and close_power > 30:
+                factors.append(
+                    "SHORT atak mumunun kapanış baskısı çok güçlü değildi."
+                )
+
+        if source == "TEPKI_SCALP":
+            if abs(move15) < 0.50:
+                factors.append(
+                    "Tepki öncesi 15M hareketi sınırlıydı."
+                )
+            if rsi1 > 0 and 42 < rsi1 < 58:
+                factors.append(
+                    "1M RSI tepki bölgesinin merkezine yakındı."
+                )
+
+    return {
+        "version": "SCALP_DIAGNOSIS_V1",
+        "primary": primary,
+        "confidence": confidence,
+        "factors": list(dict.fromkeys(factors)),
+        "provisional": provisional,
+        "best_favorable_percent": round(best_favorable, 4),
+        "worst_adverse_percent": round(worst_adverse, 4),
+        "best_favorable_r": best_favorable_r,
+        "worst_adverse_r": worst_adverse_r,
+        "post_stop_best_favorable_percent": round(
+            post_stop_best,
+            4,
+        ),
+        "note": (
+            "Bu teşhis kesin piyasa sebebi değil; kayıtlı kısa vadeli "
+            "fiyat, hacim, RSI, kurulum ve sonuç verilerine dayalıdır."
+        ),
+    }
 
 
 def record_scalp_performance(stage, item):
@@ -481,10 +789,15 @@ def record_scalp_performance(stage, item):
             or direction not in ("LONG", "SHORT")
             or reference_price <= 0
         ):
-            return False
+            return None
+
+        record_id = (
+            f"{symbol}_{direction}_"
+            f"{str(stage).upper()}_{sent_at}"
+        )
 
         record = {
-            "id": f"{symbol}_{direction}_{str(stage).upper()}_{sent_at}",
+            "id": record_id,
             "stage": str(stage).upper(),
             "symbol": symbol,
             "direction": direction,
@@ -492,6 +805,9 @@ def record_scalp_performance(stage, item):
             "sent_at_tr": tr_now_text(),
             "reference_price": reference_price,
             "analysis_price": safe_float(item.get("entry")),
+            "entry_drift_percent": safe_float(
+                item.get("entry_drift_percent")
+            ),
             "score": safe_float(item.get("score")),
             "source": item.get("source"),
             "setup": item.get("setup"),
@@ -500,13 +816,54 @@ def record_scalp_performance(stage, item):
             "tp3": safe_float(item.get("tp3")),
             "sl": safe_float(item.get("sl")),
             "risk_percent": safe_float(item.get("risk_percent")),
+            "ok_count": item.get("ok_count"),
+            "total_conditions": item.get("total_conditions"),
+            "missing": item.get("missing", []),
+            "rsi1": safe_float(item.get("rsi1")),
+            "rsi5": safe_float(item.get("rsi5")),
+            "vol1": safe_float(item.get("vol1")),
+            "vol5": safe_float(item.get("vol5")),
+            "move1": safe_float(item.get("move1")),
+            "move5": safe_float(item.get("move5")),
+            "move15": safe_float(item.get("move15")),
+            "live_move3": safe_float(item.get("live_move3")),
+            "live_move5": safe_float(item.get("live_move5")),
+            "live_move15": safe_float(item.get("live_move15")),
+            "rolling_vol3": safe_float(item.get("rolling_vol3")),
+            "rolling_vol5": safe_float(item.get("rolling_vol5")),
+            "lower_wick": safe_float(item.get("lower_wick")),
+            "upper_wick": safe_float(item.get("upper_wick")),
+            "close_power": safe_float(item.get("close_power")),
+            "breakout": bool(item.get("breakout", False)),
+            "breakout_distance": safe_float(
+                item.get("breakout_distance")
+            ),
+            "reason": item.get("reason"),
             "snapshots": {},
             "latest_price": reference_price,
             "latest_directional_move_percent": 0.0,
             "best_favorable_percent": 0.0,
             "worst_adverse_percent": 0.0,
+            "best_favorable_r": 0.0,
+            "worst_adverse_r": 0.0,
+            "post_stop_best_favorable_percent": 0.0,
+            "post_stop_latest_directional_move_percent": 0.0,
+            "post_stop_snapshots": {},
+            "trade_outcome": (
+                "OPEN"
+                if str(stage).upper() == "REAL_SIGNAL"
+                else None
+            ),
+            "trade_events": [],
             "status": "OPEN",
             "status_reason": "Gönderim sonrası performans izleniyor",
+            "diagnosis": {
+                "version": "SCALP_DIAGNOSIS_V1",
+                "primary": "TAKIP DEVAM EDIYOR",
+                "confidence": "DUSUK",
+                "factors": [],
+                "provisional": True,
+            },
         }
         records.append(record)
 
@@ -518,11 +875,205 @@ def record_scalp_performance(stage, item):
         ]
         records.sort(key=lambda candidate: int(candidate.get("sent_at", 0)))
         ledger["records"] = records[-PERFORMANCE_MAX_RECORDS:]
-        return save_performance_ledger(ledger)
+        save_performance_ledger(ledger)
+        return record_id
 
     except Exception as exc:
         print("Scalp performans kaydı oluşturma hatası:", exc)
+        return None
+
+
+def find_real_scalp_record(ledger, symbol, direction, record_id=None):
+    records = ledger.setdefault("records", [])
+
+    if record_id:
+        for record in records:
+            if str(record.get("id")) == str(record_id):
+                return record
+
+    eligible = [
+        record
+        for record in records
+        if str(record.get("stage", "")).upper() == "REAL_SIGNAL"
+        and normalize_bot_symbol(record.get("symbol"))
+        == normalize_bot_symbol(symbol)
+        and str(record.get("direction", "")).upper()
+        == str(direction).upper()
+    ]
+
+    if not eligible:
+        return None
+
+    return max(
+        eligible,
+        key=lambda item: int(item.get("sent_at", 0)),
+    )
+
+
+def update_real_scalp_tracking(signal):
+    try:
+        ledger = load_performance_ledger()
+        record = find_real_scalp_record(
+            ledger,
+            signal.get("symbol"),
+            signal.get("direction"),
+            signal.get("performance_record_id"),
+        )
+
+        if record is None:
+            return False
+
+        for key in (
+            "best_favorable_percent",
+            "worst_adverse_percent",
+            "best_favorable_price",
+            "worst_adverse_price",
+            "last_market_price",
+            "last_tracking_at",
+        ):
+            if signal.get(key) is not None:
+                record[key] = signal.get(key)
+
+        record["best_favorable_r"] = (
+            scalp_r_from_percent(
+                record,
+                record.get("best_favorable_percent"),
+            )
+            or 0.0
+        )
+        record["worst_adverse_r"] = (
+            scalp_r_from_percent(
+                record,
+                record.get("worst_adverse_percent"),
+            )
+            or 0.0
+        )
+        record["diagnosis"] = build_scalp_diagnosis(record)
+        return save_performance_ledger(ledger)
+
+    except Exception as exc:
+        print("Scalp açık takip ledger hatası:", exc)
         return False
+
+
+def update_real_scalp_outcome(
+    symbol,
+    direction,
+    outcome,
+    price=None,
+    signal=None,
+):
+    try:
+        ledger = load_performance_ledger()
+        record_id = (
+            signal.get("performance_record_id")
+            if isinstance(signal, dict)
+            else None
+        )
+        record = find_real_scalp_record(
+            ledger,
+            symbol,
+            direction,
+            record_id,
+        )
+
+        if record is None:
+            return False
+
+        if isinstance(signal, dict):
+            for key in (
+                "best_favorable_percent",
+                "worst_adverse_percent",
+                "best_favorable_price",
+                "worst_adverse_price",
+                "last_market_price",
+                "last_tracking_at",
+            ):
+                if signal.get(key) is not None:
+                    record[key] = signal.get(key)
+
+        outcome = str(outcome).upper()
+        event = {
+            "outcome": outcome,
+            "time": now_ts(),
+            "time_tr": tr_now_text(),
+            "price": safe_float(price),
+        }
+
+        existing = any(
+            str(item.get("outcome", "")).upper() == outcome
+            for item in record.setdefault("trade_events", [])
+        )
+        if not existing:
+            record["trade_events"].append(event)
+
+        record["trade_outcome"] = outcome
+        record["trade_last_updated_at"] = now_ts()
+        record["trade_last_updated_at_tr"] = tr_now_text()
+
+        if outcome in ("TP3", "STOP", "BREAKEVEN", "EXPIRED"):
+            record["trade_closed_at"] = now_ts()
+            record["trade_closed_at_tr"] = tr_now_text()
+            record["outcome_price"] = safe_float(price)
+
+        record["best_favorable_r"] = (
+            scalp_r_from_percent(
+                record,
+                record.get("best_favorable_percent"),
+            )
+            or 0.0
+        )
+        record["worst_adverse_r"] = (
+            scalp_r_from_percent(
+                record,
+                record.get("worst_adverse_percent"),
+            )
+            or 0.0
+        )
+        record["diagnosis"] = build_scalp_diagnosis(record)
+        return save_performance_ledger(ledger)
+
+    except Exception as exc:
+        print("Scalp işlem sonucu ledger hatası:", exc)
+        return False
+
+
+def update_open_signal_excursion(signal, high, low, candle_time=None):
+    entry = safe_float(signal.get("entry"))
+    high = safe_float(high)
+    low = safe_float(low)
+
+    if entry <= 0 or high <= 0 or low <= 0:
+        return
+
+    direction = str(signal.get("direction", "")).upper()
+
+    if direction == "LONG":
+        favorable_price = high
+        adverse_price = low
+        favorable = max(0.0, (high - entry) / entry * 100)
+        adverse = max(0.0, (entry - low) / entry * 100)
+    elif direction == "SHORT":
+        favorable_price = low
+        adverse_price = high
+        favorable = max(0.0, (entry - low) / entry * 100)
+        adverse = max(0.0, (high - entry) / entry * 100)
+    else:
+        return
+
+    if favorable > safe_float(
+        signal.get("best_favorable_percent")
+    ):
+        signal["best_favorable_percent"] = round(favorable, 4)
+        signal["best_favorable_price"] = favorable_price
+
+    if adverse > safe_float(
+        signal.get("worst_adverse_percent")
+    ):
+        signal["worst_adverse_percent"] = round(adverse, 4)
+        signal["worst_adverse_price"] = adverse_price
+
+    signal["last_tracking_at"] = int(candle_time or now_ts())
 
 
 def update_scalp_performance(exchange):
@@ -571,7 +1122,9 @@ def update_scalp_performance(exchange):
         age_minutes = max(0, (now_ts() - sent_at) / 60)
         reference_price = safe_float(record.get("reference_price"))
         move = directional_move_percent(
-            record.get("direction"), current_price, reference_price
+            record.get("direction"),
+            current_price,
+            reference_price,
         )
 
         record["latest_price"] = current_price
@@ -595,27 +1148,103 @@ def update_scalp_performance(exchange):
             4,
         )
 
+        record["best_favorable_r"] = (
+            scalp_r_from_percent(
+                record,
+                record.get("best_favorable_percent"),
+            )
+            or 0.0
+        )
+        record["worst_adverse_r"] = (
+            scalp_r_from_percent(
+                record,
+                record.get("worst_adverse_percent"),
+            )
+            or 0.0
+        )
+
+        is_stopped_real = (
+            str(record.get("stage", "")).upper() == "REAL_SIGNAL"
+            and str(record.get("trade_outcome", "")).upper() == "STOP"
+        )
+
+        post_stop_age_minutes = 0.0
+
+        if is_stopped_real:
+            stopped_at = int(
+                record.get("trade_closed_at")
+                or now_ts()
+            )
+            post_stop_age_minutes = max(
+                0.0,
+                (now_ts() - stopped_at) / 60,
+            )
+
+            record[
+                "post_stop_latest_directional_move_percent"
+            ] = round(move, 4)
+            record[
+                "post_stop_best_favorable_percent"
+            ] = round(
+                max(
+                    safe_float(
+                        record.get(
+                            "post_stop_best_favorable_percent"
+                        )
+                    ),
+                    move,
+                    0.0,
+                ),
+                4,
+            )
+
+            post_stop_snapshots = record.setdefault(
+                "post_stop_snapshots",
+                {},
+            )
+
+            for window in POST_STOP_TRACK_WINDOWS_MINUTES:
+                key = f"{window}m"
+                if (
+                    post_stop_age_minutes >= window
+                    and key not in post_stop_snapshots
+                ):
+                    post_stop_snapshots[key] = round(
+                        move,
+                        4,
+                    )
+
         snapshots = record.setdefault("snapshots", {})
         for window in PERFORMANCE_WINDOWS_MINUTES:
             key = f"{window}m"
             if age_minutes >= window and key not in snapshots:
                 snapshots[key] = round(move, 4)
 
-        if age_minutes >= 60:
+        should_finalize = (
+            post_stop_age_minutes >= POST_STOP_MAX_TRACK_MINUTES
+            if is_stopped_real
+            else age_minutes >= PERFORMANCE_DIRECTION_FINAL_MINUTES
+        )
+
+        if should_finalize:
             status, reason = classify_performance_record(record)
             record["status"] = status
             record["status_reason"] = reason
             record["finalized_at"] = now_ts()
             record["finalized_at_tr"] = tr_now_text()
+            record["diagnosis"] = build_scalp_diagnosis(record)
+            record["diagnosis"]["provisional"] = False
             finalized_count += 1
-        elif age_minutes >= PERFORMANCE_MAX_TRACK_MINUTES:
-            record["status"] = "MIXED"
-            record["status_reason"] = "Takip süresi doldu; net yön oluşmadı"
-            record["finalized_at"] = now_ts()
-            record["finalized_at_tr"] = tr_now_text()
-            finalized_count += 1
+        else:
+            record["diagnosis"] = build_scalp_diagnosis(record)
 
         updated_count += 1
+
+    # Eski performans kayıtlarında teşhis alanı yoksa geriye dönük
+    # mevcut kayıt verileriyle yaklaşık teşhis oluşturulur.
+    for record in records:
+        if not isinstance(record.get("diagnosis"), dict):
+            record["diagnosis"] = build_scalp_diagnosis(record)
 
     cutoff = now_ts() - PERFORMANCE_KEEP_DAYS * 24 * 60 * 60
     ledger["records"] = [
@@ -625,7 +1254,7 @@ def update_scalp_performance(exchange):
     ][-PERFORMANCE_MAX_RECORDS:]
     save_performance_ledger(ledger)
     print(
-        "Scalp performans güncellendi:",
+        "Scalp performans ve teşhis güncellendi:",
         updated_count,
         "| sonuçlanan:",
         finalized_count,
@@ -1647,7 +2276,7 @@ def build_signal_message(signal):
         f"🎯 TP2: {format_price(signal['tp2'])}\n"
         f"🎯 TP3: {format_price(signal['tp3'])}\n"
         f"🛑 SL: {format_price(signal['sl'])}\n\n"
-        f"📊 Skor: %{signal['score']}\n"
+        f"📊 Kalite Uyum Skoru: {signal['score']}/100\n"
         f"🛡️ Stop Mesafesi: %{round(signal['risk_percent'], 3)}\n\n"
         f"📊 Scalp Verileri:\n"
         f"• 1M RSI: {round(signal['rsi1'], 2)}\n"
@@ -2446,8 +3075,13 @@ def save_open_signal(state, signal):
         f"{signal['source']}"
     )
 
+    opened_at = now_ts()
+
     state.setdefault("open_scalp_signals", {})
     state["open_scalp_signals"][key] = {
+        "performance_record_id": signal.get(
+            "performance_record_id"
+        ),
         "symbol": signal["symbol"],
         "direction": signal["direction"],
         "source": signal["source"],
@@ -2459,8 +3093,34 @@ def save_open_signal(state, signal):
         "sl": signal["sl"],
         "score": signal["score"],
         "risk_percent": signal["risk_percent"],
-        "opened_at": now_ts(),
-        "last_checked_at": now_ts(),
+        "entry_drift_percent": signal.get(
+            "entry_drift_percent"
+        ),
+        "rsi1": signal.get("rsi1"),
+        "rsi5": signal.get("rsi5"),
+        "vol1": signal.get("vol1"),
+        "vol5": signal.get("vol5"),
+        "move1": signal.get("move1"),
+        "move5": signal.get("move5"),
+        "move15": signal.get("move15"),
+        "lower_wick": signal.get("lower_wick"),
+        "upper_wick": signal.get("upper_wick"),
+        "close_power": signal.get("close_power"),
+        "ok_count": signal.get("ok_count"),
+        "total_conditions": signal.get(
+            "total_conditions"
+        ),
+        "missing": signal.get("missing", []),
+        "best_favorable_percent": 0.0,
+        "worst_adverse_percent": 0.0,
+        "best_favorable_price": signal.get("entry"),
+        "worst_adverse_price": signal.get("entry"),
+        "last_market_price": signal.get(
+            "current_price",
+            signal.get("entry"),
+        ),
+        "opened_at": opened_at,
+        "last_checked_at": opened_at,
         "tp1_hit": False,
         "tp2_hit": False,
         "tp3_hit": False,
@@ -2471,7 +3131,14 @@ def save_open_signal(state, signal):
     save_state(state)
 
 
-def notify_tp1(state, symbol, direction, entry, tp1):
+def notify_tp1(
+    state,
+    symbol,
+    direction,
+    entry,
+    tp1,
+    signal=None,
+):
     send_telegram(
         f"✅ SCALP TP1 GELDİ\n\n"
         f"Coin: {symbol}\n"
@@ -2481,9 +3148,22 @@ def notify_tp1(state, symbol, direction, entry, tp1):
         f"Öneri: %50 kâr al, SL girişe çek."
     )
     increment_stat(state, "tp1")
+    update_real_scalp_outcome(
+        symbol,
+        direction,
+        "TP1",
+        tp1,
+        signal,
+    )
 
 
-def notify_tp2(state, symbol, direction, tp2):
+def notify_tp2(
+    state,
+    symbol,
+    direction,
+    tp2,
+    signal=None,
+):
     send_telegram(
         f"✅ SCALP TP2 GELDİ\n\n"
         f"Coin: {symbol}\n"
@@ -2491,9 +3171,22 @@ def notify_tp2(state, symbol, direction, tp2):
         f"TP2: {format_price(tp2)}"
     )
     increment_stat(state, "tp2")
+    update_real_scalp_outcome(
+        symbol,
+        direction,
+        "TP2",
+        tp2,
+        signal,
+    )
 
 
-def notify_tp3(state, symbol, direction, tp3):
+def notify_tp3(
+    state,
+    symbol,
+    direction,
+    tp3,
+    signal=None,
+):
     send_telegram(
         f"🏁 SCALP TP3 GELDİ\n\n"
         f"Coin: {symbol}\n"
@@ -2502,21 +3195,51 @@ def notify_tp3(state, symbol, direction, tp3):
         f"Scalp maksimum hedefe ulaştı."
     )
     increment_stat(state, "tp3")
+    update_real_scalp_outcome(
+        symbol,
+        direction,
+        "TP3",
+        tp3,
+        signal,
+    )
 
 
-def notify_stop(state, symbol, direction, entry, sl, close):
+def notify_stop(
+    state,
+    symbol,
+    direction,
+    entry,
+    sl,
+    close,
+    signal=None,
+):
     send_telegram(
         f"❌ SCALP STOP OLDU\n\n"
         f"Coin: {symbol}\n"
         f"Yön: {direction}\n"
         f"Giriş: {format_price(entry)}\n"
         f"SL: {format_price(sl)}\n"
-        f"Güncel: {format_price(close)}"
+        f"Güncel: {format_price(close)}\n\n"
+        f"📊 Teşhis kaydı 120 dakika boyunca yönün "
+        f"sonradan doğrulanıp doğrulanmadığını izleyecek."
     )
     increment_stat(state, "stop")
+    update_real_scalp_outcome(
+        symbol,
+        direction,
+        "STOP",
+        close,
+        signal,
+    )
 
 
-def notify_breakeven(state, symbol, direction, entry):
+def notify_breakeven(
+    state,
+    symbol,
+    direction,
+    entry,
+    signal=None,
+):
     send_telegram(
         f"🟡 SCALP KALAN GİRİŞTEN KAPANDI\n\n"
         f"Coin: {symbol}\n"
@@ -2524,6 +3247,13 @@ def notify_breakeven(state, symbol, direction, entry):
         f"Giriş: {format_price(entry)}"
     )
     increment_stat(state, "breakeven")
+    update_real_scalp_outcome(
+        symbol,
+        direction,
+        "BREAKEVEN",
+        entry,
+        signal,
+    )
 
 
 def check_open_signals(exchange, state):
@@ -2564,15 +3294,29 @@ def check_open_signals(exchange, state):
                 now_ts() - opened_at > max_age_seconds
                 and not signal.get("tp1_hit")
             ):
+                expiry_price = get_current_price(
+                    exchange,
+                    symbol,
+                )
+
                 send_telegram(
                     f"⏳ SCALP SİNYAL SÜRESİ DOLDU\n\n"
                     f"Coin: {symbol}\n"
                     f"Yön: {direction}\n"
-                    f"Giriş: {format_price(entry)}\n\n"
+                    f"Giriş: {format_price(entry)}\n"
+                    f"Güncel: "
+                    f"{format_price(expiry_price or entry)}\n\n"
                     f"{MAX_OPEN_SIGNAL_MINUTES} dakika içinde "
                     f"TP1 gelmediği için takipten çıkarıldı."
                 )
                 increment_stat(state, "expired")
+                update_real_scalp_outcome(
+                    symbol,
+                    direction,
+                    "EXPIRED",
+                    expiry_price or entry,
+                    signal,
+                )
                 continue
 
             candles = fetch_candles_since(
@@ -2596,6 +3340,18 @@ def check_open_signals(exchange, state):
                 high = safe_float(candle["high"])
                 low = safe_float(candle["low"])
                 close = safe_float(candle["close"])
+                candle_time = int(
+                    candle.get("time") or now_ts()
+                )
+
+                update_open_signal_excursion(
+                    signal,
+                    high,
+                    low,
+                    candle_time,
+                )
+                signal["last_market_price"] = close
+
                 just_hit_tp1 = False
 
                 if direction == "LONG":
@@ -2610,6 +3366,7 @@ def check_open_signals(exchange, state):
                                     direction,
                                     entry,
                                     tp1,
+                                    signal,
                                 )
                             else:
                                 notify_stop(
@@ -2619,6 +3376,7 @@ def check_open_signals(exchange, state):
                                     entry,
                                     sl,
                                     close,
+                                    signal,
                                 )
                                 closed = True
                                 break
@@ -2630,6 +3388,7 @@ def check_open_signals(exchange, state):
                                 entry,
                                 sl,
                                 close,
+                                signal,
                             )
                             closed = True
                             break
@@ -2642,6 +3401,7 @@ def check_open_signals(exchange, state):
                                 direction,
                                 entry,
                                 tp1,
+                                signal,
                             )
 
                     if tp1_hit and not tp2_hit and high >= tp2:
@@ -2651,6 +3411,7 @@ def check_open_signals(exchange, state):
                             symbol,
                             direction,
                             tp2,
+                            signal,
                         )
 
                     if tp1_hit and not tp3_hit and high >= tp3:
@@ -2660,6 +3421,7 @@ def check_open_signals(exchange, state):
                             symbol,
                             direction,
                             tp3,
+                            signal,
                         )
                         closed = True
                         break
@@ -2672,6 +3434,7 @@ def check_open_signals(exchange, state):
                             symbol,
                             direction,
                             entry,
+                            signal,
                         )
                         closed = True
                         break
@@ -2688,6 +3451,7 @@ def check_open_signals(exchange, state):
                                     direction,
                                     entry,
                                     tp1,
+                                    signal,
                                 )
                             else:
                                 notify_stop(
@@ -2697,6 +3461,7 @@ def check_open_signals(exchange, state):
                                     entry,
                                     sl,
                                     close,
+                                    signal,
                                 )
                                 closed = True
                                 break
@@ -2708,6 +3473,7 @@ def check_open_signals(exchange, state):
                                 entry,
                                 sl,
                                 close,
+                                signal,
                             )
                             closed = True
                             break
@@ -2720,6 +3486,7 @@ def check_open_signals(exchange, state):
                                 direction,
                                 entry,
                                 tp1,
+                                signal,
                             )
 
                     if tp1_hit and not tp2_hit and low <= tp2:
@@ -2729,6 +3496,7 @@ def check_open_signals(exchange, state):
                             symbol,
                             direction,
                             tp2,
+                            signal,
                         )
 
                     if tp1_hit and not tp3_hit and low <= tp3:
@@ -2738,6 +3506,7 @@ def check_open_signals(exchange, state):
                             symbol,
                             direction,
                             tp3,
+                            signal,
                         )
                         closed = True
                         break
@@ -2748,6 +3517,7 @@ def check_open_signals(exchange, state):
                             symbol,
                             direction,
                             entry,
+                            signal,
                         )
                         closed = True
                         break
@@ -2761,6 +3531,10 @@ def check_open_signals(exchange, state):
             signal["tp1_hit"] = tp1_hit
             signal["tp2_hit"] = tp2_hit
             signal["tp3_hit"] = tp3_hit
+
+            update_real_scalp_tracking(
+                signal
+            )
 
             updated[key] = signal
 
@@ -3139,7 +3913,11 @@ def main():
         )
 
         if send_telegram(signal["message"] + extra):
-            record_scalp_performance("REAL_SIGNAL", signal)
+            record_id = record_scalp_performance(
+                "REAL_SIGNAL",
+                signal,
+            )
+            signal["performance_record_id"] = record_id
             save_open_signal(state, signal)
             mark_sent(
                 state,
