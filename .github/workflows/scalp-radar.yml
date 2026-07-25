@@ -40,15 +40,23 @@ jobs:
         run: python scalp_radar.py
 
       - name: Scalp durum ve performans dosyalarını güvenli kaydet
+        if: always()
         run: |
           set -e
 
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add \
+          for file in \
             scalp_radar_state.json \
             scalp_performance_ledger.json
+          do
+            if [ -f "$file" ]; then
+              git add "$file"
+            else
+              echo "$file henüz oluşmamış; atlandı."
+            fi
+          done
 
           if git diff --cached --quiet; then
             echo "Scalp dosyalarında kaydedilecek değişiklik yok."
