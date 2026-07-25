@@ -53,8 +53,10 @@ MAX_OPEN_SWING_SIGNALS = 3
 
 DUPLICATE_SECONDS = 18 * 60 * 60
 
-# Acik sinyal takibi 15M mumlarla daha hassas yapilir.
-TRACK_TIMEFRAME = "15m"
+# Açık sinyal takibi 5M mumlarla yapılır.
+# Böylece aynı 15M mum içinde TP ve SL görülmesi durumunda
+# oluşabilecek sıra belirsizliği azaltılır.
+TRACK_TIMEFRAME = "5m"
 TRACK_LIMIT = 420
 MAX_OPEN_SIGNAL_HOURS = 120
 
@@ -86,9 +88,15 @@ MIN_VOLUME_RATIO = 0.75
 # onaylar birlikte zorunludur.
 MIN_EARLY_15M_VOLUME_RATIO = 0.70
 
-# Gonderim aninda fiyat giris bolgesinden ne kadar tasabilir?
+# Gönderim anında fiyat giriş bölgesinden ne kadar taşabilir?
 MAX_ENTRY_ZONE_DRIFT_PERCENT = 0.50
 MAX_EARLY_ENTRY_ZONE_DRIFT_PERCENT = 0.35
+
+# Tarama sırasında yön yapısı bozulursa eski analize dayanarak
+# sinyal gönderilmez. Bu toleranslar yönü değiştirmez;
+# yalnız geçersizleşen adayı engeller.
+FINAL_NORMAL_DIRECTION_TOLERANCE_PERCENT = 0.80
+FINAL_EARLY_DIRECTION_TOLERANCE_PERCENT = 0.30
 
 D1_LIMIT = 260
 H4_LIMIT = 260
@@ -947,6 +955,165 @@ def entry_zone_distance_percent(
     )
 
 
+def calculate_open_r(
+    direction,
+    entry,
+    sl,
+    current_price,
+):
+    entry = safe_float(entry)
+    sl = safe_float(sl)
+    current = safe_float(current_price)
+
+    risk = abs(entry - sl)
+
+    if (
+        entry <= 0
+        or sl <= 0
+        or current <= 0
+        or risk <= 0
+    ):
+        return None
+
+    if str(direction).upper() == "LONG":
+        result = (
+            current - entry
+        ) / risk
+
+    elif str(direction).upper() == "SHORT":
+        result = (
+            entry - current
+        ) / risk
+
+    else:
+        return None
+
+    return round(result, 4)
+
+
+def validate_direction_before_send(
+    signal,
+    current_price,
+):
+    try:
+        direction = str(
+            signal.get("direction", "")
+        ).upper()
+
+        timing_mode = str(
+            signal.get(
+                "timing_mode",
+                "1H_ONAYLI",
+            )
+        )
+
+        current = safe_float(
+            current_price
+        )
+        h1_ema50 = safe_float(
+            signal.get(
+                "h1_ema50_reference"
+            )
+        )
+        m15_ema20 = safe_float(
+            signal.get(
+                "m15_ema20_reference"
+            )
+        )
+
+        if (
+            current <= 0
+            or h1_ema50 <= 0
+        ):
+            return (
+                False,
+                "yön referansı eksik",
+            )
+
+        normal_tolerance = (
+            FINAL_NORMAL_DIRECTION_TOLERANCE_PERCENT
+            / 100
+        )
+        early_tolerance = (
+            FINAL_EARLY_DIRECTION_TOLERANCE_PERCENT
+            / 100
+        )
+
+        if direction == "LONG":
+            minimum_h1_price = (
+                h1_ema50
+                * (1 - normal_tolerance)
+            )
+
+            if current < minimum_h1_price:
+                return (
+                    False,
+                    "1H yön yapısı LONG tarafında bozuldu",
+                )
+
+            if timing_mode == "15M_ERKEN":
+                if m15_ema20 <= 0:
+                    return (
+                        False,
+                        "15M erken yön referansı eksik",
+                    )
+
+                minimum_early_price = (
+                    m15_ema20
+                    * (1 - early_tolerance)
+                )
+
+                if current < minimum_early_price:
+                    return (
+                        False,
+                        "15M erken LONG yapısı bozuldu",
+                    )
+
+        elif direction == "SHORT":
+            maximum_h1_price = (
+                h1_ema50
+                * (1 + normal_tolerance)
+            )
+
+            if current > maximum_h1_price:
+                return (
+                    False,
+                    "1H yön yapısı SHORT tarafında bozuldu",
+                )
+
+            if timing_mode == "15M_ERKEN":
+                if m15_ema20 <= 0:
+                    return (
+                        False,
+                        "15M erken yön referansı eksik",
+                    )
+
+                maximum_early_price = (
+                    m15_ema20
+                    * (1 + early_tolerance)
+                )
+
+                if current > maximum_early_price:
+                    return (
+                        False,
+                        "15M erken SHORT yapısı bozuldu",
+                    )
+
+        else:
+            return (
+                False,
+                "sinyal yönü geçersiz",
+            )
+
+        return True, "yön yapısı geçerli"
+
+    except Exception as exc:
+        return (
+            False,
+            f"son yön kontrol hatası: {exc}",
+        )
+
+
 def leverage_text(risk_percent):
     risk = safe_float(
         risk_percent
@@ -1157,8 +1324,8 @@ def build_signal_message(signal):
         f"{format_price(signal['tp3'])}\n"
         f"🛑 SL: "
         f"{format_price(signal['sl'])}\n\n"
-        f"📊 Kalite Skoru: "
-        f"%{signal['score']} ({quality})\n"
+        f"📊 Kalite Uyum Skoru: "
+        f"{signal['score']}/100 ({quality})\n"
         f"🛡️ Stop Mesafesi: "
         f"%{round(signal['risk_percent'], 2)}\n"
         f"⚙️ Kaldıraç Önerisi: "
@@ -2074,6 +2241,9 @@ def analyze_direction(
             "vol_15m": vol_15m,
             "support": support,
             "resistance": resistance,
+            "h1_ema50_reference": h1_ema50,
+            "m15_ema20_reference": m15_ema20,
+            "m15_ema50_reference": m15_ema50,
             "ok_count": ok_count,
             "total_conditions": total_conditions,
             "missing": [],
@@ -2427,17 +2597,40 @@ def notify_expired(
     state,
     symbol,
     direction,
+    entry,
+    current_price,
+    result_r,
+    tp1_hit,
 ):
     increment_stat(
         state,
         "expired",
     )
 
+    result_text = (
+        f"{result_r:+.3f}R"
+        if result_r is not None
+        else "ölçülemedi"
+    )
+
+    tp1_text = (
+        "Evet"
+        if tp1_hit
+        else "Hayır"
+    )
+
     send_telegram(
         f"⏳ SWING SİNYAL SÜRESİ DOLDU\n\n"
         f"{symbol} {direction}\n"
-        f"{MAX_OPEN_SIGNAL_HOURS} saat içinde "
-        f"TP veya SL netleşmediği için takipten çıkarıldı."
+        f"Giriş: {format_price(entry)}\n"
+        f"Süre Sonu Fiyatı: "
+        f"{format_price(current_price)}\n"
+        f"Yaklaşık Açık Sonuç: "
+        f"{result_text}\n"
+        f"TP1 Daha Önce Geldi mi: "
+        f"{tp1_text}\n\n"
+        f"{MAX_OPEN_SIGNAL_HOURS} saat sonunda "
+        f"takipten çıkarıldı."
     )
 
 
@@ -2512,10 +2705,41 @@ def check_open_signals(
                 now_ts() - opened_at
                 > max_age
             ):
+                expiry_price = get_current_price(
+                    exchange,
+                    symbol,
+                )
+
+                # Güncel fiyat alınamazsa sonucu ölçmeden kapatma.
+                # Sonraki çalışmada yeniden kontrol edilir.
+                if expiry_price is None:
+                    updated[key] = signal
+                    print(
+                        symbol,
+                        "süre doldu fakat güncel fiyat alınamadı.",
+                    )
+                    continue
+
+                expiry_r = calculate_open_r(
+                    direction,
+                    entry,
+                    sl,
+                    expiry_price,
+                )
+
                 notify_expired(
                     state,
                     symbol,
                     direction,
+                    entry,
+                    expiry_price,
+                    expiry_r,
+                    bool(
+                        signal.get(
+                            "tp1_hit",
+                            False,
+                        )
+                    ),
                 )
                 continue
 
@@ -3199,7 +3423,23 @@ def main():
             )
             continue
 
-        # Sinyal uretiminden gonderime kadar
+        (
+            direction_valid,
+            direction_reason,
+        ) = validate_direction_before_send(
+            signal,
+            current_price,
+        )
+
+        if not direction_valid:
+            print(
+                signal["symbol"],
+                "Swing son yön kontrolünde elendi:",
+                direction_reason,
+            )
+            continue
+
+        # Sinyal üretiminden gönderime kadar
         # TP1 veya SL görülmüşse gönderme.
         if signal["direction"] == "LONG":
             if (
@@ -3228,6 +3468,9 @@ def main():
         signal["zone_drift"] = (
             zone_drift
         )
+        signal["direction_check"] = (
+            direction_reason
+        )
 
         selected.append(signal)
 
@@ -3251,8 +3494,10 @@ def main():
             + f"{format_price(signal['current_price'])}\n"
             + f"📏 Giriş Bölgesi Sapması: "
             + f"%{round(signal['zone_drift'], 3)}\n"
+            + "🧭 Son Yön Kontrolü: "
+            + f"{signal['direction_check']} ✅\n"
             + "📌 Son Kontrol: "
-            + "Swing giriş bölgesinde ✅"
+            + "Swing giriş bölgesinde ve yapı geçerli ✅"
         )
 
         if send_telegram(message):
