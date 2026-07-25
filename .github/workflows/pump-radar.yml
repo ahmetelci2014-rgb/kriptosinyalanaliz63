@@ -39,21 +39,27 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python pump_radar.py
 
-      - name: Pump/Dump durum ve performans dosyalarını güvenli kaydet
+      - name: Pump/Dump durum, teşhis ve performans kayıtlarını güvenli kaydet
+        if: always()
         run: |
           set -e
 
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add             pump_radar_state.json             pump_performance_ledger.json
+          for file in             pump_radar_state.json             pump_performance_ledger.json
+          do
+            if [ -f "$file" ]; then
+              git add "$file"
+            fi
+          done
 
           if git diff --cached --quiet; then
             echo "Pump/Dump dosyalarında kaydedilecek değişiklik yok."
             exit 0
           fi
 
-          git commit -m "Update pump dump state and performance ledger"
+          git commit -m "Update pump dump state performance and diagnosis"
 
           for attempt in 1 2 3
           do
