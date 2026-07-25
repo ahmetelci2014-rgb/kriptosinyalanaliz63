@@ -692,7 +692,7 @@ def build_daily_r_report():
         else "Bugün ledger sisteminde yeni nihai kapanış yok."
     )
 
-    return f"""📈 NET R PERFORMANS RAPORU v2
+    return f"""📈 NET R PERFORMANS RAPORU v3
 
 Tarih: {today}
 
@@ -1544,7 +1544,7 @@ def build_limit_watch_message(
             f"{format_price(float(signal.get('tp3')))}\n"
             f"🛑 SL: "
             f"{format_price(float(signal.get('sl')))}\n\n"
-            f"📊 Skor: %{signal.get('score')}\n"
+            f"📊 Kalite Uyum Skoru: {signal.get('score')}/100\n"
             f"🛡️ Stop Mesafesi: "
             f"%{signal.get('risk_percent')}"
             f"{price_line}\n\n"
@@ -2023,6 +2023,22 @@ def check_open_signals(exchange):
             tp1_hit = bool(
                 signal.get("tp1_hit", False)
             )
+
+            # TP1'in görüldüğü mum sonraki workflow çalışmasında
+            # tekrar okunabilir. Eski sinyallerde zaman kaydı yoksa
+            # son kontrol zamanı güvenli başlangıç olarak kullanılır.
+            tp1_hit_at = int(
+                signal.get("tp1_hit_at")
+                or (
+                    last_checked_at
+                    if tp1_hit
+                    else 0
+                )
+            )
+
+            if tp1_hit and not signal.get("tp1_hit_at"):
+                signal["tp1_hit_at"] = tp1_hit_at
+
             tp2_hit = bool(
                 signal.get("tp2_hit", False)
             )
@@ -2033,6 +2049,10 @@ def check_open_signals(exchange):
             closed = False
 
             for candle in candles:
+                candle_time = int(
+                    candle.get("time", 0)
+                    or 0
+                )
                 high = float(candle["high"])
                 low = float(candle["low"])
                 close = float(candle["close"])
@@ -2046,6 +2066,8 @@ def check_open_signals(exchange):
                                 tp1_hit = True
                                 just_hit_tp1 = True
                                 signal["tp1_hit"] = True
+                                tp1_hit_at = candle_time
+                                signal["tp1_hit_at"] = tp1_hit_at
 
                                 send_telegram(
                                     f"✅ TP1 GELDİ\n\n"
@@ -2107,6 +2129,8 @@ def check_open_signals(exchange):
                             tp1_hit = True
                             just_hit_tp1 = True
                             signal["tp1_hit"] = True
+                            tp1_hit_at = candle_time
+                            signal["tp1_hit_at"] = tp1_hit_at
 
                             send_telegram(
                                 f"✅ TP1 GELDİ\n\n"
@@ -2177,6 +2201,7 @@ def check_open_signals(exchange):
                     if (
                         tp1_hit
                         and not just_hit_tp1
+                        and candle_time > tp1_hit_at
                         and low <= entry
                     ):
                         signal["closed"] = True
@@ -2205,6 +2230,8 @@ def check_open_signals(exchange):
                                 tp1_hit = True
                                 just_hit_tp1 = True
                                 signal["tp1_hit"] = True
+                                tp1_hit_at = candle_time
+                                signal["tp1_hit_at"] = tp1_hit_at
 
                                 send_telegram(
                                     f"✅ TP1 GELDİ\n\n"
@@ -2266,6 +2293,8 @@ def check_open_signals(exchange):
                             tp1_hit = True
                             just_hit_tp1 = True
                             signal["tp1_hit"] = True
+                            tp1_hit_at = candle_time
+                            signal["tp1_hit_at"] = tp1_hit_at
 
                             send_telegram(
                                 f"✅ TP1 GELDİ\n\n"
@@ -2336,6 +2365,7 @@ def check_open_signals(exchange):
                     if (
                         tp1_hit
                         and not just_hit_tp1
+                        and candle_time > tp1_hit_at
                         and high >= entry
                     ):
                         signal["closed"] = True
@@ -2361,6 +2391,7 @@ def check_open_signals(exchange):
                 continue
 
             signal["tp1_hit"] = tp1_hit
+            signal["tp1_hit_at"] = tp1_hit_at
             signal["tp2_hit"] = tp2_hit
             signal["tp3_hit"] = tp3_hit
             signal["last_checked_at"] = now_ts()
@@ -2631,7 +2662,7 @@ Son Kapananlar:
 
 Not:
 Bu eski olay raporudur.
-Gerçek tekil işlem ve net R sonucu ayrı v2 raporunda gösterilir.
+Gerçek tekil işlem ve net R sonucu ayrı v3 raporunda gösterilir.
 Bu bot emir açmaz, sadece sinyal gönderir."""
 
 
@@ -2701,6 +2732,7 @@ def save_open_signal(signal):
         "opened_at": opened_at,
         "last_checked_at": opened_at,
         "tp1_hit": False,
+        "tp1_hit_at": 0,
         "tp2_hit": False,
         "tp3_hit": False,
         "closed": False,
@@ -2991,8 +3023,19 @@ def main():
         available_trade_slots <= 0
         and trade_candidates
     ):
+        # Limit dolu takip mesajı gerçek TRADE duplicate kaydını
+        # kirletmez; ayrı RADAR anahtarıyla 45 dakika tekrar engellenir.
+        limit_watch_candidates = [
+            signal
+            for signal in trade_candidates
+            if not is_duplicate(
+                signal,
+                radar=True,
+            )
+        ]
+
         selected_limit_watch = (
-            trade_candidates[:1]
+            limit_watch_candidates[:1]
         )
 
     selected_radar = radar_candidates[
@@ -3008,7 +3051,7 @@ def main():
             f"{risky_open}/{MAX_OPEN_SIGNALS}\n"
             f"TP1 görmüş takipte sinyal: "
             f"{reduced_open}\n"
-            f"Gönderilen işlem sinyali: "
+            f"Son kontrole seçilen işlem adayı: "
             f"{len(selected_trade)}\n"
             f"Risk Modu: "
             f"{'AKTİF' if risk_mode else 'Kapalı'}\n"
