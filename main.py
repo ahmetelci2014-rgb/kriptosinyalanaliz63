@@ -291,6 +291,62 @@ def ledger_target_r(trade, target_key):
     return abs(target - entry) / risk
 
 
+def calculate_exit_r(signal, exit_price):
+    entry = safe_float(signal.get("entry"))
+    sl = safe_float(signal.get("sl"))
+    price = safe_float(exit_price)
+
+    if entry is None or sl is None or price is None:
+        return None
+
+    risk = abs(entry - sl)
+
+    if risk <= 0:
+        return None
+
+    direction = str(
+        signal.get("direction", "")
+    ).upper()
+
+    if direction == "LONG":
+        remaining_r = (
+            price - entry
+        ) / risk
+
+    elif direction == "SHORT":
+        remaining_r = (
+            entry - price
+        ) / risk
+
+    else:
+        return None
+
+    # TP1 geldiyse pozisyonun %50'si TP1'de alınmış,
+    # kalan %50 süre dolduğu andaki fiyatla hesaplanır.
+    if bool(signal.get("tp1_hit", False)):
+        tp1 = safe_float(signal.get("tp1"))
+
+        if tp1 is None:
+            return None
+
+        if direction == "LONG":
+            tp1_r = (
+                tp1 - entry
+            ) / risk
+        else:
+            tp1_r = (
+                entry - tp1
+            ) / risk
+
+        return round(
+            0.50 * tp1_r
+            + 0.50 * remaining_r,
+            4,
+        )
+
+    return round(remaining_r, 4)
+
+
 def ensure_ledger_trade(signal):
     ledger = load_trade_ledger()
     trades = ledger["trades"]
@@ -473,7 +529,10 @@ def ledger_record_event(signal, result, exit_price=None):
 
     elif result == "EXPIRED":
         trade["final_result"] = "EXPIRED"
-        trade["r_result"] = None
+        trade["r_result"] = calculate_exit_r(
+            trade,
+            exit_price,
+        )
 
     else:
         save_trade_ledger(ledger)
@@ -1898,20 +1957,51 @@ def check_open_signals(exchange):
                 continue
 
             if now_ts() - opened_at > max_age:
+                expiry_price = get_current_price(
+                    exchange,
+                    symbol,
+                )
+
+                # Güncel fiyat alınamazsa işlemi ölçümsüz kapatma.
+                # Bir sonraki çalışmada yeniden kontrol edilir.
+                if expiry_price is None:
+                    updated[key] = signal
+                    print(
+                        symbol,
+                        "süre doldu fakat güncel fiyat alınamadı.",
+                    )
+                    continue
+
+                expiry_r = calculate_exit_r(
+                    signal,
+                    expiry_price,
+                )
+
+                expiry_r_text = (
+                    f"{expiry_r:+.3f}R"
+                    if expiry_r is not None
+                    else "ölçülemedi"
+                )
+
                 send_telegram(
                     f"⏳ SİNYAL SÜRESİ DOLDU\n\n"
                     f"Coin: {symbol}\n"
                     f"Yön: {direction}\n"
-                    f"Giriş: {format_price(entry)}\n\n"
+                    f"Giriş: {format_price(entry)}\n"
+                    f"Süre Sonu Fiyatı: "
+                    f"{format_price(expiry_price)}\n"
+                    f"Yaklaşık Net Sonuç: "
+                    f"{expiry_r_text}\n\n"
                     f"{MAX_OPEN_SIGNAL_HOURS} saat içinde "
-                    f"TP/SL netleşmediği için takipten çıkarıldı."
+                    f"TP3/SL ile netleşmediği için "
+                    f"takipten çıkarıldı."
                 )
 
                 close_signal_result(
                     symbol,
                     signal,
                     "EXPIRED",
-                    None,
+                    expiry_price,
                 )
                 continue
 
