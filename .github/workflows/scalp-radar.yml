@@ -39,36 +39,37 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python scalp_radar.py
 
-      - name: Scalp durum dosyasını güvenli kaydet
+      - name: Scalp durum ve performans dosyalarını güvenli kaydet
         run: |
           set -e
 
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          git add scalp_radar_state.json
+          git add \
+            scalp_radar_state.json \
+            scalp_performance_ledger.json
 
           if git diff --cached --quiet; then
-            echo "Scalp durum dosyasında kaydedilecek değişiklik yok."
+            echo "Scalp dosyalarında kaydedilecek değişiklik yok."
             exit 0
           fi
 
-          git commit -m "Update scalp radar state"
+          git commit -m "Update scalp state and performance ledger"
 
           for attempt in 1 2 3
           do
             echo "Push denemesi: $attempt"
 
             git pull --rebase --autostash origin main
-
             if git push origin HEAD:main
             then
-              echo "Scalp durum dosyası başarıyla kaydedildi."
+              echo "Scalp durum ve performans dosyaları kaydedildi."
               exit 0
             fi
 
             sleep 10
           done
 
-          echo "Scalp durum dosyası üç denemede de kaydedilemedi."
+          echo "Scalp dosyaları üç denemede de kaydedilemedi."
           exit 1
