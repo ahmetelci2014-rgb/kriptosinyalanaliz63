@@ -55,6 +55,35 @@ NO_SIGNAL_REPORT_EVERY_MINUTES = 30
 # Sinyal gönderilene kadar fiyat çok uzaklaşmışsa iptal edilir.
 MAX_ENTRY_DRIFT_PERCENT = 0.25
 
+# =========================================================
+# ERKEN FIRSAT UYARISI
+# =========================================================
+#
+# Bu yol gerçek scalp sinyali üretmez.
+# Açık scalp limitini doldurmaz, TP/SL kaydı açmaz.
+# Amaç: ICP benzeri, 15M mum kapanmadan başlayan hızlı hareketleri
+# son tamamlanmış 1M mumlar ve güncel futures fiyatıyla haber vermek.
+
+EARLY_ALERT_ENABLED = True
+MAX_EARLY_ALERTS_PER_RUN = 2
+EARLY_ALERT_DUPLICATE_SECONDS = 60 * 60
+EARLY_MAX_SEND_DRIFT_PERCENT = 0.40
+
+EARLY_MIN_5M_MOVE = 0.55
+EARLY_MIN_15M_MOVE = 0.90
+EARLY_MAX_15M_MOVE = 2.80
+
+EARLY_MIN_1M_VOLUME_RATIO = 1.20
+EARLY_MIN_ROLLING_5M_VOLUME_RATIO = 1.10
+
+EARLY_LONG_RSI_MIN = 48
+EARLY_LONG_RSI_MAX = 78
+EARLY_SHORT_RSI_MIN = 22
+EARLY_SHORT_RSI_MAX = 52
+
+EARLY_BREAKOUT_LOOKBACK_1M = 20
+EARLY_MIN_SCORE = 70
+
 
 # =========================================================
 # TP / SL / RİSK
@@ -194,6 +223,7 @@ def empty_state():
     return {
         "open_scalp_signals": {},
         "last_sent": {},
+        "early_last_sent": {},
         "last_no_signal_report": 0,
         "stats": empty_stats(),
     }
@@ -216,6 +246,7 @@ def load_state():
 
         state.setdefault("open_scalp_signals", {})
         state.setdefault("last_sent", {})
+        state.setdefault("early_last_sent", {})
         state.setdefault("last_no_signal_report", 0)
         state.setdefault("stats", {})
 
@@ -582,6 +613,66 @@ def rolling_previous_low(frame, lookback):
         return None
 
 
+def rolling_move_from_1m(frame, current_price, minutes):
+    """Son tamamlanmış 1M mumların başlangıcından güncel fiyata hareket."""
+    try:
+        completed = frame.iloc[:-1]
+
+        if len(completed) < minutes:
+            return 0.0
+
+        start_open = safe_float(
+            completed.iloc[-minutes]["open"]
+        )
+        current = safe_float(current_price)
+
+        if start_open <= 0 or current <= 0:
+            return 0.0
+
+        return (
+            (current - start_open)
+            / start_open
+            * 100
+        )
+
+    except Exception:
+        return 0.0
+
+
+def rolling_volume_ratio_from_1m(frame, minutes=5, baseline_period=20):
+    """Son tamamlanmış 1M mumların toplam hacmini önceki ortalamayla kıyaslar."""
+    try:
+        completed = frame.iloc[:-1].copy()
+
+        if len(completed) < minutes + baseline_period:
+            return 0.0
+
+        recent_volume = float(
+            completed["volume"].iloc[-minutes:].sum()
+        )
+
+        baseline = completed["volume"].iloc[
+            -(minutes + baseline_period):-minutes
+        ]
+
+        baseline_per_minute = float(
+            baseline.mean()
+        )
+
+        expected_volume = (
+            baseline_per_minute
+            * minutes
+        )
+
+        if expected_volume <= 0:
+            return 0.0
+
+        return recent_volume / expected_volume
+
+    except Exception:
+        return 0.0
+
+
 # =========================================================
 # TEKRAR / AÇIK SİNYAL
 # =========================================================
@@ -608,6 +699,44 @@ def mark_sent(state, symbol, direction):
     state["last_sent"] = {
         key: value
         for key, value in state["last_sent"].items()
+        if int(value) >= cutoff
+    }
+
+    save_state(state)
+
+
+def early_duplicate_key(symbol, direction):
+    return (
+        f"EARLY_"
+        f"{normalize_bot_symbol(symbol)}_"
+        f"{direction}"
+    )
+
+
+def is_recent_early_duplicate(state, symbol, direction):
+    last_time = int(
+        state.get("early_last_sent", {}).get(
+            early_duplicate_key(symbol, direction),
+            0,
+        )
+    )
+
+    return (
+        now_ts() - last_time
+        < EARLY_ALERT_DUPLICATE_SECONDS
+    )
+
+
+def mark_early_alert_sent(state, symbol, direction):
+    state.setdefault("early_last_sent", {})
+    state["early_last_sent"][
+        early_duplicate_key(symbol, direction)
+    ] = now_ts()
+
+    cutoff = now_ts() - 24 * 60 * 60
+    state["early_last_sent"] = {
+        key: value
+        for key, value in state["early_last_sent"].items()
         if int(value) >= cutoff
     }
 
@@ -644,6 +773,238 @@ def missing_reasons(conditions):
         for condition in conditions
         if not condition["ok"]
     ]
+
+
+def build_early_alert_message(alert):
+    icon = (
+        "🟢"
+        if alert["direction"] == "LONG"
+        else "🔴"
+    )
+
+    breakout_text = (
+        "Var ✅"
+        if alert.get("breakout")
+        else "Henüz net değil"
+    )
+
+    return (
+        f"⚠️ ERKEN SCALP FIRSATI - İŞLEM SİNYALİ DEĞİL\n\n"
+        f"{icon} Yön İzleme: {alert['direction']}\n"
+        f"🟡 Coin: {alert['symbol']}\n"
+        f"💰 İzleme Fiyatı: {format_price(alert['entry'])}\n"
+        f"📊 Erken Kalite: {alert['score']}/100\n\n"
+        f"Canlı Futures Hareketi:\n"
+        f"• Yaklaşık 5M: %{round(alert['live_move5'], 2)}\n"
+        f"• Yaklaşık 15M: %{round(alert['live_move15'], 2)}\n"
+        f"• 1M RSI: {round(alert['rsi1'], 2)}\n"
+        f"• Son 1M Hacim: {round(alert['vol1'], 2)}x\n"
+        f"• Yuvarlanan 5M Hacim: "
+        f"{round(alert['rolling_vol5'], 2)}x\n"
+        f"• Kısa Vadeli Kırılım: {breakout_text}\n\n"
+        f"📌 Bu uyarı neden geldi?\n"
+        f"{alert['reason']}\n\n"
+        f"⚠️ TP/SL üretilmedi ve açık scalp işlemi sayılmaz.\n"
+        f"Grafikte 1M/5M kırılımını, geri çekilmeyi ve BTC yönünü kontrol et.\n"
+        f"Fiyat hareketin ortasındaysa peşinden koşma."
+    )
+
+
+def analyze_early_alert(
+    symbol,
+    df1,
+    current_price,
+    market_data,
+):
+    if not EARLY_ALERT_ENABLED:
+        return None
+
+    try:
+        current = safe_float(current_price)
+
+        if current <= 0:
+            return None
+
+        live_move5 = rolling_move_from_1m(
+            df1,
+            current,
+            5,
+        )
+        live_move15 = rolling_move_from_1m(
+            df1,
+            current,
+            15,
+        )
+        rolling_vol5 = rolling_volume_ratio_from_1m(
+            df1,
+            5,
+            20,
+        )
+
+        rsi1 = safe_float(
+            market_data.get("rsi1")
+        )
+        vol1 = safe_float(
+            market_data.get("vol1")
+        )
+
+        previous_high = rolling_previous_high(
+            df1,
+            EARLY_BREAKOUT_LOOKBACK_1M,
+        )
+        previous_low = rolling_previous_low(
+            df1,
+            EARLY_BREAKOUT_LOOKBACK_1M,
+        )
+
+        breakout_long = (
+            previous_high is not None
+            and current >= previous_high
+        )
+        breakdown_short = (
+            previous_low is not None
+            and current <= previous_low
+        )
+
+        direction = None
+        breakout = False
+
+        if (
+            live_move5 >= EARLY_MIN_5M_MOVE
+            or live_move15 >= EARLY_MIN_15M_MOVE
+        ):
+            direction = "LONG"
+            breakout = breakout_long
+
+        elif (
+            live_move5 <= -EARLY_MIN_5M_MOVE
+            or live_move15 <= -EARLY_MIN_15M_MOVE
+        ):
+            direction = "SHORT"
+            breakout = breakdown_short
+
+        if direction is None:
+            return None
+
+        if abs(live_move15) > EARLY_MAX_15M_MOVE:
+            return None
+
+        momentum_ok = (
+            abs(live_move5) >= EARLY_MIN_5M_MOVE
+            or abs(live_move15) >= EARLY_MIN_15M_MOVE
+        )
+        volume_ok = (
+            vol1 >= EARLY_MIN_1M_VOLUME_RATIO
+            or rolling_vol5
+            >= EARLY_MIN_ROLLING_5M_VOLUME_RATIO
+        )
+
+        if direction == "LONG":
+            rsi_ok = (
+                EARLY_LONG_RSI_MIN
+                <= rsi1
+                <= EARLY_LONG_RSI_MAX
+            )
+            strong_move = (
+                live_move15
+                >= max(
+                    1.20,
+                    EARLY_MIN_15M_MOVE,
+                )
+            )
+        else:
+            rsi_ok = (
+                EARLY_SHORT_RSI_MIN
+                <= rsi1
+                <= EARLY_SHORT_RSI_MAX
+            )
+            strong_move = (
+                live_move15
+                <= -max(
+                    1.20,
+                    EARLY_MIN_15M_MOVE,
+                )
+            )
+
+        score = 0
+
+        if abs(live_move5) >= EARLY_MIN_5M_MOVE:
+            score += 25
+        if abs(live_move15) >= EARLY_MIN_15M_MOVE:
+            score += 20
+        if vol1 >= EARLY_MIN_1M_VOLUME_RATIO:
+            score += 15
+        if (
+            rolling_vol5
+            >= EARLY_MIN_ROLLING_5M_VOLUME_RATIO
+        ):
+            score += 15
+        if breakout:
+            score += 15
+        if rsi_ok:
+            score += 10
+
+        score = min(100, score)
+
+        hard_ok = (
+            momentum_ok
+            and volume_ok
+            and rsi_ok
+            and (
+                breakout
+                or strong_move
+            )
+        )
+
+        if not hard_ok or score < EARLY_MIN_SCORE:
+            return None
+
+        reason_parts = []
+
+        if breakout:
+            reason_parts.append(
+                "önceki 1M fiyat bölgesi kırılıyor"
+            )
+        if strong_move:
+            reason_parts.append(
+                "15M mum kapanmadan güçlü hareket oluştu"
+            )
+        if volume_ok:
+            reason_parts.append(
+                "kısa vadeli hacim hareketi destekliyor"
+            )
+
+        alert = {
+            "symbol": normalize_bot_symbol(symbol),
+            "direction": direction,
+            "entry": current,
+            "score": score,
+            "live_move5": live_move5,
+            "live_move15": live_move15,
+            "rsi1": rsi1,
+            "vol1": vol1,
+            "rolling_vol5": rolling_vol5,
+            "breakout": breakout,
+            "reason": (
+                ", ".join(reason_parts)
+                if reason_parts
+                else "hızlı momentum algılandı"
+            ),
+        }
+
+        alert["message"] = build_early_alert_message(
+            alert
+        )
+
+        return alert
+
+    except Exception as exc:
+        print(
+            symbol,
+            "erken fırsat analiz hatası:",
+            exc,
+        )
+        return None
 
 
 def build_signal_message(signal):
@@ -1385,6 +1746,17 @@ def analyze_symbol(exchange, symbol):
 
     signals = []
     debug_items = []
+    early_alerts = []
+
+    early_alert = analyze_early_alert(
+        symbol,
+        df1,
+        current_price,
+        market_data,
+    )
+
+    if early_alert is not None:
+        early_alerts.append(early_alert)
 
     for analyzer in (
         analyze_reaction_side,
@@ -1416,7 +1788,7 @@ def analyze_symbol(exchange, symbol):
         reverse=True,
     )
 
-    return signals[:1], debug_items
+    return signals[:1], debug_items, early_alerts
 
 
 # =========================================================
@@ -1858,6 +2230,7 @@ def main():
     print("Boş scalp slot:", available_slots)
 
     all_signals = []
+    all_early_alerts = []
     reason_counter = Counter()
     top_candidates = []
     scanned = 0
@@ -1870,7 +2243,7 @@ def main():
                 print(symbol, "zaten açık scalp var, atlandı.")
                 continue
 
-            signals, debug_items = analyze_symbol(
+            signals, debug_items, early_items = analyze_symbol(
                 exchange,
                 symbol,
             )
@@ -1879,6 +2252,18 @@ def main():
                 for reason in debug.get("missing", []):
                     reason_counter[reason] += 1
                 top_candidates.append(debug)
+
+            for early_alert in early_items:
+                if is_recent_early_duplicate(
+                    state,
+                    early_alert["symbol"],
+                    early_alert["direction"],
+                ):
+                    continue
+
+                all_early_alerts.append(
+                    early_alert
+                )
 
             for signal in signals:
                 if is_recent_duplicate(
@@ -1906,6 +2291,15 @@ def main():
             -item["risk_percent"],
             item["vol5"],
             item["vol1"],
+        ),
+        reverse=True,
+    )
+
+    all_early_alerts.sort(
+        key=lambda item: (
+            item.get("score", 0),
+            abs(item.get("live_move15", 0)),
+            item.get("rolling_vol5", 0),
         ),
         reverse=True,
     )
@@ -1955,8 +2349,52 @@ def main():
         signal["entry_drift_percent"] = drift
         selected.append(signal)
 
+    selected_early = []
+    selected_symbols = {
+        signal["symbol"]
+        for signal in selected
+    }
+
+    for alert in all_early_alerts:
+        if (
+            len(selected_early)
+            >= MAX_EARLY_ALERTS_PER_RUN
+        ):
+            break
+
+        if alert["symbol"] in selected_symbols:
+            continue
+
+        current_price = get_current_price(
+            exchange,
+            alert["symbol"],
+        )
+
+        if current_price is None:
+            continue
+
+        drift = percent_distance(
+            current_price,
+            alert["entry"],
+        )
+
+        if drift > EARLY_MAX_SEND_DRIFT_PERCENT:
+            print(
+                alert["symbol"],
+                "erken uyarı fiyatı uzaklaştı:",
+                round(drift, 3),
+                "%",
+            )
+            continue
+
+        alert["current_price"] = current_price
+        alert["entry_drift_percent"] = drift
+        selected_early.append(alert)
+
     print("Bulunan kaliteli scalp sinyal:", len(all_signals))
     print("Gönderilecek scalp sinyal:", len(selected))
+    print("Bulunan erken fırsat:", len(all_early_alerts))
+    print("Gönderilecek erken fırsat:", len(selected_early))
 
     if selected:
         send_telegram(
@@ -1986,7 +2424,35 @@ def main():
             state = load_state()
             time.sleep(1)
 
-    if not selected:
+    if selected_early:
+        send_telegram(
+            f"⚠️ ERKEN SCALP FIRSATLARI BULUNDU\n"
+            f"Taranan coin: {scanned}\n"
+            f"Erken aday: {len(all_early_alerts)}\n"
+            f"Gönderilecek uyarı: {len(selected_early)}\n"
+            f"Bu mesajlar işlem sinyali değildir."
+        )
+
+    for alert in selected_early:
+        extra = (
+            f"\n\n💰 Gönderim Anı Futures Fiyatı: "
+            f"{format_price(alert['current_price'])}\n"
+            f"📏 İzleme Fiyatı Sapması: "
+            f"%{round(alert['entry_drift_percent'], 3)}"
+        )
+
+        if send_telegram(
+            alert["message"] + extra
+        ):
+            mark_early_alert_sent(
+                state,
+                alert["symbol"],
+                alert["direction"],
+            )
+            state = load_state()
+            time.sleep(1)
+
+    if not selected and not selected_early:
         print("Yeni kaliteli scalp sinyali yok.")
 
         if should_send_no_signal_report(state):
