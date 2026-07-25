@@ -86,6 +86,36 @@ EARLY_MIN_SCORE = 70
 
 
 # =========================================================
+# ÖN İZLEME UYARISI
+# =========================================================
+#
+# Hareket henüz büyük ölçüde ilerlemeden grafiği açmak için uyarır.
+# Gerçek işlem sinyali değildir; TP/SL üretmez ve açık scalp sayılmaz.
+# Mevcut ERKEN FIRSAT yolu ikinci kademe teyit olarak çalışmaya devam eder.
+
+PREWATCH_ENABLED = True
+MAX_PREWATCH_ALERTS_PER_RUN = 2
+PREWATCH_DUPLICATE_SECONDS = 45 * 60
+PREWATCH_MAX_SEND_DRIFT_PERCENT = 0.30
+
+PREWATCH_MIN_3M_MOVE = 0.22
+PREWATCH_MIN_5M_MOVE = 0.32
+PREWATCH_MAX_15M_MOVE = 1.25
+
+PREWATCH_MIN_1M_VOLUME_RATIO = 1.10
+PREWATCH_MIN_ROLLING_3M_VOLUME_RATIO = 1.05
+
+PREWATCH_LONG_RSI_MIN = 45
+PREWATCH_LONG_RSI_MAX = 72
+PREWATCH_SHORT_RSI_MIN = 28
+PREWATCH_SHORT_RSI_MAX = 55
+
+PREWATCH_BREAKOUT_LOOKBACK_1M = 15
+PREWATCH_MAX_BREAKOUT_DISTANCE_PERCENT = 0.18
+PREWATCH_MIN_SCORE = 65
+
+
+# =========================================================
 # TP / SL / RİSK
 # =========================================================
 
@@ -224,6 +254,7 @@ def empty_state():
         "open_scalp_signals": {},
         "last_sent": {},
         "early_last_sent": {},
+        "prewatch_last_sent": {},
         "last_no_signal_report": 0,
         "stats": empty_stats(),
     }
@@ -247,6 +278,7 @@ def load_state():
         state.setdefault("open_scalp_signals", {})
         state.setdefault("last_sent", {})
         state.setdefault("early_last_sent", {})
+        state.setdefault("prewatch_last_sent", {})
         state.setdefault("last_no_signal_report", 0)
         state.setdefault("stats", {})
 
@@ -743,6 +775,44 @@ def mark_early_alert_sent(state, symbol, direction):
     save_state(state)
 
 
+def prewatch_duplicate_key(symbol, direction):
+    return (
+        f"PREWATCH_"
+        f"{normalize_bot_symbol(symbol)}_"
+        f"{direction}"
+    )
+
+
+def is_recent_prewatch_duplicate(state, symbol, direction):
+    last_time = int(
+        state.get("prewatch_last_sent", {}).get(
+            prewatch_duplicate_key(symbol, direction),
+            0,
+        )
+    )
+
+    return (
+        now_ts() - last_time
+        < PREWATCH_DUPLICATE_SECONDS
+    )
+
+
+def mark_prewatch_sent(state, symbol, direction):
+    state.setdefault("prewatch_last_sent", {})
+    state["prewatch_last_sent"][
+        prewatch_duplicate_key(symbol, direction)
+    ] = now_ts()
+
+    cutoff = now_ts() - 24 * 60 * 60
+    state["prewatch_last_sent"] = {
+        key: value
+        for key, value in state["prewatch_last_sent"].items()
+        if int(value) >= cutoff
+    }
+
+    save_state(state)
+
+
 def has_open_same_symbol(state, symbol):
     symbol = normalize_bot_symbol(symbol)
 
@@ -773,6 +843,269 @@ def missing_reasons(conditions):
         for condition in conditions
         if not condition["ok"]
     ]
+
+
+def build_prewatch_message(alert):
+    icon = (
+        "🟢"
+        if alert["direction"] == "LONG"
+        else "🔴"
+    )
+
+    zone_text = (
+        "Kırılım başladı ✅"
+        if alert.get("breakout")
+        else (
+            f"Kırılım bölgesine "
+            f"%{round(alert['breakout_distance'], 3)} uzak"
+        )
+    )
+
+    return (
+        f"👀 SCALP ÖN İZLEME - HENÜZ İŞLEM DEĞİL\n\n"
+        f"{icon} Hazırlık Yönü: {alert['direction']}\n"
+        f"🟡 Coin: {alert['symbol']}\n"
+        f"💰 İzleme Fiyatı: {format_price(alert['entry'])}\n"
+        f"📊 Hazırlık Skoru: {alert['score']}/100\n\n"
+        f"İlk Hızlanma Verileri:\n"
+        f"• Yaklaşık 3M: %{round(alert['live_move3'], 2)}\n"
+        f"• Yaklaşık 5M: %{round(alert['live_move5'], 2)}\n"
+        f"• Yaklaşık 15M: %{round(alert['live_move15'], 2)}\n"
+        f"• 1M RSI: {round(alert['rsi1'], 2)}\n"
+        f"• Son 1M Hacim: {round(alert['vol1'], 2)}x\n"
+        f"• Yuvarlanan 3M Hacim: "
+        f"{round(alert['rolling_vol3'], 2)}x\n"
+        f"• Fiyat Bölgesi: {zone_text}\n\n"
+        f"📌 Uyarı nedeni:\n"
+        f"{alert['reason']}\n\n"
+        f"⚠️ Henüz giriş, TP veya SL üretilmedi.\n"
+        f"Grafiği aç; hacimli kırılım veya kontrollü geri çekilme bekle.\n"
+        f"Bu mesaj tek başına işlem açma emri değildir."
+    )
+
+
+def analyze_prewatch_alert(
+    symbol,
+    df1,
+    current_price,
+    market_data,
+):
+    if not PREWATCH_ENABLED:
+        return None
+
+    try:
+        current = safe_float(current_price)
+
+        if current <= 0:
+            return None
+
+        live_move3 = rolling_move_from_1m(
+            df1,
+            current,
+            3,
+        )
+        live_move5 = rolling_move_from_1m(
+            df1,
+            current,
+            5,
+        )
+        live_move15 = rolling_move_from_1m(
+            df1,
+            current,
+            15,
+        )
+
+        # Ön izleme aşamasında hareket fazla ilerlediyse
+        # ikinci kademe ERKEN FIRSAT yoluna bırakılır.
+        if abs(live_move15) > PREWATCH_MAX_15M_MOVE:
+            return None
+
+        rolling_vol3 = rolling_volume_ratio_from_1m(
+            df1,
+            3,
+            20,
+        )
+
+        rsi1 = safe_float(
+            market_data.get("rsi1")
+        )
+        vol1 = safe_float(
+            market_data.get("vol1")
+        )
+
+        previous_high = rolling_previous_high(
+            df1,
+            PREWATCH_BREAKOUT_LOOKBACK_1M,
+        )
+        previous_low = rolling_previous_low(
+            df1,
+            PREWATCH_BREAKOUT_LOOKBACK_1M,
+        )
+
+        direction = None
+        breakout = False
+        breakout_distance = 999.0
+
+        long_momentum = (
+            live_move3 >= PREWATCH_MIN_3M_MOVE
+            or live_move5 >= PREWATCH_MIN_5M_MOVE
+        )
+        short_momentum = (
+            live_move3 <= -PREWATCH_MIN_3M_MOVE
+            or live_move5 <= -PREWATCH_MIN_5M_MOVE
+        )
+
+        if long_momentum and not short_momentum:
+            direction = "LONG"
+
+            if previous_high is not None and previous_high > 0:
+                breakout = current >= previous_high
+                breakout_distance = (
+                    0.0
+                    if breakout
+                    else (
+                        (previous_high - current)
+                        / current
+                        * 100
+                    )
+                )
+
+        elif short_momentum and not long_momentum:
+            direction = "SHORT"
+
+            if previous_low is not None and previous_low > 0:
+                breakout = current <= previous_low
+                breakout_distance = (
+                    0.0
+                    if breakout
+                    else (
+                        (current - previous_low)
+                        / current
+                        * 100
+                    )
+                )
+
+        if direction is None:
+            return None
+
+        near_breakout = (
+            breakout
+            or (
+                0 <= breakout_distance
+                <= PREWATCH_MAX_BREAKOUT_DISTANCE_PERCENT
+            )
+        )
+
+        volume_ok = (
+            vol1 >= PREWATCH_MIN_1M_VOLUME_RATIO
+            or rolling_vol3
+            >= PREWATCH_MIN_ROLLING_3M_VOLUME_RATIO
+        )
+
+        if direction == "LONG":
+            rsi_ok = (
+                PREWATCH_LONG_RSI_MIN
+                <= rsi1
+                <= PREWATCH_LONG_RSI_MAX
+            )
+        else:
+            rsi_ok = (
+                PREWATCH_SHORT_RSI_MIN
+                <= rsi1
+                <= PREWATCH_SHORT_RSI_MAX
+            )
+
+        score = 0
+
+        if abs(live_move3) >= PREWATCH_MIN_3M_MOVE:
+            score += 20
+
+        if abs(live_move5) >= PREWATCH_MIN_5M_MOVE:
+            score += 20
+
+        if vol1 >= PREWATCH_MIN_1M_VOLUME_RATIO:
+            score += 15
+
+        if (
+            rolling_vol3
+            >= PREWATCH_MIN_ROLLING_3M_VOLUME_RATIO
+        ):
+            score += 15
+
+        if near_breakout:
+            score += 20
+
+        if rsi_ok:
+            score += 10
+
+        score = min(100, score)
+
+        momentum_ok = (
+            long_momentum
+            if direction == "LONG"
+            else short_momentum
+        )
+
+        hard_ok = (
+            momentum_ok
+            and volume_ok
+            and rsi_ok
+            and near_breakout
+        )
+
+        if not hard_ok or score < PREWATCH_MIN_SCORE:
+            return None
+
+        reason_parts = [
+            "ilk 3M/5M hızlanma başladı",
+        ]
+
+        if breakout:
+            reason_parts.append(
+                "kısa vadeli fiyat bölgesi kırılıyor"
+            )
+        else:
+            reason_parts.append(
+                "kısa vadeli kırılım bölgesine yaklaşıyor"
+            )
+
+        if volume_ok:
+            reason_parts.append(
+                "kısa vadeli hacim artışı var"
+            )
+
+        alert = {
+            "symbol": normalize_bot_symbol(symbol),
+            "direction": direction,
+            "entry": current,
+            "score": score,
+            "live_move3": live_move3,
+            "live_move5": live_move5,
+            "live_move15": live_move15,
+            "rsi1": rsi1,
+            "vol1": vol1,
+            "rolling_vol3": rolling_vol3,
+            "breakout": breakout,
+            "breakout_distance": max(
+                0.0,
+                breakout_distance,
+            ),
+            "reason": ", ".join(reason_parts),
+        }
+
+        alert["message"] = build_prewatch_message(
+            alert
+        )
+
+        return alert
+
+    except Exception as exc:
+        print(
+            symbol,
+            "ön izleme analiz hatası:",
+            exc,
+        )
+        return None
 
 
 def build_early_alert_message(alert):
@@ -1719,7 +2052,7 @@ def analyze_symbol(exchange, symbol):
         or df15 is None
         or current_price is None
     ):
-        return [], []
+        return [], [], [], []
 
     df1 = df1.copy()
     df5 = df5.copy()
@@ -1747,6 +2080,19 @@ def analyze_symbol(exchange, symbol):
     signals = []
     debug_items = []
     early_alerts = []
+    prewatch_alerts = []
+
+    prewatch_alert = analyze_prewatch_alert(
+        symbol,
+        df1,
+        current_price,
+        market_data,
+    )
+
+    if prewatch_alert is not None:
+        prewatch_alerts.append(
+            prewatch_alert
+        )
 
     early_alert = analyze_early_alert(
         symbol,
@@ -1788,7 +2134,12 @@ def analyze_symbol(exchange, symbol):
         reverse=True,
     )
 
-    return signals[:1], debug_items, early_alerts
+    return (
+        signals[:1],
+        debug_items,
+        early_alerts,
+        prewatch_alerts,
+    )
 
 
 # =========================================================
@@ -2231,6 +2582,7 @@ def main():
 
     all_signals = []
     all_early_alerts = []
+    all_prewatch_alerts = []
     reason_counter = Counter()
     top_candidates = []
     scanned = 0
@@ -2243,7 +2595,12 @@ def main():
                 print(symbol, "zaten açık scalp var, atlandı.")
                 continue
 
-            signals, debug_items, early_items = analyze_symbol(
+            (
+                signals,
+                debug_items,
+                early_items,
+                prewatch_items,
+            ) = analyze_symbol(
                 exchange,
                 symbol,
             )
@@ -2252,6 +2609,18 @@ def main():
                 for reason in debug.get("missing", []):
                     reason_counter[reason] += 1
                 top_candidates.append(debug)
+
+            for prewatch_alert in prewatch_items:
+                if is_recent_prewatch_duplicate(
+                    state,
+                    prewatch_alert["symbol"],
+                    prewatch_alert["direction"],
+                ):
+                    continue
+
+                all_prewatch_alerts.append(
+                    prewatch_alert
+                )
 
             for early_alert in early_items:
                 if is_recent_early_duplicate(
@@ -2300,6 +2669,16 @@ def main():
             item.get("score", 0),
             abs(item.get("live_move15", 0)),
             item.get("rolling_vol5", 0),
+        ),
+        reverse=True,
+    )
+
+    all_prewatch_alerts.sort(
+        key=lambda item: (
+            item.get("score", 0),
+            -item.get("breakout_distance", 999),
+            abs(item.get("live_move5", 0)),
+            item.get("rolling_vol3", 0),
         ),
         reverse=True,
     )
@@ -2391,10 +2770,58 @@ def main():
         alert["entry_drift_percent"] = drift
         selected_early.append(alert)
 
+    selected_prewatch = []
+
+    blocked_symbols = {
+        signal["symbol"]
+        for signal in selected
+    } | {
+        alert["symbol"]
+        for alert in selected_early
+    }
+
+    for alert in all_prewatch_alerts:
+        if (
+            len(selected_prewatch)
+            >= MAX_PREWATCH_ALERTS_PER_RUN
+        ):
+            break
+
+        if alert["symbol"] in blocked_symbols:
+            continue
+
+        current_price = get_current_price(
+            exchange,
+            alert["symbol"],
+        )
+
+        if current_price is None:
+            continue
+
+        drift = percent_distance(
+            current_price,
+            alert["entry"],
+        )
+
+        if drift > PREWATCH_MAX_SEND_DRIFT_PERCENT:
+            print(
+                alert["symbol"],
+                "ön izleme fiyatı uzaklaştı:",
+                round(drift, 3),
+                "%",
+            )
+            continue
+
+        alert["current_price"] = current_price
+        alert["entry_drift_percent"] = drift
+        selected_prewatch.append(alert)
+
     print("Bulunan kaliteli scalp sinyal:", len(all_signals))
     print("Gönderilecek scalp sinyal:", len(selected))
     print("Bulunan erken fırsat:", len(all_early_alerts))
     print("Gönderilecek erken fırsat:", len(selected_early))
+    print("Bulunan ön izleme:", len(all_prewatch_alerts))
+    print("Gönderilecek ön izleme:", len(selected_prewatch))
 
     if selected:
         send_telegram(
@@ -2452,7 +2879,39 @@ def main():
             state = load_state()
             time.sleep(1)
 
-    if not selected and not selected_early:
+    if selected_prewatch:
+        send_telegram(
+            f"👀 SCALP ÖN İZLEME ADAYLARI\n"
+            f"Taranan coin: {scanned}\n"
+            f"Ön izleme adayı: {len(all_prewatch_alerts)}\n"
+            f"Gönderilecek uyarı: {len(selected_prewatch)}\n"
+            f"Bu mesajlar işlem sinyali değildir."
+        )
+
+    for alert in selected_prewatch:
+        extra = (
+            f"\n\n💰 Gönderim Anı Futures Fiyatı: "
+            f"{format_price(alert['current_price'])}\n"
+            f"📏 İzleme Fiyatı Sapması: "
+            f"%{round(alert['entry_drift_percent'], 3)}"
+        )
+
+        if send_telegram(
+            alert["message"] + extra
+        ):
+            mark_prewatch_sent(
+                state,
+                alert["symbol"],
+                alert["direction"],
+            )
+            state = load_state()
+            time.sleep(1)
+
+    if (
+        not selected
+        and not selected_early
+        and not selected_prewatch
+    ):
         print("Yeni kaliteli scalp sinyali yok.")
 
         if should_send_no_signal_report(state):
