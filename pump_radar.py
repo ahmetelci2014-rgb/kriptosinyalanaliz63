@@ -1,5 +1,5 @@
 # pump_radar.py
-# Erken Pump/Dump Radar v2 - Dengeli Canlı Para + Sessiz Trend Gözlemi
+# Erken Pump/Dump Radar v2 - Performans + Teknik Teşhis + Sessiz Trend
 #
 # OKX USDT perpetual futures paritelerini tarar.
 # Emir açmaz; Telegram uyarısı gönderir ve TP/SL takibi yapar.
@@ -44,6 +44,13 @@ PERFORMANCE_KEEP_DAYS = 21
 PERFORMANCE_MAX_RECORDS = 500
 PERFORMANCE_DIRECTION_THRESHOLD_PERCENT = 0.50
 PERFORMANCE_MIXED_THRESHOLD_PERCENT = 0.25
+
+# Pump/Dump işlem teşhisi:
+# Stop sonrası fiyatın aynı sinyal yönüne dönüp dönmediği 4 saat izlenir.
+PUMP_DIAGNOSIS_VERSION = "PUMP_DIAGNOSIS_V1"
+POST_STOP_CHECKPOINT_MINUTES = (15, 30, 60, 120, 240)
+POST_STOP_MAX_TRACK_MINUTES = 240
+POST_STOP_KEEP_HOURS = 24
 
 # Hacmi yüksek uygun OKX USDT futures pariteleri taranır.
 MAX_SCAN_COINS = 300
@@ -223,6 +230,7 @@ def default_state():
         "stats": empty_stats(),
         "shadow_moves": [],
         "shadow_last_seen": {},
+        "post_stop_follow": {},
         "shadow_stats": {
             "recorded": 0,
             "ready": 0,
@@ -261,6 +269,7 @@ def load_state():
         state.setdefault("stats", {})
         state.setdefault("shadow_moves", [])
         state.setdefault("shadow_last_seen", {})
+        state.setdefault("post_stop_follow", {})
         state.setdefault("shadow_stats", {})
 
         for key, value in {
@@ -298,9 +307,14 @@ def load_state():
             )
 
             item.setdefault("tp1_hit", False)
+            item.setdefault("tp1_hit_at", 0)
             item.setdefault("tp2_hit", False)
             item.setdefault("tp3_hit", False)
             item.setdefault("closed", False)
+            item.setdefault("best_favorable_percent", 0.0)
+            item.setdefault("worst_adverse_percent", 0.0)
+            item.setdefault("best_favorable_r", 0.0)
+            item.setdefault("worst_adverse_r", 0.0)
 
             new_key = (
                 f"{item.get('symbol', '')}_"
@@ -413,6 +427,12 @@ def rebuild_pump_performance_summary(ledger):
         "expired": 0,
         "long": 0,
         "short": 0,
+        "diagnosis_open": 0,
+        "diagnosis_success": 0,
+        "diagnosis_false_breakout": 0,
+        "diagnosis_early_stop": 0,
+        "diagnosis_momentum_faded": 0,
+        "diagnosis_no_continuation": 0,
     }
 
     for record in records:
@@ -462,6 +482,27 @@ def rebuild_pump_performance_summary(ledger):
             summary["breakeven"] += 1
         elif trade_outcome == "EXPIRED":
             summary["expired"] += 1
+
+        diagnosis = record.get("diagnosis") or {}
+        diagnosis_code = str(
+            diagnosis.get("code", "OPEN")
+        ).upper()
+
+        if diagnosis_code == "OPEN":
+            summary["diagnosis_open"] += 1
+        elif diagnosis_code == "BREAKOUT_SUCCESS":
+            summary["diagnosis_success"] += 1
+        elif diagnosis_code == "FALSE_BREAKOUT":
+            summary["diagnosis_false_breakout"] += 1
+        elif diagnosis_code == "EARLY_OR_WICK_STOP":
+            summary["diagnosis_early_stop"] += 1
+        elif diagnosis_code == "MOMENTUM_FADED":
+            summary["diagnosis_momentum_faded"] += 1
+        elif diagnosis_code in (
+            "NO_CONTINUATION",
+            "DIRECTION_WRONG",
+        ):
+            summary["diagnosis_no_continuation"] += 1
 
     ledger["summary"] = summary
     ledger["updated_at"] = now_ts()
@@ -584,6 +625,657 @@ def classify_pump_direction(record):
     )
 
 
+
+def pump_record_by_id(ledger, record_id):
+    if not record_id:
+        return None
+
+    for record in ledger.get("records", []):
+        if str(record.get("id")) == str(record_id):
+            return record
+
+    return None
+
+
+def apply_signal_metrics_to_pump_record(record, signal):
+    if record is None or not isinstance(signal, dict):
+        return
+
+    fields = (
+        "move1",
+        "move5",
+        "move15",
+        "vol1",
+        "vol5",
+        "rsi5",
+        "close_power1",
+        "close_power5",
+        "break_level",
+        "entry_drift_percent",
+        "break_level_distance_percent",
+        "ok_count",
+        "total_conditions",
+        "missing",
+        "best_favorable_percent",
+        "worst_adverse_percent",
+        "best_favorable_r",
+        "worst_adverse_r",
+        "best_favorable_price",
+        "worst_adverse_price",
+        "last_market_price",
+        "last_tracking_at",
+        "tp1_hit_at",
+    )
+
+    for field in fields:
+        value = signal.get(field)
+
+        if value is not None:
+            record[field] = value
+
+    record["tp1_hit"] = bool(
+        signal.get(
+            "tp1_hit",
+            record.get("tp1_hit", False),
+        )
+    )
+    record["tp2_hit"] = bool(
+        signal.get(
+            "tp2_hit",
+            record.get("tp2_hit", False),
+        )
+    )
+    record["tp3_hit"] = bool(
+        signal.get(
+            "tp3_hit",
+            record.get("tp3_hit", False),
+        )
+    )
+
+
+def update_pump_excursion(signal, high, low, candle_time=None):
+    entry = safe_float(signal.get("entry"))
+    sl = safe_float(signal.get("sl"))
+    high = safe_float(high)
+    low = safe_float(low)
+
+    if (
+        entry <= 0
+        or sl <= 0
+        or high <= 0
+        or low <= 0
+    ):
+        return
+
+    risk = abs(entry - sl)
+
+    if risk <= 0:
+        return
+
+    direction = str(
+        signal.get("direction", "")
+    ).upper()
+
+    if direction == "LONG":
+        favorable_price = high
+        adverse_price = low
+        favorable_percent = max(
+            0.0,
+            (high - entry) / entry * 100,
+        )
+        adverse_percent = max(
+            0.0,
+            (entry - low) / entry * 100,
+        )
+        favorable_r = max(
+            0.0,
+            (high - entry) / risk,
+        )
+        adverse_r = max(
+            0.0,
+            (entry - low) / risk,
+        )
+
+    elif direction == "SHORT":
+        favorable_price = low
+        adverse_price = high
+        favorable_percent = max(
+            0.0,
+            (entry - low) / entry * 100,
+        )
+        adverse_percent = max(
+            0.0,
+            (high - entry) / entry * 100,
+        )
+        favorable_r = max(
+            0.0,
+            (entry - low) / risk,
+        )
+        adverse_r = max(
+            0.0,
+            (high - entry) / risk,
+        )
+
+    else:
+        return
+
+    if favorable_percent > safe_float(
+        signal.get("best_favorable_percent")
+    ):
+        signal["best_favorable_percent"] = round(
+            favorable_percent,
+            4,
+        )
+        signal["best_favorable_r"] = round(
+            favorable_r,
+            4,
+        )
+        signal["best_favorable_price"] = favorable_price
+
+    if adverse_percent > safe_float(
+        signal.get("worst_adverse_percent")
+    ):
+        signal["worst_adverse_percent"] = round(
+            adverse_percent,
+            4,
+        )
+        signal["worst_adverse_r"] = round(
+            adverse_r,
+            4,
+        )
+        signal["worst_adverse_price"] = adverse_price
+
+    signal["last_tracking_at"] = int(
+        candle_time or now_ts()
+    )
+
+
+def build_pump_diagnosis(record):
+    outcome = str(
+        record.get("trade_outcome", "OPEN")
+    ).upper()
+
+    sent_at = int(
+        record.get("sent_at") or now_ts()
+    )
+    closed_at = int(
+        record.get("trade_closed_at")
+        or record.get("trade_last_updated_at")
+        or now_ts()
+    )
+
+    duration_minutes = int(
+        max(0, (closed_at - sent_at) / 60)
+    )
+
+    mfe_r = safe_float(
+        record.get("best_favorable_r")
+    )
+    mae_r = safe_float(
+        record.get("worst_adverse_r")
+    )
+    vol1 = safe_float(record.get("vol1"))
+    vol5 = safe_float(record.get("vol5"))
+    rsi5 = safe_float(record.get("rsi5"))
+    move15 = safe_float(record.get("move15"))
+    entry_drift = safe_float(
+        record.get("entry_drift_percent")
+    )
+    break_distance = safe_float(
+        record.get("break_level_distance_percent")
+    )
+    close_power1 = safe_float(
+        record.get("close_power1")
+    )
+    close_power5 = safe_float(
+        record.get("close_power5")
+    )
+    direction = str(
+        record.get("direction", "")
+    ).upper()
+
+    diagnosis = {
+        "version": PUMP_DIAGNOSIS_VERSION,
+        "code": "OPEN",
+        "primary": "İşlem sonucu bekleniyor",
+        "confidence": "DÜŞÜK",
+        "factors": [],
+        "duration_minutes": duration_minutes,
+        "best_favorable_r": round(mfe_r, 4),
+        "worst_adverse_r": round(mae_r, 4),
+        "provisional": outcome in (
+            "OPEN",
+            "TP1",
+            "TP2",
+            "STOP",
+        ),
+        "note": (
+            "Bu teşhis kesin piyasa sebebi değildir; "
+            "kayıtlı kırılım, hacim, momentum ve fiyat "
+            "hareketine dayalı teknik değerlendirmedir."
+        ),
+    }
+
+    factors = diagnosis["factors"]
+
+    if outcome == "TP3":
+        diagnosis["code"] = "BREAKOUT_SUCCESS"
+        diagnosis["primary"] = (
+            "KIRILIM BAŞARILI, MOMENTUM DEVAM ETTİ"
+        )
+        diagnosis["confidence"] = "YÜKSEK"
+        diagnosis["provisional"] = False
+        factors.append(
+            "Pump/Dump hareketi maksimum hedef TP3'e ulaştı."
+        )
+        return diagnosis
+
+    if outcome == "BREAKEVEN":
+        diagnosis["code"] = "MOMENTUM_FADED"
+        diagnosis["primary"] = (
+            "YÖN DOĞRUYDU, MOMENTUM DEVAMI ZAYIFLADI"
+        )
+        diagnosis["confidence"] = "YÜKSEK"
+        diagnosis["provisional"] = False
+        factors.append(
+            "İşlem TP1 gördükten sonra kalan bölüm girişten kapandı."
+        )
+        return diagnosis
+
+    if outcome == "EXPIRED":
+        result_r = safe_float(
+            record.get("trade_result_r")
+        )
+
+        if result_r > 0:
+            diagnosis["code"] = "MOMENTUM_FADED"
+            diagnosis["primary"] = (
+                "YÖN KISMEN DOĞRUYDU, HEDEF TAMAMLANMADI"
+            )
+        else:
+            diagnosis["code"] = "NO_CONTINUATION"
+            diagnosis["primary"] = (
+                "KIRILIM DEVAM ETMEDİ / ZAMAN AŞIMI"
+            )
+
+        diagnosis["confidence"] = "ORTA"
+        diagnosis["provisional"] = False
+        factors.append(
+            "Belirlenen takip süresinde TP1 gelmedi."
+        )
+        return diagnosis
+
+    if outcome in ("TP1", "TP2"):
+        diagnosis["code"] = "DIRECTION_CORRECT"
+        diagnosis["primary"] = (
+            "YÖN DOĞRU, İŞLEM DEVAM EDİYOR"
+        )
+        diagnosis["confidence"] = "YÜKSEK"
+        factors.append(
+            f"İşlem {outcome} seviyesine ulaştı."
+        )
+        return diagnosis
+
+    if outcome != "STOP":
+        return diagnosis
+
+    diagnosis["confidence"] = "ORTA"
+
+    if duration_minutes <= 20 and mfe_r < 0.15:
+        diagnosis["code"] = "FALSE_BREAKOUT"
+        diagnosis["primary"] = (
+            "SAHTE KIRILIM / HIZLI TERS DÖNÜŞ"
+        )
+        factors.append(
+            "İşlem ilk 20 dakikada anlamlı lehe hareket yapmadan stop oldu."
+        )
+
+    elif mfe_r >= 0.35:
+        diagnosis["code"] = "MOMENTUM_FADED"
+        diagnosis["primary"] = (
+            "ÖNCE LEHE GİTTİ, SONRA MOMENTUM SÖNDÜ"
+        )
+        factors.append(
+            "Stop öncesinde işlem en az 0.35R lehe hareket etti."
+        )
+
+    else:
+        diagnosis["code"] = "NO_CONTINUATION"
+        diagnosis["primary"] = "KIRILIM DEVAM ETMEDİ"
+        factors.append(
+            "Kırılım sonrasında yeterli lehe ivme oluşmadan stop geldi."
+        )
+
+    if entry_drift > 0.20:
+        factors.append(
+            "Gönderim anında fiyat analiz girişinden uzaklaşmıştı."
+        )
+
+    if break_distance > 0.40:
+        factors.append(
+            "Fiyat kırılım seviyesinden göreceli olarak uzaktaydı."
+        )
+
+    if vol1 < 1.70:
+        factors.append(
+            "1M hacim güçlü devam için sınırdaydı."
+        )
+
+    if vol5 < 1.25:
+        factors.append(
+            "5M hacim hareketin devamını yeterince desteklememiş olabilir."
+        )
+
+    if direction == "LONG":
+        if rsi5 >= 68:
+            factors.append(
+                "LONG girişinde 5M RSI aşırı alıma yakındı."
+            )
+
+        if close_power1 < 65 or close_power5 < 58:
+            factors.append(
+                "Pump kapanış gücü güçlü devam için sınırdaydı."
+            )
+
+        if move15 < 0.30:
+            factors.append(
+                "15M yön desteği zayıf kaldı."
+            )
+
+    elif direction == "SHORT":
+        if rsi5 <= 38:
+            factors.append(
+                "SHORT girişinde 5M RSI aşırı satıma yakındı."
+            )
+
+        if close_power1 > 35 or close_power5 > 42:
+            factors.append(
+                "Dump kapanış gücü güçlü devam için sınırdaydı."
+            )
+
+        if move15 > -0.30:
+            factors.append(
+                "15M aşağı yön desteği zayıf kaldı."
+            )
+
+    if mae_r >= 1.0 and duration_minutes <= 20:
+        factors.append(
+            "Stop mesafesi çok kısa sürede tamamen tüketildi."
+        )
+
+    return diagnosis
+
+
+def sync_pump_open_metrics(signal):
+    record_id = signal.get("performance_record_id")
+
+    if not record_id:
+        return False
+
+    try:
+        ledger = load_pump_performance()
+        record = pump_record_by_id(
+            ledger,
+            record_id,
+        )
+
+        if record is None:
+            return False
+
+        apply_signal_metrics_to_pump_record(
+            record,
+            signal,
+        )
+
+        return save_pump_performance(ledger)
+
+    except Exception as exc:
+        print(
+            "Pump açık metrik senkron hatası:",
+            exc,
+        )
+        return False
+
+
+def update_pump_post_stop_diagnosis(
+    record_id,
+    returned_level=None,
+    age_minutes=None,
+):
+    if not record_id:
+        return False
+
+    try:
+        ledger = load_pump_performance()
+        record = pump_record_by_id(
+            ledger,
+            record_id,
+        )
+
+        if record is None:
+            return False
+
+        diagnosis = (
+            record.get("diagnosis")
+            or build_pump_diagnosis(record)
+        )
+        diagnosis.setdefault("factors", [])
+
+        if returned_level:
+            diagnosis["code"] = "EARLY_OR_WICK_STOP"
+            diagnosis["primary"] = (
+                "YÖN DOĞRUYDU, STOP ERKEN / FİTİL STOP"
+            )
+            diagnosis["confidence"] = "YÜKSEK"
+            diagnosis["provisional"] = False
+            diagnosis["factors"].append(
+                f"Stop sonrası fiyat {returned_level} seviyesine döndü."
+            )
+
+            record["post_stop_follow"] = {
+                "status": "RETURNED_TO_TARGET",
+                "returned_level": returned_level,
+                "age_minutes": age_minutes,
+                "updated_at": now_ts(),
+                "updated_at_tr": tr_now_text(),
+            }
+
+        else:
+            diagnosis["provisional"] = False
+            diagnosis["factors"].append(
+                "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı."
+            )
+
+            record["post_stop_follow"] = {
+                "status": "NO_TP1_RETURN",
+                "returned_level": None,
+                "age_minutes": age_minutes,
+                "updated_at": now_ts(),
+                "updated_at_tr": tr_now_text(),
+            }
+
+        record["diagnosis"] = diagnosis
+        return save_pump_performance(ledger)
+
+    except Exception as exc:
+        print(
+            "Pump stop sonrası teşhis güncelleme hatası:",
+            exc,
+        )
+        return False
+
+
+def add_pump_post_stop_follow(state, signal, exit_price):
+    record_id = signal.get("performance_record_id")
+
+    if not record_id:
+        return
+
+    state.setdefault("post_stop_follow", {})
+    stopped_at = now_ts()
+
+    state["post_stop_follow"][str(record_id)] = {
+        "record_id": record_id,
+        "symbol": normalize_bot_symbol(
+            signal.get("symbol")
+        ),
+        "direction": signal.get("direction"),
+        "entry": signal.get("entry"),
+        "tp1": signal.get("tp1"),
+        "tp2": signal.get("tp2"),
+        "tp3": signal.get("tp3"),
+        "sl": signal.get("sl"),
+        "stop_exit": exit_price,
+        "stopped_at": stopped_at,
+        "reported_checkpoints": [],
+        "resolved": False,
+    }
+
+    save_state(state)
+
+
+def check_pump_post_stop_follow(exchange, state):
+    follow = state.setdefault(
+        "post_stop_follow",
+        {},
+    )
+
+    if not follow:
+        return
+
+    changed = False
+
+    for key, item in list(follow.items()):
+        try:
+            if item.get("resolved"):
+                continue
+
+            symbol = normalize_bot_symbol(
+                item.get("symbol")
+            )
+            direction = str(
+                item.get("direction", "")
+            ).upper()
+            tp1 = safe_float(item.get("tp1"))
+            tp2 = safe_float(item.get("tp2"))
+            tp3 = safe_float(item.get("tp3"))
+            stopped_at = int(
+                item.get("stopped_at")
+                or now_ts()
+            )
+
+            age_minutes = int(
+                max(
+                    0,
+                    (now_ts() - stopped_at) / 60,
+                )
+            )
+
+            candles = fetch_candles_since(
+                exchange,
+                symbol,
+                TRACK_TIMEFRAME,
+                stopped_at,
+                TRACK_LIMIT,
+            )
+
+            reached_tp1 = False
+            reached_tp2 = False
+            reached_tp3 = False
+
+            for candle in candles:
+                high = safe_float(candle.get("high"))
+                low = safe_float(candle.get("low"))
+
+                if direction == "LONG":
+                    reached_tp1 = (
+                        reached_tp1 or high >= tp1
+                    )
+                    reached_tp2 = (
+                        reached_tp2 or high >= tp2
+                    )
+                    reached_tp3 = (
+                        reached_tp3 or high >= tp3
+                    )
+
+                elif direction == "SHORT":
+                    reached_tp1 = (
+                        reached_tp1 or low <= tp1
+                    )
+                    reached_tp2 = (
+                        reached_tp2 or low <= tp2
+                    )
+                    reached_tp3 = (
+                        reached_tp3 or low <= tp3
+                    )
+
+            if reached_tp1:
+                returned_level = (
+                    "TP3"
+                    if reached_tp3
+                    else "TP2"
+                    if reached_tp2
+                    else "TP1"
+                )
+
+                update_pump_post_stop_diagnosis(
+                    item.get("record_id"),
+                    returned_level=returned_level,
+                    age_minutes=age_minutes,
+                )
+
+                item["resolved"] = True
+                item["returned_level"] = returned_level
+                item["resolved_at"] = now_ts()
+                changed = True
+                continue
+
+            reported = item.setdefault(
+                "reported_checkpoints",
+                [],
+            )
+
+            for checkpoint in POST_STOP_CHECKPOINT_MINUTES:
+                if (
+                    age_minutes >= checkpoint
+                    and checkpoint not in reported
+                ):
+                    reported.append(checkpoint)
+                    changed = True
+
+            if age_minutes >= POST_STOP_MAX_TRACK_MINUTES:
+                update_pump_post_stop_diagnosis(
+                    item.get("record_id"),
+                    returned_level=None,
+                    age_minutes=age_minutes,
+                )
+                item["resolved"] = True
+                item["resolved_at"] = now_ts()
+                changed = True
+
+        except Exception as exc:
+            print(
+                key,
+                "Pump stop sonrası takip hatası:",
+                exc,
+            )
+
+    keep_seconds = POST_STOP_KEEP_HOURS * 60 * 60
+
+    for key, item in list(follow.items()):
+        stopped_at = int(item.get("stopped_at", 0))
+
+        if (
+            item.get("resolved")
+            and now_ts() - stopped_at > keep_seconds
+        ):
+            follow.pop(key, None)
+            changed = True
+
+    if changed:
+        save_state(state)
+
+
 def record_pump_performance(signal):
     try:
         ledger = load_pump_performance()
@@ -614,11 +1306,13 @@ def record_pump_performance(signal):
         ):
             return False
 
+        record_id = (
+            f"{symbol}_{direction}_"
+            f"PUMP_DUMP_{sent_at}"
+        )
+
         record = {
-            "id": (
-                f"{symbol}_{direction}_"
-                f"PUMP_DUMP_{sent_at}"
-            ),
+            "id": record_id,
             "stage": "REAL_SIGNAL",
             "symbol": symbol,
             "direction": direction,
@@ -653,6 +1347,25 @@ def record_pump_performance(signal):
             "score": safe_float(
                 signal.get("score")
             ),
+            "move1": safe_float(signal.get("move1")),
+            "move5": safe_float(signal.get("move5")),
+            "move15": safe_float(signal.get("move15")),
+            "vol1": safe_float(signal.get("vol1")),
+            "vol5": safe_float(signal.get("vol5")),
+            "rsi5": safe_float(signal.get("rsi5")),
+            "close_power1": safe_float(
+                signal.get("close_power1")
+            ),
+            "close_power5": safe_float(
+                signal.get("close_power5")
+            ),
+            "ok_count": signal.get("ok_count"),
+            "total_conditions": signal.get(
+                "total_conditions"
+            ),
+            "missing": list(
+                signal.get("missing") or []
+            ),
             "break_level": safe_float(
                 signal.get("break_level")
             ),
@@ -671,6 +1384,11 @@ def record_pump_performance(signal):
             "latest_directional_move_percent": 0.0,
             "best_favorable_percent": 0.0,
             "worst_adverse_percent": 0.0,
+            "best_favorable_r": 0.0,
+            "worst_adverse_r": 0.0,
+            "best_favorable_price": reference_price,
+            "worst_adverse_price": reference_price,
+            "last_market_price": reference_price,
             "direction_status": "OPEN",
             "direction_reason": (
                 "Gönderim sonrası yön performansı izleniyor"
@@ -678,6 +1396,15 @@ def record_pump_performance(signal):
             "trade_outcome": "OPEN",
             "trade_result_r": None,
             "milestones": [],
+            "diagnosis": {
+                "version": PUMP_DIAGNOSIS_VERSION,
+                "code": "OPEN",
+                "primary": "İşlem sonucu bekleniyor",
+                "confidence": "DÜŞÜK",
+                "factors": [],
+                "provisional": True,
+            },
+            "post_stop_follow": None,
         }
 
         records.append(record)
@@ -708,9 +1435,10 @@ def record_pump_performance(signal):
             -PERFORMANCE_MAX_RECORDS:
         ]
 
-        return save_pump_performance(
-            ledger
-        )
+        if save_pump_performance(ledger):
+            return record_id
+
+        return False
 
     except Exception as exc:
         print(
@@ -824,9 +1552,11 @@ def update_pump_trade_outcome(
                 tr_now_text()
             )
 
-        return save_pump_performance(
-            ledger
+        record["diagnosis"] = build_pump_diagnosis(
+            record
         )
+
+        return save_pump_performance(ledger)
 
     except Exception as exc:
         print(
@@ -2974,9 +3704,43 @@ def save_open_signal(state, signal):
         "risk_percent": (
             signal["risk_percent"]
         ),
+        "performance_record_id": signal.get(
+            "performance_record_id"
+        ),
+        "move1": signal.get("move1"),
+        "move5": signal.get("move5"),
+        "move15": signal.get("move15"),
+        "vol1": signal.get("vol1"),
+        "vol5": signal.get("vol5"),
+        "rsi5": signal.get("rsi5"),
+        "close_power1": signal.get("close_power1"),
+        "close_power5": signal.get("close_power5"),
+        "break_level": signal.get("break_level"),
+        "entry_drift_percent": signal.get(
+            "entry_drift_percent"
+        ),
+        "break_level_distance_percent": signal.get(
+            "break_level_distance_percent"
+        ),
+        "ok_count": signal.get("ok_count"),
+        "total_conditions": signal.get(
+            "total_conditions"
+        ),
+        "missing": list(signal.get("missing") or []),
+        "best_favorable_percent": 0.0,
+        "worst_adverse_percent": 0.0,
+        "best_favorable_r": 0.0,
+        "worst_adverse_r": 0.0,
+        "best_favorable_price": signal.get("entry"),
+        "worst_adverse_price": signal.get("entry"),
+        "last_market_price": signal.get(
+            "current_price",
+            signal.get("entry"),
+        ),
         "opened_at": now_ts(),
         "last_checked_at": now_ts(),
         "tp1_hit": False,
+        "tp1_hit_at": 0,
         "tp2_hit": False,
         "tp3_hit": False,
         "closed": False,
@@ -3233,6 +3997,8 @@ def check_open_signals(exchange, state):
                     "expired",
                 )
 
+                sync_pump_open_metrics(signal)
+
                 update_pump_trade_outcome(
                     symbol,
                     direction,
@@ -3261,6 +4027,10 @@ def check_open_signals(exchange, state):
             tp1_hit = bool(
                 signal.get("tp1_hit", False)
             )
+            tp1_hit_at = int(
+                signal.get("tp1_hit_at", 0)
+                or 0
+            )
 
             tp2_hit = bool(
                 signal.get("tp2_hit", False)
@@ -3284,6 +4054,18 @@ def check_open_signals(exchange, state):
                 close = safe_float(
                     candle["close"]
                 )
+                candle_time = int(
+                    candle.get("time", 0)
+                    or 0
+                )
+
+                update_pump_excursion(
+                    signal,
+                    high,
+                    low,
+                    candle_time=candle_time,
+                )
+                signal["last_market_price"] = close
 
                 just_hit_tp1 = False
 
@@ -3293,6 +4075,14 @@ def check_open_signals(exchange, state):
                             if close >= entry:
                                 tp1_hit = True
                                 just_hit_tp1 = True
+                                tp1_hit_at = (
+                                    candle_time or now_ts()
+                                )
+                                signal["tp1_hit"] = True
+                                signal["tp1_hit_at"] = tp1_hit_at
+
+                                sync_pump_open_metrics(signal)
+
 
                                 notify_tp1(
                                     state,
@@ -3303,6 +4093,14 @@ def check_open_signals(exchange, state):
                                     tp1,
                                 )
                             else:
+                                sync_pump_open_metrics(signal)
+
+                                add_pump_post_stop_follow(
+                                    state,
+                                    signal,
+                                    close,
+                                )
+
                                 notify_stop(
                                     state,
                                     signal_type,
@@ -3317,6 +4115,14 @@ def check_open_signals(exchange, state):
                                 break
 
                         elif low <= sl:
+                            sync_pump_open_metrics(signal)
+
+                            add_pump_post_stop_follow(
+                                state,
+                                signal,
+                                close,
+                            )
+
                             notify_stop(
                                 state,
                                 signal_type,
@@ -3333,6 +4139,14 @@ def check_open_signals(exchange, state):
                         elif high >= tp1:
                             tp1_hit = True
                             just_hit_tp1 = True
+                            tp1_hit_at = (
+                                candle_time or now_ts()
+                            )
+                            signal["tp1_hit"] = True
+                            signal["tp1_hit_at"] = tp1_hit_at
+
+                            sync_pump_open_metrics(signal)
+
 
                             notify_tp1(
                                 state,
@@ -3350,6 +4164,9 @@ def check_open_signals(exchange, state):
                     ):
                         tp2_hit = True
 
+                        sync_pump_open_metrics(signal)
+
+
                         notify_tp2(
                             state,
                             signal_type,
@@ -3364,6 +4181,9 @@ def check_open_signals(exchange, state):
                         and high >= tp3
                     ):
                         tp3_hit = True
+
+                        sync_pump_open_metrics(signal)
+
 
                         notify_tp3(
                             state,
@@ -3381,8 +4201,14 @@ def check_open_signals(exchange, state):
                     if (
                         tp1_hit
                         and not just_hit_tp1
+                        and (
+                            tp1_hit_at <= 0
+                            or candle_time > tp1_hit_at
+                        )
                         and low <= entry
                     ):
+                        sync_pump_open_metrics(signal)
+
                         notify_breakeven(
                             state,
                             signal_type,
@@ -3400,6 +4226,14 @@ def check_open_signals(exchange, state):
                             if close <= entry:
                                 tp1_hit = True
                                 just_hit_tp1 = True
+                                tp1_hit_at = (
+                                    candle_time or now_ts()
+                                )
+                                signal["tp1_hit"] = True
+                                signal["tp1_hit_at"] = tp1_hit_at
+
+                                sync_pump_open_metrics(signal)
+
 
                                 notify_tp1(
                                     state,
@@ -3410,6 +4244,14 @@ def check_open_signals(exchange, state):
                                     tp1,
                                 )
                             else:
+                                sync_pump_open_metrics(signal)
+
+                                add_pump_post_stop_follow(
+                                    state,
+                                    signal,
+                                    close,
+                                )
+
                                 notify_stop(
                                     state,
                                     signal_type,
@@ -3424,6 +4266,14 @@ def check_open_signals(exchange, state):
                                 break
 
                         elif high >= sl:
+                            sync_pump_open_metrics(signal)
+
+                            add_pump_post_stop_follow(
+                                state,
+                                signal,
+                                close,
+                            )
+
                             notify_stop(
                                 state,
                                 signal_type,
@@ -3440,6 +4290,14 @@ def check_open_signals(exchange, state):
                         elif low <= tp1:
                             tp1_hit = True
                             just_hit_tp1 = True
+                            tp1_hit_at = (
+                                candle_time or now_ts()
+                            )
+                            signal["tp1_hit"] = True
+                            signal["tp1_hit_at"] = tp1_hit_at
+
+                            sync_pump_open_metrics(signal)
+
 
                             notify_tp1(
                                 state,
@@ -3457,6 +4315,9 @@ def check_open_signals(exchange, state):
                     ):
                         tp2_hit = True
 
+                        sync_pump_open_metrics(signal)
+
+
                         notify_tp2(
                             state,
                             signal_type,
@@ -3472,6 +4333,9 @@ def check_open_signals(exchange, state):
                     ):
                         tp3_hit = True
 
+                        sync_pump_open_metrics(signal)
+
+
                         notify_tp3(
                             state,
                             signal_type,
@@ -3486,8 +4350,14 @@ def check_open_signals(exchange, state):
                     if (
                         tp1_hit
                         and not just_hit_tp1
+                        and (
+                            tp1_hit_at <= 0
+                            or candle_time > tp1_hit_at
+                        )
                         and high >= entry
                     ):
+                        sync_pump_open_metrics(signal)
+
                         notify_breakeven(
                             state,
                             signal_type,
@@ -3506,8 +4376,11 @@ def check_open_signals(exchange, state):
             signal["opened_at"] = opened_at
             signal["last_checked_at"] = now_ts()
             signal["tp1_hit"] = tp1_hit
+            signal["tp1_hit_at"] = tp1_hit_at
             signal["tp2_hit"] = tp2_hit
             signal["tp3_hit"] = tp3_hit
+
+            sync_pump_open_metrics(signal)
 
             updated[key] = signal
 
@@ -3641,6 +4514,13 @@ def main():
     update_pump_performance(exchange)
 
     check_open_signals(
+        exchange,
+        state,
+    )
+
+    state = load_state()
+
+    check_pump_post_stop_follow(
         exchange,
         state,
     )
@@ -3918,9 +4798,14 @@ def main():
         if send_telegram(
             signal["message"] + extra
         ):
-            record_pump_performance(
+            record_id = record_pump_performance(
                 signal
             )
+
+            if record_id:
+                signal["performance_record_id"] = (
+                    record_id
+                )
 
             save_open_signal(
                 state,
