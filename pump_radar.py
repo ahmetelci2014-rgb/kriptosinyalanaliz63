@@ -57,6 +57,14 @@ TOP_NEAR_CANDIDATES = 8
 # Gönderim anında fiyat eski girişten fazla uzaklaştıysa sinyal iptal edilir.
 MAX_ENTRY_DRIFT_PERCENT = 0.25
 
+# Sinyal gönderilmeden önce kırılımın hâlâ geçerli olması gerekir.
+# LONG fiyatı kırılan direncin altına, SHORT fiyatı kırılan desteğin
+# üstüne geri döndüyse aday gönderilmez.
+FINAL_BREAK_CONFIRM_TOLERANCE_PERCENT = 0.03
+
+# Fiyat kırılım seviyesinden fazla uzaklaşmışsa hareketin peşinden koşulmaz.
+MAX_BREAK_LEVEL_DISTANCE_PERCENT = 0.55
+
 
 # =========================================================
 # TP / SL / RİSK
@@ -789,6 +797,117 @@ def recent_support(frame):
         return None
 
 
+def calculate_open_r(direction, entry, sl, current_price):
+    entry = safe_float(entry)
+    sl = safe_float(sl)
+    current = safe_float(current_price)
+
+    risk = abs(entry - sl)
+
+    if (
+        entry <= 0
+        or sl <= 0
+        or current <= 0
+        or risk <= 0
+    ):
+        return None
+
+    if str(direction).upper() == "LONG":
+        result = (current - entry) / risk
+
+    elif str(direction).upper() == "SHORT":
+        result = (entry - current) / risk
+
+    else:
+        return None
+
+    return round(result, 4)
+
+
+def validate_breakout_before_send(signal, current_price):
+    try:
+        direction = str(
+            signal.get("direction", "")
+        ).upper()
+
+        break_level = safe_float(
+            signal.get("break_level")
+        )
+        current = safe_float(current_price)
+
+        if break_level <= 0 or current <= 0:
+            return (
+                False,
+                "kırılım seviyesi veya güncel fiyat yok",
+                999.0,
+            )
+
+        distance = percent_distance(
+            current,
+            break_level,
+        )
+
+        if (
+            distance
+            > MAX_BREAK_LEVEL_DISTANCE_PERCENT
+        ):
+            return (
+                False,
+                (
+                    "kırılım seviyesinden uzak: "
+                    f"%{round(distance, 3)}"
+                ),
+                distance,
+            )
+
+        tolerance = (
+            FINAL_BREAK_CONFIRM_TOLERANCE_PERCENT
+            / 100
+        )
+
+        if direction == "LONG":
+            minimum_valid_price = (
+                break_level
+                * (1 - tolerance)
+            )
+
+            if current < minimum_valid_price:
+                return (
+                    False,
+                    "direnç kırılımı korunmadı",
+                    distance,
+                )
+
+        elif direction == "SHORT":
+            maximum_valid_price = (
+                break_level
+                * (1 + tolerance)
+            )
+
+            if current > maximum_valid_price:
+                return (
+                    False,
+                    "destek kırılımı korunmadı",
+                    distance,
+                )
+
+        else:
+            return (
+                False,
+                "yön bilgisi geçersiz",
+                distance,
+            )
+
+        return True, "kırılım geçerli", distance
+
+    except Exception as exc:
+        return (
+            False,
+            f"kırılım son kontrol hatası: {exc}",
+            999.0,
+        )
+
+
 def condition(label, ok):
     return {
         "label": label,
@@ -911,7 +1030,7 @@ def build_signal_message(signal):
         f"🎯 TP2: {format_price(signal['tp2'])}\n"
         f"🎯 TP3: {format_price(signal['tp3'])}\n"
         f"🛑 SL: {format_price(signal['sl'])}\n\n"
-        f"📊 Skor: %{signal['score']}\n"
+        f"📊 Uyum Skoru: {signal['score']}/100\n"
         f"🛡️ Stop Mesafesi: "
         f"%{round(signal['risk_percent'], 3)}\n\n"
         f"📊 Radar Verileri:\n"
@@ -2331,12 +2450,44 @@ def check_open_signals(exchange, state):
                 > max_age
                 and not signal.get("tp1_hit")
             ):
+                expiry_price = get_current_price(
+                    exchange,
+                    symbol,
+                )
+
+                # Güncel fiyat alınamazsa ölçümsüz kapatma.
+                # Sonraki çalışmada yeniden kontrol edilir.
+                if expiry_price is None:
+                    updated[key] = signal
+                    print(
+                        symbol,
+                        "süre doldu fakat güncel fiyat alınamadı.",
+                    )
+                    continue
+
+                expiry_r = calculate_open_r(
+                    direction,
+                    entry,
+                    sl,
+                    expiry_price,
+                )
+
+                expiry_r_text = (
+                    f"{expiry_r:+.3f}R"
+                    if expiry_r is not None
+                    else "ölçülemedi"
+                )
+
                 send_telegram(
                     f"⏳ PUMP/DUMP SİNYAL "
                     f"SÜRESİ DOLDU\n\n"
                     f"Coin: {symbol}\n"
                     f"Yön: {direction}\n"
-                    f"Giriş: {format_price(entry)}\n\n"
+                    f"Giriş: {format_price(entry)}\n"
+                    f"Süre Sonu Fiyatı: "
+                    f"{format_price(expiry_price)}\n"
+                    f"Yaklaşık Sonuç: "
+                    f"{expiry_r_text}\n\n"
                     f"{MAX_OPEN_SIGNAL_MINUTES} dakika "
                     f"içinde TP1 gelmediği için "
                     f"takipten çıkarıldı."
@@ -2960,8 +3111,28 @@ def main():
             )
             continue
 
+        (
+            break_valid,
+            break_reason,
+            break_distance,
+        ) = validate_breakout_before_send(
+            signal,
+            current_price,
+        )
+
+        if not break_valid:
+            print(
+                signal["symbol"],
+                "kırılım son kontrolünde elendi:",
+                break_reason,
+            )
+            continue
+
         signal["current_price"] = current_price
         signal["entry_drift_percent"] = drift
+        signal[
+            "break_level_distance_percent"
+        ] = break_distance
         selected.append(signal)
 
     print(
@@ -2991,7 +3162,10 @@ def main():
             f"{format_price(signal['current_price'])}\n"
             f"📏 Giriş Sapması: "
             f"%{round(signal['entry_drift_percent'], 3)}\n"
-            f"📌 Son Kontrol: Girişe yakın ✅"
+            f"📐 Kırılım Seviyesi Uzaklığı: "
+            f"%{round(signal['break_level_distance_percent'], 3)}\n"
+            f"📌 Son Kontrol: "
+            f"Girişe yakın ve kırılım geçerli ✅"
         )
 
         if send_telegram(
