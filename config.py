@@ -1,9 +1,9 @@
 # config.py
-# Premium MTF TP Odaklı v2 - Dengeli Canlı Para Ayarları
+# Premium MTF TP Odaklı v3 - Erken Giriş + Geç Sinyal Koruması
 # 5M + 15M + 1H + 4H çoklu zaman dilimi futures sinyal botu.
 # Emir açmaz. Sadece Telegram sinyali gönderir ve TP/SL takibi yapar.
 
-BOT_NAME = "Premium MTF TP Odaklı v2"
+BOT_NAME = "Premium MTF TP Odaklı v3"
 
 # =========================
 # TARAMA
@@ -26,7 +26,7 @@ PRIORITY_COINS = [
     "LTCUSDT", "DOTUSDT", "APTUSDT", "ARBUSDT", "OPUSDT",
     "NEARUSDT", "INJUSDT", "WLDUSDT", "FILUSDT", "ATOMUSDT",
     "UNIUSDT", "AAVEUSDT", "TRXUSDT", "ETCUSDT", "ICPUSDT",
-    "SEIUSDT", "TIAUSDT", "JUPUSDT", "BCHUSDT"
+    "SEIUSDT", "TIAUSDT", "ORDIUSDT", "JUPUSDT", "BCHUSDT"
 ]
 
 ALLOW_LONG = True
@@ -42,7 +42,7 @@ CONFIRM_TIMEFRAME = "1h"
 TREND_TIMEFRAME = "4h"
 TRACK_TIMEFRAME = "1m"
 
-RADAR_LIMIT = 180
+RADAR_LIMIT = 240
 ENTRY_LIMIT = 280
 CONFIRM_LIMIT = 240
 TREND_LIMIT = 240
@@ -74,7 +74,9 @@ RISK_MODE_STOP_COUNT = 5
 RISK_MODE_MAX_TRADE_SIGNALS = 1
 
 RISK_MODE_MAX_RADAR_ALERTS = 0
-RISK_MODE_ALLOW_RADAR_TRADE = False
+# 5M erken giriş, yalnız TRADE kalitesindeyse risk modunda da
+# çalışma başına 1 sinyal sınırına tabidir. Radar-only mesajlar kapalıdır.
+RISK_MODE_ALLOW_RADAR_TRADE = True
 
 # =========================
 # FİLTRELER
@@ -100,14 +102,24 @@ SHORT_RSI_MIN = 30
 SHORT_RSI_MAX = 60
 
 # =========================
-# 5M RADAR
+# 5M ERKEN GİRİŞ / RADAR
 # =========================
 
-# Ana bot içi radar kapalı.
+# Radar-only Telegram mesajları kapalı kalır:
+# MAX_RADAR_ALERTS_PER_RUN = 0 ve MIN_SCORE_RADAR = 999.
+#
+# Buna karşılık 4H + 1H kesin yön onayı alan, 15M bölgesine yakın
+# ve 5M dönüş teyidi veren aday gerçek TRADE olarak çalışabilir.
+ENABLE_5M_EARLY_TRADE = True
+EARLY_TRADE_MIN_SCORE = 86
+EARLY_TRADE_MIN_VOLUME_RATIO = 1.15
+
 RADAR_MIN_5M_MOVE_PERCENT = 0.30
 RADAR_MAX_5M_MOVE_PERCENT = 1.35
 RADAR_MIN_VOLUME_RATIO = 1.15
 
+# Eski isimler geriye dönük uyumluluk için tutulur.
+# strategy.py artık erken trade kararında bu 999 değerlerini kullanmaz.
 RADAR_TRADE_MIN_SCORE = 999
 RADAR_TRADE_MIN_VOLUME_RATIO = 999
 
@@ -182,7 +194,7 @@ SYSTEM_NOTE = (
     "Dengeli canlı para MTF sürümü. "
     "Hacmi yüksek ilk 300 uygun USDT futures paritesi taranır. "
     "4H ana trend + 1H onay + 15M giriş mantığı korunur. "
-    "Ana bot içi radar kapalıdır. "
+    "Radar-only mesajlar kapalıdır; güçlü 5M erken trade yolu aktiftir. "
     "Zayıf trendli, düşük hacimli, geniş stoplu ve geç kalmış girişler azaltılır. "
     "Her çalıştırmada en fazla 2 güçlü işlem sinyali gönderilir. "
     "TP hedef yapısı korunmuştur; kâr garantisi yoktur."

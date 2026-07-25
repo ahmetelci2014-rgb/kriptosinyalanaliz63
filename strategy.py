@@ -36,8 +36,9 @@ from config import (
     RADAR_MIN_5M_MOVE_PERCENT,
     RADAR_MAX_5M_MOVE_PERCENT,
     RADAR_MIN_VOLUME_RATIO,
-    RADAR_TRADE_MIN_SCORE,
-    RADAR_TRADE_MIN_VOLUME_RATIO,
+    ENABLE_5M_EARLY_TRADE,
+    EARLY_TRADE_MIN_SCORE,
+    EARLY_TRADE_MIN_VOLUME_RATIO,
     MIN_RISK_PERCENT,
     MAX_RISK_PERCENT,
     TP1_R_MULTIPLIER,
@@ -186,7 +187,10 @@ def add_indicators(df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
 
     frame = frame.dropna().reset_index(drop=True)
 
-    if len(frame) < 35:
+    # EMA200 ve son 20 kullanılabilir gösterge satırı için
+    # en az 220 mum gerekir. Daha kısa veri sessizce hatalı sinyal
+    # üretmek yerine reddedilir.
+    if len(frame) < 220:
         return None
 
     frame["rsi"] = RSIIndicator(
@@ -732,7 +736,7 @@ def build_signal_message(signal: Dict[str, Any]) -> str:
 🎯 TP3: {format_price(signal["tp3"])}
 🛑 SL: {format_price(signal["sl"])}
 
-📊 Skor: %{signal["score"]} ({signal["quality"]})
+📊 Kalite Uyum Skoru: {signal["score"]}/100 ({signal["quality"]})
 🧠 Kalite Notu: {signal.get("quality_note", "-")}
 📈 R/R TP1: {round(signal["rr_tp1"], 2)}
 📈 R/R TP2: {round(signal["rr_tp2"], 2)}
@@ -900,18 +904,29 @@ def analyze_mtf_trade(
     direction = None
     entry_reason = ""
 
-    touched_ema_long = (
-        safe_float(recent["low"].min())
-        <= safe_float(recent["ema20"].iloc[-1]) * 1.006
-        or safe_float(recent["low"].min())
-        <= safe_float(recent["ema50"].iloc[-1]) * 1.006
+    # Her mum kendi EMA20/EMA50 seviyesiyle karşılaştırılır.
+    # Eski yöntem, tüm periyodun en düşük/yüksek fiyatını yalnız son EMA
+    # değeriyle karşılaştırdığı için sahte "EMA teması" üretebiliyordu.
+    touched_ema_long = bool(
+        (
+            recent["low"]
+            <= recent["ema20"] * 1.006
+        ).any()
+        or (
+            recent["low"]
+            <= recent["ema50"] * 1.006
+        ).any()
     )
 
-    touched_ema_short = (
-        safe_float(recent["high"].max())
-        >= safe_float(recent["ema20"].iloc[-1]) * 0.994
-        or safe_float(recent["high"].max())
-        >= safe_float(recent["ema50"].iloc[-1]) * 0.994
+    touched_ema_short = bool(
+        (
+            recent["high"]
+            >= recent["ema20"] * 0.994
+        ).any()
+        or (
+            recent["high"]
+            >= recent["ema50"] * 0.994
+        ).any()
     )
 
     bullish_reclaim = (
@@ -1232,15 +1247,11 @@ def analyze_5m_radar(
     if zone_distance > MAX_EARLY_ZONE_DISTANCE_PERCENT:
         return None
 
-    # Config radar hareket eşiği çok yüksekse erken girişi tamamen öldürmemek
-    # için en az %0.10 kullanılır; üst hareket sınırı yine korunur.
-    required_move = min(
-        max(safe_float(RADAR_MIN_5M_MOVE_PERCENT), 0.0),
+    # 5M erken trade minimum hareketi radar-only ayarlarından bağımsızdır.
+    required_move = max(
         EARLY_MIN_5M_MOVE_PERCENT,
+        0.01,
     )
-
-    if required_move <= 0:
-        required_move = EARLY_MIN_5M_MOVE_PERCENT
 
     max_move = max(
         safe_float(RADAR_MAX_5M_MOVE_PERCENT),
@@ -1256,7 +1267,7 @@ def analyze_5m_radar(
 
     min_vol5 = max(
         safe_float(RADAR_MIN_VOLUME_RATIO),
-        safe_float(RADAR_TRADE_MIN_VOLUME_RATIO),
+        safe_float(EARLY_TRADE_MIN_VOLUME_RATIO),
         1.15,
     )
 
@@ -1397,11 +1408,14 @@ def analyze_5m_radar(
 
     score = max(0, min(100, int(score)))
 
+    early_trade_score = max(
+        int(MIN_SCORE_TRADE),
+        int(EARLY_TRADE_MIN_SCORE),
+    )
+
     can_be_trade = (
-        score >= max(
-            int(MIN_SCORE_TRADE),
-            int(RADAR_TRADE_MIN_SCORE),
-        )
+        bool(ENABLE_5M_EARLY_TRADE)
+        and score >= early_trade_score
         and vol5_ratio >= min_vol5
         and trend_supports_direction(
             direction,
@@ -1412,23 +1426,12 @@ def analyze_5m_radar(
         and zone_distance <= MAX_EARLY_ZONE_DISTANCE_PERCENT
     )
 
-    signal_class = (
-        "TRADE"
-        if can_be_trade
-        else "RADAR"
-    )
-
-    if (
-        signal_class == "RADAR"
-        and score < MIN_SCORE_RADAR
-    ):
+    # Radar-only mesajlar config.py üzerinden kapalı kalır.
+    # Şartları geçemeyen erken aday Telegram'a gönderilmez.
+    if not can_be_trade:
         return None
 
-    if (
-        signal_class == "TRADE"
-        and score < RADAR_TRADE_MIN_SCORE
-    ):
-        return None
+    signal_class = "TRADE"
 
     combined_volume = max(volume15, vol5_ratio)
 
