@@ -1,5 +1,5 @@
 # main.py
-# Premium MTF Futures Bot - Akilli Takip v3 + Net R Performans
+# Premium MTF Futures Bot - Akilli Takip v3 + Net R + Teknik Teshis
 #
 # GitHub Actions icin Telegram sinyal botu.
 # Emir acmaz. Sinyal gonderir, TP/SL takip eder.
@@ -11,6 +11,9 @@
 # - Her islem tek nihai sonuc ve net R degeriyle kapanir.
 # - TP1'in ilk goruldugu ayni mumda yanlis BE kapanisi engellenir.
 # - Telegram API yanit govdesi loglanmaz; yalnizca HTTP kodu yazilir.
+# - Yeni sinyallerin trend, hacim, giris uzakligi ve hareket profili kaydedilir.
+# - Kapanan islemlere kayitli verilere dayali olasilik temelli teknik teshis eklenir.
+# - Stop sonrasi TP1'e donen islemlerde fitil / dar stop olasiligi isaretlenir.
 
 import json
 import os
@@ -347,6 +350,441 @@ def calculate_exit_r(signal, exit_price):
     return round(remaining_r, 4)
 
 
+
+def signal_diagnostic_snapshot(signal):
+    """
+    Strategy tarafinda uretilen sinyal anlik verilerini tek yerde toplar.
+    Eski sinyallerde bulunmayan alanlar None olarak kalir.
+    """
+    return {
+        "quality": signal.get("quality"),
+        "quality_note": signal.get("quality_note"),
+        "trend_reason": signal.get("trend_reason"),
+        "confirm_reason": signal.get("confirm_reason"),
+        "entry_reason": signal.get("entry_reason"),
+        "radar_reason": signal.get("radar_reason"),
+        "rsi_15m": safe_float(signal.get("rsi_15m")),
+        "adx_15m": safe_float(signal.get("adx_15m")),
+        "adx_4h": safe_float(signal.get("adx_4h")),
+        "adx_1h": safe_float(signal.get("adx_1h")),
+        "volume_ratio": safe_float(signal.get("volume_ratio")),
+        "ideal_entry": safe_float(signal.get("ideal_entry")),
+        "zone_name": signal.get("zone_name"),
+        "zone_distance_percent": safe_float(
+            signal.get("zone_distance_percent")
+        ),
+        "rr_tp1": safe_float(signal.get("rr_tp1")),
+        "rr_tp2": safe_float(signal.get("rr_tp2")),
+        "rr_tp3": safe_float(signal.get("rr_tp3")),
+        "leverage": signal.get("leverage"),
+        "sent_price": safe_float(signal.get("sent_price")),
+        "entry_distance_at_send_percent": safe_float(
+            signal.get("entry_distance_at_send_percent")
+        ),
+        "tp1_progress_at_send_percent": safe_float(
+            signal.get("tp1_progress_at_send_percent")
+        ),
+        "market_guard_long_allowed": signal.get(
+            "market_guard_long_allowed"
+        ),
+        "market_guard_short_allowed": signal.get(
+            "market_guard_short_allowed"
+        ),
+        "market_guard_reason": signal.get("market_guard_reason"),
+    }
+
+
+def apply_signal_tracking_to_trade(trade, signal):
+    snapshot = signal_diagnostic_snapshot(signal)
+
+    for key, value in snapshot.items():
+        if value is not None:
+            trade[key] = value
+
+    tracking_fields = (
+        "best_favorable_percent",
+        "worst_adverse_percent",
+        "best_favorable_r",
+        "worst_adverse_r",
+        "best_favorable_price",
+        "worst_adverse_price",
+        "last_market_price",
+        "last_tracking_at",
+        "tp1_hit_at",
+    )
+
+    for key in tracking_fields:
+        value = signal.get(key)
+
+        if value is not None:
+            trade[key] = value
+
+    trade["tp1_hit"] = bool(
+        signal.get("tp1_hit", trade.get("tp1_hit", False))
+    )
+    trade["tp2_hit"] = bool(
+        signal.get("tp2_hit", trade.get("tp2_hit", False))
+    )
+    trade["tp3_hit"] = bool(
+        signal.get("tp3_hit", trade.get("tp3_hit", False))
+    )
+
+
+def update_signal_excursion(signal, high, low, candle_time=None):
+    """
+    Sinyal acildiktan sonra gorulen en iyi lehe ve en kotu ters hareketi
+    yuzde ve R cinsinden kaydeder.
+    """
+    entry = safe_float(signal.get("entry"))
+    sl = safe_float(signal.get("sl"))
+    high = safe_float(high)
+    low = safe_float(low)
+
+    if (
+        entry is None
+        or sl is None
+        or high is None
+        or low is None
+        or entry <= 0
+    ):
+        return
+
+    risk = abs(entry - sl)
+    direction = str(signal.get("direction", "")).upper()
+
+    if direction == "LONG":
+        favorable_price = high
+        adverse_price = low
+        favorable_percent = max(
+            0.0,
+            (high - entry) / entry * 100,
+        )
+        adverse_percent = max(
+            0.0,
+            (entry - low) / entry * 100,
+        )
+        favorable_r = (
+            max(0.0, (high - entry) / risk)
+            if risk > 0
+            else 0.0
+        )
+        adverse_r = (
+            max(0.0, (entry - low) / risk)
+            if risk > 0
+            else 0.0
+        )
+
+    elif direction == "SHORT":
+        favorable_price = low
+        adverse_price = high
+        favorable_percent = max(
+            0.0,
+            (entry - low) / entry * 100,
+        )
+        adverse_percent = max(
+            0.0,
+            (high - entry) / entry * 100,
+        )
+        favorable_r = (
+            max(0.0, (entry - low) / risk)
+            if risk > 0
+            else 0.0
+        )
+        adverse_r = (
+            max(0.0, (high - entry) / risk)
+            if risk > 0
+            else 0.0
+        )
+
+    else:
+        return
+
+    if favorable_percent > safe_float(
+        signal.get("best_favorable_percent"),
+        0.0,
+    ):
+        signal["best_favorable_percent"] = round(
+            favorable_percent,
+            4,
+        )
+        signal["best_favorable_r"] = round(
+            favorable_r,
+            4,
+        )
+        signal["best_favorable_price"] = favorable_price
+
+    if adverse_percent > safe_float(
+        signal.get("worst_adverse_percent"),
+        0.0,
+    ):
+        signal["worst_adverse_percent"] = round(
+            adverse_percent,
+            4,
+        )
+        signal["worst_adverse_r"] = round(
+            adverse_r,
+            4,
+        )
+        signal["worst_adverse_price"] = adverse_price
+
+    signal["last_tracking_at"] = int(
+        candle_time or now_ts()
+    )
+
+
+def build_trade_diagnosis(trade):
+    """
+    Bu sonuc kesin piyasa sebebi degildir.
+    Kayitli teknik verilere dayali olasilik temelli siniflandirmadir.
+    """
+    result = str(
+        trade.get("final_result") or ""
+    ).upper()
+
+    duration_minutes = int(
+        max(
+            0,
+            (
+                int(trade.get("closed_at") or now_ts())
+                - int(trade.get("opened_at") or now_ts())
+            )
+            / 60,
+        )
+    )
+
+    mfe_r = safe_float(
+        trade.get("best_favorable_r"),
+        0.0,
+    )
+    mae_r = safe_float(
+        trade.get("worst_adverse_r"),
+        0.0,
+    )
+    volume_ratio = safe_float(
+        trade.get("volume_ratio")
+    )
+    adx_4h = safe_float(trade.get("adx_4h"))
+    adx_1h = safe_float(trade.get("adx_1h"))
+    adx_15m = safe_float(trade.get("adx_15m"))
+    zone_distance = safe_float(
+        trade.get("zone_distance_percent")
+    )
+    entry_distance = safe_float(
+        trade.get("entry_distance_at_send_percent")
+    )
+    source = str(trade.get("source", ""))
+
+    factors = []
+    primary = "KAYIT YETERSIZ"
+    confidence = "DUSUK"
+
+    if result == "TP3":
+        primary = "KURULUM BASARILI"
+        confidence = "YUKSEK"
+        factors.append(
+            "Sinyal maksimum hedef TP3'e ulasti."
+        )
+
+    elif result in {
+        "TP1_SONRASI_BE",
+        "TP2_SONRASI_BE",
+    }:
+        primary = "YON DOGRU, DEVAM GUCU ZAYIFLADI"
+        confidence = "YUKSEK"
+        factors.append(
+            "Islem hedef gordukten sonra kalan kisim giristen kapandi."
+        )
+
+    elif result == "EXPIRED":
+        r_result = safe_float(trade.get("r_result"))
+
+        if r_result is not None and r_result > 0:
+            primary = "YON KISMEN DOGRU, HEDEF TAMAMLANMADI"
+        elif r_result is not None and r_result < 0:
+            primary = "YON DEVAM ETMEDI / ZAMAN ASIMI"
+        else:
+            primary = "BELIRGIN SONUC OLUSMADI"
+
+        confidence = "ORTA"
+        factors.append(
+            "Islem belirlenen takip suresi icinde TP3 veya SL ile kapanmadi."
+        )
+
+    elif result == "SL":
+        confidence = "ORTA"
+
+        if duration_minutes <= 20 and mfe_r < 0.15:
+            primary = "HIZLI TERS HAREKET / YON UYUMSUZLUGU"
+            factors.append(
+                "Islem ilk 20 dakikada anlamli lehe hareket yapmadan stop oldu."
+            )
+
+        elif mfe_r >= 0.35:
+            primary = "ONCE LEHE GITTI, SONRA TERS DONDU"
+            factors.append(
+                "Stop oncesinde islem en az 0.35R lehe hareket etti."
+            )
+
+        else:
+            primary = "KURULUM DEVAM ETMEDI"
+            factors.append(
+                "Islem yeterli lehe ivme olusturmadan stop oldu."
+            )
+
+        if (
+            zone_distance is not None
+            and zone_distance > 0.25
+        ):
+            factors.append(
+                "Giris ideal bolgeden goreceli olarak uzakti."
+            )
+
+        if (
+            entry_distance is not None
+            and entry_distance > 0.25
+        ):
+            factors.append(
+                "Telegram gonderim aninda fiyat giristen uzaklasmisti."
+            )
+
+        if (
+            volume_ratio is not None
+            and volume_ratio < 0.90
+        ):
+            factors.append(
+                "15M hacim kendi ortalamasinin altinda veya sinirdaydi."
+            )
+
+        weak_adx = [
+            value
+            for value in (adx_4h, adx_1h)
+            if value is not None
+        ]
+
+        if weak_adx and min(weak_adx) < 18:
+            factors.append(
+                "Ust zaman dilimi trend gucu sinirdaydi."
+            )
+
+        if (
+            source == "5M_RADAR"
+            and adx_15m is not None
+            and adx_15m < 18
+        ):
+            factors.append(
+                "5M erken giriste 15M trend gucu sinirdaydi."
+            )
+
+        if mae_r >= 1.0 and duration_minutes <= 20:
+            factors.append(
+                "Stop mesafesi cok kisa surede tamamen tuketildi."
+            )
+
+    return {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": primary,
+        "confidence": confidence,
+        "factors": factors,
+        "duration_minutes": duration_minutes,
+        "best_favorable_r": round(mfe_r, 4),
+        "worst_adverse_r": round(mae_r, 4),
+        "provisional": result == "SL",
+        "note": (
+            "Bu teshis kesin piyasa sebebi degil; "
+            "kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+        ),
+    }
+
+
+def ledger_update_open_snapshot(signal):
+    try:
+        trade_id = ensure_ledger_trade(signal)
+        ledger = load_trade_ledger()
+        trade = ledger.get("trades", {}).get(trade_id)
+
+        if trade is None:
+            return
+
+        apply_signal_tracking_to_trade(
+            trade,
+            signal,
+        )
+        save_trade_ledger(ledger)
+
+    except Exception as exc:
+        print(
+            "Ledger acik takip guncelleme hatasi:",
+            exc,
+        )
+
+
+def ledger_update_post_stop_diagnosis(
+    trade_id,
+    returned_level=None,
+    age_minutes=None,
+):
+    if not trade_id:
+        return
+
+    try:
+        ledger = load_trade_ledger()
+        trade = ledger.get("trades", {}).get(
+            str(trade_id)
+        )
+
+        if trade is None:
+            return
+
+        diagnosis = trade.setdefault(
+            "diagnosis",
+            build_trade_diagnosis(trade),
+        )
+
+        if returned_level:
+            diagnosis["primary"] = (
+                "FITIL / DAR STOP OLASILIGI"
+            )
+            diagnosis["confidence"] = "YUKSEK"
+            diagnosis["provisional"] = False
+            diagnosis.setdefault(
+                "factors",
+                [],
+            ).append(
+                f"Stop sonrasi fiyat {returned_level} seviyesine dondu."
+            )
+
+            trade["post_stop_follow"] = {
+                "returned_level": returned_level,
+                "age_minutes": age_minutes,
+                "status": "RETURNED_TO_TARGET",
+                "updated_at": now_ts(),
+            }
+
+        else:
+            diagnosis["provisional"] = False
+            diagnosis.setdefault(
+                "factors",
+                [],
+            ).append(
+                "Stop sonrasi 120 dakika icinde TP1'e donus olmadi."
+            )
+
+            trade["post_stop_follow"] = {
+                "returned_level": None,
+                "age_minutes": age_minutes,
+                "status": "NO_TP1_RETURN",
+                "updated_at": now_ts(),
+            }
+
+        save_trade_ledger(ledger)
+
+    except Exception as exc:
+        print(
+            "Ledger stop sonrasi teshis guncelleme hatasi:",
+            exc,
+        )
+
+
 def ensure_ledger_trade(signal):
     ledger = load_trade_ledger()
     trades = ledger["trades"]
@@ -390,6 +828,18 @@ def ensure_ledger_trade(signal):
             ],
         }
 
+        apply_signal_tracking_to_trade(
+            trades[trade_id],
+            signal,
+        )
+
+        save_trade_ledger(ledger)
+
+    else:
+        apply_signal_tracking_to_trade(
+            trades[trade_id],
+            signal,
+        )
         save_trade_ledger(ledger)
 
     return trade_id
@@ -450,6 +900,11 @@ def sync_open_signals_to_ledger():
             ],
         }
 
+        apply_signal_tracking_to_trade(
+            ledger["trades"][trade_id],
+            signal,
+        )
+
         changed = True
 
     if changed:
@@ -465,6 +920,11 @@ def ledger_record_event(signal, result, exit_price=None):
 
     if trade is None:
         return
+
+    apply_signal_tracking_to_trade(
+        trade,
+        signal,
+    )
 
     event_time = now_ts()
 
@@ -542,6 +1002,19 @@ def ledger_record_event(signal, result, exit_price=None):
     trade["exit_price"] = safe_float(exit_price)
     trade["closed_at"] = event_time
     trade["closed_day"] = day_key_from_ts(event_time)
+    trade["duration_minutes"] = int(
+        max(
+            0,
+            (
+                event_time
+                - int(trade.get("opened_at") or event_time)
+            )
+            / 60,
+        )
+    )
+    trade["diagnosis"] = build_trade_diagnosis(
+        trade
+    )
 
     save_trade_ledger(ledger)
 
@@ -720,7 +1193,8 @@ Son Nihai Kapanışlar:
 
 Not:
 TP1'de %50 kâr alınması ve kalan %50'nin TP3 veya girişten kapanması esas alınır.
-Bu rapor yalnızca trade_ledger.json içindeki tekil işlemleri ölçer."""
+Bu rapor yalnızca trade_ledger.json içindeki tekil işlemleri ölçer.
+Yeni işlemlerde teknik teşhis, lehe/ters hareket ve stop sonrası takip de ledger'a yazılır."""
 
 
 # =========================================================
@@ -1587,6 +2061,7 @@ def add_sl_after_follow(signal, exit_price):
         )
 
         follow[key] = {
+            "trade_id": signal.get("trade_id"),
             "symbol": signal.get("symbol"),
             "direction": signal.get("direction"),
             "source": signal.get("source"),
@@ -1801,6 +2276,12 @@ def check_sl_after_follow(exchange):
                     else "TP1"
                 )
 
+                ledger_update_post_stop_diagnosis(
+                    item.get("trade_id"),
+                    returned_level=level_text,
+                    age_minutes=age_minutes,
+                )
+
                 send_telegram(
                     f"📊 SL SONRASI TAKİP\n\n"
                     f"Coin: {symbol}\n"
@@ -1854,6 +2335,12 @@ def check_sl_after_follow(exchange):
                                 )
                             )
                             + 1
+                        )
+
+                        ledger_update_post_stop_diagnosis(
+                            item.get("trade_id"),
+                            returned_level=None,
+                            age_minutes=age_minutes,
                         )
 
                     send_telegram(
@@ -2056,6 +2543,14 @@ def check_open_signals(exchange):
                 high = float(candle["high"])
                 low = float(candle["low"])
                 close = float(candle["close"])
+
+                update_signal_excursion(
+                    signal,
+                    high,
+                    low,
+                    candle_time=candle_time,
+                )
+                signal["last_market_price"] = close
 
                 just_hit_tp1 = False
 
@@ -2396,6 +2891,10 @@ def check_open_signals(exchange):
             signal["tp3_hit"] = tp3_hit
             signal["last_checked_at"] = now_ts()
 
+            ledger_update_open_snapshot(
+                signal
+            )
+
             updated[key] = signal
 
         except Exception as exc:
@@ -2729,6 +3228,49 @@ def save_open_signal(signal):
         "risk_percent": signal.get(
             "risk_percent"
         ),
+        "quality": signal.get("quality"),
+        "quality_note": signal.get("quality_note"),
+        "trend_reason": signal.get("trend_reason"),
+        "confirm_reason": signal.get("confirm_reason"),
+        "entry_reason": signal.get("entry_reason"),
+        "radar_reason": signal.get("radar_reason"),
+        "rsi_15m": signal.get("rsi_15m"),
+        "adx_15m": signal.get("adx_15m"),
+        "adx_4h": signal.get("adx_4h"),
+        "adx_1h": signal.get("adx_1h"),
+        "volume_ratio": signal.get("volume_ratio"),
+        "ideal_entry": signal.get("ideal_entry"),
+        "zone_name": signal.get("zone_name"),
+        "zone_distance_percent": signal.get(
+            "zone_distance_percent"
+        ),
+        "rr_tp1": signal.get("rr_tp1"),
+        "rr_tp2": signal.get("rr_tp2"),
+        "rr_tp3": signal.get("rr_tp3"),
+        "leverage": signal.get("leverage"),
+        "sent_price": signal.get("sent_price"),
+        "entry_distance_at_send_percent": signal.get(
+            "entry_distance_at_send_percent"
+        ),
+        "tp1_progress_at_send_percent": signal.get(
+            "tp1_progress_at_send_percent"
+        ),
+        "market_guard_long_allowed": signal.get(
+            "market_guard_long_allowed"
+        ),
+        "market_guard_short_allowed": signal.get(
+            "market_guard_short_allowed"
+        ),
+        "market_guard_reason": signal.get(
+            "market_guard_reason"
+        ),
+        "best_favorable_percent": 0.0,
+        "worst_adverse_percent": 0.0,
+        "best_favorable_r": 0.0,
+        "worst_adverse_r": 0.0,
+        "best_favorable_price": signal.get("entry"),
+        "worst_adverse_price": signal.get("entry"),
+        "last_market_price": signal.get("sent_price"),
         "opened_at": opened_at,
         "last_checked_at": opened_at,
         "tp1_hit": False,
@@ -3088,6 +3630,72 @@ def main():
                 reason,
             )
             continue
+
+        entry_price = safe_float(
+            signal.get("entry")
+        )
+        tp1_price = safe_float(
+            signal.get("tp1")
+        )
+
+        entry_distance_at_send = None
+        tp1_progress_at_send = None
+
+        if (
+            entry_price is not None
+            and entry_price > 0
+            and current_price is not None
+        ):
+            entry_distance_at_send = abs(
+                current_price - entry_price
+            ) / entry_price * 100
+
+            if (
+                tp1_price is not None
+                and signal.get("direction") == "LONG"
+                and tp1_price > entry_price
+            ):
+                tp1_progress_at_send = (
+                    current_price - entry_price
+                ) / (
+                    tp1_price - entry_price
+                ) * 100
+
+            elif (
+                tp1_price is not None
+                and signal.get("direction") == "SHORT"
+                and tp1_price < entry_price
+            ):
+                tp1_progress_at_send = (
+                    entry_price - current_price
+                ) / (
+                    entry_price - tp1_price
+                ) * 100
+
+        signal["sent_price"] = current_price
+        signal[
+            "entry_distance_at_send_percent"
+        ] = (
+            round(entry_distance_at_send, 4)
+            if entry_distance_at_send is not None
+            else None
+        )
+        signal[
+            "tp1_progress_at_send_percent"
+        ] = (
+            round(tp1_progress_at_send, 4)
+            if tp1_progress_at_send is not None
+            else None
+        )
+        signal["market_guard_long_allowed"] = (
+            market_status.get("LONG")
+        )
+        signal["market_guard_short_allowed"] = (
+            market_status.get("SHORT")
+        )
+        signal["market_guard_reason"] = (
+            market_status.get("reason")
+        )
 
         extra = (
             f"\n💰 Güncel Fiyat: "
