@@ -6934,10 +6934,10 @@
     "2026-07-27": {
       "opened": 3,
       "radar": 0,
-      "tp1": 1,
+      "tp1": 3,
       "tp2": 1,
       "tp3": 1,
-      "sl": 0,
+      "sl": 1,
       "be": 0,
       "expired": 0,
       "long": 3,
@@ -6948,7 +6948,7 @@
         "KAITOUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
+          "tp1": 1,
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
@@ -6958,7 +6958,7 @@
         "SAPIENUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
+          "tp1": 1,
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
@@ -6974,10 +6974,24 @@
           "sl": 0,
           "be": 0,
           "expired": 0
+        },
+        "BATUSDT": {
+          "opened": 0,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 1,
+          "be": 0,
+          "expired": 0
         }
       },
-      "direction_stops": {},
-      "stop_times": {},
+      "direction_stops": {
+        "SHORT": 1
+      },
+      "stop_times": {
+        "BATUSDT": 1785104147
+      },
       "closed_times": {
         "LINKUSDT": 1785103337
       },
@@ -7014,6 +7028,36 @@
           "exit": 8.7028338352,
           "source": "15M_ENTRY",
           "score": 91
+        },
+        {
+          "time": "01:15:47",
+          "symbol": "BATUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.07525,
+          "exit": 0.07596,
+          "source": "15M_ENTRY",
+          "score": 93
+        },
+        {
+          "time": "01:15:48",
+          "symbol": "KAITOUSDT",
+          "direction": "LONG",
+          "result": "TP1",
+          "entry": 1.1753,
+          "exit": 1.1860174204,
+          "source": "15M_ENTRY",
+          "score": 94
+        },
+        {
+          "time": "01:15:48",
+          "symbol": "SAPIENUSDT",
+          "direction": "LONG",
+          "result": "TP1",
+          "entry": 0.07983,
+          "exit": 0.0803954493,
+          "source": "15M_ENTRY",
+          "score": 99
         }
       ],
       "sl_after_tp1": 0,
@@ -7021,9 +7065,30 @@
       "sl_after_no_return": 0
     }
   },
-  "last_update": 1785103337,
+  "last_update": 1785104148,
   "last_open_summary": 1785103339,
   "last_status_message": 1785103639,
   "last_daily_report": "2026-07-26",
-  "sl_after_follow": {}
+  "sl_after_follow": {
+    "BATUSDT_SHORT_1785104147": {
+      "trade_id": "BATUSDT_SHORT_15M_ENTRY_1785070321",
+      "symbol": "BATUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.07525,
+      "tp1": 0.0748994918,
+      "tp2": 0.074580848,
+      "tp3": 0.0742303398,
+      "sl": 0.0758872876,
+      "score": 93,
+      "risk_percent": 0.847,
+      "stopped_at": 1785104147,
+      "stop_exit": 0.07596,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    }
+  }
 }
