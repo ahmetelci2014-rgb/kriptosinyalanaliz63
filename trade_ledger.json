@@ -1512,17 +1512,22 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "EXPIRED",
+      "r_result": -0.1086,
+      "exit_price": 0.1554,
+      "closed_at": 1785032150,
+      "closed_day": "2026-07-26",
       "events": [
         {
           "time": 1784966795,
           "event": "OPENED",
           "price": 0.1552
+        },
+        {
+          "time": 1785032150,
+          "event": "EXPIRED",
+          "price": 0.1554
         }
       ],
       "worst_adverse_percent": 0.9665,
@@ -1530,7 +1535,21 @@
       "worst_adverse_price": 0.1567,
       "last_market_price": 0.1555,
       "last_tracking_at": 1785031260,
-      "tp1_hit_at": 0
+      "tp1_hit_at": 0,
+      "duration_minutes": 1089,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "YON DEVAM ETMEDI / ZAMAN ASIMI",
+        "confidence": "ORTA",
+        "factors": [
+          "Islem belirlenen takip suresi icinde TP3 veya SL ile kapanmadi."
+        ],
+        "duration_minutes": 1089,
+        "best_favorable_r": 0.0,
+        "worst_adverse_r": 0.8147,
+        "provisional": false,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      }
     },
     "SOPHUSDT_SHORT_15M_ENTRY_1784967658": {
       "trade_id": "SOPHUSDT_SHORT_15M_ENTRY_1784967658",
@@ -2460,5 +2479,5 @@
       }
     }
   },
-  "last_update": 1785031271
+  "last_update": 1785032150
 }
