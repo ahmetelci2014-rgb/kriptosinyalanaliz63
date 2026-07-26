@@ -6104,10 +6104,10 @@
       "opened": 9,
       "radar": 0,
       "tp1": 4,
-      "tp2": 2,
+      "tp2": 3,
       "tp3": 0,
-      "sl": 2,
-      "be": 3,
+      "sl": 4,
+      "be": 4,
       "expired": 1,
       "long": 5,
       "short": 4,
@@ -6190,7 +6190,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -6198,10 +6198,10 @@
           "opened": 1,
           "radar": 0,
           "tp1": 1,
-          "tp2": 0,
+          "tp2": 1,
           "tp3": 0,
           "sl": 0,
-          "be": 0,
+          "be": 1,
           "expired": 0
         },
         "COREUSDT": {
@@ -6220,29 +6220,34 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         }
       },
       "direction_stops": {
-        "LONG": 2
+        "LONG": 2,
+        "SHORT": 2
       },
       "stop_times": {
         "JELLYJELLYUSDT": 1785022366,
-        "LQTYUSDT": 1785024956
+        "LQTYUSDT": 1785024956,
+        "SAHARAUSDT": 1785049329,
+        "BERAUSDT": 1785049331
       },
       "closed_times": {
         "KGENUSDT": 1785016954,
         "TRUTHUSDT": 1785024955,
         "PEOPLEUSDT": 1785027743,
-        "BANDUSDT": 1785032150
+        "BANDUSDT": 1785032150,
+        "PARTIUSDT": 1785049330
       },
       "closed_results": {
         "KGENUSDT": "BE",
         "TRUTHUSDT": "BE",
         "PEOPLEUSDT": "BE",
-        "BANDUSDT": "EXPIRED"
+        "BANDUSDT": "EXPIRED",
+        "PARTIUSDT": "BE"
       },
       "closed_history": [
         {
@@ -6364,6 +6369,46 @@
           "exit": 0.0271256819,
           "source": "5M_RADAR",
           "score": 100
+        },
+        {
+          "time": "10:02:09",
+          "symbol": "SAHARAUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.008804,
+          "exit": 0.008886,
+          "source": "15M_ENTRY",
+          "score": 100
+        },
+        {
+          "time": "10:02:10",
+          "symbol": "PARTIUSDT",
+          "direction": "SHORT",
+          "result": "TP2",
+          "entry": 0.02721,
+          "exit": 0.0270490291,
+          "source": "5M_RADAR",
+          "score": 100
+        },
+        {
+          "time": "10:02:10",
+          "symbol": "PARTIUSDT",
+          "direction": "SHORT",
+          "result": "BE",
+          "entry": 0.02721,
+          "exit": 0.02721,
+          "source": "5M_RADAR",
+          "score": 100
+        },
+        {
+          "time": "10:02:11",
+          "symbol": "BERAUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.1788,
+          "exit": 0.1799,
+          "source": "15M_ENTRY",
+          "score": 94
         }
       ],
       "sl_after_tp1": 0,
@@ -6371,9 +6416,50 @@
       "sl_after_no_return": 3
     }
   },
-  "last_update": 1785047858,
+  "last_update": 1785049331,
   "last_open_summary": 1785045660,
   "last_status_message": 1785048687,
   "last_daily_report": "2026-07-25",
-  "sl_after_follow": {}
+  "sl_after_follow": {
+    "SAHARAUSDT_SHORT_1785049329": {
+      "trade_id": "SAHARAUSDT_SHORT_15M_ENTRY_1785046939",
+      "symbol": "SAHARAUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.008804,
+      "tp1": 0.0087597119,
+      "tp2": 0.00871945,
+      "tp3": 0.0086751619,
+      "sl": 0.0088845238,
+      "score": 100,
+      "risk_percent": 0.915,
+      "stopped_at": 1785049329,
+      "stop_exit": 0.008886,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "BERAUSDT_SHORT_1785049331": {
+      "trade_id": "BERAUSDT_SHORT_15M_ENTRY_1785047858",
+      "symbol": "BERAUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.1788,
+      "tp1": 0.1781920364,
+      "tp2": 0.1776393423,
+      "tp3": 0.1770313787,
+      "sl": 0.1799053883,
+      "score": 94,
+      "risk_percent": 0.618,
+      "stopped_at": 1785049331,
+      "stop_exit": 0.1799,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    }
+  }
 }
