@@ -6106,8 +6106,8 @@
       "tp1": 2,
       "tp2": 1,
       "tp3": 0,
-      "sl": 1,
-      "be": 1,
+      "sl": 2,
+      "be": 2,
       "expired": 0,
       "long": 4,
       "short": 0,
@@ -6140,7 +6140,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -6151,7 +6151,7 @@
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
-          "be": 0,
+          "be": 1,
           "expired": 0
         },
         "PEOPLEUSDT": {
@@ -6166,16 +6166,19 @@
         }
       },
       "direction_stops": {
-        "LONG": 1
+        "LONG": 2
       },
       "stop_times": {
-        "JELLYJELLYUSDT": 1785022366
+        "JELLYJELLYUSDT": 1785022366,
+        "LQTYUSDT": 1785024956
       },
       "closed_times": {
-        "KGENUSDT": 1785016954
+        "KGENUSDT": 1785016954,
+        "TRUTHUSDT": 1785024955
       },
       "closed_results": {
-        "KGENUSDT": "BE"
+        "KGENUSDT": "BE",
+        "TRUTHUSDT": "BE"
       },
       "closed_history": [
         {
@@ -6227,15 +6230,35 @@
           "exit": 0.0131603196,
           "source": "15M_ENTRY",
           "score": 92
+        },
+        {
+          "time": "03:15:55",
+          "symbol": "TRUTHUSDT",
+          "direction": "LONG",
+          "result": "BE",
+          "entry": 0.013104,
+          "exit": 0.013104,
+          "source": "15M_ENTRY",
+          "score": 92
+        },
+        {
+          "time": "03:15:56",
+          "symbol": "LQTYUSDT",
+          "direction": "LONG",
+          "result": "SL",
+          "entry": 0.1831,
+          "exit": 0.1812,
+          "source": "15M_ENTRY",
+          "score": 100
         }
       ],
       "sl_after_tp1": 0,
       "sl_after_tp2": 0,
-      "sl_after_no_return": 0
+      "sl_after_no_return": 1
     }
   },
-  "last_update": 1785024379,
-  "last_open_summary": 1785018745,
+  "last_update": 1785024957,
+  "last_open_summary": 1785024959,
   "last_status_message": 1785021700,
   "last_daily_report": "2026-07-25",
   "sl_after_follow": {
@@ -6257,12 +6280,15 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-07-26"
     },
     "JELLYJELLYUSDT_LONG_1785022366": {
       "trade_id": "JELLYJELLYUSDT_LONG_15M_ENTRY_1785016316",
@@ -6278,6 +6304,28 @@
       "risk_percent": 0.46,
       "stopped_at": 1785022366,
       "stop_exit": 0.05655,
+      "reported_checkpoints": [
+        30
+      ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "LQTYUSDT_LONG_1785024956": {
+      "trade_id": "LQTYUSDT_LONG_15M_ENTRY_1785023447",
+      "symbol": "LQTYUSDT",
+      "direction": "LONG",
+      "source": "15M_ENTRY",
+      "entry": 0.1831,
+      "tp1": 0.1841192182,
+      "tp2": 0.1850457802,
+      "tp3": 0.1860649983,
+      "sl": 0.181246876,
+      "score": 100,
+      "risk_percent": 1.012,
+      "stopped_at": 1785024956,
+      "stop_exit": 0.1812,
       "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
