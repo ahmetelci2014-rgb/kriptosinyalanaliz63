@@ -6103,10 +6103,10 @@
     "2026-07-26": {
       "opened": 15,
       "radar": 0,
-      "tp1": 5,
+      "tp1": 6,
       "tp2": 4,
-      "tp3": 0,
-      "sl": 5,
+      "tp3": 1,
+      "sl": 6,
       "be": 4,
       "expired": 1,
       "long": 6,
@@ -6209,7 +6209,7 @@
           "radar": 0,
           "tp1": 1,
           "tp2": 1,
-          "tp3": 0,
+          "tp3": 1,
           "sl": 0,
           "be": 0,
           "expired": 0
@@ -6270,14 +6270,14 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
         "AEVOUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
+          "tp1": 1,
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
@@ -6287,28 +6287,31 @@
       },
       "direction_stops": {
         "LONG": 2,
-        "SHORT": 3
+        "SHORT": 4
       },
       "stop_times": {
         "JELLYJELLYUSDT": 1785022366,
         "LQTYUSDT": 1785024956,
         "SAHARAUSDT": 1785049329,
         "BERAUSDT": 1785049331,
-        "PROVEUSDT": 1785053748
+        "PROVEUSDT": 1785053748,
+        "HOMEUSDT": 1785057369
       },
       "closed_times": {
         "KGENUSDT": 1785016954,
         "TRUTHUSDT": 1785024955,
         "PEOPLEUSDT": 1785027743,
         "BANDUSDT": 1785032150,
-        "PARTIUSDT": 1785049330
+        "PARTIUSDT": 1785049330,
+        "COREUSDT": 1785057367
       },
       "closed_results": {
         "KGENUSDT": "BE",
         "TRUTHUSDT": "BE",
         "PEOPLEUSDT": "BE",
         "BANDUSDT": "EXPIRED",
-        "PARTIUSDT": "BE"
+        "PARTIUSDT": "BE",
+        "COREUSDT": "TP3"
       },
       "closed_history": [
         {
@@ -6500,6 +6503,36 @@
           "exit": 0.1912,
           "source": "15M_ENTRY",
           "score": 96
+        },
+        {
+          "time": "12:16:07",
+          "symbol": "COREUSDT",
+          "direction": "SHORT",
+          "result": "TP3",
+          "entry": 0.01845,
+          "exit": 0.0182709965,
+          "source": "15M_ENTRY",
+          "score": 94
+        },
+        {
+          "time": "12:16:09",
+          "symbol": "HOMEUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.006131,
+          "exit": 0.006214,
+          "source": "15M_ENTRY",
+          "score": 96
+        },
+        {
+          "time": "12:16:09",
+          "symbol": "AEVOUSDT",
+          "direction": "LONG",
+          "result": "TP1",
+          "entry": 0.01953,
+          "exit": 0.0195957367,
+          "source": "15M_ENTRY",
+          "score": 99
         }
       ],
       "sl_after_tp1": 0,
@@ -6507,8 +6540,8 @@
       "sl_after_no_return": 3
     }
   },
-  "last_update": 1785055853,
-  "last_open_summary": 1785051955,
+  "last_update": 1785057372,
+  "last_open_summary": 1785057373,
   "last_status_message": 1785054961,
   "last_daily_report": "2026-07-25",
   "sl_after_follow": {
@@ -6528,7 +6561,8 @@
       "stop_exit": 0.008886,
       "reported_checkpoints": [
         30,
-        60
+        60,
+        120
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
@@ -6551,7 +6585,8 @@
       "stop_exit": 0.1799,
       "reported_checkpoints": [
         30,
-        60
+        60,
+        120
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
@@ -6573,8 +6608,29 @@
       "stopped_at": 1785053748,
       "stop_exit": 0.1912,
       "reported_checkpoints": [
-        30
+        30,
+        60
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "HOMEUSDT_SHORT_1785057369": {
+      "trade_id": "HOMEUSDT_SHORT_15M_ENTRY_1785054042",
+      "symbol": "HOMEUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.006131,
+      "tp1": 0.0060909613,
+      "tp2": 0.0060545625,
+      "tp3": 0.0060145238,
+      "sl": 0.0062037976,
+      "score": 96,
+      "risk_percent": 1.187,
+      "stopped_at": 1785057369,
+      "stop_exit": 0.006214,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
