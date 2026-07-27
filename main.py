@@ -17,6 +17,7 @@
 # - Süresi dolan işlemler 24 saat daha sessiz izlenir; hedef/koruma sırası kaydedilir.
 # - Günlük Telegram raporu tekleştirildi: Net R + tüm teşhisler v5.
 # - Stoplar olasılık temelli kök nedenlere ayrılır; işlem kuralları değişmez.
+# - TP1/TP2 tekrar mesajları ledger tabanlı tekil event korumasıyla engellenir.
 
 import json
 import os
@@ -3240,12 +3241,138 @@ def close_signal_result(
         )
 
 
+
+def get_ledger_trade_for_signal(signal):
+    trade_id = build_trade_id(signal)
+    ledger = load_trade_ledger()
+    trade = ledger.get(
+        "trades",
+        {},
+    ).get(trade_id)
+
+    return ledger, trade_id, trade
+
+
+def ledger_event_info(signal, result):
+    """
+    Aynı trade_id için hedef olayı daha önce kaydedilmiş mi kontrol eder.
+    Böylece open_signals.json kısa süreli eski kalsa bile tekrar bildirim
+    gönderilmez.
+    """
+    result = str(result).upper()
+    _, _, trade = get_ledger_trade_for_signal(
+        signal
+    )
+
+    if not trade:
+        return False, None
+
+    for event in trade.get("events", []):
+        if str(
+            event.get("event", "")
+        ).upper() == result:
+            return True, int(
+                event.get("time")
+                or 0
+            )
+
+    return False, None
+
+
+def sync_signal_target_state_from_ledger(signal):
+    """
+    open_signals.json ile trade_ledger.json arasında geçici uyumsuzluk
+    oluşursa ledger hedef durumunu esas alır.
+    """
+    _, _, trade = get_ledger_trade_for_signal(
+        signal
+    )
+
+    if not trade:
+        return False
+
+    changed = False
+    events = {
+        str(event.get("event", "")).upper():
+        int(event.get("time") or 0)
+        for event in trade.get("events", [])
+    }
+
+    for result, field in (
+        ("TP1", "tp1_hit"),
+        ("TP2", "tp2_hit"),
+        ("TP3", "tp3_hit"),
+    ):
+        ledger_hit = bool(
+            trade.get(field, False)
+            or result in events
+        )
+
+        if ledger_hit and not bool(
+            signal.get(field, False)
+        ):
+            signal[field] = True
+            changed = True
+
+    if bool(signal.get("tp1_hit", False)):
+        ledger_tp1_time = int(
+            trade.get("tp1_hit_at")
+            or events.get("TP1")
+            or 0
+        )
+
+        if (
+            ledger_tp1_time > 0
+            and int(
+                signal.get("tp1_hit_at")
+                or 0
+            ) != ledger_tp1_time
+        ):
+            signal["tp1_hit_at"] = (
+                ledger_tp1_time
+            )
+            changed = True
+
+    if str(
+        trade.get("status", "")
+    ).upper() == "CLOSED":
+        if not bool(
+            signal.get("closed", False)
+        ):
+            signal["closed"] = True
+            changed = True
+
+    return changed
+
+
 def register_partial_result(
     symbol,
     signal,
     result,
     exit_price,
 ):
+    result = str(result).upper()
+
+    event_exists, _ = ledger_event_info(
+        signal,
+        result,
+    )
+
+    if event_exists:
+        print(
+            symbol,
+            result,
+            "bildirimi tekrar olduğu için engellendi.",
+        )
+        return False
+
+    # Önce kalıcı ledger kaydı oluşturulur.
+    ledger_record_event(
+        signal,
+        result,
+        exit_price,
+    )
+
     update_performance(
         symbol=symbol,
         result=result,
@@ -3256,11 +3383,7 @@ def register_partial_result(
         score=signal.get("score"),
     )
 
-    ledger_record_event(
-        signal,
-        result,
-        exit_price,
-    )
+    return True
 
 
 
@@ -4658,6 +4781,14 @@ def check_open_signals(exchange):
             symbol = signal["symbol"]
             direction = signal["direction"]
 
+            if sync_signal_target_state_from_ledger(
+                signal
+            ):
+                print(
+                    symbol,
+                    "açık sinyal durumu ledger ile eşitlendi.",
+                )
+
             entry = float(signal["entry"])
             tp1 = float(signal["tp1"])
             tp2 = float(signal["tp2"])
@@ -4809,22 +4940,21 @@ def check_open_signals(exchange):
                                 tp1_hit_at = candle_time
                                 signal["tp1_hit_at"] = tp1_hit_at
 
-                                send_telegram(
-                                    f"✅ TP1 GELDİ\n\n"
-                                    f"Coin: {symbol}\n"
-                                    f"Yön: LONG 🟢\n"
-                                    f"Giriş: {format_price(entry)}\n"
-                                    f"TP1: {format_price(tp1)}\n"
-                                    f"Öneri: %50 kâr al, "
-                                    f"SL girişe çek."
-                                )
-
-                                register_partial_result(
+                                if register_partial_result(
                                     symbol,
                                     signal,
                                     "TP1",
                                     tp1,
-                                )
+                                ):
+                                    send_telegram(
+                                        f"✅ TP1 GELDİ\n\n"
+                                        f"Coin: {symbol}\n"
+                                        f"Yön: LONG 🟢\n"
+                                        f"Giriş: {format_price(entry)}\n"
+                                        f"TP1: {format_price(tp1)}\n"
+                                        f"Öneri: %50 kâr al, "
+                                        f"SL girişe çek."
+                                    )
                             else:
                                 send_telegram(
                                     f"❌ STOP OLDU\n\n"
@@ -4872,22 +5002,21 @@ def check_open_signals(exchange):
                             tp1_hit_at = candle_time
                             signal["tp1_hit_at"] = tp1_hit_at
 
-                            send_telegram(
-                                f"✅ TP1 GELDİ\n\n"
-                                f"Coin: {symbol}\n"
-                                f"Yön: LONG 🟢\n"
-                                f"Giriş: {format_price(entry)}\n"
-                                f"TP1: {format_price(tp1)}\n"
-                                f"Öneri: %50 kâr al, "
-                                f"SL girişe çek."
-                            )
-
-                            register_partial_result(
+                            if register_partial_result(
                                 symbol,
                                 signal,
                                 "TP1",
                                 tp1,
-                            )
+                            ):
+                                send_telegram(
+                                    f"✅ TP1 GELDİ\n\n"
+                                    f"Coin: {symbol}\n"
+                                    f"Yön: LONG 🟢\n"
+                                    f"Giriş: {format_price(entry)}\n"
+                                    f"TP1: {format_price(tp1)}\n"
+                                    f"Öneri: %50 kâr al, "
+                                    f"SL girişe çek."
+                                )
 
                     if (
                         tp1_hit
@@ -4897,19 +5026,18 @@ def check_open_signals(exchange):
                         tp2_hit = True
                         signal["tp2_hit"] = True
 
-                        send_telegram(
-                            f"✅ TP2 GELDİ\n\n"
-                            f"Coin: {symbol}\n"
-                            f"Yön: LONG 🟢\n"
-                            f"TP2: {format_price(tp2)}"
-                        )
-
-                        register_partial_result(
+                        if register_partial_result(
                             symbol,
                             signal,
                             "TP2",
                             tp2,
-                        )
+                        ):
+                            send_telegram(
+                                f"✅ TP2 GELDİ\n\n"
+                                f"Coin: {symbol}\n"
+                                f"Yön: LONG 🟢\n"
+                                f"TP2: {format_price(tp2)}"
+                            )
 
                     if (
                         tp1_hit
@@ -4973,22 +5101,21 @@ def check_open_signals(exchange):
                                 tp1_hit_at = candle_time
                                 signal["tp1_hit_at"] = tp1_hit_at
 
-                                send_telegram(
-                                    f"✅ TP1 GELDİ\n\n"
-                                    f"Coin: {symbol}\n"
-                                    f"Yön: SHORT 🔴\n"
-                                    f"Giriş: {format_price(entry)}\n"
-                                    f"TP1: {format_price(tp1)}\n"
-                                    f"Öneri: %50 kâr al, "
-                                    f"SL girişe çek."
-                                )
-
-                                register_partial_result(
+                                if register_partial_result(
                                     symbol,
                                     signal,
                                     "TP1",
                                     tp1,
-                                )
+                                ):
+                                    send_telegram(
+                                        f"✅ TP1 GELDİ\n\n"
+                                        f"Coin: {symbol}\n"
+                                        f"Yön: SHORT 🔴\n"
+                                        f"Giriş: {format_price(entry)}\n"
+                                        f"TP1: {format_price(tp1)}\n"
+                                        f"Öneri: %50 kâr al, "
+                                        f"SL girişe çek."
+                                    )
                             else:
                                 send_telegram(
                                     f"❌ STOP OLDU\n\n"
@@ -5036,22 +5163,21 @@ def check_open_signals(exchange):
                             tp1_hit_at = candle_time
                             signal["tp1_hit_at"] = tp1_hit_at
 
-                            send_telegram(
-                                f"✅ TP1 GELDİ\n\n"
-                                f"Coin: {symbol}\n"
-                                f"Yön: SHORT 🔴\n"
-                                f"Giriş: {format_price(entry)}\n"
-                                f"TP1: {format_price(tp1)}\n"
-                                f"Öneri: %50 kâr al, "
-                                f"SL girişe çek."
-                            )
-
-                            register_partial_result(
+                            if register_partial_result(
                                 symbol,
                                 signal,
                                 "TP1",
                                 tp1,
-                            )
+                            ):
+                                send_telegram(
+                                    f"✅ TP1 GELDİ\n\n"
+                                    f"Coin: {symbol}\n"
+                                    f"Yön: SHORT 🔴\n"
+                                    f"Giriş: {format_price(entry)}\n"
+                                    f"TP1: {format_price(tp1)}\n"
+                                    f"Öneri: %50 kâr al, "
+                                    f"SL girişe çek."
+                                )
 
                     if (
                         tp1_hit
@@ -5061,19 +5187,18 @@ def check_open_signals(exchange):
                         tp2_hit = True
                         signal["tp2_hit"] = True
 
-                        send_telegram(
-                            f"✅ TP2 GELDİ\n\n"
-                            f"Coin: {symbol}\n"
-                            f"Yön: SHORT 🔴\n"
-                            f"TP2: {format_price(tp2)}"
-                        )
-
-                        register_partial_result(
+                        if register_partial_result(
                             symbol,
                             signal,
                             "TP2",
                             tp2,
-                        )
+                        ):
+                            send_telegram(
+                                f"✅ TP2 GELDİ\n\n"
+                                f"Coin: {symbol}\n"
+                                f"Yön: SHORT 🔴\n"
+                                f"TP2: {format_price(tp2)}"
+                            )
 
                     if (
                         tp1_hit
