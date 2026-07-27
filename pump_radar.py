@@ -11,10 +11,13 @@
 # 4) Çok geniş stoplu ve girişten uzaklaşmış adayları elemek.
 # 5) Eski pump_radar_state.json yapısıyla uyumlu çalışmak.
 # 6) XLM benzeri büyük ama hacim patlamasız hareketleri sessizce ölçmek.
+# 7) State ve performans JSON dosyalarını doğrulamalı atomik yazmak.
+# 8) Ortak portföy denetimiyle aynı coindeki bot çakışmasını engellemek.
 
 import json
 import math
 import os
+import tempfile
 import time
 from collections import Counter
 from datetime import datetime, timedelta, timezone
@@ -22,6 +25,11 @@ from datetime import datetime, timedelta, timezone
 import ccxt
 import pandas as pd
 import requests
+
+from portfolio_risk import (
+    evaluate_portfolio_risk,
+    format_portfolio_note,
+)
 
 
 # =========================================================
@@ -334,6 +342,133 @@ def load_state():
         return default_state()
 
 
+
+def fsync_parent_directory(filename):
+    """
+    os.replace sonrasında klasör kaydını da diske zorlamaya çalışır.
+    Desteklenmeyen ortamlarda ana JSON kaydı yine geçerli kalır.
+    """
+    directory = os.path.dirname(
+        os.path.abspath(filename)
+    ) or "."
+
+    directory_fd = None
+
+    try:
+        directory_fd = os.open(
+            directory,
+            os.O_RDONLY
+            | getattr(os, "O_DIRECTORY", 0),
+        )
+        os.fsync(directory_fd)
+
+    except Exception:
+        pass
+
+    finally:
+        if directory_fd is not None:
+            try:
+                os.close(directory_fd)
+            except Exception:
+                pass
+
+
+def atomic_save_json(filename, data):
+    """
+    JSON'u aynı klasörde geçici dosyaya yazar, doğrular ve
+    os.replace ile tek adımda asıl dosyanın yerine geçirir.
+    """
+    normalized_data = (
+        data
+        if isinstance(data, dict)
+        else {}
+    )
+
+    absolute_filename = os.path.abspath(
+        filename
+    )
+    directory = os.path.dirname(
+        absolute_filename
+    ) or "."
+    base_name = os.path.basename(
+        absolute_filename
+    )
+    temp_path = None
+
+    try:
+        os.makedirs(
+            directory,
+            exist_ok=True,
+        )
+
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=directory,
+            prefix=f".{base_name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temp_path = handle.name
+
+            json.dump(
+                normalized_data,
+                handle,
+                indent=2,
+                ensure_ascii=False,
+            )
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+
+        with open(
+            temp_path,
+            "r",
+            encoding="utf-8",
+        ) as verify_handle:
+            verified = json.load(
+                verify_handle
+            )
+
+        if not isinstance(
+            verified,
+            dict,
+        ):
+            raise ValueError(
+                "Geçici JSON doğrulaması başarısız."
+            )
+
+        os.replace(
+            temp_path,
+            absolute_filename,
+        )
+        temp_path = None
+
+        fsync_parent_directory(
+            absolute_filename
+        )
+
+        return True
+
+    except Exception as exc:
+        print(
+            filename,
+            "atomik JSON kaydetme hatası:",
+            exc,
+        )
+        return False
+
+    finally:
+        if (
+            temp_path
+            and os.path.exists(temp_path)
+        ):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
+
+
 def save_state(state):
     try:
         state["open_pump_signals"] = state.get(
@@ -341,18 +476,16 @@ def save_state(state):
             {},
         )
 
-        with open(STATE_FILE, "w", encoding="utf-8") as handle:
-            json.dump(
-                state,
-                handle,
-                indent=2,
-                ensure_ascii=False,
-            )
-
-        return True
+        return atomic_save_json(
+            STATE_FILE,
+            state,
+        )
 
     except Exception as exc:
-        print("State kaydetme hatası:", exc)
+        print(
+            "State kaydetme hatası:",
+            exc,
+        )
         return False
 
 
@@ -515,19 +648,10 @@ def save_pump_performance(ledger):
             ledger
         )
 
-        with open(
+        return atomic_save_json(
             PERFORMANCE_FILE,
-            "w",
-            encoding="utf-8",
-        ) as handle:
-            json.dump(
-                ledger,
-                handle,
-                indent=2,
-                ensure_ascii=False,
-            )
-
-        return True
+            ledger,
+        )
 
     except Exception as exc:
         print(
@@ -3722,6 +3846,9 @@ def save_open_signal(state, signal):
         "break_level_distance_percent": signal.get(
             "break_level_distance_percent"
         ),
+        "portfolio_risk": signal.get(
+            "portfolio_risk"
+        ),
         "ok_count": signal.get("ok_count"),
         "total_conditions": signal.get(
             "total_conditions"
@@ -4755,6 +4882,37 @@ def main():
             )
             continue
 
+        portfolio_risk = (
+            evaluate_portfolio_risk(
+                symbol=signal["symbol"],
+                direction=signal["direction"],
+                source_bot="PUMP_DUMP",
+            )
+        )
+
+        signal["portfolio_risk"] = (
+            portfolio_risk
+        )
+        signal["portfolio_note"] = (
+            format_portfolio_note(
+                portfolio_risk
+            )
+        )
+
+        if portfolio_risk.get(
+            "hard_block",
+            False,
+        ):
+            print(
+                signal["symbol"],
+                "portföy çakışması nedeniyle "
+                "Pump/Dump sinyali elendi:",
+                portfolio_risk.get(
+                    "block_reason"
+                ),
+            )
+            continue
+
         signal["current_price"] = current_price
         signal["entry_drift_percent"] = drift
         signal[
@@ -4794,6 +4952,15 @@ def main():
             f"📌 Son Kontrol: "
             f"Girişe yakın ve kırılım geçerli ✅"
         )
+
+        portfolio_note = signal.get(
+            "portfolio_note"
+        )
+
+        if portfolio_note:
+            extra += (
+                f"\n{portfolio_note}"
+            )
 
         if send_telegram(
             signal["message"] + extra
