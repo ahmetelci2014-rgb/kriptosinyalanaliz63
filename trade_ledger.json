@@ -4665,9 +4665,9 @@
       "worst_adverse_r": 0.9189,
       "best_favorable_price": 0.03987,
       "worst_adverse_price": 0.04046,
-      "last_market_price": 0.04008,
+      "last_market_price": 0.04007,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785135060
+      "last_tracking_at": 1785135660
     },
     "KAITOUSDT_LONG_15M_ENTRY_1785101707": {
       "trade_id": "KAITOUSDT_LONG_15M_ENTRY_1785101707",
@@ -5364,9 +5364,9 @@
       "worst_adverse_r": 0.5615,
       "best_favorable_price": 0.4145,
       "worst_adverse_price": 0.4035,
-      "last_market_price": 0.411,
+      "last_market_price": 0.4107,
       "tp1_hit_at": 1785132900,
-      "last_tracking_at": 1785135060
+      "last_tracking_at": 1785135660
     },
     "LQTYUSDT_LONG_15M_ENTRY_1785124255": {
       "trade_id": "LQTYUSDT_LONG_15M_ENTRY_1785124255",
@@ -5619,9 +5619,9 @@
       "worst_adverse_r": 0.0712,
       "best_favorable_price": 1982.29,
       "worst_adverse_price": 1957.3,
-      "last_market_price": 1967.91,
+      "last_market_price": 1967.99,
       "tp1_hit_at": 1785131880,
-      "last_tracking_at": 1785135060
+      "last_tracking_at": 1785135660
     },
     "JELLYJELLYUSDT_LONG_5M_RADAR_1785132418": {
       "trade_id": "JELLYJELLYUSDT_LONG_5M_RADAR_1785132418",
@@ -5694,17 +5694,46 @@
       "duration_minutes": 13,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "HIZLI TERS HAREKET / YON UYUMSUZLUGU",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
           "Islem ilk 20 dakikada anlamli lehe hareket yapmadan stop oldu.",
-          "Stop mesafesi cok kisa surede tamamen tuketildi."
+          "Stop mesafesi cok kisa surede tamamen tuketildi.",
+          "Stop sonrasi fiyat TP1 seviyesine dondu."
         ],
         "duration_minutes": 13,
         "best_favorable_r": 0.0,
         "worst_adverse_r": 2.5769,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "post_stop_follow": {
+        "returned_level": "TP1",
+        "age_minutes": 41,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1785135669
+      },
+      "stop_root_cause": {
+        "version": "STOP_ROOT_CAUSE_V1",
+        "primary": "ERKEN_GIRIS_VEYA_DAR_STOP",
+        "label": "Erken giriş veya dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
+        "secondary": [],
+        "confidence": "ORTA",
+        "provisional": false,
+        "factors": [
+          "Stop sonrası fiyat TP1 seviyesine 41 dakikada döndü.",
+          "Hızlı ve düşük MFE'li stop ile dar risk profili birlikte görüldü."
+        ],
+        "metrics": {
+          "duration_minutes": 13,
+          "mfe_r": 0.0,
+          "mae_r": 2.5769,
+          "risk_percent": 0.498,
+          "return_minutes": 41.0
+        },
+        "updated_at": 1785135669
       }
     },
     "ENAUSDT_LONG_15M_ENTRY_1785133451": {
@@ -5777,9 +5806,9 @@
       "worst_adverse_r": 0.4326,
       "best_favorable_price": 0.09052,
       "worst_adverse_price": 0.08933,
-      "last_market_price": 0.09023,
+      "last_market_price": 0.09045,
       "tp1_hit_at": 1785134340,
-      "last_tracking_at": 1785135060
+      "last_tracking_at": 1785135660
     },
     "LINKUSDT_LONG_15M_ENTRY_1785135453": {
       "trade_id": "LINKUSDT_LONG_15M_ENTRY_1785135453",
@@ -5835,15 +5864,16 @@
       "market_guard_long_allowed": true,
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %-0.12 | ETHUSDT: 15M EMA20 üstü, 5M %-0.17 | SOLUSDT: 15M EMA20 üstü, 5M %-0.2",
-      "best_favorable_percent": 0.0,
+      "best_favorable_percent": 0.2152,
       "worst_adverse_percent": 0.0,
-      "best_favorable_r": 0.0,
+      "best_favorable_r": 0.1795,
       "worst_adverse_r": 0.0,
-      "best_favorable_price": 8.831,
+      "best_favorable_price": 8.85,
       "worst_adverse_price": 8.831,
-      "last_market_price": 8.843,
-      "tp1_hit_at": 0
+      "last_market_price": 8.848,
+      "tp1_hit_at": 0,
+      "last_tracking_at": 1785135660
     }
   },
-  "last_update": 1785135453
+  "last_update": 1785135669
 }
