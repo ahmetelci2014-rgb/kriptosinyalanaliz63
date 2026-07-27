@@ -40,6 +40,14 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Test dosyalarını kontrol et
+        run: |
+          pwd
+          ls -la
+          ls -la tests
+          test -f tests/__init__.py
+          test -f tests/test_main_core.py
+
       - name: Python dosyalarını derle
         run: |
           python -m py_compile \
@@ -48,14 +56,13 @@ jobs:
             config.py \
             scalp_radar.py \
             pump_radar.py \
-            swing_radar.py
+            swing_radar.py \
+            tests/__init__.py \
+            tests/test_main_core.py
 
       - name: Ana bot çekirdek testlerini çalıştır
         env:
           TOKEN: ""
           CHAT_ID: ""
         run: |
-          python -m unittest discover \
-            -s tests \
-            -p "test_*.py" \
-            -v
+          python -m tests.test_main_core -v
