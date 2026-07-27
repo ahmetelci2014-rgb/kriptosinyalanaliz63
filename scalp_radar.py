@@ -14,10 +14,13 @@
 #    çalıştığını performans ledger içinde olasılık temelli teşhis etmek.
 # 6) Gerçek scalp stop olduktan sonra 120 dakika içinde yönüne dönüp
 #    dönmediğini izleyerek fitil/dar stop olasılığını ayırmak.
+# 7) State ve performans JSON dosyalarını doğrulamalı atomik yazmak.
+# 8) Ortak portföy denetimiyle aynı coindeki bot çakışmasını engellemek.
 
 import json
 import math
 import os
+import tempfile
 import time
 from collections import Counter
 from datetime import datetime, timedelta, timezone
@@ -25,6 +28,11 @@ from datetime import datetime, timedelta, timezone
 import ccxt
 import pandas as pd
 import requests
+
+from portfolio_risk import (
+    evaluate_portfolio_risk,
+    format_portfolio_note,
+)
 
 
 # =========================================================
@@ -354,14 +362,138 @@ def load_state():
         return empty_state()
 
 
-def save_state(state):
+
+def fsync_parent_directory(filename):
+    """
+    os.replace sonrasında klasör kaydını da diske zorlamaya çalışır.
+    Desteklenmeyen ortamlarda ana JSON kaydı yine geçerli kalır.
+    """
+    directory = os.path.dirname(
+        os.path.abspath(filename)
+    ) or "."
+
+    directory_fd = None
+
     try:
-        with open(STATE_FILE, "w", encoding="utf-8") as handle:
-            json.dump(state, handle, indent=2, ensure_ascii=False)
+        directory_fd = os.open(
+            directory,
+            os.O_RDONLY
+            | getattr(os, "O_DIRECTORY", 0),
+        )
+        os.fsync(directory_fd)
+
+    except Exception:
+        pass
+
+    finally:
+        if directory_fd is not None:
+            try:
+                os.close(directory_fd)
+            except Exception:
+                pass
+
+
+def atomic_save_json(filename, data):
+    """
+    JSON'u aynı klasörde geçici dosyaya yazar, doğrular ve
+    os.replace ile tek adımda asıl dosyanın yerine geçirir.
+    """
+    normalized_data = (
+        data
+        if isinstance(data, dict)
+        else {}
+    )
+
+    absolute_filename = os.path.abspath(
+        filename
+    )
+    directory = os.path.dirname(
+        absolute_filename
+    ) or "."
+    base_name = os.path.basename(
+        absolute_filename
+    )
+    temp_path = None
+
+    try:
+        os.makedirs(
+            directory,
+            exist_ok=True,
+        )
+
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=directory,
+            prefix=f".{base_name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temp_path = handle.name
+
+            json.dump(
+                normalized_data,
+                handle,
+                indent=2,
+                ensure_ascii=False,
+            )
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+
+        with open(
+            temp_path,
+            "r",
+            encoding="utf-8",
+        ) as verify_handle:
+            verified = json.load(
+                verify_handle
+            )
+
+        if not isinstance(
+            verified,
+            dict,
+        ):
+            raise ValueError(
+                "Geçici JSON doğrulaması başarısız."
+            )
+
+        os.replace(
+            temp_path,
+            absolute_filename,
+        )
+        temp_path = None
+
+        fsync_parent_directory(
+            absolute_filename
+        )
+
         return True
+
     except Exception as exc:
-        print("State kaydetme hatası:", exc)
+        print(
+            filename,
+            "atomik JSON kaydetme hatası:",
+            exc,
+        )
         return False
+
+    finally:
+        if (
+            temp_path
+            and os.path.exists(temp_path)
+        ):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
+
+
+def save_state(state):
+    return atomic_save_json(
+        STATE_FILE,
+        state,
+    )
 
 
 def increment_stat(state, key):
@@ -472,12 +604,20 @@ def rebuild_performance_summary(ledger):
 
 def save_performance_ledger(ledger):
     try:
-        rebuild_performance_summary(ledger)
-        with open(PERFORMANCE_FILE, "w", encoding="utf-8") as handle:
-            json.dump(ledger, handle, indent=2, ensure_ascii=False)
-        return True
+        rebuild_performance_summary(
+            ledger
+        )
+
+        return atomic_save_json(
+            PERFORMANCE_FILE,
+            ledger,
+        )
+
     except Exception as exc:
-        print("Scalp performans dosyası kayıt hatası:", exc)
+        print(
+            "Scalp performans dosyası kayıt hatası:",
+            exc,
+        )
         return False
 
 
@@ -3100,6 +3240,9 @@ def save_open_signal(state, signal):
         "entry_drift_percent": signal.get(
             "entry_drift_percent"
         ),
+        "portfolio_risk": signal.get(
+            "portfolio_risk"
+        ),
         "rsi1": signal.get("rsi1"),
         "rsi5": signal.get("rsi5"),
         "vol1": signal.get("vol1"),
@@ -3891,6 +4034,46 @@ def main():
         alert["entry_drift_percent"] = drift
         selected_prewatch.append(alert)
 
+    portfolio_filtered_selected = []
+
+    for signal in selected:
+        portfolio_risk = (
+            evaluate_portfolio_risk(
+                symbol=signal["symbol"],
+                direction=signal["direction"],
+                source_bot="SCALP",
+            )
+        )
+
+        signal["portfolio_risk"] = (
+            portfolio_risk
+        )
+        signal["portfolio_note"] = (
+            format_portfolio_note(
+                portfolio_risk
+            )
+        )
+
+        if portfolio_risk.get(
+            "hard_block",
+            False,
+        ):
+            print(
+                signal["symbol"],
+                "portföy çakışması nedeniyle "
+                "Scalp sinyali elendi:",
+                portfolio_risk.get(
+                    "block_reason"
+                ),
+            )
+            continue
+
+        portfolio_filtered_selected.append(
+            signal
+        )
+
+    selected = portfolio_filtered_selected
+
     print("Bulunan kaliteli scalp sinyal:", len(all_signals))
     print("Gönderilecek scalp sinyal:", len(selected))
     print("Bulunan erken fırsat:", len(all_early_alerts))
@@ -3915,6 +4098,15 @@ def main():
             f"%{round(signal['entry_drift_percent'], 3)}\n"
             f"📌 Son Kontrol: Scalp girişe yakın ✅"
         )
+
+        portfolio_note = signal.get(
+            "portfolio_note"
+        )
+
+        if portfolio_note:
+            extra += (
+                f"\n{portfolio_note}"
+            )
 
         if send_telegram(signal["message"] + extra):
             record_id = record_scalp_performance(
