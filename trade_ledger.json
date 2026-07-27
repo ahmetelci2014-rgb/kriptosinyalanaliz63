@@ -7852,34 +7852,42 @@
         "confidence": "ORTA",
         "factors": [
           "Islem ilk 20 dakikada anlamli lehe hareket yapmadan stop oldu.",
-          "Stop mesafesi cok kisa surede tamamen tuketildi."
+          "Stop mesafesi cok kisa surede tamamen tuketildi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 9,
         "best_favorable_r": 0.0603,
         "worst_adverse_r": 1.4471,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "MUHTEMEL_YANLIS_YON",
-        "preliminary_label": "Muhtemel yanlış yön",
+        "primary": "MUHTEMEL_YANLIS_YON",
+        "label": "Muhtemel yanlış yön",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "İşlem çok kısa sürede anlamlı lehe hareket üretmeden stop oldu."
         ],
         "metrics": {
           "duration_minutes": 9,
           "mfe_r": 0.0603,
           "mae_r": 1.4471,
           "risk_percent": 0.83,
-          "return_minutes": null
+          "return_minutes": 245.0
         },
-        "updated_at": 1785160868
+        "updated_at": 1785175605
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 245,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1785175605
       }
     },
     "BANDUSDT_SHORT_5M_RADAR_1785171104": {
@@ -7986,5 +7994,5 @@
       }
     }
   },
-  "last_update": 1785174355
+  "last_update": 1785175605
 }
