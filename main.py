@@ -15,6 +15,7 @@
 # - Kapanan islemlere kayitli verilere dayali olasilik temelli teknik teshis eklenir.
 # - Stop sonrasi TP1'e donen islemlerde fitil / dar stop olasiligi isaretlenir.
 # - Süresi dolan işlemler 24 saat daha sessiz izlenir; hedef/koruma sırası kaydedilir.
+# - Günlük Telegram raporu tekleştirildi: Net R + tüm teşhisler v4.
 
 import json
 import os
@@ -1037,8 +1038,20 @@ def ledger_record_event(signal, result, exit_price=None):
 
 
 def build_daily_r_report():
+    """
+    Tek günlük rapor:
+    - Her işlemi yalnız bir kez sayar.
+    - Net R performansını gösterir.
+    - Stop sonrası 240 dakikalık sonucu gösterir.
+    - Süre dolduktan sonraki 24 saatlik sonucu gösterir.
+    - Teknik teşhislerin dağılımını özetler.
+
+    Ana kaynak yalnızca trade_ledger.json'dır.
+    """
     ledger = load_trade_ledger()
-    trades = list(ledger.get("trades", {}).values())
+    trades = list(
+        ledger.get("trades", {}).values()
+    )
     today = today_key()
 
     opened_today = [
@@ -1056,22 +1069,31 @@ def build_daily_r_report():
     measurable = [
         trade
         for trade in closed_today
-        if trade.get("r_result") is not None
+        if safe_float(trade.get("r_result"))
+        is not None
     ]
 
     open_total = sum(
         1
         for trade in trades
-        if trade.get("status") == "OPEN"
+        if str(
+            trade.get("status", "")
+        ).upper() == "OPEN"
     )
 
-    net_r = round(
-        sum(
-            float(trade["r_result"])
-            for trade in measurable
-        ),
-        3,
-    )
+    def sum_r(items):
+        return round(
+            sum(
+                float(trade["r_result"])
+                for trade in items
+                if safe_float(
+                    trade.get("r_result")
+                ) is not None
+            ),
+            3,
+        )
+
+    net_r = sum_r(measurable)
 
     average_r = (
         round(net_r / len(measurable), 3)
@@ -1105,30 +1127,58 @@ def build_daily_r_report():
     }
 
     for trade in closed_today:
-        final_result = trade.get("final_result")
+        final_result = str(
+            trade.get("final_result") or ""
+        ).upper()
 
         if final_result in result_counts:
             result_counts[final_result] += 1
 
-    long_r = round(
-        sum(
-            float(trade["r_result"])
-            for trade in measurable
-            if trade.get("direction") == "LONG"
-        ),
-        3,
+    long_opened = sum(
+        1
+        for trade in opened_today
+        if str(
+            trade.get("direction", "")
+        ).upper() == "LONG"
     )
 
-    short_r = round(
-        sum(
-            float(trade["r_result"])
-            for trade in measurable
-            if trade.get("direction") == "SHORT"
-        ),
-        3,
+    short_opened = sum(
+        1
+        for trade in opened_today
+        if str(
+            trade.get("direction", "")
+        ).upper() == "SHORT"
     )
 
-    ordered = sorted(
+    radar_opened = sum(
+        1
+        for trade in opened_today
+        if str(
+            trade.get("source", "")
+        ).upper() == "5M_RADAR"
+    )
+
+    normal_opened = (
+        len(opened_today) - radar_opened
+    )
+
+    long_r = sum_r([
+        trade
+        for trade in measurable
+        if str(
+            trade.get("direction", "")
+        ).upper() == "LONG"
+    ])
+
+    short_r = sum_r([
+        trade
+        for trade in measurable
+        if str(
+            trade.get("direction", "")
+        ).upper() == "SHORT"
+    ])
+
+    ordered_closed = sorted(
         closed_today,
         key=lambda trade: int(
             trade.get("closed_at")
@@ -1139,8 +1189,10 @@ def build_daily_r_report():
     current_stop_streak = 0
     max_stop_streak = 0
 
-    for trade in ordered:
-        if trade.get("final_result") == "SL":
+    for trade in ordered_closed:
+        if str(
+            trade.get("final_result", "")
+        ).upper() == "SL":
             current_stop_streak += 1
             max_stop_streak = max(
                 max_stop_streak,
@@ -1149,21 +1201,407 @@ def build_daily_r_report():
         else:
             current_stop_streak = 0
 
+    # -----------------------------------------------------
+    # STOP SONRASI 240 DAKİKALIK TEŞHİS
+    # -----------------------------------------------------
+    stops_today = [
+        trade
+        for trade in closed_today
+        if str(
+            trade.get("final_result", "")
+        ).upper() == "SL"
+    ]
+
+    stop_return_tp1 = 0
+    stop_return_tp2 = 0
+    stop_return_tp3 = 0
+    stop_no_return = 0
+    stop_tracking = 0
+    return_minutes = []
+
+    for trade in stops_today:
+        follow = (
+            trade.get("post_stop_follow")
+            or {}
+        )
+        status = str(
+            follow.get("status", "")
+        ).upper()
+        level = str(
+            follow.get("returned_level", "")
+            or ""
+        ).upper()
+
+        if status == "RETURNED_TO_TARGET":
+            if level == "TP3":
+                stop_return_tp3 += 1
+            elif level == "TP2":
+                stop_return_tp2 += 1
+            else:
+                stop_return_tp1 += 1
+
+            age_minutes = safe_float(
+                follow.get("age_minutes")
+            )
+
+            if age_minutes is not None:
+                return_minutes.append(
+                    float(age_minutes)
+                )
+
+        elif status == "NO_TP1_RETURN":
+            stop_no_return += 1
+
+        else:
+            stop_tracking += 1
+
+    stop_return_total = (
+        stop_return_tp1
+        + stop_return_tp2
+        + stop_return_tp3
+    )
+
+    stop_resolved_total = (
+        stop_return_total
+        + stop_no_return
+    )
+
+    fitil_rate = (
+        round(
+            stop_return_total
+            / stop_resolved_total
+            * 100,
+            1,
+        )
+        if stop_resolved_total
+        else 0.0
+    )
+
+    average_return_minute = (
+        round(
+            sum(return_minutes)
+            / len(return_minutes),
+        )
+        if return_minutes
+        else None
+    )
+
+    # Bugün netleşen takipler, stop dünkü olsa bile rapora girer.
+    stop_follow_resolved_today = []
+
+    for trade in trades:
+        follow = (
+            trade.get("post_stop_follow")
+            or {}
+        )
+        updated_at = int(
+            follow.get("updated_at")
+            or 0
+        )
+
+        if (
+            updated_at > 0
+            and day_key_from_ts(updated_at)
+            == today
+        ):
+            stop_follow_resolved_today.append(
+                trade
+            )
+
+    stop_follow_resolved_today.sort(
+        key=lambda trade: int(
+            (
+                trade.get("post_stop_follow")
+                or {}
+            ).get("updated_at")
+            or 0
+        )
+    )
+
+    stop_follow_lines = []
+
+    for trade in stop_follow_resolved_today[-4:]:
+        follow = (
+            trade.get("post_stop_follow")
+            or {}
+        )
+        status = str(
+            follow.get("status", "")
+        ).upper()
+        age = int(
+            safe_float(
+                follow.get("age_minutes"),
+                0,
+            )
+            or 0
+        )
+
+        if status == "RETURNED_TO_TARGET":
+            level = (
+                follow.get("returned_level")
+                or "TP1"
+            )
+            result_text = (
+                f"{age} dk sonra {level}"
+                f" → fitil/dar stop olasılığı"
+            )
+        else:
+            result_text = (
+                f"{age} dk dönüş yok"
+                f" → gerçek başarısız stop"
+            )
+
+        stop_follow_lines.append(
+            f"{trade.get('symbol')} "
+            f"{trade.get('direction')}"
+            f" → {result_text}"
+        )
+
+    stop_follow_text = (
+        "\n".join(stop_follow_lines)
+        if stop_follow_lines
+        else "Bugün netleşen stop sonrası takip yok."
+    )
+
+    # -----------------------------------------------------
+    # SÜRE SONRASI 24 SAATLİK TEŞHİS
+    # -----------------------------------------------------
+    expiry_target = 0
+    expiry_protection = 0
+    expiry_no_decision = 0
+    expiry_resolved_today = []
+
+    for trade in trades:
+        follow = (
+            trade.get("post_expiry_follow")
+            or {}
+        )
+        resolved_at = int(
+            follow.get("resolved_at")
+            or 0
+        )
+
+        if (
+            resolved_at <= 0
+            or day_key_from_ts(resolved_at)
+            != today
+        ):
+            continue
+
+        expiry_resolved_today.append(trade)
+        outcome = str(
+            follow.get("first_event", "")
+        ).upper()
+
+        if outcome == "TARGET":
+            expiry_target += 1
+        elif outcome == "PROTECTION":
+            expiry_protection += 1
+        else:
+            expiry_no_decision += 1
+
+    expiry_tracking = sum(
+        1
+        for trade in trades
+        if str(
+            trade.get(
+                "post_expiry_status",
+                "",
+            )
+        ).upper() == "TRACKING"
+    )
+
+    expiry_resolved_today.sort(
+        key=lambda trade: int(
+            (
+                trade.get("post_expiry_follow")
+                or {}
+            ).get("resolved_at")
+            or 0
+        )
+    )
+
+    expiry_lines = []
+
+    for trade in expiry_resolved_today[-3:]:
+        follow = (
+            trade.get("post_expiry_follow")
+            or {}
+        )
+        outcome = str(
+            follow.get("first_event", "")
+        ).upper()
+        elapsed = int(
+            safe_float(
+                follow.get("elapsed_minutes"),
+                0,
+            )
+            or 0
+        )
+        hours = elapsed // 60
+        minutes = elapsed % 60
+
+        if outcome == "TARGET":
+            label = (
+                follow.get("target_label")
+                or "HEDEF"
+            )
+            result_text = (
+                f"{label} önce"
+                f" → süre erken kapatmış olabilir"
+            )
+        elif outcome == "PROTECTION":
+            label = (
+                follow.get("protection_label")
+                or "KORUMA"
+            )
+            result_text = (
+                f"{label} önce"
+                f" → süre sınırı korudu"
+            )
+        else:
+            result_text = (
+                "24 saatte karar yok"
+            )
+
+        expiry_lines.append(
+            f"{trade.get('symbol')} "
+            f"{trade.get('direction')}"
+            f" → {hours}s {minutes}dk | "
+            f"{result_text}"
+        )
+
+    expiry_text = (
+        "\n".join(expiry_lines)
+        if expiry_lines
+        else "Bugün netleşen süre sonrası takip yok."
+    )
+
+    # -----------------------------------------------------
+    # TEKNİK TEŞHİS DAĞILIMI
+    # -----------------------------------------------------
+    diagnosis_labels = {
+        "KURULUM BASARILI":
+            "Kurulum başarılı",
+        "YON DOGRU, DEVAM GUCU ZAYIFLADI":
+            "Yön doğru, devam zayıf",
+        "FITIL / DAR STOP OLASILIGI":
+            "Fitil/dar stop",
+        "HIZLI TERS HAREKET / YON UYUMSUZLUGU":
+            "Hızlı ters/yön uyumsuz",
+        "ONCE LEHE GITTI, SONRA TERS DONDU":
+            "Önce lehe, sonra ters",
+        "KURULUM DEVAM ETMEDI":
+            "Kurulum devam etmedi",
+        "YON KISMEN DOGRU, HEDEF TAMAMLANMADI":
+            "Yön kısmen doğru",
+        "YON DEVAM ETMEDI / ZAMAN ASIMI":
+            "Yön devam etmedi/zaman aşımı",
+        "BELIRGIN SONUC OLUSMADI":
+            "Belirgin sonuç yok",
+        "KAYIT YETERSIZ":
+            "Kayıt yetersiz",
+    }
+
+    diagnosis_counts = {}
+
+    for trade in closed_today:
+        diagnosis = (
+            trade.get("diagnosis")
+            or {}
+        )
+        primary = str(
+            diagnosis.get(
+                "primary",
+                "KAYIT YETERSIZ",
+            )
+        ).upper()
+
+        label = diagnosis_labels.get(
+            primary,
+            primary.title(),
+        )
+
+        diagnosis_counts[label] = (
+            diagnosis_counts.get(label, 0)
+            + 1
+        )
+
+    diagnosis_ordered = sorted(
+        diagnosis_counts.items(),
+        key=lambda item: (
+            -item[1],
+            item[0],
+        ),
+    )
+
+    diagnosis_text = (
+        "\n".join(
+            f"• {label}: {count}"
+            for label, count
+            in diagnosis_ordered[:6]
+        )
+        if diagnosis_ordered
+        else "Bugün kapanan teknik teşhis yok."
+    )
+
+    # -----------------------------------------------------
+    # EN İYİ / EN ZAYIF COİN: GERÇEK NET R
+    # -----------------------------------------------------
+    coin_net = {}
+
+    for trade in measurable:
+        symbol = str(
+            trade.get("symbol") or "BILINMIYOR"
+        )
+        coin_net[symbol] = (
+            coin_net.get(symbol, 0.0)
+            + float(trade["r_result"])
+        )
+
+    if coin_net:
+        best_coin, best_coin_r = max(
+            coin_net.items(),
+            key=lambda item: item[1],
+        )
+        worst_coin, worst_coin_r = min(
+            coin_net.items(),
+            key=lambda item: item[1],
+        )
+        best_worst_text = (
+            f"🏆 En İyi: {best_coin} "
+            f"({best_coin_r:+.3f}R)\n"
+            f"⚠️ En Zayıf: {worst_coin} "
+            f"({worst_coin_r:+.3f}R)"
+        )
+    else:
+        best_worst_text = (
+            "🏆 En İyi: Yok\n"
+            "⚠️ En Zayıf: Yok"
+        )
+
+    # -----------------------------------------------------
+    # SON NİHAİ KAPANIŞLAR
+    # -----------------------------------------------------
     labels = {
         "TP3": "TP3",
-        "TP2_SONRASI_BE": "TP2 sonrası BE",
-        "TP1_SONRASI_BE": "TP1 sonrası BE",
+        "TP2_SONRASI_BE":
+            "TP2 sonrası BE",
+        "TP1_SONRASI_BE":
+            "TP1 sonrası BE",
         "SL": "SL",
         "EXPIRED": "Süre doldu",
     }
 
     recent_lines = []
 
-    for trade in ordered[-8:]:
-        r_value = trade.get("r_result")
+    for trade in ordered_closed[-6:]:
+        r_value = safe_float(
+            trade.get("r_result")
+        )
 
         r_text = (
-            f"{float(r_value):+.3f}R"
+            f"{r_value:+.3f}R"
             if r_value is not None
             else "R ölçülmedi"
         )
@@ -1172,46 +1610,160 @@ def build_daily_r_report():
             f"{clock_from_ts(trade.get('closed_at'))}"
             f" | {trade.get('symbol')}"
             f" {trade.get('direction')}"
-            f" → {labels.get(trade.get('final_result'), trade.get('final_result'))}"
+            f" → {labels.get(str(trade.get('final_result')).upper(), trade.get('final_result'))}"
             f" ({r_text})"
         )
 
     recent_text = (
         "\n".join(recent_lines)
         if recent_lines
-        else "Bugün ledger sisteminde yeni nihai kapanış yok."
+        else "Bugün yeni nihai kapanış yok."
     )
 
-    return f"""📈 NET R PERFORMANS RAPORU v3
+    # -----------------------------------------------------
+    # VERİYE DAYALI GÜNLÜK GÖZLEM
+    # -----------------------------------------------------
+    observation_lines = []
+
+    direct_stop_rate = (
+        round(
+            result_counts["SL"]
+            / len(measurable)
+            * 100,
+            1,
+        )
+        if measurable
+        else 0.0
+    )
+
+    if len(measurable) < 10:
+        observation_lines.append(
+            "Örnek sayısı düşük; ayar değişikliği için "
+            "tek günlük veri yeterli değil."
+        )
+    else:
+        observation_lines.append(
+            f"Doğrudan stop oranı: "
+            f"%{direct_stop_rate}."
+        )
+
+    if abs(long_r - short_r) >= 2.0:
+        weak_side = (
+            "SHORT"
+            if short_r < long_r
+            else "LONG"
+        )
+        difference = abs(
+            long_r - short_r
+        )
+        observation_lines.append(
+            f"{weak_side} tarafı diğer yönden "
+            f"{difference:.3f}R daha zayıf."
+        )
+
+    if stop_resolved_total >= 3:
+        observation_lines.append(
+            f"Netleşen stopların %{fitil_rate}'i "
+            f"240 dakika içinde hedefe döndü."
+        )
+
+    expiry_resolved_count = (
+        expiry_target
+        + expiry_protection
+        + expiry_no_decision
+    )
+
+    if expiry_resolved_count >= 2:
+        if expiry_protection > expiry_target:
+            observation_lines.append(
+                "18 saat sınırı bugün daha çok "
+                "kâr/zarar koruması sağladı."
+            )
+        elif expiry_target > expiry_protection:
+            observation_lines.append(
+                "Bazı işlemler 18 saatten sonra hedefe gitti; "
+                "süre sınırı izlenmeli."
+            )
+
+    observation_lines.append(
+        "Filtre değişimi için aynı nedenin en az "
+        "3 gün veya 10 işlemde tekrarı aranacak."
+    )
+
+    observation_text = "\n".join(
+        f"• {line}"
+        for line in observation_lines[:4]
+    )
+
+    average_return_text = (
+        f"{average_return_minute} dk"
+        if average_return_minute is not None
+        else "Yok"
+    )
+
+    report = f"""📊 GÜNLÜK NET + TEŞHİS RAPORU v4
 
 Tarih: {today}
 
-Bugün Açılan Ledger Kaydı: {len(opened_today)}
-Bugün Kapanan Ledger Kaydı: {len(closed_today)}
-Toplam Açık Ledger Kaydı: {open_total}
+İŞLEM ÖZETİ
+Açılan: {len(opened_today)} | Kapanan: {len(closed_today)} | Açık: {open_total}
+15M Giriş: {normal_opened} | 5M Radar: {radar_opened}
+LONG: {long_opened} | SHORT: {short_opened}
 
-🏁 TP3 ile Kapanan: {result_counts['TP3']}
-✅ TP2 Sonrası BE: {result_counts['TP2_SONRASI_BE']}
-✅ TP1 Sonrası BE: {result_counts['TP1_SONRASI_BE']}
-❌ Doğrudan Stop: {result_counts['SL']}
+NİHAİ SONUÇLAR
+🏁 TP3: {result_counts['TP3']}
+✅ TP2 sonrası BE: {result_counts['TP2_SONRASI_BE']}
+✅ TP1 sonrası BE: {result_counts['TP1_SONRASI_BE']}
+❌ Doğrudan SL: {result_counts['SL']}
 ⏳ Süresi Dolan: {result_counts['EXPIRED']}
 
-📊 Ölçülebilir Kapanış: {len(measurable)}
-📈 Net Sonuç: {net_r:+.3f}R
-📉 İşlem Başına Ortalama: {average_r:+.3f}R
-🎯 Pozitif Kapanış Oranı: %{positive_rate}
-⚠️ En Uzun Stop Serisi: {max_stop_streak}
+NET PERFORMANS
+Net: {net_r:+.3f}R | Ortalama: {average_r:+.3f}R
+Pozitif Kapanış: %{positive_rate}
+En Uzun Stop Serisi: {max_stop_streak}
+🟢 LONG: {long_r:+.3f}R | 🔴 SHORT: {short_r:+.3f}R
 
-🟢 LONG Net: {long_r:+.3f}R
-🔴 SHORT Net: {short_r:+.3f}R
+STOP SONRASI 240 DK
+TP1'e Dönen: {stop_return_tp1}
+TP2'ye Dönen: {stop_return_tp2}
+TP3'e Dönen: {stop_return_tp3}
+Dönmeyen: {stop_no_return}
+Takibi Süren: {stop_tracking}
+Fitil/Dar Stop Oranı: %{fitil_rate}
+Ortalama Dönüş Süresi: {average_return_text}
 
-Son Nihai Kapanışlar:
+Bugün Netleşen SL Takipleri:
+{stop_follow_text}
+
+SÜRE SONRASI 24 SAAT
+Hedef Önce: {expiry_target}
+Koruma Önce: {expiry_protection}
+Kararsız: {expiry_no_decision}
+Hâlâ Takipte: {expiry_tracking}
+
+Bugün Netleşen Süre Takipleri:
+{expiry_text}
+
+TEKNİK TEŞHİSLER
+{diagnosis_text}
+
+{best_worst_text}
+
+SON NİHAİ KAPANIŞLAR
 {recent_text}
 
-Not:
-TP1'de %50 kâr alınması ve kalan %50'nin TP3 veya girişten kapanması esas alınır.
-Bu rapor yalnızca trade_ledger.json içindeki tekil işlemleri ölçer.
-Yeni işlemlerde teknik teşhis, lehe/ters hareket ve stop sonrası takip de ledger'a yazılır."""
+GÜNLÜK GÖZLEM
+{observation_text}
+
+Not: Her işlem yalnız bir kez sayılır. Net R, stop sonrası ve süre sonrası teşhisler trade_ledger.json verisinden alınır."""
+
+    # Telegram mesaj sınırının altında kal.
+    if len(report) > 4050:
+        report = report[:4000] + (
+            "\n\nRapor mesaj sınırı nedeniyle kısaltıldı."
+        )
+
+    return report
 
 
 # =========================================================
@@ -4329,8 +4881,8 @@ def maybe_send_daily_report():
     ) == today:
         return
 
-    send_telegram(build_daily_report())
-    time.sleep(1)
+    # Eski olay raporu Telegram'a gönderilmez.
+    # Tek kaynaklı birleşik Net R + teşhis raporu gönderilir.
     send_telegram(build_daily_r_report())
 
     performance["last_daily_report"] = today
