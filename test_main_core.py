@@ -86,6 +86,7 @@ fake_strategy.format_price = lambda value: str(value)
 sys.modules["strategy"] = fake_strategy
 
 import main
+import portfolio_risk
 
 
 class JsonSafetyTests(unittest.TestCase):
@@ -413,6 +414,250 @@ class VersionMetadataTests(unittest.TestCase):
         self.assertEqual(
             metadata["github_run_number"],
             "42",
+        )
+
+
+
+
+class PortfolioRiskTests(unittest.TestCase):
+    def build_sources(
+        self,
+        temp_dir,
+        main_signals=None,
+        scalp_signals=None,
+        pump_signals=None,
+        swing_signals=None,
+    ):
+        paths = {
+            "main": os.path.join(
+                temp_dir,
+                "open_signals.json",
+            ),
+            "scalp": os.path.join(
+                temp_dir,
+                "scalp_radar_state.json",
+            ),
+            "pump": os.path.join(
+                temp_dir,
+                "pump_radar_state.json",
+            ),
+            "swing": os.path.join(
+                temp_dir,
+                "swing_radar_state.json",
+            ),
+        }
+
+        with open(
+            paths["main"],
+            "w",
+            encoding="utf-8",
+        ) as handle:
+            json.dump(
+                main_signals or {},
+                handle,
+            )
+
+        with open(
+            paths["scalp"],
+            "w",
+            encoding="utf-8",
+        ) as handle:
+            json.dump(
+                {
+                    "open_scalp_signals":
+                        scalp_signals or {}
+                },
+                handle,
+            )
+
+        with open(
+            paths["pump"],
+            "w",
+            encoding="utf-8",
+        ) as handle:
+            json.dump(
+                {
+                    "open_signals":
+                        pump_signals or {}
+                },
+                handle,
+            )
+
+        with open(
+            paths["swing"],
+            "w",
+            encoding="utf-8",
+        ) as handle:
+            json.dump(
+                {
+                    "open_swing_signals":
+                        swing_signals or {}
+                },
+                handle,
+            )
+
+        return {
+            "MAIN_MTF": {
+                "filename": paths["main"],
+                "containers": [None],
+            },
+            "SCALP": {
+                "filename": paths["scalp"],
+                "containers": [
+                    "open_scalp_signals"
+                ],
+            },
+            "PUMP_DUMP": {
+                "filename": paths["pump"],
+                "containers": [
+                    "open_signals"
+                ],
+            },
+            "SWING": {
+                "filename": paths["swing"],
+                "containers": [
+                    "open_swing_signals"
+                ],
+            },
+        }
+
+    def test_same_coin_same_direction_blocks(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            sources = self.build_sources(
+                temp_dir,
+                scalp_signals={
+                    "ENA_LONG": {
+                        "symbol": "ENAUSDT",
+                        "direction": "LONG",
+                        "closed": False,
+                    }
+                },
+            )
+
+            result = (
+                portfolio_risk
+                .evaluate_portfolio_risk(
+                    "ENAUSDT",
+                    "LONG",
+                    "MAIN_MTF",
+                    state_sources=sources,
+                )
+            )
+
+        self.assertTrue(
+            result["hard_block"]
+        )
+        self.assertEqual(
+            result["block_code"],
+            "SAME_COIN_SAME_DIRECTION",
+        )
+
+    def test_same_coin_opposite_direction_blocks(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            sources = self.build_sources(
+                temp_dir,
+                swing_signals={
+                    "ENA_SHORT": {
+                        "symbol": "ENA/USDT:USDT",
+                        "direction": "SHORT",
+                        "closed": False,
+                    }
+                },
+            )
+
+            result = (
+                portfolio_risk
+                .evaluate_portfolio_risk(
+                    "ENAUSDT",
+                    "LONG",
+                    "MAIN_MTF",
+                    state_sources=sources,
+                )
+            )
+
+        self.assertTrue(
+            result["hard_block"]
+        )
+        self.assertEqual(
+            result["block_code"],
+            "SAME_COIN_OPPOSITE_DIRECTION",
+        )
+
+    def test_tp1_signal_counts_half_risk(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            sources = self.build_sources(
+                temp_dir,
+                main_signals={
+                    "BTC_LONG": {
+                        "symbol": "BTCUSDT",
+                        "direction": "LONG",
+                        "tp1_hit": True,
+                        "closed": False,
+                    }
+                },
+            )
+
+            result = (
+                portfolio_risk
+                .evaluate_portfolio_risk(
+                    "ETHUSDT",
+                    "LONG",
+                    "MAIN_MTF",
+                    state_sources=sources,
+                )
+            )
+
+        self.assertEqual(
+            result["direction_risk_before"],
+            0.5,
+        )
+        self.assertEqual(
+            result["direction_risk_after"],
+            1.5,
+        )
+
+    def test_direction_concentration_is_soft_warning(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            sources = self.build_sources(
+                temp_dir,
+                main_signals={
+                    "BTC_LONG": {
+                        "symbol": "BTCUSDT",
+                        "direction": "LONG",
+                    },
+                    "ETH_LONG": {
+                        "symbol": "ETHUSDT",
+                        "direction": "LONG",
+                    },
+                },
+                scalp_signals={
+                    "SOL_LONG": {
+                        "symbol": "SOLUSDT",
+                        "direction": "LONG",
+                    },
+                    "XRP_LONG": {
+                        "symbol": "XRPUSDT",
+                        "direction": "LONG",
+                    },
+                },
+            )
+
+            result = (
+                portfolio_risk
+                .evaluate_portfolio_risk(
+                    "ADAUSDT",
+                    "LONG",
+                    "MAIN_MTF",
+                    state_sources=sources,
+                    max_direction_risk=4.0,
+                )
+            )
+
+        self.assertFalse(
+            result["hard_block"]
+        )
+        self.assertTrue(
+            result["has_soft_warning"]
         )
 
 

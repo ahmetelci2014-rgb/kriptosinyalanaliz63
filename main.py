@@ -20,6 +20,7 @@
 # - TP1/TP2 tekrar mesajları ledger tabanlı tekil event korumasıyla engellenir.
 # - Her yeni işlem bot/strateji/config/Git commit sürümüyle etiketlenir.
 # - Tüm ana JSON state/ledger kayıtları atomik ve doğrulamalı yazılır.
+# - Ortak portföy denetimi aynı coindeki bot çakışmalarını engeller.
 
 import json
 import os
@@ -78,6 +79,11 @@ from strategy import (
     analyze_mtf_trade,
     analyze_5m_radar,
     format_price,
+)
+
+from portfolio_risk import (
+    evaluate_portfolio_risk,
+    format_portfolio_note,
 )
 
 
@@ -5958,6 +5964,9 @@ def save_open_signal(signal):
         "market_guard_reason": signal.get(
             "market_guard_reason"
         ),
+        "portfolio_risk": signal.get(
+            "portfolio_risk"
+        ),
         "best_favorable_percent": 0.0,
         "worst_adverse_percent": 0.0,
         "best_favorable_r": 0.0,
@@ -6328,6 +6337,37 @@ def main():
             )
             continue
 
+        portfolio_risk = (
+            evaluate_portfolio_risk(
+                symbol=signal["symbol"],
+                direction=signal["direction"],
+                source_bot="MAIN_MTF",
+            )
+        )
+
+        signal["portfolio_risk"] = (
+            portfolio_risk
+        )
+
+        if portfolio_risk.get(
+            "hard_block",
+            False,
+        ):
+            print(
+                signal["symbol"],
+                "portföy çakışması nedeniyle elendi:",
+                portfolio_risk.get(
+                    "block_reason"
+                ),
+            )
+            continue
+
+        portfolio_note = (
+            format_portfolio_note(
+                portfolio_risk
+            )
+        )
+
         entry_price = safe_float(
             signal.get("entry")
         )
@@ -6399,6 +6439,11 @@ def main():
             f"{format_price(current_price)}\n"
             f"📌 Son Kontrol: Girişe yakın ✅"
         )
+
+        if portfolio_note:
+            extra += (
+                f"\n{portfolio_note}"
+            )
 
         if send_telegram(
             signal["message"] + extra
