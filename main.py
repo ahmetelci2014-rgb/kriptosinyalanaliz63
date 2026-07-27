@@ -15,7 +15,8 @@
 # - Kapanan islemlere kayitli verilere dayali olasilik temelli teknik teshis eklenir.
 # - Stop sonrasi TP1'e donen islemlerde fitil / dar stop olasiligi isaretlenir.
 # - Süresi dolan işlemler 24 saat daha sessiz izlenir; hedef/koruma sırası kaydedilir.
-# - Günlük Telegram raporu tekleştirildi: Net R + tüm teşhisler v4.
+# - Günlük Telegram raporu tekleştirildi: Net R + tüm teşhisler v5.
+# - Stoplar olasılık temelli kök nedenlere ayrılır; işlem kuralları değişmez.
 
 import json
 import os
@@ -101,6 +102,17 @@ POST_EXPIRY_MAX_TRACK_HOURS = 24
 POST_EXPIRY_RESTORE_MAX_HOURS = 48
 POST_EXPIRY_TIMEFRAME = "5m"
 POST_EXPIRY_TRACK_LIMIT = 320
+
+# Stop kök neden sınıflandırma eşikleri yalnız teşhis içindir.
+# Sinyal üretimi, TP/SL veya işlem filtrelerini değiştirmez.
+STOP_CAUSE_QUICK_MINUTES = 30
+STOP_CAUSE_EARLY_ENTRY_MINUTES = 60
+STOP_CAUSE_LOW_MFE_R = 0.15
+STOP_CAUSE_MEANINGFUL_MFE_R = 0.35
+STOP_CAUSE_FAR_ENTRY_PERCENT = 0.25
+STOP_CAUSE_WEAK_VOLUME_RATIO = 0.90
+STOP_CAUSE_WEAK_ADX = 18.0
+STOP_CAUSE_TIGHT_RISK_PERCENT = 0.85
 
 RECENT_CLOSED_COIN_COOLDOWN_SECONDS = 4 * 60 * 60
 
@@ -711,6 +723,395 @@ def build_trade_diagnosis(trade):
     }
 
 
+
+# =========================================================
+# STOP KÖK NEDEN SINIFLANDIRMASI
+# =========================================================
+
+STOP_ROOT_CAUSE_LABELS = {
+    "TAKIP_SURUYOR":
+        "Takip sürüyor",
+    "FITIL_DAR_STOP":
+        "Fitil/dar stop",
+    "MUHTEMEL_ERKEN_GIRIS":
+        "Muhtemel erken giriş",
+    "ERKEN_GIRIS_VEYA_DAR_STOP":
+        "Erken giriş veya dar stop",
+    "MUHTEMEL_YANLIS_YON":
+        "Muhtemel yanlış yön",
+    "ZAYIF_TREND_HACIM":
+        "Zayıf trend/hacim",
+    "GEC_UZAK_GIRIS":
+        "Geç/uzak giriş",
+    "ONCE_LEHE_SONRA_TERS":
+        "Önce lehe, sonra ters",
+    "KURULUM_DEVAM_ETMEDI":
+        "Kurulum devam etmedi",
+    "VERI_YETERSIZ":
+        "Veri yetersiz",
+}
+
+
+def classify_stop_root_cause(trade):
+    """
+    Stopun muhtemel kök nedenini kayıtlı verilerden sınıflandırır.
+
+    Bu fonksiyon kesin piyasa sebebi iddia etmez. Özellikle erken giriş
+    ile dar stop aynı fiyat davranışını gösterebildiği için kanıt
+    yetersiz olduğunda birleşik kategori kullanılır.
+    """
+    if str(
+        trade.get("final_result", "")
+    ).upper() != "SL":
+        return None
+
+    duration_minutes = int(
+        safe_float(
+            trade.get("duration_minutes"),
+            0,
+        )
+        or 0
+    )
+    mfe_r = safe_float(
+        trade.get("best_favorable_r"),
+        0.0,
+    )
+    mae_r = safe_float(
+        trade.get("worst_adverse_r"),
+        0.0,
+    )
+    risk_percent = safe_float(
+        trade.get("risk_percent")
+    )
+    volume_ratio = safe_float(
+        trade.get("volume_ratio")
+    )
+    adx_4h = safe_float(
+        trade.get("adx_4h")
+    )
+    adx_1h = safe_float(
+        trade.get("adx_1h")
+    )
+    adx_15m = safe_float(
+        trade.get("adx_15m")
+    )
+    zone_distance = safe_float(
+        trade.get("zone_distance_percent")
+    )
+    entry_distance = safe_float(
+        trade.get(
+            "entry_distance_at_send_percent"
+        )
+    )
+    source = str(
+        trade.get("source", "")
+    ).upper()
+
+    follow = (
+        trade.get("post_stop_follow")
+        or {}
+    )
+    follow_status = str(
+        follow.get("status", "")
+    ).upper()
+    returned_level = str(
+        follow.get("returned_level", "")
+        or ""
+    ).upper()
+    return_minutes = safe_float(
+        follow.get("age_minutes")
+    )
+
+    weak_signals = []
+    factors = []
+    secondary = []
+
+    if (
+        volume_ratio is not None
+        and volume_ratio
+        < STOP_CAUSE_WEAK_VOLUME_RATIO
+    ):
+        weak_signals.append("HACIM")
+        factors.append(
+            "15M hacim oranı sınırın altındaydı."
+        )
+
+    upper_adx_values = [
+        value
+        for value in (adx_4h, adx_1h)
+        if value is not None
+    ]
+
+    if (
+        upper_adx_values
+        and min(upper_adx_values)
+        < STOP_CAUSE_WEAK_ADX
+    ):
+        weak_signals.append("UST_ZAMAN_ADX")
+        factors.append(
+            "Üst zaman dilimi trend gücü sınırdaydı."
+        )
+
+    if (
+        source == "5M_RADAR"
+        and adx_15m is not None
+        and adx_15m < STOP_CAUSE_WEAK_ADX
+    ):
+        weak_signals.append("15M_ADX")
+        factors.append(
+            "5M erken girişte 15M trend gücü sınırdaydı."
+        )
+
+    far_entry = bool(
+        (
+            zone_distance is not None
+            and zone_distance
+            > STOP_CAUSE_FAR_ENTRY_PERCENT
+        )
+        or (
+            entry_distance is not None
+            and entry_distance
+            > STOP_CAUSE_FAR_ENTRY_PERCENT
+        )
+    )
+
+    if far_entry:
+        factors.append(
+            "Giriş ideal bölgeden veya gönderim fiyatından uzaktı."
+        )
+        secondary.append("GEC_UZAK_GIRIS")
+
+    quick_low_mfe = bool(
+        duration_minutes
+        <= STOP_CAUSE_QUICK_MINUTES
+        and mfe_r < STOP_CAUSE_LOW_MFE_R
+    )
+
+    early_entry_profile = bool(
+        duration_minutes
+        <= STOP_CAUSE_EARLY_ENTRY_MINUTES
+        and mfe_r < STOP_CAUSE_LOW_MFE_R
+        and (
+            source == "5M_RADAR"
+            or bool(weak_signals)
+        )
+    )
+
+    tight_stop_profile = bool(
+        risk_percent is not None
+        and risk_percent
+        <= STOP_CAUSE_TIGHT_RISK_PERCENT
+    )
+
+    # 240 dakikalık takip henüz bitmediyse kesin kök neden verilmez.
+    if follow_status not in {
+        "RETURNED_TO_TARGET",
+        "NO_TP1_RETURN",
+    }:
+        preliminary = None
+
+        if quick_low_mfe:
+            preliminary = "MUHTEMEL_YANLIS_YON"
+        elif far_entry:
+            preliminary = "GEC_UZAK_GIRIS"
+        elif weak_signals:
+            preliminary = "ZAYIF_TREND_HACIM"
+        elif mfe_r >= STOP_CAUSE_MEANINGFUL_MFE_R:
+            preliminary = "ONCE_LEHE_SONRA_TERS"
+        else:
+            preliminary = "KURULUM_DEVAM_ETMEDI"
+
+        factors.insert(
+            0,
+            "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+        )
+
+        return {
+            "version": "STOP_ROOT_CAUSE_V1",
+            "primary": "TAKIP_SURUYOR",
+            "label": STOP_ROOT_CAUSE_LABELS[
+                "TAKIP_SURUYOR"
+            ],
+            "preliminary": preliminary,
+            "preliminary_label": (
+                STOP_ROOT_CAUSE_LABELS.get(
+                    preliminary
+                )
+            ),
+            "secondary": list(dict.fromkeys(secondary)),
+            "confidence": "DUSUK",
+            "provisional": True,
+            "factors": factors,
+            "metrics": {
+                "duration_minutes": duration_minutes,
+                "mfe_r": round(mfe_r, 4),
+                "mae_r": round(mae_r, 4),
+                "risk_percent": risk_percent,
+                "return_minutes": return_minutes,
+            },
+        }
+
+    # Stop sonrası hedefe dönüş: yön tamamen yanlış değildir.
+    if follow_status == "RETURNED_TO_TARGET":
+        factors.insert(
+            0,
+            (
+                f"Stop sonrası fiyat {returned_level or 'TP1'} "
+                f"seviyesine {int(return_minutes or 0)} dakikada döndü."
+            ),
+        )
+
+        if early_entry_profile and tight_stop_profile:
+            primary = "ERKEN_GIRIS_VEYA_DAR_STOP"
+            confidence = "ORTA"
+            factors.append(
+                "Hızlı ve düşük MFE'li stop ile dar risk profili birlikte görüldü."
+            )
+
+        elif early_entry_profile:
+            primary = "MUHTEMEL_ERKEN_GIRIS"
+            confidence = "ORTA"
+            factors.append(
+                "İşlem kısa sürede düşük lehe hareketle stop oldu, sonra hedefe döndü."
+            )
+
+        else:
+            primary = "FITIL_DAR_STOP"
+            confidence = "YUKSEK"
+
+            if tight_stop_profile:
+                factors.append(
+                    "Stop yüzdesi teşhis eşiğine göre dardı."
+                )
+            else:
+                factors.append(
+                    "Stop sonrası hedef dönüşü fitil veya giriş zamanlaması ihtimalini güçlendirdi."
+                )
+
+        return {
+            "version": "STOP_ROOT_CAUSE_V1",
+            "primary": primary,
+            "label": STOP_ROOT_CAUSE_LABELS[primary],
+            "preliminary": None,
+            "preliminary_label": None,
+            "secondary": list(dict.fromkeys(secondary)),
+            "confidence": confidence,
+            "provisional": False,
+            "factors": factors,
+            "metrics": {
+                "duration_minutes": duration_minutes,
+                "mfe_r": round(mfe_r, 4),
+                "mae_r": round(mae_r, 4),
+                "risk_percent": risk_percent,
+                "return_minutes": return_minutes,
+            },
+        }
+
+    # 240 dakikada hedefe dönüş yok: stop daha çok kurulum/yön kaynaklıdır.
+    factors.insert(
+        0,
+        (
+            f"Stop sonrası {SL_AFTER_MAX_TRACK_MINUTES} dakika "
+            f"içinde TP1'e dönüş olmadı."
+        ),
+    )
+
+    if far_entry:
+        primary = "GEC_UZAK_GIRIS"
+        confidence = "ORTA"
+
+    elif quick_low_mfe:
+        primary = "MUHTEMEL_YANLIS_YON"
+        confidence = "ORTA"
+        factors.append(
+            "İşlem çok kısa sürede anlamlı lehe hareket üretmeden stop oldu."
+        )
+
+    elif (
+        weak_signals
+        and mfe_r < STOP_CAUSE_MEANINGFUL_MFE_R
+    ):
+        primary = "ZAYIF_TREND_HACIM"
+        confidence = "ORTA"
+
+    elif mfe_r >= STOP_CAUSE_MEANINGFUL_MFE_R:
+        primary = "ONCE_LEHE_SONRA_TERS"
+        confidence = "YUKSEK"
+        factors.append(
+            "İşlem stop öncesinde anlamlı lehe hareket üretmişti."
+        )
+
+    else:
+        primary = "KURULUM_DEVAM_ETMEDI"
+        confidence = "ORTA"
+        factors.append(
+            "İşlem yeterli lehe ivme üretmeden stop oldu."
+        )
+
+    return {
+        "version": "STOP_ROOT_CAUSE_V1",
+        "primary": primary,
+        "label": STOP_ROOT_CAUSE_LABELS[primary],
+        "preliminary": None,
+        "preliminary_label": None,
+        "secondary": list(dict.fromkeys(secondary)),
+        "confidence": confidence,
+        "provisional": False,
+        "factors": factors,
+        "metrics": {
+            "duration_minutes": duration_minutes,
+            "mfe_r": round(mfe_r, 4),
+            "mae_r": round(mae_r, 4),
+            "risk_percent": risk_percent,
+            "return_minutes": return_minutes,
+        },
+    }
+
+
+def update_trade_stop_root_cause(trade):
+    classified = classify_stop_root_cause(trade)
+
+    if classified is None:
+        return False
+
+    current = (
+        trade.get("stop_root_cause")
+        or {}
+    )
+
+    comparable_current = {
+        key: value
+        for key, value in current.items()
+        if key != "updated_at"
+    }
+
+    if comparable_current == classified:
+        return False
+
+    classified["updated_at"] = now_ts()
+    trade["stop_root_cause"] = classified
+    return True
+
+
+def refresh_stop_root_causes(ledger):
+    changed = False
+
+    for trade in ledger.get(
+        "trades",
+        {},
+    ).values():
+        if str(
+            trade.get("final_result", "")
+        ).upper() != "SL":
+            continue
+
+        if update_trade_stop_root_cause(trade):
+            changed = True
+
+    return changed
+
+
+
 def ledger_update_open_snapshot(signal):
     try:
         trade_id = ensure_ledger_trade(signal)
@@ -794,6 +1195,7 @@ def ledger_update_post_stop_diagnosis(
                 "updated_at": now_ts(),
             }
 
+        update_trade_stop_root_cause(trade)
         save_trade_ledger(ledger)
 
     except Exception as exc:
@@ -1034,6 +1436,9 @@ def ledger_record_event(signal, result, exit_price=None):
         trade
     )
 
+    if result == "SL":
+        update_trade_stop_root_cause(trade)
+
     save_trade_ledger(ledger)
 
 
@@ -1049,6 +1454,10 @@ def build_daily_r_report():
     Ana kaynak yalnızca trade_ledger.json'dır.
     """
     ledger = load_trade_ledger()
+
+    if refresh_stop_root_causes(ledger):
+        save_trade_ledger(ledger)
+
     trades = list(
         ledger.get("trades", {}).values()
     )
@@ -1546,6 +1955,127 @@ def build_daily_r_report():
     )
 
     # -----------------------------------------------------
+    # STOP KÖK NEDENLERİ
+    # -----------------------------------------------------
+    root_cause_counts = {}
+    root_cause_resolved = 0
+
+    for trade in stops_today:
+        root = (
+            trade.get("stop_root_cause")
+            or classify_stop_root_cause(trade)
+            or {}
+        )
+        primary = str(
+            root.get("primary", "VERI_YETERSIZ")
+        ).upper()
+        label = (
+            root.get("label")
+            or STOP_ROOT_CAUSE_LABELS.get(
+                primary,
+                "Veri yetersiz",
+            )
+        )
+
+        root_cause_counts[label] = (
+            root_cause_counts.get(label, 0)
+            + 1
+        )
+
+        if not root.get("provisional", True):
+            root_cause_resolved += 1
+
+    root_cause_ordered = sorted(
+        root_cause_counts.items(),
+        key=lambda item: (
+            -item[1],
+            item[0],
+        ),
+    )
+
+    root_cause_count_text = (
+        "\n".join(
+            f"• {label}: {count}"
+            for label, count
+            in root_cause_ordered[:8]
+        )
+        if root_cause_ordered
+        else "Bugün stop kök neden kaydı yok."
+    )
+
+    recent_stop_lines = []
+
+    for trade in sorted(
+        stops_today,
+        key=lambda item: int(
+            item.get("closed_at")
+            or 0
+        ),
+    )[-5:]:
+        root = (
+            trade.get("stop_root_cause")
+            or classify_stop_root_cause(trade)
+            or {}
+        )
+        metrics = root.get("metrics") or {}
+        mfe_value = safe_float(
+            metrics.get("mfe_r"),
+            0.0,
+        )
+        duration_value = int(
+            safe_float(
+                metrics.get("duration_minutes"),
+                0,
+            )
+            or 0
+        )
+        primary_label = (
+            root.get("label")
+            or "Veri yetersiz"
+        )
+
+        if root.get("provisional", True):
+            preliminary = root.get(
+                "preliminary_label"
+            )
+            if preliminary:
+                primary_label = (
+                    f"Takip sürüyor; ilk ihtimal: "
+                    f"{preliminary}"
+                )
+
+        recent_stop_lines.append(
+            f"{trade.get('symbol')} "
+            f"{trade.get('direction')}"
+            f" → {primary_label}"
+            f" | MFE {mfe_value:.2f}R"
+            f" | {duration_value} dk"
+        )
+
+    recent_stop_text = (
+        "\n".join(recent_stop_lines)
+        if recent_stop_lines
+        else "Bugün yeni stop işlemi yok."
+    )
+
+    resolved_root_items = [
+        (label, count)
+        for label, count in root_cause_ordered
+        if label != STOP_ROOT_CAUSE_LABELS[
+            "TAKIP_SURUYOR"
+        ]
+    ]
+
+    dominant_root_label = None
+    dominant_root_count = 0
+
+    if resolved_root_items:
+        (
+            dominant_root_label,
+            dominant_root_count,
+        ) = resolved_root_items[0]
+
+    # -----------------------------------------------------
     # EN İYİ / EN ZAYIF COİN: GERÇEK NET R
     # -----------------------------------------------------
     coin_net = {}
@@ -1685,8 +2215,18 @@ def build_daily_r_report():
                 "süre sınırı izlenmeli."
             )
 
+    if (
+        root_cause_resolved >= 3
+        and dominant_root_label
+    ):
+        observation_lines.append(
+            f"Bugünün en sık netleşen stop nedeni: "
+            f"{dominant_root_label} "
+            f"({dominant_root_count} işlem)."
+        )
+
     observation_lines.append(
-        "Filtre değişimi için aynı nedenin en az "
+        "Filtre değişimi için aynı kök nedenin en az "
         "3 gün veya 10 işlemde tekrarı aranacak."
     )
 
@@ -1701,7 +2241,7 @@ def build_daily_r_report():
         else "Yok"
     )
 
-    report = f"""📊 GÜNLÜK NET + TEŞHİS RAPORU v4
+    report = f"""📊 GÜNLÜK NET + KÖK NEDEN RAPORU v5
 
 Tarih: {today}
 
@@ -1746,6 +2286,12 @@ Bugün Netleşen Süre Takipleri:
 
 TEKNİK TEŞHİSLER
 {diagnosis_text}
+
+STOP KÖK NEDENLERİ
+{root_cause_count_text}
+
+Son Stop Teşhisleri:
+{recent_stop_text}
 
 {best_worst_text}
 
