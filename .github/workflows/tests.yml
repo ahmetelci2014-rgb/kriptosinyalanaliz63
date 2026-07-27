@@ -1,0 +1,61 @@
+name: Bot Core Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "*.py"
+      - "tests/**"
+      - "requirements.txt"
+      - ".github/workflows/tests.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "*.py"
+      - "tests/**"
+      - "requirements.txt"
+      - ".github/workflows/tests.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bot-core-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Repo indir
+        uses: actions/checkout@v4
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Python dosyalarını derle
+        run: |
+          python -m py_compile \
+            main.py \
+            strategy.py \
+            config.py \
+            scalp_radar.py \
+            pump_radar.py \
+            swing_radar.py
+
+      - name: Ana bot çekirdek testlerini çalıştır
+        env:
+          TOKEN: ""
+          CHAT_ID: ""
+        run: |
+          python -m unittest discover \
+            -s tests \
+            -p "test_*.py" \
+            -v
