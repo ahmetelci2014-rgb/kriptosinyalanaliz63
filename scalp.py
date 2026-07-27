@@ -1,0 +1,4136 @@
+# scalp_radar.py
+# Hızlı Scalp Radar v2 - Sessiz Ön İzleme + Gerçek İşlem Bildirimi + Teknik Teşhis
+#
+# Ana MTF, Swing ve Pump/Dump sistemlerinden tamamen ayrı çalışır.
+# OKX USDT perpetual futures paritelerini tarar.
+# Emir açmaz; yalnızca Telegram sinyali gönderir ve kendi state dosyasında takip eder.
+#
+# Temel amaç:
+# 1) Aşırı satımda geç SHORT ve aşırı alımda geç LONG sinyallerini azaltmak.
+# 2) Düşük hacimli ve geniş stoplu scalp işlemlerini elemek.
+# 3) Aynı anda çok fazla hızlı işlem birikmesini önlemek.
+# 4) Eski state kayıtlarıyla uyumluluğu korumak.
+# 5) Ön İzleme, Erken Fırsat ve gerçek sinyallerin neden doğru/yanlış
+#    çalıştığını performans ledger içinde olasılık temelli teşhis etmek.
+# 6) Gerçek scalp stop olduktan sonra 120 dakika içinde yönüne dönüp
+#    dönmediğini izleyerek fitil/dar stop olasılığını ayırmak.
+# 7) State ve performans JSON dosyalarını doğrulamalı atomik yazmak.
+
+import json
+import math
+import os
+import tempfile
+import time
+from collections import Counter
+from datetime import datetime, timedelta, timezone
+
+import ccxt
+import pandas as pd
+import requests
+
+
+# =========================================================
+# GENEL AYARLAR
+# =========================================================
+
+BOT_NAME = "Hızlı Scalp Radar v2 - Dengeli Canlı Para"
+
+TOKEN = os.getenv("TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
+
+STATE_FILE = "scalp_radar_state.json"
+PERFORMANCE_FILE = "scalp_performance_ledger.json"
+TR_TIMEZONE = timezone(timedelta(hours=3))
+
+# Ön İzleme, Erken Fırsat ve gerçek Scalp mesajlarının
+# gönderim sonrası yön performansı ayrı kaydedilir.
+PERFORMANCE_WINDOWS_MINUTES = (
+    5,
+    15,
+    30,
+    60,
+    90,
+    120,
+)
+PERFORMANCE_DIRECTION_FINAL_MINUTES = 120
+POST_STOP_TRACK_WINDOWS_MINUTES = (15, 30, 60, 120)
+POST_STOP_MAX_TRACK_MINUTES = 120
+PERFORMANCE_MAX_TRACK_MINUTES = 120
+PERFORMANCE_KEEP_DAYS = 14
+PERFORMANCE_MAX_RECORDS = 600
+
+# 120 dakika sonunda yaklaşık yön sınıflandırması.
+PERFORMANCE_DIRECTION_THRESHOLD_PERCENT = 0.50
+PERFORMANCE_MIXED_THRESHOLD_PERCENT = 0.25
+
+# Hacmi en yüksek uygun OKX USDT futures pariteleri.
+MAX_SCAN_COINS = 300
+MIN_24H_QUOTE_VOLUME = 500_000
+
+# Aynı anda işlem yığılmasını önler.
+MAX_NEW_SIGNALS_PER_RUN = 1
+MAX_OPEN_SCALP_SIGNALS = 2
+
+DUPLICATE_SECONDS = 120 * 60
+MAX_OPEN_SIGNAL_MINUTES = 180
+
+TRACK_TIMEFRAME = "1m"
+TRACK_LIMIT = 180
+
+# Telegram'a yalnız gerçek işlem girişleri ve TP/SL sonuçları gönderilir.
+# Ön İzleme ve Erken Fırsat arka planda ledger'a kaydedilir.
+SEND_NO_SIGNAL_REPORT = False
+SEND_EARLY_ALERTS_TO_TELEGRAM = False
+SEND_PREWATCH_ALERTS_TO_TELEGRAM = False
+NO_SIGNAL_REPORT_EVERY_MINUTES = 30
+
+# Sinyal gönderilene kadar fiyat çok uzaklaşmışsa iptal edilir.
+MAX_ENTRY_DRIFT_PERCENT = 0.25
+
+# =========================================================
+# ERKEN FIRSAT UYARISI
+# =========================================================
+#
+# Bu yol gerçek scalp sinyali üretmez.
+# Açık scalp limitini doldurmaz, TP/SL kaydı açmaz.
+# Amaç: ICP benzeri, 15M mum kapanmadan başlayan hızlı hareketleri
+# son tamamlanmış 1M mumlar ve güncel futures fiyatıyla haber vermek.
+
+EARLY_ALERT_ENABLED = True
+MAX_EARLY_ALERTS_PER_RUN = 2
+EARLY_ALERT_DUPLICATE_SECONDS = 60 * 60
+EARLY_MAX_SEND_DRIFT_PERCENT = 0.40
+
+EARLY_MIN_5M_MOVE = 0.55
+EARLY_MIN_15M_MOVE = 0.90
+EARLY_MAX_15M_MOVE = 2.80
+
+EARLY_MIN_1M_VOLUME_RATIO = 1.20
+EARLY_MIN_ROLLING_5M_VOLUME_RATIO = 1.10
+
+EARLY_LONG_RSI_MIN = 48
+EARLY_LONG_RSI_MAX = 78
+EARLY_SHORT_RSI_MIN = 22
+EARLY_SHORT_RSI_MAX = 52
+
+EARLY_BREAKOUT_LOOKBACK_1M = 20
+EARLY_MIN_SCORE = 70
+
+
+# =========================================================
+# ÖN İZLEME UYARISI
+# =========================================================
+#
+# Hareket henüz büyük ölçüde ilerlemeden grafiği açmak için uyarır.
+# Gerçek işlem sinyali değildir; TP/SL üretmez ve açık scalp sayılmaz.
+# Mevcut ERKEN FIRSAT yolu ikinci kademe teyit olarak çalışmaya devam eder.
+
+PREWATCH_ENABLED = True
+MAX_PREWATCH_ALERTS_PER_RUN = 2
+PREWATCH_DUPLICATE_SECONDS = 45 * 60
+PREWATCH_MAX_SEND_DRIFT_PERCENT = 0.30
+
+PREWATCH_MIN_3M_MOVE = 0.22
+PREWATCH_MIN_5M_MOVE = 0.32
+PREWATCH_MAX_15M_MOVE = 1.25
+
+PREWATCH_MIN_1M_VOLUME_RATIO = 1.10
+PREWATCH_MIN_ROLLING_3M_VOLUME_RATIO = 1.05
+
+PREWATCH_LONG_RSI_MIN = 45
+PREWATCH_LONG_RSI_MAX = 72
+PREWATCH_SHORT_RSI_MIN = 28
+PREWATCH_SHORT_RSI_MAX = 55
+
+PREWATCH_BREAKOUT_LOOKBACK_1M = 15
+PREWATCH_MAX_BREAKOUT_DISTANCE_PERCENT = 0.18
+PREWATCH_MIN_SCORE = 65
+
+
+# =========================================================
+# TP / SL / RİSK
+# =========================================================
+
+TP1_R = 0.65
+TP2_R = 1.15
+TP3_R = 1.70
+
+SL_BUFFER_PERCENT = 0.08
+
+MIN_RISK_PERCENT = 0.20
+MAX_RISK_PERCENT = 1.25
+
+MIN_SCORE = 84
+
+
+# =========================================================
+# TEPKİ SCALP
+# =========================================================
+
+# LONG: hızlı düşüş sonrası teyitli yukarı tepki
+REACTION_LONG_MIN_5M_DROP = 0.65
+REACTION_LONG_MIN_15M_DROP = 0.25
+REACTION_LONG_RSI_1M_MIN = 18
+REACTION_LONG_RSI_1M_MAX = 42
+REACTION_LONG_RSI_5M_MAX = 50
+
+# SHORT: hızlı yükseliş sonrası teyitli aşağı red
+REACTION_SHORT_MIN_5M_PUMP = 0.65
+REACTION_SHORT_MIN_15M_PUMP = 0.25
+REACTION_SHORT_RSI_1M_MIN = 58
+REACTION_SHORT_RSI_1M_MAX = 84
+REACTION_SHORT_RSI_5M_MIN = 52
+
+REACTION_MIN_1M_VOLUME_RATIO = 1.40
+REACTION_MIN_5M_VOLUME_RATIO = 1.10
+REACTION_MIN_WICK_PERCENT = 28
+REACTION_LONG_MIN_CLOSE_POWER = 48
+REACTION_SHORT_MAX_CLOSE_POWER = 52
+
+
+# =========================================================
+# ATAK / MOMENTUM SCALP
+# =========================================================
+
+# LONG: yükseliş atağı; aşırı alımda geç LONG engellenir.
+ATTACK_LONG_MIN_1M_MOVE = 0.12
+ATTACK_LONG_MIN_5M_MOVE = 0.35
+ATTACK_LONG_MIN_15M_MOVE = 0.15
+ATTACK_LONG_RSI_1M_MIN = 50
+ATTACK_LONG_RSI_1M_MAX = 70
+ATTACK_LONG_RSI_5M_MIN = 48
+ATTACK_LONG_RSI_5M_MAX = 68
+ATTACK_LONG_MIN_CLOSE_POWER = 62
+
+# SHORT: düşüş atağı; aşırı satımda geç SHORT engellenir.
+# Eski alt sınırlar 22 / 24 olduğu için RSI 25 civarında SHORT gelebiliyordu.
+ATTACK_SHORT_MIN_1M_MOVE = 0.12
+ATTACK_SHORT_MIN_5M_MOVE = 0.35
+ATTACK_SHORT_MIN_15M_MOVE = 0.15
+ATTACK_SHORT_RSI_1M_MIN = 34
+ATTACK_SHORT_RSI_1M_MAX = 50
+ATTACK_SHORT_RSI_5M_MIN = 38
+ATTACK_SHORT_RSI_5M_MAX = 52
+ATTACK_SHORT_MAX_CLOSE_POWER = 38
+
+# Atak sinyalinde hem 1M hem 5M hacim şartı zorunludur.
+ATTACK_MIN_1M_VOLUME_RATIO = 1.50
+ATTACK_MIN_5M_VOLUME_RATIO = 1.15
+
+ATTACK_BREAKOUT_LOOKBACK_1M = 20
+ATTACK_BREAKOUT_LOOKBACK_5M = 12
+
+
+# =========================================================
+# TELEGRAM
+# =========================================================
+
+def send_telegram(message):
+    if not TOKEN or not CHAT_ID:
+        print("TOKEN veya CHAT_ID eksik.")
+        return False
+
+    try:
+        response = requests.post(
+            f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+            data={"chat_id": CHAT_ID, "text": message},
+            timeout=20,
+        )
+        print("Telegram cevap:", response.status_code)
+        return response.status_code == 200
+    except Exception as exc:
+        print("Telegram gönderim hatası:", exc)
+        return False
+
+
+# =========================================================
+# STATE
+# =========================================================
+
+def now_ts():
+    return int(time.time())
+
+
+def tr_now_text():
+    return datetime.now(TR_TIMEZONE).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def normalize_bot_symbol(symbol):
+    value = str(symbol or "").upper().strip()
+    value = value.replace("/USDT:USDT", "USDT")
+    value = value.replace(":USDT", "")
+    value = value.replace("/", "")
+
+    if not value:
+        return value
+    if not value.endswith("USDT"):
+        value += "USDT"
+
+    return value
+
+
+def empty_stats():
+    return {
+        "signals": 0,
+        "tp1": 0,
+        "tp2": 0,
+        "tp3": 0,
+        "stop": 0,
+        "breakeven": 0,
+        "expired": 0,
+    }
+
+
+def empty_state():
+    return {
+        "open_scalp_signals": {},
+        "last_sent": {},
+        "early_last_sent": {},
+        "prewatch_last_sent": {},
+        "last_no_signal_report": 0,
+        "stats": empty_stats(),
+    }
+
+
+def load_state():
+    try:
+        if not os.path.exists(STATE_FILE):
+            return empty_state()
+
+        with open(STATE_FILE, "r", encoding="utf-8") as handle:
+            raw = handle.read().strip()
+
+        if not raw:
+            return empty_state()
+
+        state = json.loads(raw)
+        if not isinstance(state, dict):
+            state = {}
+
+        state.setdefault("open_scalp_signals", {})
+        state.setdefault("last_sent", {})
+        state.setdefault("early_last_sent", {})
+        state.setdefault("prewatch_last_sent", {})
+        state.setdefault("last_no_signal_report", 0)
+        state.setdefault("stats", {})
+
+        for key, value in empty_stats().items():
+            state["stats"].setdefault(key, value)
+
+        # Eski sürümlerde created_ts kullanılmış olabilir.
+        migrated = {}
+        for old_key, signal in state["open_scalp_signals"].items():
+            if not isinstance(signal, dict):
+                continue
+
+            signal = dict(signal)
+            signal["symbol"] = normalize_bot_symbol(signal.get("symbol"))
+
+            opened_at = int(
+                signal.get("opened_at")
+                or signal.get("created_ts")
+                or now_ts()
+            )
+            signal["opened_at"] = opened_at
+            signal["last_checked_at"] = int(
+                signal.get("last_checked_at") or opened_at
+            )
+
+            signal.setdefault("tp1_hit", False)
+            signal.setdefault("tp2_hit", False)
+            signal.setdefault("tp3_hit", False)
+            signal.setdefault("closed", False)
+
+            new_key = (
+                f"{signal.get('symbol', '')}_"
+                f"{signal.get('direction', '')}_"
+                f"{signal.get('source', 'SCALP')}"
+            )
+            migrated[new_key or old_key] = signal
+
+        state["open_scalp_signals"] = migrated
+        return state
+
+    except Exception as exc:
+        print("State okuma hatası:", exc)
+        return empty_state()
+
+
+
+def fsync_parent_directory(filename):
+    """
+    os.replace sonrasında klasör kaydını da diske zorlamaya çalışır.
+    Desteklenmeyen ortamlarda ana JSON kaydı yine geçerli kalır.
+    """
+    directory = os.path.dirname(
+        os.path.abspath(filename)
+    ) or "."
+
+    directory_fd = None
+
+    try:
+        directory_fd = os.open(
+            directory,
+            os.O_RDONLY
+            | getattr(os, "O_DIRECTORY", 0),
+        )
+        os.fsync(directory_fd)
+
+    except Exception:
+        pass
+
+    finally:
+        if directory_fd is not None:
+            try:
+                os.close(directory_fd)
+            except Exception:
+                pass
+
+
+def atomic_save_json(filename, data):
+    """
+    JSON'u aynı klasörde geçici dosyaya yazar, doğrular ve
+    os.replace ile tek adımda asıl dosyanın yerine geçirir.
+    """
+    normalized_data = (
+        data
+        if isinstance(data, dict)
+        else {}
+    )
+
+    absolute_filename = os.path.abspath(
+        filename
+    )
+    directory = os.path.dirname(
+        absolute_filename
+    ) or "."
+    base_name = os.path.basename(
+        absolute_filename
+    )
+    temp_path = None
+
+    try:
+        os.makedirs(
+            directory,
+            exist_ok=True,
+        )
+
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=directory,
+            prefix=f".{base_name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temp_path = handle.name
+
+            json.dump(
+                normalized_data,
+                handle,
+                indent=2,
+                ensure_ascii=False,
+            )
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+
+        with open(
+            temp_path,
+            "r",
+            encoding="utf-8",
+        ) as verify_handle:
+            verified = json.load(
+                verify_handle
+            )
+
+        if not isinstance(
+            verified,
+            dict,
+        ):
+            raise ValueError(
+                "Geçici JSON doğrulaması başarısız."
+            )
+
+        os.replace(
+            temp_path,
+            absolute_filename,
+        )
+        temp_path = None
+
+        fsync_parent_directory(
+            absolute_filename
+        )
+
+        return True
+
+    except Exception as exc:
+        print(
+            filename,
+            "atomik JSON kaydetme hatası:",
+            exc,
+        )
+        return False
+
+    finally:
+        if (
+            temp_path
+            and os.path.exists(temp_path)
+        ):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
+
+
+def save_state(state):
+    return atomic_save_json(
+        STATE_FILE,
+        state,
+    )
+
+
+def increment_stat(state, key):
+    state.setdefault("stats", empty_stats())
+    state["stats"][key] = int(state["stats"].get(key, 0)) + 1
+
+
+
+# =========================================================
+# SCALP PERFORMANS KAYDI
+# =========================================================
+
+def load_performance_ledger():
+    try:
+        if not os.path.exists(PERFORMANCE_FILE):
+            return {"records": [], "summary": {}}
+
+        with open(PERFORMANCE_FILE, "r", encoding="utf-8") as handle:
+            raw = handle.read().strip()
+
+        if not raw:
+            return {"records": [], "summary": {}}
+
+        ledger = json.loads(raw)
+        if not isinstance(ledger, dict):
+            ledger = {}
+
+        ledger.setdefault("records", [])
+        ledger.setdefault("summary", {})
+        return ledger
+
+    except Exception as exc:
+        print("Scalp performans dosyası okuma hatası:", exc)
+        return {"records": [], "summary": {}}
+
+
+def rebuild_performance_summary(ledger):
+    records = ledger.get("records", [])
+    summary = {
+        "total": len(records),
+        "open": 0,
+        "direction_correct": 0,
+        "direction_wrong": 0,
+        "mixed": 0,
+        "prewatch": 0,
+        "early": 0,
+        "real_signal": 0,
+        "trade_open": 0,
+        "tp1": 0,
+        "tp2": 0,
+        "tp3": 0,
+        "stop": 0,
+        "breakeven": 0,
+        "expired": 0,
+        "stopped_but_direction_later_correct": 0,
+        "diagnosis_counts": {},
+    }
+
+    for record in records:
+        stage = str(record.get("stage", "")).upper()
+        if stage == "PREWATCH":
+            summary["prewatch"] += 1
+        elif stage == "EARLY":
+            summary["early"] += 1
+        elif stage == "REAL_SIGNAL":
+            summary["real_signal"] += 1
+
+        status = str(record.get("status", "OPEN")).upper()
+        if status == "OPEN":
+            summary["open"] += 1
+        elif status == "DIRECTION_CORRECT":
+            summary["direction_correct"] += 1
+        elif status == "DIRECTION_WRONG":
+            summary["direction_wrong"] += 1
+        elif status == "MIXED":
+            summary["mixed"] += 1
+
+        outcome = str(record.get("trade_outcome", "")).upper()
+        if stage == "REAL_SIGNAL":
+            if not outcome or outcome == "OPEN":
+                summary["trade_open"] += 1
+            elif outcome == "TP1":
+                summary["tp1"] += 1
+            elif outcome == "TP2":
+                summary["tp2"] += 1
+            elif outcome == "TP3":
+                summary["tp3"] += 1
+            elif outcome == "STOP":
+                summary["stop"] += 1
+            elif outcome == "BREAKEVEN":
+                summary["breakeven"] += 1
+            elif outcome == "EXPIRED":
+                summary["expired"] += 1
+
+        diagnosis = record.get("diagnosis", {})
+        primary = str(diagnosis.get("primary", "")).strip()
+        if primary:
+            counts = summary["diagnosis_counts"]
+            counts[primary] = int(counts.get(primary, 0)) + 1
+
+        if primary == "YON DOGRUYDU, STOP ERKEN / DAR KALDI":
+            summary["stopped_but_direction_later_correct"] += 1
+
+    ledger["summary"] = summary
+    ledger["updated_at"] = now_ts()
+    ledger["updated_at_tr"] = tr_now_text()
+
+
+def save_performance_ledger(ledger):
+    try:
+        rebuild_performance_summary(
+            ledger
+        )
+
+        return atomic_save_json(
+            PERFORMANCE_FILE,
+            ledger,
+        )
+
+    except Exception as exc:
+        print(
+            "Scalp performans dosyası kayıt hatası:",
+            exc,
+        )
+        return False
+
+
+def directional_move_percent(direction, current_price, reference_price):
+    current = safe_float(current_price)
+    reference = safe_float(reference_price)
+    if current <= 0 or reference <= 0:
+        return 0.0
+
+    raw_move = (current - reference) / reference * 100
+    return raw_move if str(direction).upper() == "LONG" else -raw_move
+
+
+def scalp_r_from_percent(record, move_percent):
+    risk_percent = safe_float(record.get("risk_percent"))
+    if risk_percent <= 0:
+        return None
+    return round(safe_float(move_percent) / risk_percent, 4)
+
+
+def classify_performance_record(record):
+    snapshots = record.get("snapshots", {})
+    move_60 = safe_float(snapshots.get("60m"))
+    move_120 = safe_float(
+        snapshots.get(
+            "120m",
+            record.get("latest_directional_move_percent"),
+        )
+    )
+    best_favorable = safe_float(record.get("best_favorable_percent"))
+    worst_adverse = safe_float(record.get("worst_adverse_percent"))
+    threshold = PERFORMANCE_DIRECTION_THRESHOLD_PERCENT
+    mixed_threshold = PERFORMANCE_MIXED_THRESHOLD_PERCENT
+
+    if move_120 >= threshold or (
+        best_favorable >= threshold
+        and worst_adverse < threshold
+    ):
+        return (
+            "DIRECTION_CORRECT",
+            "120 dakika içinde yön lehine hareket",
+        )
+
+    if move_120 <= -threshold or (
+        worst_adverse >= threshold
+        and best_favorable < threshold
+    ):
+        return (
+            "DIRECTION_WRONG",
+            "120 dakika içinde yön tersine hareket",
+        )
+
+    # İlk saat doğru, ikinci saat yatay kalmışsa tamamen yanlış sayma.
+    if move_60 >= threshold and move_120 > -mixed_threshold:
+        return (
+            "DIRECTION_CORRECT",
+            "İlk 60 dakikada yön doğrulandı, sonra hareket zayıfladı",
+        )
+
+    if abs(move_120) <= mixed_threshold:
+        return (
+            "MIXED",
+            "120 dakika sonunda belirgin yön oluşmadı",
+        )
+
+    return (
+        "DIRECTION_CORRECT" if move_120 > 0 else "DIRECTION_WRONG",
+        "120 dakika son fiyat yönüne göre sınıflandırıldı",
+    )
+
+
+def build_scalp_diagnosis(record):
+    stage = str(record.get("stage", "")).upper()
+    status = str(record.get("status", "OPEN")).upper()
+    outcome = str(record.get("trade_outcome", "OPEN")).upper()
+    source = str(record.get("source", "")).upper()
+    setup = str(record.get("setup", "")).upper()
+
+    score = safe_float(record.get("score"))
+    vol1 = safe_float(record.get("vol1"))
+    vol5 = safe_float(record.get("vol5"))
+    rolling_vol3 = safe_float(record.get("rolling_vol3"))
+    rolling_vol5 = safe_float(record.get("rolling_vol5"))
+    rsi1 = safe_float(record.get("rsi1"))
+    rsi5 = safe_float(record.get("rsi5"))
+    move15 = safe_float(record.get("move15"))
+    live_move15 = safe_float(record.get("live_move15"))
+    close_power = safe_float(record.get("close_power"))
+    entry_drift = safe_float(record.get("entry_drift_percent"))
+    breakout = bool(record.get("breakout", False))
+    best_favorable = safe_float(record.get("best_favorable_percent"))
+    worst_adverse = safe_float(record.get("worst_adverse_percent"))
+    best_favorable_r = scalp_r_from_percent(
+        record,
+        best_favorable,
+    )
+    worst_adverse_r = scalp_r_from_percent(
+        record,
+        worst_adverse,
+    )
+    post_stop_best = safe_float(
+        record.get("post_stop_best_favorable_percent")
+    )
+
+    factors = []
+    primary = "TAKIP DEVAM EDIYOR"
+    confidence = "DUSUK"
+    provisional = status == "OPEN"
+
+    if stage == "PREWATCH":
+        if status == "DIRECTION_CORRECT":
+            primary = "ON IZLEME YONU DOGRU"
+            confidence = "YUKSEK"
+            factors.append(
+                "Hareket erken aşamada işaret edilen yönde devam etti."
+            )
+        elif status == "DIRECTION_WRONG":
+            primary = "ON IZLEME YONU BASARISIZ"
+            confidence = "YUKSEK"
+            factors.append(
+                "İlk hızlanma kalıcı olmadı ve fiyat ters yöne gitti."
+            )
+        elif status == "MIXED":
+            primary = "ON IZLEME SONRASI NET HAREKET OLMADI"
+            confidence = "ORTA"
+
+        if not breakout:
+            factors.append(
+                "Uyarı anında kırılım henüz tamamlanmamıştı."
+            )
+        if max(vol1, rolling_vol3) < 1.20:
+            factors.append(
+                "Kısa vadeli hacim artışı sınırlıydı."
+            )
+        if entry_drift > 0.20:
+            factors.append(
+                "Gönderim anında fiyat izleme seviyesinden uzaklaşmıştı."
+            )
+
+    elif stage == "EARLY":
+        if status == "DIRECTION_CORRECT":
+            primary = "ERKEN FIRSAT YONU DOGRU"
+            confidence = "YUKSEK"
+        elif status == "DIRECTION_WRONG":
+            if breakout:
+                primary = "SAHTE KIRILIM / MOMENTUM SONDU"
+            else:
+                primary = "ERKEN MOMENTUM DEVAM ETMEDI"
+            confidence = "YUKSEK"
+        elif status == "MIXED":
+            primary = "ERKEN FIRSAT SONRASI NET YON OLMADI"
+            confidence = "ORTA"
+
+        if not breakout:
+            factors.append(
+                "Net kırılım teyidi olmadan güçlü harekete dayanıyordu."
+            )
+        if max(vol1, rolling_vol5) < 1.30:
+            factors.append(
+                "Hacim devamlılığı güçlü değildi."
+            )
+        if abs(live_move15) >= 2.0:
+            factors.append(
+                "Uyarı anında 15 dakikalık hareketin önemli kısmı ilerlemişti."
+            )
+        if entry_drift > 0.25:
+            factors.append(
+                "Gönderim fiyatı analiz seviyesinden uzaklaşmıştı."
+            )
+
+    elif stage == "REAL_SIGNAL":
+        provisional = (
+            outcome in ("OPEN", "STOP")
+            and status == "OPEN"
+        )
+
+        if outcome == "TP3":
+            primary = "SCALP KURULUMU BASARILI"
+            confidence = "YUKSEK"
+            factors.append("Maksimum hedef TP3 görüldü.")
+
+        elif outcome in ("TP1", "TP2"):
+            primary = "YON DOGRU, ISLEM HEDEF GORDU"
+            confidence = "YUKSEK"
+
+        elif outcome == "BREAKEVEN":
+            primary = "YON DOGRUYDU, DEVAM GUCU ZAYIFLADI"
+            confidence = "YUKSEK"
+            factors.append(
+                "TP1 sonrası kalan pozisyon girişten kapandı."
+            )
+
+        elif outcome == "EXPIRED":
+            if status == "DIRECTION_CORRECT":
+                primary = "YON DOGRUYDU, HEDEF ZAMANINDA GELMEDI"
+            elif status == "DIRECTION_WRONG":
+                primary = "SCALP YONU DEVAM ETMEDI"
+            else:
+                primary = "SCALP SONRASI NET HAREKET OLMADI"
+            confidence = "ORTA"
+
+        elif outcome == "STOP":
+            if (
+                post_stop_best
+                >= PERFORMANCE_DIRECTION_THRESHOLD_PERCENT
+            ):
+                primary = "YON DOGRUYDU, STOP ERKEN / DAR KALDI"
+                confidence = "YUKSEK"
+                factors.append(
+                    "Stop sonrasında fiyat tekrar sinyal yönüne döndü."
+                )
+                provisional = False
+            elif (
+                best_favorable_r is not None
+                and best_favorable_r >= 0.35
+            ):
+                primary = "ONCE LEHE GITTI, SONRA TERS DONDU"
+                confidence = "YUKSEK"
+                factors.append(
+                    "Stop öncesinde işlem en az 0.35R lehe hareket etti."
+                )
+            elif source == "ATAK_SCALP" or "ATAK" in setup:
+                primary = (
+                    "ATAK MOMENTUMU DEVAM ETMEDI"
+                    if not breakout
+                    else "KIRILIM SONRASI MOMENTUM SONDU"
+                )
+                confidence = "ORTA"
+            elif source == "TEPKI_SCALP" or "TEPKI" in setup:
+                primary = "TEPKI BASARISIZ, ANA HAREKET DEVAM ETTI"
+                confidence = "ORTA"
+            else:
+                primary = "KISA VADELI YON UYUMSUZLUGU"
+                confidence = "ORTA"
+
+            if status == "DIRECTION_WRONG":
+                factors.append(
+                    "120 dakikalık takipte fiyat sinyalin ters yönünde kaldı."
+                )
+
+        elif outcome == "OPEN":
+            if status == "DIRECTION_CORRECT":
+                primary = "ACIK ISLEM YONU DESTEKLENIYOR"
+                confidence = "ORTA"
+            elif status == "DIRECTION_WRONG":
+                primary = "ACIK ISLEM YONU ZAYIF"
+                confidence = "ORTA"
+
+        if vol1 < 1.50:
+            factors.append("1M hacim sınırdaydı.")
+        if vol5 < 1.15:
+            factors.append("5M hacim sınırdaydı.")
+        if entry_drift > 0.18:
+            factors.append(
+                "Gönderim anında giriş sapması yükselmişti."
+            )
+
+        if source == "ATAK_SCALP":
+            direction = str(record.get("direction", "")).upper()
+            if direction == "LONG" and close_power < 70:
+                factors.append(
+                    "LONG atak mumunun kapanış gücü çok yüksek değildi."
+                )
+            if direction == "SHORT" and close_power > 30:
+                factors.append(
+                    "SHORT atak mumunun kapanış baskısı çok güçlü değildi."
+                )
+
+        if source == "TEPKI_SCALP":
+            if abs(move15) < 0.50:
+                factors.append(
+                    "Tepki öncesi 15M hareketi sınırlıydı."
+                )
+            if rsi1 > 0 and 42 < rsi1 < 58:
+                factors.append(
+                    "1M RSI tepki bölgesinin merkezine yakındı."
+                )
+
+    return {
+        "version": "SCALP_DIAGNOSIS_V1",
+        "primary": primary,
+        "confidence": confidence,
+        "factors": list(dict.fromkeys(factors)),
+        "provisional": provisional,
+        "best_favorable_percent": round(best_favorable, 4),
+        "worst_adverse_percent": round(worst_adverse, 4),
+        "best_favorable_r": best_favorable_r,
+        "worst_adverse_r": worst_adverse_r,
+        "post_stop_best_favorable_percent": round(
+            post_stop_best,
+            4,
+        ),
+        "note": (
+            "Bu teşhis kesin piyasa sebebi değil; kayıtlı kısa vadeli "
+            "fiyat, hacim, RSI, kurulum ve sonuç verilerine dayalıdır."
+        ),
+    }
+
+
+def record_scalp_performance(stage, item):
+    try:
+        ledger = load_performance_ledger()
+        records = ledger.setdefault("records", [])
+        sent_at = now_ts()
+        symbol = normalize_bot_symbol(item.get("symbol"))
+        direction = str(item.get("direction", "")).upper()
+        reference_price = safe_float(
+            item.get("current_price", item.get("entry"))
+        )
+
+        if (
+            not symbol
+            or direction not in ("LONG", "SHORT")
+            or reference_price <= 0
+        ):
+            return None
+
+        record_id = (
+            f"{symbol}_{direction}_"
+            f"{str(stage).upper()}_{sent_at}"
+        )
+
+        record = {
+            "id": record_id,
+            "stage": str(stage).upper(),
+            "symbol": symbol,
+            "direction": direction,
+            "sent_at": sent_at,
+            "sent_at_tr": tr_now_text(),
+            "reference_price": reference_price,
+            "analysis_price": safe_float(item.get("entry")),
+            "entry_drift_percent": safe_float(
+                item.get("entry_drift_percent")
+            ),
+            "score": safe_float(item.get("score")),
+            "source": item.get("source"),
+            "setup": item.get("setup"),
+            "tp1": safe_float(item.get("tp1")),
+            "tp2": safe_float(item.get("tp2")),
+            "tp3": safe_float(item.get("tp3")),
+            "sl": safe_float(item.get("sl")),
+            "risk_percent": safe_float(item.get("risk_percent")),
+            "ok_count": item.get("ok_count"),
+            "total_conditions": item.get("total_conditions"),
+            "missing": item.get("missing", []),
+            "rsi1": safe_float(item.get("rsi1")),
+            "rsi5": safe_float(item.get("rsi5")),
+            "vol1": safe_float(item.get("vol1")),
+            "vol5": safe_float(item.get("vol5")),
+            "move1": safe_float(item.get("move1")),
+            "move5": safe_float(item.get("move5")),
+            "move15": safe_float(item.get("move15")),
+            "live_move3": safe_float(item.get("live_move3")),
+            "live_move5": safe_float(item.get("live_move5")),
+            "live_move15": safe_float(item.get("live_move15")),
+            "rolling_vol3": safe_float(item.get("rolling_vol3")),
+            "rolling_vol5": safe_float(item.get("rolling_vol5")),
+            "lower_wick": safe_float(item.get("lower_wick")),
+            "upper_wick": safe_float(item.get("upper_wick")),
+            "close_power": safe_float(item.get("close_power")),
+            "breakout": bool(item.get("breakout", False)),
+            "breakout_distance": safe_float(
+                item.get("breakout_distance")
+            ),
+            "reason": item.get("reason"),
+            "snapshots": {},
+            "latest_price": reference_price,
+            "latest_directional_move_percent": 0.0,
+            "best_favorable_percent": 0.0,
+            "worst_adverse_percent": 0.0,
+            "best_favorable_r": 0.0,
+            "worst_adverse_r": 0.0,
+            "post_stop_best_favorable_percent": 0.0,
+            "post_stop_latest_directional_move_percent": 0.0,
+            "post_stop_snapshots": {},
+            "trade_outcome": (
+                "OPEN"
+                if str(stage).upper() == "REAL_SIGNAL"
+                else None
+            ),
+            "trade_events": [],
+            "status": "OPEN",
+            "status_reason": "Gönderim sonrası performans izleniyor",
+            "diagnosis": {
+                "version": "SCALP_DIAGNOSIS_V1",
+                "primary": "TAKIP DEVAM EDIYOR",
+                "confidence": "DUSUK",
+                "factors": [],
+                "provisional": True,
+            },
+        }
+        records.append(record)
+
+        cutoff = now_ts() - PERFORMANCE_KEEP_DAYS * 24 * 60 * 60
+        records = [
+            candidate
+            for candidate in records
+            if int(candidate.get("sent_at", 0)) >= cutoff
+        ]
+        records.sort(key=lambda candidate: int(candidate.get("sent_at", 0)))
+        ledger["records"] = records[-PERFORMANCE_MAX_RECORDS:]
+        save_performance_ledger(ledger)
+        return record_id
+
+    except Exception as exc:
+        print("Scalp performans kaydı oluşturma hatası:", exc)
+        return None
+
+
+def find_real_scalp_record(ledger, symbol, direction, record_id=None):
+    records = ledger.setdefault("records", [])
+
+    if record_id:
+        for record in records:
+            if str(record.get("id")) == str(record_id):
+                return record
+
+    eligible = [
+        record
+        for record in records
+        if str(record.get("stage", "")).upper() == "REAL_SIGNAL"
+        and normalize_bot_symbol(record.get("symbol"))
+        == normalize_bot_symbol(symbol)
+        and str(record.get("direction", "")).upper()
+        == str(direction).upper()
+    ]
+
+    if not eligible:
+        return None
+
+    return max(
+        eligible,
+        key=lambda item: int(item.get("sent_at", 0)),
+    )
+
+
+def update_real_scalp_tracking(signal):
+    try:
+        ledger = load_performance_ledger()
+        record = find_real_scalp_record(
+            ledger,
+            signal.get("symbol"),
+            signal.get("direction"),
+            signal.get("performance_record_id"),
+        )
+
+        if record is None:
+            return False
+
+        for key in (
+            "best_favorable_percent",
+            "worst_adverse_percent",
+            "best_favorable_price",
+            "worst_adverse_price",
+            "last_market_price",
+            "last_tracking_at",
+        ):
+            if signal.get(key) is not None:
+                record[key] = signal.get(key)
+
+        record["best_favorable_r"] = (
+            scalp_r_from_percent(
+                record,
+                record.get("best_favorable_percent"),
+            )
+            or 0.0
+        )
+        record["worst_adverse_r"] = (
+            scalp_r_from_percent(
+                record,
+                record.get("worst_adverse_percent"),
+            )
+            or 0.0
+        )
+        record["diagnosis"] = build_scalp_diagnosis(record)
+        return save_performance_ledger(ledger)
+
+    except Exception as exc:
+        print("Scalp açık takip ledger hatası:", exc)
+        return False
+
+
+def update_real_scalp_outcome(
+    symbol,
+    direction,
+    outcome,
+    price=None,
+    signal=None,
+):
+    try:
+        ledger = load_performance_ledger()
+        record_id = (
+            signal.get("performance_record_id")
+            if isinstance(signal, dict)
+            else None
+        )
+        record = find_real_scalp_record(
+            ledger,
+            symbol,
+            direction,
+            record_id,
+        )
+
+        if record is None:
+            return False
+
+        if isinstance(signal, dict):
+            for key in (
+                "best_favorable_percent",
+                "worst_adverse_percent",
+                "best_favorable_price",
+                "worst_adverse_price",
+                "last_market_price",
+                "last_tracking_at",
+            ):
+                if signal.get(key) is not None:
+                    record[key] = signal.get(key)
+
+        outcome = str(outcome).upper()
+        event = {
+            "outcome": outcome,
+            "time": now_ts(),
+            "time_tr": tr_now_text(),
+            "price": safe_float(price),
+        }
+
+        existing = any(
+            str(item.get("outcome", "")).upper() == outcome
+            for item in record.setdefault("trade_events", [])
+        )
+        if not existing:
+            record["trade_events"].append(event)
+
+        record["trade_outcome"] = outcome
+        record["trade_last_updated_at"] = now_ts()
+        record["trade_last_updated_at_tr"] = tr_now_text()
+
+        if outcome in ("TP3", "STOP", "BREAKEVEN", "EXPIRED"):
+            record["trade_closed_at"] = now_ts()
+            record["trade_closed_at_tr"] = tr_now_text()
+            record["outcome_price"] = safe_float(price)
+
+        record["best_favorable_r"] = (
+            scalp_r_from_percent(
+                record,
+                record.get("best_favorable_percent"),
+            )
+            or 0.0
+        )
+        record["worst_adverse_r"] = (
+            scalp_r_from_percent(
+                record,
+                record.get("worst_adverse_percent"),
+            )
+            or 0.0
+        )
+        record["diagnosis"] = build_scalp_diagnosis(record)
+        return save_performance_ledger(ledger)
+
+    except Exception as exc:
+        print("Scalp işlem sonucu ledger hatası:", exc)
+        return False
+
+
+def update_open_signal_excursion(signal, high, low, candle_time=None):
+    entry = safe_float(signal.get("entry"))
+    high = safe_float(high)
+    low = safe_float(low)
+
+    if entry <= 0 or high <= 0 or low <= 0:
+        return
+
+    direction = str(signal.get("direction", "")).upper()
+
+    if direction == "LONG":
+        favorable_price = high
+        adverse_price = low
+        favorable = max(0.0, (high - entry) / entry * 100)
+        adverse = max(0.0, (entry - low) / entry * 100)
+    elif direction == "SHORT":
+        favorable_price = low
+        adverse_price = high
+        favorable = max(0.0, (entry - low) / entry * 100)
+        adverse = max(0.0, (high - entry) / entry * 100)
+    else:
+        return
+
+    if favorable > safe_float(
+        signal.get("best_favorable_percent")
+    ):
+        signal["best_favorable_percent"] = round(favorable, 4)
+        signal["best_favorable_price"] = favorable_price
+
+    if adverse > safe_float(
+        signal.get("worst_adverse_percent")
+    ):
+        signal["worst_adverse_percent"] = round(adverse, 4)
+        signal["worst_adverse_price"] = adverse_price
+
+    signal["last_tracking_at"] = int(candle_time or now_ts())
+
+
+def update_scalp_performance(exchange):
+    ledger = load_performance_ledger()
+    records = ledger.setdefault("records", [])
+
+    if not records:
+        save_performance_ledger(ledger)
+        print("Scalp performans kaydı: açık gözlem yok.")
+        return
+
+    active_records = [
+        record
+        for record in records
+        if str(record.get("status", "OPEN")).upper() == "OPEN"
+    ]
+    symbols = sorted({
+        normalize_bot_symbol(record.get("symbol"))
+        for record in active_records
+        if normalize_bot_symbol(record.get("symbol"))
+    })
+    price_map = {}
+
+    if symbols:
+        try:
+            okx_symbols = [to_okx_symbol(symbol) for symbol in symbols]
+            tickers = exchange.fetch_tickers(okx_symbols)
+            for symbol in symbols:
+                ticker = tickers.get(to_okx_symbol(symbol), {})
+                price = ticker.get("last")
+                if price is not None:
+                    price_map[symbol] = float(price)
+        except Exception as exc:
+            print("Scalp performans toplu fiyat hatası:", exc)
+
+    updated_count = 0
+    finalized_count = 0
+
+    for record in active_records:
+        symbol = normalize_bot_symbol(record.get("symbol"))
+        current_price = price_map.get(symbol)
+        if current_price is None:
+            continue
+
+        sent_at = int(record.get("sent_at", now_ts()))
+        age_minutes = max(0, (now_ts() - sent_at) / 60)
+        reference_price = safe_float(record.get("reference_price"))
+        move = directional_move_percent(
+            record.get("direction"),
+            current_price,
+            reference_price,
+        )
+
+        record["latest_price"] = current_price
+        record["latest_directional_move_percent"] = round(move, 4)
+        record["last_updated_at"] = now_ts()
+        record["last_updated_at_tr"] = tr_now_text()
+        record["best_favorable_percent"] = round(
+            max(
+                safe_float(record.get("best_favorable_percent")),
+                move,
+                0.0,
+            ),
+            4,
+        )
+        record["worst_adverse_percent"] = round(
+            max(
+                safe_float(record.get("worst_adverse_percent")),
+                -move,
+                0.0,
+            ),
+            4,
+        )
+
+        record["best_favorable_r"] = (
+            scalp_r_from_percent(
+                record,
+                record.get("best_favorable_percent"),
+            )
+            or 0.0
+        )
+        record["worst_adverse_r"] = (
+            scalp_r_from_percent(
+                record,
+                record.get("worst_adverse_percent"),
+            )
+            or 0.0
+        )
+
+        is_stopped_real = (
+            str(record.get("stage", "")).upper() == "REAL_SIGNAL"
+            and str(record.get("trade_outcome", "")).upper() == "STOP"
+        )
+
+        post_stop_age_minutes = 0.0
+
+        if is_stopped_real:
+            stopped_at = int(
+                record.get("trade_closed_at")
+                or now_ts()
+            )
+            post_stop_age_minutes = max(
+                0.0,
+                (now_ts() - stopped_at) / 60,
+            )
+
+            record[
+                "post_stop_latest_directional_move_percent"
+            ] = round(move, 4)
+            record[
+                "post_stop_best_favorable_percent"
+            ] = round(
+                max(
+                    safe_float(
+                        record.get(
+                            "post_stop_best_favorable_percent"
+                        )
+                    ),
+                    move,
+                    0.0,
+                ),
+                4,
+            )
+
+            post_stop_snapshots = record.setdefault(
+                "post_stop_snapshots",
+                {},
+            )
+
+            for window in POST_STOP_TRACK_WINDOWS_MINUTES:
+                key = f"{window}m"
+                if (
+                    post_stop_age_minutes >= window
+                    and key not in post_stop_snapshots
+                ):
+                    post_stop_snapshots[key] = round(
+                        move,
+                        4,
+                    )
+
+        snapshots = record.setdefault("snapshots", {})
+        for window in PERFORMANCE_WINDOWS_MINUTES:
+            key = f"{window}m"
+            if age_minutes >= window and key not in snapshots:
+                snapshots[key] = round(move, 4)
+
+        should_finalize = (
+            post_stop_age_minutes >= POST_STOP_MAX_TRACK_MINUTES
+            if is_stopped_real
+            else age_minutes >= PERFORMANCE_DIRECTION_FINAL_MINUTES
+        )
+
+        if should_finalize:
+            status, reason = classify_performance_record(record)
+            record["status"] = status
+            record["status_reason"] = reason
+            record["finalized_at"] = now_ts()
+            record["finalized_at_tr"] = tr_now_text()
+            record["diagnosis"] = build_scalp_diagnosis(record)
+            record["diagnosis"]["provisional"] = False
+            finalized_count += 1
+        else:
+            record["diagnosis"] = build_scalp_diagnosis(record)
+
+        updated_count += 1
+
+    # Eski performans kayıtlarında teşhis alanı yoksa geriye dönük
+    # mevcut kayıt verileriyle yaklaşık teşhis oluşturulur.
+    for record in records:
+        if not isinstance(record.get("diagnosis"), dict):
+            record["diagnosis"] = build_scalp_diagnosis(record)
+
+    cutoff = now_ts() - PERFORMANCE_KEEP_DAYS * 24 * 60 * 60
+    ledger["records"] = [
+        record
+        for record in records
+        if int(record.get("sent_at", 0)) >= cutoff
+    ][-PERFORMANCE_MAX_RECORDS:]
+    save_performance_ledger(ledger)
+    print(
+        "Scalp performans ve teşhis güncellendi:",
+        updated_count,
+        "| sonuçlanan:",
+        finalized_count,
+    )
+
+
+# =========================================================
+# OKX / VERİ
+# =========================================================
+
+def get_exchange():
+    return ccxt.okx({
+        "enableRateLimit": True,
+        "options": {"defaultType": "swap"},
+    })
+
+
+def to_okx_symbol(symbol):
+    bot_symbol = normalize_bot_symbol(symbol)
+    base = bot_symbol[:-4] if bot_symbol.endswith("USDT") else bot_symbol
+    return f"{base}/USDT:USDT"
+
+
+def okx_symbol_to_bot_symbol(okx_symbol):
+    base = str(okx_symbol).split("/")[0]
+    return f"{base}USDT".upper()
+
+
+def safe_quote_volume(ticker):
+    try:
+        value = ticker.get("quoteVolume")
+        if value is not None:
+            return float(value)
+
+        info = ticker.get("info", {})
+        for key in ("volCcy24h", "volUsd24h", "vol24h"):
+            value = info.get(key)
+            if value is not None:
+                return float(value)
+    except Exception:
+        pass
+
+    return 0.0
+
+
+def get_scan_coins(exchange):
+    try:
+        markets = exchange.load_markets()
+        okx_symbols = []
+        stable_bases = {
+            "USDT", "USDC", "DAI", "FDUSD",
+            "TUSD", "USDP", "USD",
+        }
+
+        for market in markets.values():
+            if not market.get("active", True):
+                continue
+            if not market.get("swap", False):
+                continue
+            if market.get("quote") != "USDT":
+                continue
+            if market.get("settle") != "USDT":
+                continue
+
+            okx_symbol = market.get("symbol")
+            if not okx_symbol or "/USDT:USDT" not in okx_symbol:
+                continue
+
+            base = str(market.get("base", "")).upper()
+            if not base or base in stable_bases:
+                continue
+
+            okx_symbols.append(okx_symbol)
+
+        tickers = exchange.fetch_tickers(okx_symbols)
+
+        rows = []
+        for okx_symbol in okx_symbols:
+            volume = safe_quote_volume(tickers.get(okx_symbol, {}))
+            if volume < MIN_24H_QUOTE_VOLUME:
+                continue
+
+            rows.append((
+                okx_symbol_to_bot_symbol(okx_symbol),
+                volume,
+            ))
+
+        rows.sort(key=lambda item: item[1], reverse=True)
+        coins = [symbol for symbol, _ in rows[:MAX_SCAN_COINS]]
+
+        print("Taranacak coin sayısı:", len(coins))
+        print("İlk 20 coin:", coins[:20])
+        return coins
+
+    except Exception as exc:
+        print("Coin tarama hatası:", exc)
+        return []
+
+
+def fetch_df(exchange, symbol, timeframe, limit=120, min_len=40):
+    try:
+        ohlcv = exchange.fetch_ohlcv(
+            to_okx_symbol(symbol),
+            timeframe=timeframe,
+            limit=limit,
+        )
+
+        if not ohlcv or len(ohlcv) < min_len:
+            return None
+
+        frame = pd.DataFrame(
+            ohlcv,
+            columns=["time", "open", "high", "low", "close", "volume"],
+        )
+
+        for column in ("open", "high", "low", "close", "volume"):
+            frame[column] = pd.to_numeric(
+                frame[column],
+                errors="coerce",
+            )
+
+        frame = frame.dropna().reset_index(drop=True)
+        return frame if len(frame) >= min_len else None
+
+    except Exception as exc:
+        print(symbol, timeframe, "veri hatası:", exc)
+        return None
+
+
+def fetch_candles_since(
+    exchange,
+    symbol,
+    timeframe,
+    since_seconds,
+    limit=180,
+):
+    try:
+        ohlcv = exchange.fetch_ohlcv(
+            to_okx_symbol(symbol),
+            timeframe=timeframe,
+            since=max(0, int(since_seconds)) * 1000,
+            limit=limit,
+        )
+
+        return [
+            {
+                "time": int(item[0] / 1000),
+                "open": float(item[1]),
+                "high": float(item[2]),
+                "low": float(item[3]),
+                "close": float(item[4]),
+                "volume": float(item[5]),
+            }
+            for item in ohlcv
+        ]
+
+    except Exception as exc:
+        print(symbol, "mum takip hatası:", exc)
+        return []
+
+
+def get_current_price(exchange, symbol):
+    try:
+        ticker = exchange.fetch_ticker(to_okx_symbol(symbol))
+        value = ticker.get("last")
+        return float(value) if value is not None else None
+    except Exception as exc:
+        print(symbol, "güncel fiyat hatası:", exc)
+        return None
+
+
+# =========================================================
+# HESAPLAMALAR
+# =========================================================
+
+def safe_float(value, default=0.0):
+    try:
+        number = float(value)
+        if math.isnan(number) or math.isinf(number):
+            return default
+        return number
+    except Exception:
+        return default
+
+
+def format_price(value):
+    number = safe_float(value)
+
+    if number >= 100:
+        return f"{number:.2f}"
+    if number >= 10:
+        return f"{number:.3f}"
+    if number >= 1:
+        return f"{number:.4f}"
+    if number >= 0.1:
+        return f"{number:.5f}"
+    if number >= 0.01:
+        return f"{number:.6f}"
+    return f"{number:.10f}"
+
+
+def percent_distance(current, reference):
+    current = safe_float(current)
+    reference = safe_float(reference)
+    if reference <= 0:
+        return 999.0
+    return abs(current - reference) / reference * 100
+
+
+def calc_rsi(series, period=14):
+    delta = series.diff()
+    gain = delta.where(delta > 0, 0.0)
+    loss = -delta.where(delta < 0, 0.0)
+
+    avg_gain = gain.ewm(
+        alpha=1 / period,
+        adjust=False,
+    ).mean()
+    avg_loss = loss.ewm(
+        alpha=1 / period,
+        adjust=False,
+    ).mean()
+
+    rs = avg_gain / avg_loss.replace(0, 0.0000001)
+    return 100 - (100 / (1 + rs))
+
+
+def volume_ratio(frame, index=-2, period=20):
+    try:
+        average = frame["volume"].rolling(period).mean().iloc[index]
+        volume = frame["volume"].iloc[index]
+
+        if average <= 0 or math.isnan(average):
+            return 0.0
+
+        return float(volume / average)
+    except Exception:
+        return 0.0
+
+
+def candle_move_percent(row):
+    open_price = safe_float(row["open"])
+    close_price = safe_float(row["close"])
+
+    if open_price <= 0:
+        return 0.0
+
+    return ((close_price - open_price) / open_price) * 100
+
+
+def lower_wick_percent(row):
+    high = safe_float(row["high"])
+    low = safe_float(row["low"])
+    open_price = safe_float(row["open"])
+    close_price = safe_float(row["close"])
+
+    candle_range = high - low
+    if candle_range <= 0:
+        return 0.0
+
+    wick = min(open_price, close_price) - low
+    return max(0.0, wick / candle_range * 100)
+
+
+def upper_wick_percent(row):
+    high = safe_float(row["high"])
+    low = safe_float(row["low"])
+    open_price = safe_float(row["open"])
+    close_price = safe_float(row["close"])
+
+    candle_range = high - low
+    if candle_range <= 0:
+        return 0.0
+
+    wick = high - max(open_price, close_price)
+    return max(0.0, wick / candle_range * 100)
+
+
+def close_power_percent(row):
+    high = safe_float(row["high"])
+    low = safe_float(row["low"])
+    close_price = safe_float(row["close"])
+
+    candle_range = high - low
+    if candle_range <= 0:
+        return 50.0
+
+    return (close_price - low) / candle_range * 100
+
+
+def rolling_previous_high(frame, lookback):
+    try:
+        start = max(0, len(frame) - lookback - 2)
+        end = len(frame) - 2
+        if end <= start:
+            return None
+        return float(frame["high"].iloc[start:end].max())
+    except Exception:
+        return None
+
+
+def rolling_previous_low(frame, lookback):
+    try:
+        start = max(0, len(frame) - lookback - 2)
+        end = len(frame) - 2
+        if end <= start:
+            return None
+        return float(frame["low"].iloc[start:end].min())
+    except Exception:
+        return None
+
+
+def rolling_move_from_1m(frame, current_price, minutes):
+    """Son tamamlanmış 1M mumların başlangıcından güncel fiyata hareket."""
+    try:
+        completed = frame.iloc[:-1]
+
+        if len(completed) < minutes:
+            return 0.0
+
+        start_open = safe_float(
+            completed.iloc[-minutes]["open"]
+        )
+        current = safe_float(current_price)
+
+        if start_open <= 0 or current <= 0:
+            return 0.0
+
+        return (
+            (current - start_open)
+            / start_open
+            * 100
+        )
+
+    except Exception:
+        return 0.0
+
+
+def rolling_volume_ratio_from_1m(frame, minutes=5, baseline_period=20):
+    """Son tamamlanmış 1M mumların toplam hacmini önceki ortalamayla kıyaslar."""
+    try:
+        completed = frame.iloc[:-1].copy()
+
+        if len(completed) < minutes + baseline_period:
+            return 0.0
+
+        recent_volume = float(
+            completed["volume"].iloc[-minutes:].sum()
+        )
+
+        baseline = completed["volume"].iloc[
+            -(minutes + baseline_period):-minutes
+        ]
+
+        baseline_per_minute = float(
+            baseline.mean()
+        )
+
+        expected_volume = (
+            baseline_per_minute
+            * minutes
+        )
+
+        if expected_volume <= 0:
+            return 0.0
+
+        return recent_volume / expected_volume
+
+    except Exception:
+        return 0.0
+
+
+# =========================================================
+# TEKRAR / AÇIK SİNYAL
+# =========================================================
+
+def duplicate_key(symbol, direction):
+    return f"{normalize_bot_symbol(symbol)}_{direction}"
+
+
+def is_recent_duplicate(state, symbol, direction):
+    last_time = int(
+        state.get("last_sent", {}).get(
+            duplicate_key(symbol, direction),
+            0,
+        )
+    )
+    return now_ts() - last_time < DUPLICATE_SECONDS
+
+
+def mark_sent(state, symbol, direction):
+    state.setdefault("last_sent", {})
+    state["last_sent"][duplicate_key(symbol, direction)] = now_ts()
+
+    cutoff = now_ts() - 24 * 60 * 60
+    state["last_sent"] = {
+        key: value
+        for key, value in state["last_sent"].items()
+        if int(value) >= cutoff
+    }
+
+    save_state(state)
+
+
+def early_duplicate_key(symbol, direction):
+    return (
+        f"EARLY_"
+        f"{normalize_bot_symbol(symbol)}_"
+        f"{direction}"
+    )
+
+
+def is_recent_early_duplicate(state, symbol, direction):
+    last_time = int(
+        state.get("early_last_sent", {}).get(
+            early_duplicate_key(symbol, direction),
+            0,
+        )
+    )
+
+    return (
+        now_ts() - last_time
+        < EARLY_ALERT_DUPLICATE_SECONDS
+    )
+
+
+def mark_early_alert_sent(state, symbol, direction):
+    state.setdefault("early_last_sent", {})
+    state["early_last_sent"][
+        early_duplicate_key(symbol, direction)
+    ] = now_ts()
+
+    cutoff = now_ts() - 24 * 60 * 60
+    state["early_last_sent"] = {
+        key: value
+        for key, value in state["early_last_sent"].items()
+        if int(value) >= cutoff
+    }
+
+    save_state(state)
+
+
+def prewatch_duplicate_key(symbol, direction):
+    return (
+        f"PREWATCH_"
+        f"{normalize_bot_symbol(symbol)}_"
+        f"{direction}"
+    )
+
+
+def is_recent_prewatch_duplicate(state, symbol, direction):
+    last_time = int(
+        state.get("prewatch_last_sent", {}).get(
+            prewatch_duplicate_key(symbol, direction),
+            0,
+        )
+    )
+
+    return (
+        now_ts() - last_time
+        < PREWATCH_DUPLICATE_SECONDS
+    )
+
+
+def mark_prewatch_sent(state, symbol, direction):
+    state.setdefault("prewatch_last_sent", {})
+    state["prewatch_last_sent"][
+        prewatch_duplicate_key(symbol, direction)
+    ] = now_ts()
+
+    cutoff = now_ts() - 24 * 60 * 60
+    state["prewatch_last_sent"] = {
+        key: value
+        for key, value in state["prewatch_last_sent"].items()
+        if int(value) >= cutoff
+    }
+
+    save_state(state)
+
+
+def has_open_same_symbol(state, symbol):
+    symbol = normalize_bot_symbol(symbol)
+
+    return any(
+        normalize_bot_symbol(signal.get("symbol")) == symbol
+        for signal in state.get("open_scalp_signals", {}).values()
+    )
+
+
+# =========================================================
+# SİNYAL YARDIMCILARI
+# =========================================================
+
+def build_condition_result(label, ok):
+    return {"label": label, "ok": bool(ok)}
+
+
+def score_from_conditions(conditions, bonus=0):
+    ok_count = sum(1 for condition in conditions if condition["ok"])
+    total = max(1, len(conditions))
+    score = int(ok_count / total * 100) + int(bonus)
+    return max(0, min(100, score)), ok_count, total
+
+
+def missing_reasons(conditions):
+    return [
+        condition["label"]
+        for condition in conditions
+        if not condition["ok"]
+    ]
+
+
+def build_prewatch_message(alert):
+    icon = (
+        "🟢"
+        if alert["direction"] == "LONG"
+        else "🔴"
+    )
+
+    zone_text = (
+        "Kırılım başladı ✅"
+        if alert.get("breakout")
+        else (
+            f"Kırılım bölgesine "
+            f"%{round(alert['breakout_distance'], 3)} uzak"
+        )
+    )
+
+    return (
+        f"👀 SCALP ÖN İZLEME - HENÜZ İŞLEM DEĞİL\n\n"
+        f"{icon} Hazırlık Yönü: {alert['direction']}\n"
+        f"🟡 Coin: {alert['symbol']}\n"
+        f"💰 İzleme Fiyatı: {format_price(alert['entry'])}\n"
+        f"📊 Hazırlık Skoru: {alert['score']}/100\n\n"
+        f"İlk Hızlanma Verileri:\n"
+        f"• Yaklaşık 3M: %{round(alert['live_move3'], 2)}\n"
+        f"• Yaklaşık 5M: %{round(alert['live_move5'], 2)}\n"
+        f"• Yaklaşık 15M: %{round(alert['live_move15'], 2)}\n"
+        f"• 1M RSI: {round(alert['rsi1'], 2)}\n"
+        f"• Son 1M Hacim: {round(alert['vol1'], 2)}x\n"
+        f"• Yuvarlanan 3M Hacim: "
+        f"{round(alert['rolling_vol3'], 2)}x\n"
+        f"• Fiyat Bölgesi: {zone_text}\n\n"
+        f"📌 Uyarı nedeni:\n"
+        f"{alert['reason']}\n\n"
+        f"⚠️ Henüz giriş, TP veya SL üretilmedi.\n"
+        f"Grafiği aç; hacimli kırılım veya kontrollü geri çekilme bekle.\n"
+        f"Bu mesaj tek başına işlem açma emri değildir."
+    )
+
+
+def analyze_prewatch_alert(
+    symbol,
+    df1,
+    current_price,
+    market_data,
+):
+    if not PREWATCH_ENABLED:
+        return None
+
+    try:
+        current = safe_float(current_price)
+
+        if current <= 0:
+            return None
+
+        live_move3 = rolling_move_from_1m(
+            df1,
+            current,
+            3,
+        )
+        live_move5 = rolling_move_from_1m(
+            df1,
+            current,
+            5,
+        )
+        live_move15 = rolling_move_from_1m(
+            df1,
+            current,
+            15,
+        )
+
+        # Ön izleme aşamasında hareket fazla ilerlediyse
+        # ikinci kademe ERKEN FIRSAT yoluna bırakılır.
+        if abs(live_move15) > PREWATCH_MAX_15M_MOVE:
+            return None
+
+        rolling_vol3 = rolling_volume_ratio_from_1m(
+            df1,
+            3,
+            20,
+        )
+
+        rsi1 = safe_float(
+            market_data.get("rsi1")
+        )
+        vol1 = safe_float(
+            market_data.get("vol1")
+        )
+
+        previous_high = rolling_previous_high(
+            df1,
+            PREWATCH_BREAKOUT_LOOKBACK_1M,
+        )
+        previous_low = rolling_previous_low(
+            df1,
+            PREWATCH_BREAKOUT_LOOKBACK_1M,
+        )
+
+        direction = None
+        breakout = False
+        breakout_distance = 999.0
+
+        long_momentum = (
+            live_move3 >= PREWATCH_MIN_3M_MOVE
+            or live_move5 >= PREWATCH_MIN_5M_MOVE
+        )
+        short_momentum = (
+            live_move3 <= -PREWATCH_MIN_3M_MOVE
+            or live_move5 <= -PREWATCH_MIN_5M_MOVE
+        )
+
+        if long_momentum and not short_momentum:
+            direction = "LONG"
+
+            if previous_high is not None and previous_high > 0:
+                breakout = current >= previous_high
+                breakout_distance = (
+                    0.0
+                    if breakout
+                    else (
+                        (previous_high - current)
+                        / current
+                        * 100
+                    )
+                )
+
+        elif short_momentum and not long_momentum:
+            direction = "SHORT"
+
+            if previous_low is not None and previous_low > 0:
+                breakout = current <= previous_low
+                breakout_distance = (
+                    0.0
+                    if breakout
+                    else (
+                        (current - previous_low)
+                        / current
+                        * 100
+                    )
+                )
+
+        if direction is None:
+            return None
+
+        near_breakout = (
+            breakout
+            or (
+                0 <= breakout_distance
+                <= PREWATCH_MAX_BREAKOUT_DISTANCE_PERCENT
+            )
+        )
+
+        volume_ok = (
+            vol1 >= PREWATCH_MIN_1M_VOLUME_RATIO
+            or rolling_vol3
+            >= PREWATCH_MIN_ROLLING_3M_VOLUME_RATIO
+        )
+
+        if direction == "LONG":
+            rsi_ok = (
+                PREWATCH_LONG_RSI_MIN
+                <= rsi1
+                <= PREWATCH_LONG_RSI_MAX
+            )
+        else:
+            rsi_ok = (
+                PREWATCH_SHORT_RSI_MIN
+                <= rsi1
+                <= PREWATCH_SHORT_RSI_MAX
+            )
+
+        score = 0
+
+        if abs(live_move3) >= PREWATCH_MIN_3M_MOVE:
+            score += 20
+
+        if abs(live_move5) >= PREWATCH_MIN_5M_MOVE:
+            score += 20
+
+        if vol1 >= PREWATCH_MIN_1M_VOLUME_RATIO:
+            score += 15
+
+        if (
+            rolling_vol3
+            >= PREWATCH_MIN_ROLLING_3M_VOLUME_RATIO
+        ):
+            score += 15
+
+        if near_breakout:
+            score += 20
+
+        if rsi_ok:
+            score += 10
+
+        score = min(100, score)
+
+        momentum_ok = (
+            long_momentum
+            if direction == "LONG"
+            else short_momentum
+        )
+
+        hard_ok = (
+            momentum_ok
+            and volume_ok
+            and rsi_ok
+            and near_breakout
+        )
+
+        if not hard_ok or score < PREWATCH_MIN_SCORE:
+            return None
+
+        reason_parts = [
+            "ilk 3M/5M hızlanma başladı",
+        ]
+
+        if breakout:
+            reason_parts.append(
+                "kısa vadeli fiyat bölgesi kırılıyor"
+            )
+        else:
+            reason_parts.append(
+                "kısa vadeli kırılım bölgesine yaklaşıyor"
+            )
+
+        if volume_ok:
+            reason_parts.append(
+                "kısa vadeli hacim artışı var"
+            )
+
+        alert = {
+            "symbol": normalize_bot_symbol(symbol),
+            "direction": direction,
+            "entry": current,
+            "score": score,
+            "live_move3": live_move3,
+            "live_move5": live_move5,
+            "live_move15": live_move15,
+            "rsi1": rsi1,
+            "vol1": vol1,
+            "rolling_vol3": rolling_vol3,
+            "breakout": breakout,
+            "breakout_distance": max(
+                0.0,
+                breakout_distance,
+            ),
+            "reason": ", ".join(reason_parts),
+        }
+
+        alert["message"] = build_prewatch_message(
+            alert
+        )
+
+        return alert
+
+    except Exception as exc:
+        print(
+            symbol,
+            "ön izleme analiz hatası:",
+            exc,
+        )
+        return None
+
+
+def build_early_alert_message(alert):
+    icon = (
+        "🟢"
+        if alert["direction"] == "LONG"
+        else "🔴"
+    )
+
+    breakout_text = (
+        "Var ✅"
+        if alert.get("breakout")
+        else "Henüz net değil"
+    )
+
+    return (
+        f"⚠️ ERKEN SCALP FIRSATI - İŞLEM SİNYALİ DEĞİL\n\n"
+        f"{icon} Yön İzleme: {alert['direction']}\n"
+        f"🟡 Coin: {alert['symbol']}\n"
+        f"💰 İzleme Fiyatı: {format_price(alert['entry'])}\n"
+        f"📊 Erken Kalite: {alert['score']}/100\n\n"
+        f"Canlı Futures Hareketi:\n"
+        f"• Yaklaşık 5M: %{round(alert['live_move5'], 2)}\n"
+        f"• Yaklaşık 15M: %{round(alert['live_move15'], 2)}\n"
+        f"• 1M RSI: {round(alert['rsi1'], 2)}\n"
+        f"• Son 1M Hacim: {round(alert['vol1'], 2)}x\n"
+        f"• Yuvarlanan 5M Hacim: "
+        f"{round(alert['rolling_vol5'], 2)}x\n"
+        f"• Kısa Vadeli Kırılım: {breakout_text}\n\n"
+        f"📌 Bu uyarı neden geldi?\n"
+        f"{alert['reason']}\n\n"
+        f"⚠️ TP/SL üretilmedi ve açık scalp işlemi sayılmaz.\n"
+        f"Grafikte 1M/5M kırılımını, geri çekilmeyi ve BTC yönünü kontrol et.\n"
+        f"Fiyat hareketin ortasındaysa peşinden koşma."
+    )
+
+
+def analyze_early_alert(
+    symbol,
+    df1,
+    current_price,
+    market_data,
+):
+    if not EARLY_ALERT_ENABLED:
+        return None
+
+    try:
+        current = safe_float(current_price)
+
+        if current <= 0:
+            return None
+
+        live_move5 = rolling_move_from_1m(
+            df1,
+            current,
+            5,
+        )
+        live_move15 = rolling_move_from_1m(
+            df1,
+            current,
+            15,
+        )
+        rolling_vol5 = rolling_volume_ratio_from_1m(
+            df1,
+            5,
+            20,
+        )
+
+        rsi1 = safe_float(
+            market_data.get("rsi1")
+        )
+        vol1 = safe_float(
+            market_data.get("vol1")
+        )
+
+        previous_high = rolling_previous_high(
+            df1,
+            EARLY_BREAKOUT_LOOKBACK_1M,
+        )
+        previous_low = rolling_previous_low(
+            df1,
+            EARLY_BREAKOUT_LOOKBACK_1M,
+        )
+
+        breakout_long = (
+            previous_high is not None
+            and current >= previous_high
+        )
+        breakdown_short = (
+            previous_low is not None
+            and current <= previous_low
+        )
+
+        direction = None
+        breakout = False
+
+        if (
+            live_move5 >= EARLY_MIN_5M_MOVE
+            or live_move15 >= EARLY_MIN_15M_MOVE
+        ):
+            direction = "LONG"
+            breakout = breakout_long
+
+        elif (
+            live_move5 <= -EARLY_MIN_5M_MOVE
+            or live_move15 <= -EARLY_MIN_15M_MOVE
+        ):
+            direction = "SHORT"
+            breakout = breakdown_short
+
+        if direction is None:
+            return None
+
+        if abs(live_move15) > EARLY_MAX_15M_MOVE:
+            return None
+
+        momentum_ok = (
+            abs(live_move5) >= EARLY_MIN_5M_MOVE
+            or abs(live_move15) >= EARLY_MIN_15M_MOVE
+        )
+        volume_ok = (
+            vol1 >= EARLY_MIN_1M_VOLUME_RATIO
+            or rolling_vol5
+            >= EARLY_MIN_ROLLING_5M_VOLUME_RATIO
+        )
+
+        if direction == "LONG":
+            rsi_ok = (
+                EARLY_LONG_RSI_MIN
+                <= rsi1
+                <= EARLY_LONG_RSI_MAX
+            )
+            strong_move = (
+                live_move15
+                >= max(
+                    1.20,
+                    EARLY_MIN_15M_MOVE,
+                )
+            )
+        else:
+            rsi_ok = (
+                EARLY_SHORT_RSI_MIN
+                <= rsi1
+                <= EARLY_SHORT_RSI_MAX
+            )
+            strong_move = (
+                live_move15
+                <= -max(
+                    1.20,
+                    EARLY_MIN_15M_MOVE,
+                )
+            )
+
+        score = 0
+
+        if abs(live_move5) >= EARLY_MIN_5M_MOVE:
+            score += 25
+        if abs(live_move15) >= EARLY_MIN_15M_MOVE:
+            score += 20
+        if vol1 >= EARLY_MIN_1M_VOLUME_RATIO:
+            score += 15
+        if (
+            rolling_vol5
+            >= EARLY_MIN_ROLLING_5M_VOLUME_RATIO
+        ):
+            score += 15
+        if breakout:
+            score += 15
+        if rsi_ok:
+            score += 10
+
+        score = min(100, score)
+
+        hard_ok = (
+            momentum_ok
+            and volume_ok
+            and rsi_ok
+            and (
+                breakout
+                or strong_move
+            )
+        )
+
+        if not hard_ok or score < EARLY_MIN_SCORE:
+            return None
+
+        reason_parts = []
+
+        if breakout:
+            reason_parts.append(
+                "önceki 1M fiyat bölgesi kırılıyor"
+            )
+        if strong_move:
+            reason_parts.append(
+                "15M mum kapanmadan güçlü hareket oluştu"
+            )
+        if volume_ok:
+            reason_parts.append(
+                "kısa vadeli hacim hareketi destekliyor"
+            )
+
+        alert = {
+            "symbol": normalize_bot_symbol(symbol),
+            "direction": direction,
+            "entry": current,
+            "score": score,
+            "live_move5": live_move5,
+            "live_move15": live_move15,
+            "rsi1": rsi1,
+            "vol1": vol1,
+            "rolling_vol5": rolling_vol5,
+            "breakout": breakout,
+            "reason": (
+                ", ".join(reason_parts)
+                if reason_parts
+                else "hızlı momentum algılandı"
+            ),
+        }
+
+        alert["message"] = build_early_alert_message(
+            alert
+        )
+
+        return alert
+
+    except Exception as exc:
+        print(
+            symbol,
+            "erken fırsat analiz hatası:",
+            exc,
+        )
+        return None
+
+
+def build_signal_message(signal):
+    icon = "🟢" if signal["direction"] == "LONG" else "🔴"
+
+    return (
+        f"⚡ HIZLI SCALP RADAR v2\n\n"
+        f"{icon} {signal['direction']}\n"
+        f"🟡 Coin: {signal['symbol']}\n"
+        f"⏱️ Kaynak: {signal['source']}\n"
+        f"📌 Kurulum: {signal['setup']}\n\n"
+        f"📌 Giriş: {format_price(signal['entry'])}\n"
+        f"🎯 TP1: {format_price(signal['tp1'])}\n"
+        f"🎯 TP2: {format_price(signal['tp2'])}\n"
+        f"🎯 TP3: {format_price(signal['tp3'])}\n"
+        f"🛑 SL: {format_price(signal['sl'])}\n\n"
+        f"📊 Kalite Uyum Skoru: {signal['score']}/100\n"
+        f"🛡️ Stop Mesafesi: %{round(signal['risk_percent'], 3)}\n\n"
+        f"📊 Scalp Verileri:\n"
+        f"• 1M RSI: {round(signal['rsi1'], 2)}\n"
+        f"• 5M RSI: {round(signal['rsi5'], 2)}\n"
+        f"• 1M Hacim: {round(signal['vol1'], 2)}x\n"
+        f"• 5M Hacim: {round(signal['vol5'], 2)}x\n"
+        f"• 1M Hareket: %{round(signal['move1'], 2)}\n"
+        f"• 5M Hareket: %{round(signal['move5'], 2)}\n"
+        f"• 15M Hareket: %{round(signal['move15'], 2)}\n"
+        f"• Alt Fitil: %{round(signal['lower_wick'], 1)}\n"
+        f"• Üst Fitil: %{round(signal['upper_wick'], 1)}\n"
+        f"• Kapanış Gücü: %{round(signal['close_power'], 1)}\n\n"
+        f"📌 İşlem Kuralı:\n"
+        f"• Hızlı scalp sinyalidir; ana MTF sinyali değildir.\n"
+        f"• Girişten %{MAX_ENTRY_DRIFT_PERCENT} fazla uzaklaştıysa girme.\n"
+        f"• TP1 gelirse %50 kâr al, SL girişe çek.\n"
+        f"• Stop mutlaka girilmeli.\n"
+        f"• Marjin: Isolated.\n"
+        f"• Kaldıraç düşük tutulmalı.\n\n"
+        f"⚠️ Finansal tavsiye değildir. Grafikte kontrol etmeden işlem açma."
+    )
+
+
+def make_signal(
+    symbol,
+    direction,
+    source,
+    setup,
+    entry,
+    sl,
+    score,
+    risk_percent,
+    market_data,
+    ok_count,
+    total,
+    missing,
+):
+    risk = entry - sl if direction == "LONG" else sl - entry
+
+    if risk <= 0:
+        return None
+
+    if direction == "LONG":
+        tp1 = entry + risk * TP1_R
+        tp2 = entry + risk * TP2_R
+        tp3 = entry + risk * TP3_R
+    else:
+        tp1 = entry - risk * TP1_R
+        tp2 = entry - risk * TP2_R
+        tp3 = entry - risk * TP3_R
+
+        if min(tp1, tp2, tp3) <= 0:
+            return None
+
+    signal = {
+        "symbol": normalize_bot_symbol(symbol),
+        "direction": direction,
+        "source": source,
+        "setup": setup,
+        "entry": entry,
+        "tp1": tp1,
+        "tp2": tp2,
+        "tp3": tp3,
+        "sl": sl,
+        "score": score,
+        "risk_percent": risk_percent,
+        "ok_count": ok_count,
+        "total_conditions": total,
+        "missing": missing,
+        **market_data,
+    }
+
+    signal["message"] = build_signal_message(signal)
+    return signal
+
+
+def build_debug(
+    symbol,
+    direction,
+    setup,
+    score,
+    ok_count,
+    total,
+    missing,
+    market_data,
+    risk_percent,
+):
+    return {
+        "symbol": normalize_bot_symbol(symbol),
+        "direction": direction,
+        "setup": setup,
+        "score": score,
+        "ok_count": ok_count,
+        "total_conditions": total,
+        "missing": missing,
+        "risk_percent": risk_percent,
+        **market_data,
+    }
+
+
+# =========================================================
+# TEPKİ ANALİZİ
+# =========================================================
+
+def analyze_reaction_side(
+    symbol,
+    direction,
+    df1,
+    df5,
+    df15,
+    current_price,
+    market_data,
+):
+    try:
+        c1 = df1.iloc[-2]
+        c5 = df5.iloc[-2]
+        entry = float(current_price)
+
+        rsi1 = market_data["rsi1"]
+        rsi5 = market_data["rsi5"]
+        vol1 = market_data["vol1"]
+        vol5 = market_data["vol5"]
+        move5 = market_data["move5"]
+        move15 = market_data["move15"]
+        lower_wick = market_data["lower_wick"]
+        upper_wick = market_data["upper_wick"]
+        close_power = market_data["close_power"]
+
+        if direction == "LONG":
+            raw_sl = min(float(c1["low"]), float(c5["low"]))
+            sl = raw_sl * (1 - SL_BUFFER_PERCENT / 100)
+            risk = entry - sl
+
+            if risk <= 0:
+                return None, None
+
+            risk_percent = risk / entry * 100
+
+            conditions = [
+                build_condition_result(
+                    "TEPKİ: 5M düşüş yetersiz",
+                    move5 <= -REACTION_LONG_MIN_5M_DROP,
+                ),
+                build_condition_result(
+                    "TEPKİ: 15M düşüş yetersiz",
+                    move15 <= -REACTION_LONG_MIN_15M_DROP,
+                ),
+                build_condition_result(
+                    "TEPKİ: 1M RSI uygun değil",
+                    REACTION_LONG_RSI_1M_MIN
+                    <= rsi1
+                    <= REACTION_LONG_RSI_1M_MAX,
+                ),
+                build_condition_result(
+                    "TEPKİ: 5M RSI yüksek",
+                    rsi5 <= REACTION_LONG_RSI_5M_MAX,
+                ),
+                build_condition_result(
+                    "TEPKİ: 1M hacim düşük",
+                    vol1 >= REACTION_MIN_1M_VOLUME_RATIO,
+                ),
+                build_condition_result(
+                    "TEPKİ: 5M hacim düşük",
+                    vol5 >= REACTION_MIN_5M_VOLUME_RATIO,
+                ),
+                build_condition_result(
+                    "TEPKİ: alt fitil yetersiz",
+                    lower_wick >= REACTION_MIN_WICK_PERCENT,
+                ),
+                build_condition_result(
+                    "TEPKİ: kapanış gücü zayıf",
+                    close_power >= REACTION_LONG_MIN_CLOSE_POWER,
+                ),
+                build_condition_result(
+                    "TEPKİ: risk uygun değil",
+                    MIN_RISK_PERCENT
+                    <= risk_percent
+                    <= MAX_RISK_PERCENT,
+                ),
+            ]
+
+            bonus = 0
+            if vol1 >= 2.0:
+                bonus += 3
+            if lower_wick >= 40:
+                bonus += 3
+            if close_power >= 58:
+                bonus += 2
+
+            score, ok_count, total = score_from_conditions(
+                conditions,
+                bonus,
+            )
+            missing = missing_reasons(conditions)
+
+            # Scalp için temel şartlar puanla telafi edilemez.
+            hard_ok = (
+                MIN_RISK_PERCENT
+                <= risk_percent
+                <= MAX_RISK_PERCENT
+                and move5 <= -REACTION_LONG_MIN_5M_DROP
+                and move15 <= -REACTION_LONG_MIN_15M_DROP
+                and REACTION_LONG_RSI_1M_MIN
+                <= rsi1
+                <= REACTION_LONG_RSI_1M_MAX
+                and rsi5 <= REACTION_LONG_RSI_5M_MAX
+                and vol1 >= REACTION_MIN_1M_VOLUME_RATIO
+                and vol5 >= REACTION_MIN_5M_VOLUME_RATIO
+                and lower_wick >= REACTION_MIN_WICK_PERCENT
+                and close_power >= REACTION_LONG_MIN_CLOSE_POWER
+            )
+
+            signal = None
+            if score >= MIN_SCORE and hard_ok:
+                signal = make_signal(
+                    symbol,
+                    "LONG",
+                    "TEPKI_SCALP",
+                    "Teyitli Tepki LONG",
+                    entry,
+                    sl,
+                    score,
+                    risk_percent,
+                    market_data,
+                    ok_count,
+                    total,
+                    missing,
+                )
+
+            return signal, build_debug(
+                symbol,
+                "LONG",
+                "Teyitli Tepki LONG",
+                score,
+                ok_count,
+                total,
+                missing,
+                market_data,
+                risk_percent,
+            )
+
+        raw_sl = max(float(c1["high"]), float(c5["high"]))
+        sl = raw_sl * (1 + SL_BUFFER_PERCENT / 100)
+        risk = sl - entry
+
+        if risk <= 0:
+            return None, None
+
+        risk_percent = risk / entry * 100
+
+        conditions = [
+            build_condition_result(
+                "TEPKİ: 5M yükseliş yetersiz",
+                move5 >= REACTION_SHORT_MIN_5M_PUMP,
+            ),
+            build_condition_result(
+                "TEPKİ: 15M yükseliş yetersiz",
+                move15 >= REACTION_SHORT_MIN_15M_PUMP,
+            ),
+            build_condition_result(
+                "TEPKİ: 1M RSI uygun değil",
+                REACTION_SHORT_RSI_1M_MIN
+                <= rsi1
+                <= REACTION_SHORT_RSI_1M_MAX,
+            ),
+            build_condition_result(
+                "TEPKİ: 5M RSI düşük",
+                rsi5 >= REACTION_SHORT_RSI_5M_MIN,
+            ),
+            build_condition_result(
+                "TEPKİ: 1M hacim düşük",
+                vol1 >= REACTION_MIN_1M_VOLUME_RATIO,
+            ),
+            build_condition_result(
+                "TEPKİ: 5M hacim düşük",
+                vol5 >= REACTION_MIN_5M_VOLUME_RATIO,
+            ),
+            build_condition_result(
+                "TEPKİ: üst fitil yetersiz",
+                upper_wick >= REACTION_MIN_WICK_PERCENT,
+            ),
+            build_condition_result(
+                "TEPKİ: kapanış gücü yetersiz",
+                close_power <= REACTION_SHORT_MAX_CLOSE_POWER,
+            ),
+            build_condition_result(
+                "TEPKİ: risk uygun değil",
+                MIN_RISK_PERCENT
+                <= risk_percent
+                <= MAX_RISK_PERCENT,
+            ),
+        ]
+
+        bonus = 0
+        if vol1 >= 2.0:
+            bonus += 3
+        if upper_wick >= 40:
+            bonus += 3
+        if close_power <= 42:
+            bonus += 2
+
+        score, ok_count, total = score_from_conditions(
+            conditions,
+            bonus,
+        )
+        missing = missing_reasons(conditions)
+
+        hard_ok = (
+            MIN_RISK_PERCENT
+            <= risk_percent
+            <= MAX_RISK_PERCENT
+            and move5 >= REACTION_SHORT_MIN_5M_PUMP
+            and move15 >= REACTION_SHORT_MIN_15M_PUMP
+            and REACTION_SHORT_RSI_1M_MIN
+            <= rsi1
+            <= REACTION_SHORT_RSI_1M_MAX
+            and rsi5 >= REACTION_SHORT_RSI_5M_MIN
+            and vol1 >= REACTION_MIN_1M_VOLUME_RATIO
+            and vol5 >= REACTION_MIN_5M_VOLUME_RATIO
+            and upper_wick >= REACTION_MIN_WICK_PERCENT
+            and close_power <= REACTION_SHORT_MAX_CLOSE_POWER
+        )
+
+        signal = None
+        if score >= MIN_SCORE and hard_ok:
+            signal = make_signal(
+                symbol,
+                "SHORT",
+                "TEPKI_SCALP",
+                "Teyitli Tepki SHORT",
+                entry,
+                sl,
+                score,
+                risk_percent,
+                market_data,
+                ok_count,
+                total,
+                missing,
+            )
+
+        return signal, build_debug(
+            symbol,
+            "SHORT",
+            "Teyitli Tepki SHORT",
+            score,
+            ok_count,
+            total,
+            missing,
+            market_data,
+            risk_percent,
+        )
+
+    except Exception as exc:
+        print(symbol, direction, "tepki analiz hatası:", exc)
+        return None, None
+
+
+# =========================================================
+# ATAK ANALİZİ
+# =========================================================
+
+def analyze_attack_side(
+    symbol,
+    direction,
+    df1,
+    df5,
+    df15,
+    current_price,
+    market_data,
+):
+    try:
+        c1 = df1.iloc[-2]
+        entry = float(current_price)
+
+        rsi1 = market_data["rsi1"]
+        rsi5 = market_data["rsi5"]
+        vol1 = market_data["vol1"]
+        vol5 = market_data["vol5"]
+        move1 = market_data["move1"]
+        move5 = market_data["move5"]
+        move15 = market_data["move15"]
+        close_power = market_data["close_power"]
+
+        previous_high_1m = rolling_previous_high(
+            df1,
+            ATTACK_BREAKOUT_LOOKBACK_1M,
+        )
+        previous_high_5m = rolling_previous_high(
+            df5,
+            ATTACK_BREAKOUT_LOOKBACK_5M,
+        )
+        previous_low_1m = rolling_previous_low(
+            df1,
+            ATTACK_BREAKOUT_LOOKBACK_1M,
+        )
+        previous_low_5m = rolling_previous_low(
+            df5,
+            ATTACK_BREAKOUT_LOOKBACK_5M,
+        )
+
+        close1 = float(c1["close"])
+
+        breakout_long = (
+            (
+                previous_high_1m is not None
+                and close1 >= previous_high_1m
+            )
+            or (
+                previous_high_5m is not None
+                and close1 >= previous_high_5m
+            )
+        )
+
+        breakdown_short = (
+            (
+                previous_low_1m is not None
+                and close1 <= previous_low_1m
+            )
+            or (
+                previous_low_5m is not None
+                and close1 <= previous_low_5m
+            )
+        )
+
+        if direction == "LONG":
+            recent_low = min(
+                float(df1["low"].iloc[-6:-1].min()),
+                float(df5["low"].iloc[-3:-1].min()),
+            )
+            sl = recent_low * (1 - SL_BUFFER_PERCENT / 100)
+            risk = entry - sl
+
+            if risk <= 0:
+                return None, None
+
+            risk_percent = risk / entry * 100
+
+            conditions = [
+                build_condition_result(
+                    "ATAK: 1M yeşil güç yetersiz",
+                    move1 >= ATTACK_LONG_MIN_1M_MOVE,
+                ),
+                build_condition_result(
+                    "ATAK: 5M yukarı momentum yok",
+                    move5 >= ATTACK_LONG_MIN_5M_MOVE,
+                ),
+                build_condition_result(
+                    "ATAK: 15M yukarı momentum zayıf",
+                    move15 >= ATTACK_LONG_MIN_15M_MOVE,
+                ),
+                build_condition_result(
+                    "ATAK: 1M RSI uygun değil",
+                    ATTACK_LONG_RSI_1M_MIN
+                    <= rsi1
+                    <= ATTACK_LONG_RSI_1M_MAX,
+                ),
+                build_condition_result(
+                    "ATAK: 5M RSI uygun değil",
+                    ATTACK_LONG_RSI_5M_MIN
+                    <= rsi5
+                    <= ATTACK_LONG_RSI_5M_MAX,
+                ),
+                build_condition_result(
+                    "ATAK: 1M hacim düşük",
+                    vol1 >= ATTACK_MIN_1M_VOLUME_RATIO,
+                ),
+                build_condition_result(
+                    "ATAK: 5M hacim düşük",
+                    vol5 >= ATTACK_MIN_5M_VOLUME_RATIO,
+                ),
+                build_condition_result(
+                    "ATAK: kırılım yok",
+                    breakout_long,
+                ),
+                build_condition_result(
+                    "ATAK: kapanış gücü zayıf",
+                    close_power >= ATTACK_LONG_MIN_CLOSE_POWER,
+                ),
+                build_condition_result(
+                    "ATAK: risk uygun değil",
+                    MIN_RISK_PERCENT
+                    <= risk_percent
+                    <= MAX_RISK_PERCENT,
+                ),
+            ]
+
+            bonus = 0
+            if vol1 >= 2.0:
+                bonus += 3
+            if vol5 >= 1.60:
+                bonus += 2
+            if breakout_long:
+                bonus += 4
+            if close_power >= 72:
+                bonus += 2
+
+            score, ok_count, total = score_from_conditions(
+                conditions,
+                bonus,
+            )
+            missing = missing_reasons(conditions)
+
+            hard_ok = (
+                MIN_RISK_PERCENT
+                <= risk_percent
+                <= MAX_RISK_PERCENT
+                and move1 >= ATTACK_LONG_MIN_1M_MOVE
+                and (
+                    move5 >= ATTACK_LONG_MIN_5M_MOVE
+                    or breakout_long
+                )
+                and move15 >= ATTACK_LONG_MIN_15M_MOVE
+                and ATTACK_LONG_RSI_1M_MIN
+                <= rsi1
+                <= ATTACK_LONG_RSI_1M_MAX
+                and ATTACK_LONG_RSI_5M_MIN
+                <= rsi5
+                <= ATTACK_LONG_RSI_5M_MAX
+                and vol1 >= ATTACK_MIN_1M_VOLUME_RATIO
+                and vol5 >= ATTACK_MIN_5M_VOLUME_RATIO
+                and close_power >= ATTACK_LONG_MIN_CLOSE_POWER
+            )
+
+            signal = None
+            if score >= MIN_SCORE and hard_ok:
+                signal = make_signal(
+                    symbol,
+                    "LONG",
+                    "ATAK_SCALP",
+                    "Filtreli Atak Momentum LONG",
+                    entry,
+                    sl,
+                    score,
+                    risk_percent,
+                    market_data,
+                    ok_count,
+                    total,
+                    missing,
+                )
+
+            return signal, build_debug(
+                symbol,
+                "LONG",
+                "Filtreli Atak Momentum LONG",
+                score,
+                ok_count,
+                total,
+                missing,
+                market_data,
+                risk_percent,
+            )
+
+        recent_high = max(
+            float(df1["high"].iloc[-6:-1].max()),
+            float(df5["high"].iloc[-3:-1].max()),
+        )
+        sl = recent_high * (1 + SL_BUFFER_PERCENT / 100)
+        risk = sl - entry
+
+        if risk <= 0:
+            return None, None
+
+        risk_percent = risk / entry * 100
+
+        conditions = [
+            build_condition_result(
+                "ATAK: 1M kırmızı güç yetersiz",
+                move1 <= -ATTACK_SHORT_MIN_1M_MOVE,
+            ),
+            build_condition_result(
+                "ATAK: 5M aşağı momentum yok",
+                move5 <= -ATTACK_SHORT_MIN_5M_MOVE,
+            ),
+            build_condition_result(
+                "ATAK: 15M aşağı momentum zayıf",
+                move15 <= -ATTACK_SHORT_MIN_15M_MOVE,
+            ),
+            build_condition_result(
+                "ATAK: 1M RSI uygun değil",
+                ATTACK_SHORT_RSI_1M_MIN
+                <= rsi1
+                <= ATTACK_SHORT_RSI_1M_MAX,
+            ),
+            build_condition_result(
+                "ATAK: 5M RSI uygun değil",
+                ATTACK_SHORT_RSI_5M_MIN
+                <= rsi5
+                <= ATTACK_SHORT_RSI_5M_MAX,
+            ),
+            build_condition_result(
+                "ATAK: 1M hacim düşük",
+                vol1 >= ATTACK_MIN_1M_VOLUME_RATIO,
+            ),
+            build_condition_result(
+                "ATAK: 5M hacim düşük",
+                vol5 >= ATTACK_MIN_5M_VOLUME_RATIO,
+            ),
+            build_condition_result(
+                "ATAK: aşağı kırılım yok",
+                breakdown_short,
+            ),
+            build_condition_result(
+                "ATAK: kapanış gücü zayıf",
+                close_power <= ATTACK_SHORT_MAX_CLOSE_POWER,
+            ),
+            build_condition_result(
+                "ATAK: risk uygun değil",
+                MIN_RISK_PERCENT
+                <= risk_percent
+                <= MAX_RISK_PERCENT,
+            ),
+        ]
+
+        bonus = 0
+        if vol1 >= 2.0:
+            bonus += 3
+        if vol5 >= 1.60:
+            bonus += 2
+        if breakdown_short:
+            bonus += 4
+        if close_power <= 28:
+            bonus += 2
+
+        score, ok_count, total = score_from_conditions(
+            conditions,
+            bonus,
+        )
+        missing = missing_reasons(conditions)
+
+        hard_ok = (
+            MIN_RISK_PERCENT
+            <= risk_percent
+            <= MAX_RISK_PERCENT
+            and move1 <= -ATTACK_SHORT_MIN_1M_MOVE
+            and (
+                move5 <= -ATTACK_SHORT_MIN_5M_MOVE
+                or breakdown_short
+            )
+            and move15 <= -ATTACK_SHORT_MIN_15M_MOVE
+            and ATTACK_SHORT_RSI_1M_MIN
+            <= rsi1
+            <= ATTACK_SHORT_RSI_1M_MAX
+            and ATTACK_SHORT_RSI_5M_MIN
+            <= rsi5
+            <= ATTACK_SHORT_RSI_5M_MAX
+            and vol1 >= ATTACK_MIN_1M_VOLUME_RATIO
+            and vol5 >= ATTACK_MIN_5M_VOLUME_RATIO
+            and close_power <= ATTACK_SHORT_MAX_CLOSE_POWER
+        )
+
+        signal = None
+        if score >= MIN_SCORE and hard_ok:
+            signal = make_signal(
+                symbol,
+                "SHORT",
+                "ATAK_SCALP",
+                "Filtreli Atak Momentum SHORT",
+                entry,
+                sl,
+                score,
+                risk_percent,
+                market_data,
+                ok_count,
+                total,
+                missing,
+            )
+
+        return signal, build_debug(
+            symbol,
+            "SHORT",
+            "Filtreli Atak Momentum SHORT",
+            score,
+            ok_count,
+            total,
+            missing,
+            market_data,
+            risk_percent,
+        )
+
+    except Exception as exc:
+        print(symbol, direction, "atak analiz hatası:", exc)
+        return None, None
+
+
+def analyze_symbol(exchange, symbol):
+    current_price = get_current_price(exchange, symbol)
+
+    df1 = fetch_df(exchange, symbol, "1m", limit=100, min_len=60)
+    df5 = fetch_df(exchange, symbol, "5m", limit=100, min_len=60)
+    df15 = fetch_df(exchange, symbol, "15m", limit=80, min_len=40)
+
+    if (
+        df1 is None
+        or df5 is None
+        or df15 is None
+        or current_price is None
+    ):
+        return [], [], [], []
+
+    df1 = df1.copy()
+    df5 = df5.copy()
+
+    df1["rsi"] = calc_rsi(df1["close"])
+    df5["rsi"] = calc_rsi(df5["close"])
+
+    c1 = df1.iloc[-2]
+    c5 = df5.iloc[-2]
+    c15 = df15.iloc[-2]
+
+    market_data = {
+        "rsi1": float(df1["rsi"].iloc[-2]),
+        "rsi5": float(df5["rsi"].iloc[-2]),
+        "vol1": volume_ratio(df1, -2, 20),
+        "vol5": volume_ratio(df5, -2, 20),
+        "move1": candle_move_percent(c1),
+        "move5": candle_move_percent(c5),
+        "move15": candle_move_percent(c15),
+        "lower_wick": lower_wick_percent(c1),
+        "upper_wick": upper_wick_percent(c1),
+        "close_power": close_power_percent(c1),
+    }
+
+    signals = []
+    debug_items = []
+    early_alerts = []
+    prewatch_alerts = []
+
+    prewatch_alert = analyze_prewatch_alert(
+        symbol,
+        df1,
+        current_price,
+        market_data,
+    )
+
+    if prewatch_alert is not None:
+        prewatch_alerts.append(
+            prewatch_alert
+        )
+
+    early_alert = analyze_early_alert(
+        symbol,
+        df1,
+        current_price,
+        market_data,
+    )
+
+    if early_alert is not None:
+        early_alerts.append(early_alert)
+
+    for analyzer in (
+        analyze_reaction_side,
+        analyze_attack_side,
+    ):
+        for direction in ("LONG", "SHORT"):
+            signal, debug = analyzer(
+                symbol,
+                direction,
+                df1,
+                df5,
+                df15,
+                current_price,
+                market_data,
+            )
+
+            if signal is not None:
+                signals.append(signal)
+            if debug is not None:
+                debug_items.append(debug)
+
+    signals.sort(
+        key=lambda item: (
+            item["score"],
+            -item["risk_percent"],
+            item["vol5"],
+            item["vol1"],
+        ),
+        reverse=True,
+    )
+
+    return (
+        signals[:1],
+        debug_items,
+        early_alerts,
+        prewatch_alerts,
+    )
+
+
+# =========================================================
+# AÇIK SİNYAL TAKİBİ
+# =========================================================
+
+def save_open_signal(state, signal):
+    key = (
+        f"{signal['symbol']}_"
+        f"{signal['direction']}_"
+        f"{signal['source']}"
+    )
+
+    opened_at = now_ts()
+
+    state.setdefault("open_scalp_signals", {})
+    state["open_scalp_signals"][key] = {
+        "performance_record_id": signal.get(
+            "performance_record_id"
+        ),
+        "symbol": signal["symbol"],
+        "direction": signal["direction"],
+        "source": signal["source"],
+        "setup": signal.get("setup"),
+        "entry": signal["entry"],
+        "tp1": signal["tp1"],
+        "tp2": signal["tp2"],
+        "tp3": signal["tp3"],
+        "sl": signal["sl"],
+        "score": signal["score"],
+        "risk_percent": signal["risk_percent"],
+        "entry_drift_percent": signal.get(
+            "entry_drift_percent"
+        ),
+        "rsi1": signal.get("rsi1"),
+        "rsi5": signal.get("rsi5"),
+        "vol1": signal.get("vol1"),
+        "vol5": signal.get("vol5"),
+        "move1": signal.get("move1"),
+        "move5": signal.get("move5"),
+        "move15": signal.get("move15"),
+        "lower_wick": signal.get("lower_wick"),
+        "upper_wick": signal.get("upper_wick"),
+        "close_power": signal.get("close_power"),
+        "ok_count": signal.get("ok_count"),
+        "total_conditions": signal.get(
+            "total_conditions"
+        ),
+        "missing": signal.get("missing", []),
+        "best_favorable_percent": 0.0,
+        "worst_adverse_percent": 0.0,
+        "best_favorable_price": signal.get("entry"),
+        "worst_adverse_price": signal.get("entry"),
+        "last_market_price": signal.get(
+            "current_price",
+            signal.get("entry"),
+        ),
+        "opened_at": opened_at,
+        "last_checked_at": opened_at,
+        "tp1_hit": False,
+        "tp2_hit": False,
+        "tp3_hit": False,
+        "closed": False,
+    }
+
+    increment_stat(state, "signals")
+    save_state(state)
+
+
+def notify_tp1(
+    state,
+    symbol,
+    direction,
+    entry,
+    tp1,
+    signal=None,
+):
+    send_telegram(
+        f"✅ SCALP TP1 GELDİ\n\n"
+        f"Coin: {symbol}\n"
+        f"Yön: {direction}\n"
+        f"Giriş: {format_price(entry)}\n"
+        f"TP1: {format_price(tp1)}\n"
+        f"Öneri: %50 kâr al, SL girişe çek."
+    )
+    increment_stat(state, "tp1")
+    update_real_scalp_outcome(
+        symbol,
+        direction,
+        "TP1",
+        tp1,
+        signal,
+    )
+
+
+def notify_tp2(
+    state,
+    symbol,
+    direction,
+    tp2,
+    signal=None,
+):
+    send_telegram(
+        f"✅ SCALP TP2 GELDİ\n\n"
+        f"Coin: {symbol}\n"
+        f"Yön: {direction}\n"
+        f"TP2: {format_price(tp2)}"
+    )
+    increment_stat(state, "tp2")
+    update_real_scalp_outcome(
+        symbol,
+        direction,
+        "TP2",
+        tp2,
+        signal,
+    )
+
+
+def notify_tp3(
+    state,
+    symbol,
+    direction,
+    tp3,
+    signal=None,
+):
+    send_telegram(
+        f"🏁 SCALP TP3 GELDİ\n\n"
+        f"Coin: {symbol}\n"
+        f"Yön: {direction}\n"
+        f"TP3: {format_price(tp3)}\n"
+        f"Scalp maksimum hedefe ulaştı."
+    )
+    increment_stat(state, "tp3")
+    update_real_scalp_outcome(
+        symbol,
+        direction,
+        "TP3",
+        tp3,
+        signal,
+    )
+
+
+def notify_stop(
+    state,
+    symbol,
+    direction,
+    entry,
+    sl,
+    close,
+    signal=None,
+):
+    send_telegram(
+        f"❌ SCALP STOP OLDU\n\n"
+        f"Coin: {symbol}\n"
+        f"Yön: {direction}\n"
+        f"Giriş: {format_price(entry)}\n"
+        f"SL: {format_price(sl)}\n"
+        f"Güncel: {format_price(close)}\n\n"
+        f"📊 Teşhis kaydı 120 dakika boyunca yönün "
+        f"sonradan doğrulanıp doğrulanmadığını izleyecek."
+    )
+    increment_stat(state, "stop")
+    update_real_scalp_outcome(
+        symbol,
+        direction,
+        "STOP",
+        close,
+        signal,
+    )
+
+
+def notify_breakeven(
+    state,
+    symbol,
+    direction,
+    entry,
+    signal=None,
+):
+    send_telegram(
+        f"🟡 SCALP KALAN GİRİŞTEN KAPANDI\n\n"
+        f"Coin: {symbol}\n"
+        f"Yön: {direction}\n"
+        f"Giriş: {format_price(entry)}"
+    )
+    increment_stat(state, "breakeven")
+    update_real_scalp_outcome(
+        symbol,
+        direction,
+        "BREAKEVEN",
+        entry,
+        signal,
+    )
+
+
+def check_open_signals(exchange, state):
+    open_signals = state.get("open_scalp_signals", {})
+
+    if not open_signals:
+        print("Açık scalp sinyali yok.")
+        return
+
+    updated = {}
+    max_age_seconds = MAX_OPEN_SIGNAL_MINUTES * 60
+
+    for key, signal in open_signals.items():
+        try:
+            symbol = normalize_bot_symbol(signal["symbol"])
+            direction = signal["direction"]
+
+            entry = safe_float(signal["entry"])
+            tp1 = safe_float(signal["tp1"])
+            tp2 = safe_float(signal["tp2"])
+            tp3 = safe_float(signal["tp3"])
+            sl = safe_float(signal["sl"])
+
+            opened_at = int(
+                signal.get("opened_at")
+                or signal.get("created_ts")
+                or now_ts()
+            )
+            last_checked_at = int(
+                signal.get("last_checked_at")
+                or opened_at
+            )
+
+            if signal.get("closed") or signal.get("tp3_hit"):
+                continue
+
+            if (
+                now_ts() - opened_at > max_age_seconds
+                and not signal.get("tp1_hit")
+            ):
+                expiry_price = get_current_price(
+                    exchange,
+                    symbol,
+                )
+
+                send_telegram(
+                    f"⏳ SCALP SİNYAL SÜRESİ DOLDU\n\n"
+                    f"Coin: {symbol}\n"
+                    f"Yön: {direction}\n"
+                    f"Giriş: {format_price(entry)}\n"
+                    f"Güncel: "
+                    f"{format_price(expiry_price or entry)}\n\n"
+                    f"{MAX_OPEN_SIGNAL_MINUTES} dakika içinde "
+                    f"TP1 gelmediği için takipten çıkarıldı."
+                )
+                increment_stat(state, "expired")
+                update_real_scalp_outcome(
+                    symbol,
+                    direction,
+                    "EXPIRED",
+                    expiry_price or entry,
+                    signal,
+                )
+                continue
+
+            candles = fetch_candles_since(
+                exchange,
+                symbol,
+                TRACK_TIMEFRAME,
+                max(opened_at, last_checked_at - 120),
+                TRACK_LIMIT,
+            )
+
+            if not candles:
+                updated[key] = signal
+                continue
+
+            tp1_hit = bool(signal.get("tp1_hit", False))
+            tp2_hit = bool(signal.get("tp2_hit", False))
+            tp3_hit = bool(signal.get("tp3_hit", False))
+            closed = False
+
+            for candle in candles:
+                high = safe_float(candle["high"])
+                low = safe_float(candle["low"])
+                close = safe_float(candle["close"])
+                candle_time = int(
+                    candle.get("time") or now_ts()
+                )
+
+                update_open_signal_excursion(
+                    signal,
+                    high,
+                    low,
+                    candle_time,
+                )
+                signal["last_market_price"] = close
+
+                just_hit_tp1 = False
+
+                if direction == "LONG":
+                    if not tp1_hit:
+                        if low <= sl and high >= tp1:
+                            if close >= entry:
+                                tp1_hit = True
+                                just_hit_tp1 = True
+                                notify_tp1(
+                                    state,
+                                    symbol,
+                                    direction,
+                                    entry,
+                                    tp1,
+                                    signal,
+                                )
+                            else:
+                                notify_stop(
+                                    state,
+                                    symbol,
+                                    direction,
+                                    entry,
+                                    sl,
+                                    close,
+                                    signal,
+                                )
+                                closed = True
+                                break
+                        elif low <= sl:
+                            notify_stop(
+                                state,
+                                symbol,
+                                direction,
+                                entry,
+                                sl,
+                                close,
+                                signal,
+                            )
+                            closed = True
+                            break
+                        elif high >= tp1:
+                            tp1_hit = True
+                            just_hit_tp1 = True
+                            notify_tp1(
+                                state,
+                                symbol,
+                                direction,
+                                entry,
+                                tp1,
+                                signal,
+                            )
+
+                    if tp1_hit and not tp2_hit and high >= tp2:
+                        tp2_hit = True
+                        notify_tp2(
+                            state,
+                            symbol,
+                            direction,
+                            tp2,
+                            signal,
+                        )
+
+                    if tp1_hit and not tp3_hit and high >= tp3:
+                        tp3_hit = True
+                        notify_tp3(
+                            state,
+                            symbol,
+                            direction,
+                            tp3,
+                            signal,
+                        )
+                        closed = True
+                        break
+
+                    # TP1'in ilk görüldüğü aynı mumda eski düşük fiyat
+                    # yüzünden yanlış BE kapanışı yapılmaz.
+                    if tp1_hit and not just_hit_tp1 and low <= entry:
+                        notify_breakeven(
+                            state,
+                            symbol,
+                            direction,
+                            entry,
+                            signal,
+                        )
+                        closed = True
+                        break
+
+                else:
+                    if not tp1_hit:
+                        if high >= sl and low <= tp1:
+                            if close <= entry:
+                                tp1_hit = True
+                                just_hit_tp1 = True
+                                notify_tp1(
+                                    state,
+                                    symbol,
+                                    direction,
+                                    entry,
+                                    tp1,
+                                    signal,
+                                )
+                            else:
+                                notify_stop(
+                                    state,
+                                    symbol,
+                                    direction,
+                                    entry,
+                                    sl,
+                                    close,
+                                    signal,
+                                )
+                                closed = True
+                                break
+                        elif high >= sl:
+                            notify_stop(
+                                state,
+                                symbol,
+                                direction,
+                                entry,
+                                sl,
+                                close,
+                                signal,
+                            )
+                            closed = True
+                            break
+                        elif low <= tp1:
+                            tp1_hit = True
+                            just_hit_tp1 = True
+                            notify_tp1(
+                                state,
+                                symbol,
+                                direction,
+                                entry,
+                                tp1,
+                                signal,
+                            )
+
+                    if tp1_hit and not tp2_hit and low <= tp2:
+                        tp2_hit = True
+                        notify_tp2(
+                            state,
+                            symbol,
+                            direction,
+                            tp2,
+                            signal,
+                        )
+
+                    if tp1_hit and not tp3_hit and low <= tp3:
+                        tp3_hit = True
+                        notify_tp3(
+                            state,
+                            symbol,
+                            direction,
+                            tp3,
+                            signal,
+                        )
+                        closed = True
+                        break
+
+                    if tp1_hit and not just_hit_tp1 and high >= entry:
+                        notify_breakeven(
+                            state,
+                            symbol,
+                            direction,
+                            entry,
+                            signal,
+                        )
+                        closed = True
+                        break
+
+            if closed:
+                continue
+
+            signal["symbol"] = symbol
+            signal["opened_at"] = opened_at
+            signal["last_checked_at"] = now_ts()
+            signal["tp1_hit"] = tp1_hit
+            signal["tp2_hit"] = tp2_hit
+            signal["tp3_hit"] = tp3_hit
+
+            update_real_scalp_tracking(
+                signal
+            )
+
+            updated[key] = signal
+
+        except Exception as exc:
+            print(key, "scalp takip hatası:", exc)
+            updated[key] = signal
+
+    state["open_scalp_signals"] = updated
+    save_state(state)
+
+
+# =========================================================
+# RAPOR
+# =========================================================
+
+def top_reasons_text(counter, limit=6):
+    if not counter:
+        return "Veri yok"
+
+    return "\n".join(
+        f"• {reason}: {count}"
+        for reason, count in counter.most_common(limit)
+    )
+
+
+def candidate_line(debug):
+    missing = debug.get("missing", [])
+    missing_text = (
+        ", ".join(missing[:3])
+        if missing
+        else "eksik yok"
+    )
+
+    return (
+        f"{debug['symbol']} {debug['direction']} | "
+        f"{debug.get('setup', 'SCALP')} | "
+        f"şart {debug['ok_count']}/{debug['total_conditions']} | "
+        f"skor {debug['score']} | "
+        f"eksik: {missing_text}"
+    )
+
+
+def build_no_signal_report(
+    scanned_count,
+    candidate_count,
+    reason_counter,
+    top_candidates,
+):
+    lines = [
+        "⚡ HIZLI SCALP RADAR v2 RAPORU",
+        "",
+        f"Bot: {BOT_NAME}",
+        f"Zaman: {tr_now_text()}",
+        f"Taranan coin: {scanned_count}",
+        f"Filtreyi geçen aday: {candidate_count}",
+        "",
+        "En çok elenen şartlar:",
+        top_reasons_text(reason_counter),
+        "",
+        "Sinyale en yakın adaylar:",
+    ]
+
+    if top_candidates:
+        for item in top_candidates[:8]:
+            lines.append("• " + candidate_line(item))
+    else:
+        lines.append("• Yakın aday yok")
+
+    lines.extend([
+        "",
+        "Not: Bu rapor işlem sinyali değildir. "
+        "Kalite filtrelerinin neden sinyal üretmediğini gösterir.",
+    ])
+
+    return "\n".join(lines)
+
+
+def should_send_no_signal_report(state):
+    if not SEND_NO_SIGNAL_REPORT:
+        return False
+
+    last_report = int(state.get("last_no_signal_report", 0))
+    return (
+        now_ts() - last_report
+        >= NO_SIGNAL_REPORT_EVERY_MINUTES * 60
+    )
+
+
+# =========================================================
+# MAIN
+# =========================================================
+
+def main():
+    print(BOT_NAME, "başladı.")
+
+    state = load_state()
+    exchange = get_exchange()
+
+    # Önce eski Ön İzleme / Erken / gerçek sinyallerin
+    # gönderim sonrası performansı güncellenir.
+    update_scalp_performance(exchange)
+
+    check_open_signals(exchange, state)
+    state = load_state()
+
+    scan_coins = get_scan_coins(exchange)
+
+    open_count = len(state.get("open_scalp_signals", {}))
+    available_slots = max(
+        0,
+        MAX_OPEN_SCALP_SIGNALS - open_count,
+    )
+
+    print("Açık scalp:", open_count)
+    print("Boş scalp slot:", available_slots)
+
+    all_signals = []
+    all_early_alerts = []
+    all_prewatch_alerts = []
+    reason_counter = Counter()
+    top_candidates = []
+    scanned = 0
+
+    for symbol in scan_coins:
+        try:
+            scanned += 1
+
+            if has_open_same_symbol(state, symbol):
+                print(symbol, "zaten açık scalp var, atlandı.")
+                continue
+
+            (
+                signals,
+                debug_items,
+                early_items,
+                prewatch_items,
+            ) = analyze_symbol(
+                exchange,
+                symbol,
+            )
+
+            for debug in debug_items:
+                for reason in debug.get("missing", []):
+                    reason_counter[reason] += 1
+                top_candidates.append(debug)
+
+            for prewatch_alert in prewatch_items:
+                if is_recent_prewatch_duplicate(
+                    state,
+                    prewatch_alert["symbol"],
+                    prewatch_alert["direction"],
+                ):
+                    continue
+
+                all_prewatch_alerts.append(
+                    prewatch_alert
+                )
+
+            for early_alert in early_items:
+                if is_recent_early_duplicate(
+                    state,
+                    early_alert["symbol"],
+                    early_alert["direction"],
+                ):
+                    continue
+
+                all_early_alerts.append(
+                    early_alert
+                )
+
+            for signal in signals:
+                if is_recent_duplicate(
+                    state,
+                    signal["symbol"],
+                    signal["direction"],
+                ):
+                    print(
+                        signal["symbol"],
+                        signal["direction"],
+                        "duplicate, atlandı.",
+                    )
+                    continue
+
+                all_signals.append(signal)
+
+            time.sleep(0.08)
+
+        except Exception as exc:
+            print(symbol, "genel analiz hatası:", exc)
+
+    all_signals.sort(
+        key=lambda item: (
+            item["score"],
+            -item["risk_percent"],
+            item["vol5"],
+            item["vol1"],
+        ),
+        reverse=True,
+    )
+
+    all_early_alerts.sort(
+        key=lambda item: (
+            item.get("score", 0),
+            abs(item.get("live_move15", 0)),
+            item.get("rolling_vol5", 0),
+        ),
+        reverse=True,
+    )
+
+    all_prewatch_alerts.sort(
+        key=lambda item: (
+            item.get("score", 0),
+            -item.get("breakout_distance", 999),
+            abs(item.get("live_move5", 0)),
+            item.get("rolling_vol3", 0),
+        ),
+        reverse=True,
+    )
+
+    top_candidates.sort(
+        key=lambda item: (
+            item.get("score", 0),
+            item.get("ok_count", 0),
+        ),
+        reverse=True,
+    )
+
+    selected = []
+    max_to_send = min(
+        MAX_NEW_SIGNALS_PER_RUN,
+        available_slots,
+    )
+
+    # Seçilen aday gönderilmeden hemen önce fiyat sapması kontrol edilir.
+    for signal in all_signals:
+        if len(selected) >= max_to_send:
+            break
+
+        current_price = get_current_price(
+            exchange,
+            signal["symbol"],
+        )
+
+        if current_price is None:
+            continue
+
+        drift = percent_distance(
+            current_price,
+            signal["entry"],
+        )
+
+        if drift > MAX_ENTRY_DRIFT_PERCENT:
+            print(
+                signal["symbol"],
+                "girişten uzaklaştı:",
+                round(drift, 3),
+                "%",
+            )
+            continue
+
+        signal["current_price"] = current_price
+        signal["entry_drift_percent"] = drift
+        selected.append(signal)
+
+    selected_early = []
+    selected_symbols = {
+        signal["symbol"]
+        for signal in selected
+    }
+
+    for alert in all_early_alerts:
+        if (
+            len(selected_early)
+            >= MAX_EARLY_ALERTS_PER_RUN
+        ):
+            break
+
+        if alert["symbol"] in selected_symbols:
+            continue
+
+        current_price = get_current_price(
+            exchange,
+            alert["symbol"],
+        )
+
+        if current_price is None:
+            continue
+
+        drift = percent_distance(
+            current_price,
+            alert["entry"],
+        )
+
+        if drift > EARLY_MAX_SEND_DRIFT_PERCENT:
+            print(
+                alert["symbol"],
+                "erken uyarı fiyatı uzaklaştı:",
+                round(drift, 3),
+                "%",
+            )
+            continue
+
+        alert["current_price"] = current_price
+        alert["entry_drift_percent"] = drift
+        selected_early.append(alert)
+
+    selected_prewatch = []
+
+    blocked_symbols = {
+        signal["symbol"]
+        for signal in selected
+    } | {
+        alert["symbol"]
+        for alert in selected_early
+    }
+
+    for alert in all_prewatch_alerts:
+        if (
+            len(selected_prewatch)
+            >= MAX_PREWATCH_ALERTS_PER_RUN
+        ):
+            break
+
+        if alert["symbol"] in blocked_symbols:
+            continue
+
+        current_price = get_current_price(
+            exchange,
+            alert["symbol"],
+        )
+
+        if current_price is None:
+            continue
+
+        drift = percent_distance(
+            current_price,
+            alert["entry"],
+        )
+
+        if drift > PREWATCH_MAX_SEND_DRIFT_PERCENT:
+            print(
+                alert["symbol"],
+                "ön izleme fiyatı uzaklaştı:",
+                round(drift, 3),
+                "%",
+            )
+            continue
+
+        alert["current_price"] = current_price
+        alert["entry_drift_percent"] = drift
+        selected_prewatch.append(alert)
+
+    print("Bulunan kaliteli scalp sinyal:", len(all_signals))
+    print("Gönderilecek scalp sinyal:", len(selected))
+    print("Bulunan erken fırsat:", len(all_early_alerts))
+    print("Arka planda izlenecek erken fırsat:", len(selected_early))
+    print("Bulunan ön izleme:", len(all_prewatch_alerts))
+    print("Arka planda izlenecek ön izleme:", len(selected_prewatch))
+
+    if selected:
+        send_telegram(
+            f"⚡ {BOT_NAME} çalıştı.\n"
+            f"Taranan coin: {scanned}\n"
+            f"Kaliteli scalp adayı: {len(all_signals)}\n"
+            f"Açık scalp: {open_count}/{MAX_OPEN_SCALP_SIGNALS}\n"
+            f"Gönderilecek sinyal: {len(selected)}"
+        )
+
+    for signal in selected:
+        extra = (
+            f"\n💰 Güncel Fiyat: "
+            f"{format_price(signal['current_price'])}\n"
+            f"📏 Giriş Sapması: "
+            f"%{round(signal['entry_drift_percent'], 3)}\n"
+            f"📌 Son Kontrol: Scalp girişe yakın ✅"
+        )
+
+        if send_telegram(signal["message"] + extra):
+            record_id = record_scalp_performance(
+                "REAL_SIGNAL",
+                signal,
+            )
+            signal["performance_record_id"] = record_id
+            save_open_signal(state, signal)
+            mark_sent(
+                state,
+                signal["symbol"],
+                signal["direction"],
+            )
+            state = load_state()
+            time.sleep(1)
+
+    # Erken Fırsatlar Telegram'a gönderilmez.
+    # Yön performansı ve teknik teşhis için arka planda kaydedilir.
+    for alert in selected_early:
+        record_id = record_scalp_performance(
+            "EARLY",
+            alert,
+        )
+
+        if record_id:
+            mark_early_alert_sent(
+                state,
+                alert["symbol"],
+                alert["direction"],
+            )
+            state = load_state()
+            print(
+                "Arka plan Erken Fırsat kaydı:",
+                alert["symbol"],
+                alert["direction"],
+                "| kayıt:",
+                record_id,
+            )
+
+    # Ön İzleme adayları Telegram'a gönderilmez.
+    # Yön performansı ve teknik teşhis için arka planda kaydedilir.
+    for alert in selected_prewatch:
+        record_id = record_scalp_performance(
+            "PREWATCH",
+            alert,
+        )
+
+        if record_id:
+            mark_prewatch_sent(
+                state,
+                alert["symbol"],
+                alert["direction"],
+            )
+            state = load_state()
+            print(
+                "Arka plan Ön İzleme kaydı:",
+                alert["symbol"],
+                alert["direction"],
+                "| kayıt:",
+                record_id,
+            )
+
+    if not selected:
+        print(
+            "Yeni gerçek scalp işlem sinyali yok. "
+            "Ön İzleme ve Erken Fırsatlar arka planda takip edildi."
+        )
+
+        if should_send_no_signal_report(state):
+            send_telegram(
+                build_no_signal_report(
+                    scanned,
+                    len(all_signals),
+                    reason_counter,
+                    top_candidates,
+                )
+            )
+            state["last_no_signal_report"] = now_ts()
+            save_state(state)
+
+    print(BOT_NAME, "tamamlandı.")
+
+
+if __name__ == "__main__":
+    main()
