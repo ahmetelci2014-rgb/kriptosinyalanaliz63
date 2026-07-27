@@ -7,7 +7,6 @@ on:
       - main
     paths:
       - "*.py"
-      - "tests/**"
       - "requirements.txt"
       - ".github/workflows/tests.yml"
   pull_request:
@@ -15,7 +14,6 @@ on:
       - main
     paths:
       - "*.py"
-      - "tests/**"
       - "requirements.txt"
       - ".github/workflows/tests.yml"
 
@@ -40,13 +38,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Test dosyalarını kontrol et
+      - name: Test dosyasını kontrol et
         run: |
           pwd
           ls -la
-          ls -la tests
-          test -f tests/__init__.py
-          test -f tests/test_main_core.py
+          test -f test_main_core.py
 
       - name: Python dosyalarını derle
         run: |
@@ -57,12 +53,11 @@ jobs:
             scalp_radar.py \
             pump_radar.py \
             swing_radar.py \
-            tests/__init__.py \
-            tests/test_main_core.py
+            test_main_core.py
 
       - name: Ana bot çekirdek testlerini çalıştır
         env:
           TOKEN: ""
           CHAT_ID: ""
         run: |
-          python -m tests.test_main_core -v
+          python test_main_core.py -v
