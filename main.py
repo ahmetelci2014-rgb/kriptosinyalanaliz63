@@ -18,6 +18,7 @@
 # - Günlük Telegram raporu tekleştirildi: Net R + tüm teşhisler v5.
 # - Stoplar olasılık temelli kök nedenlere ayrılır; işlem kuralları değişmez.
 # - TP1/TP2 tekrar mesajları ledger tabanlı tekil event korumasıyla engellenir.
+# - Her yeni işlem bot/strateji/config/Git commit sürümüyle etiketlenir.
 
 import json
 import os
@@ -85,6 +86,12 @@ OPEN_SIGNALS_FILE = "open_signals.json"
 PERFORMANCE_FILE = "performance.json"
 LAST_SIGNALS_FILE = "last_signals.json"
 TRADE_LEDGER_FILE = "trade_ledger.json"
+
+# Bu sürüm bilgileri yalnız performans kayıtlarını ayrıştırmak içindir.
+# Sinyal üretimi, TP/SL ve filtre davranışını değiştirmez.
+BOT_BUILD_VERSION = "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27"
+STRATEGY_VERSION = "PREMIUM_MTF_TP_ODAKLI_V2"
+CONFIG_VERSION = "CONFIG_2026_07_27"
 
 TR_TIMEZONE = timezone(timedelta(hours=3))
 
@@ -282,6 +289,117 @@ def load_trade_ledger():
 def save_trade_ledger(ledger):
     ledger["last_update"] = now_ts()
     return save_json_file(TRADE_LEDGER_FILE, ledger)
+
+
+
+def build_runtime_version_metadata():
+    """
+    GitHub Actions çalışma bilgilerini ve manuel sürüm etiketlerini
+    yeni işlem kaydına ekler.
+
+    GITHUB_SHA workflow içinde otomatik sağlanır; workflow dosyasında
+    ayrıca secret veya env tanımlamaya gerek yoktur.
+    """
+    git_sha = str(
+        os.getenv("GITHUB_SHA")
+        or "LOCAL_OR_UNKNOWN"
+    )
+
+    return {
+        "bot_version": BOT_BUILD_VERSION,
+        "strategy_version": STRATEGY_VERSION,
+        "config_version": CONFIG_VERSION,
+        "git_sha": git_sha,
+        "git_sha_short": (
+            git_sha[:12]
+            if git_sha != "LOCAL_OR_UNKNOWN"
+            else git_sha
+        ),
+        "github_run_id": os.getenv(
+            "GITHUB_RUN_ID"
+        ),
+        "github_run_number": os.getenv(
+            "GITHUB_RUN_NUMBER"
+        ),
+        "github_workflow": os.getenv(
+            "GITHUB_WORKFLOW"
+        ),
+        "github_ref_name": os.getenv(
+            "GITHUB_REF_NAME"
+        ),
+    }
+
+
+def get_signal_version_metadata(signal):
+    """
+    Yeni sinyalde kayıtlı sürümü korur. Eski/açık bir sinyalde alanlar
+    yoksa mevcut runtime bilgisi yalnız o anda ledger'a taşınırken
+    kullanılır ve bunun backfill olduğu ayrıca işaretlenir.
+    """
+    runtime = build_runtime_version_metadata()
+
+    metadata = {
+        "bot_version": (
+            signal.get("bot_version")
+            or runtime["bot_version"]
+        ),
+        "strategy_version": (
+            signal.get("strategy_version")
+            or runtime["strategy_version"]
+        ),
+        "config_version": (
+            signal.get("config_version")
+            or runtime["config_version"]
+        ),
+        "git_sha": (
+            signal.get("git_sha")
+            or runtime["git_sha"]
+        ),
+        "git_sha_short": (
+            signal.get("git_sha_short")
+            or runtime["git_sha_short"]
+        ),
+        "github_run_id": (
+            signal.get("github_run_id")
+            or runtime["github_run_id"]
+        ),
+        "github_run_number": (
+            signal.get("github_run_number")
+            or runtime["github_run_number"]
+        ),
+        "github_workflow": (
+            signal.get("github_workflow")
+            or runtime["github_workflow"]
+        ),
+        "github_ref_name": (
+            signal.get("github_ref_name")
+            or runtime["github_ref_name"]
+        ),
+    }
+
+    metadata["version_backfilled"] = not all(
+        signal.get(field)
+        for field in (
+            "bot_version",
+            "strategy_version",
+            "config_version",
+            "git_sha",
+        )
+    )
+
+    return metadata
+
+
+def apply_version_metadata(target, signal):
+    metadata = get_signal_version_metadata(
+        signal
+    )
+
+    for key, value in metadata.items():
+        if key not in target:
+            target[key] = value
+
+    return target
 
 
 def build_trade_id(signal):
@@ -1249,6 +1367,11 @@ def ensure_ledger_trade(signal):
             ],
         }
 
+        apply_version_metadata(
+            trades[trade_id],
+            signal,
+        )
+
         apply_signal_tracking_to_trade(
             trades[trade_id],
             signal,
@@ -1257,6 +1380,11 @@ def ensure_ledger_trade(signal):
         save_trade_ledger(ledger)
 
     else:
+        apply_version_metadata(
+            trades[trade_id],
+            signal,
+        )
+
         apply_signal_tracking_to_trade(
             trades[trade_id],
             signal,
@@ -1320,6 +1448,11 @@ def sync_open_signals_to_ledger():
                 }
             ],
         }
+
+        apply_version_metadata(
+            ledger["trades"][trade_id],
+            signal,
+        )
 
         apply_signal_tracking_to_trade(
             ledger["trades"][trade_id],
@@ -1463,6 +1596,9 @@ def build_daily_r_report():
         ledger.get("trades", {}).values()
     )
     today = today_key()
+    runtime_version = (
+        build_runtime_version_metadata()
+    )
 
     opened_today = [
         trade
@@ -1610,6 +1746,53 @@ def build_daily_r_report():
             )
         else:
             current_stop_streak = 0
+
+    # -----------------------------------------------------
+    # SÜRÜM AYRIMI
+    # -----------------------------------------------------
+    today_versions = {}
+
+    for trade in opened_today:
+        version_key = (
+            str(
+                trade.get("strategy_version")
+                or "BILINMIYOR"
+            ),
+            str(
+                trade.get("config_version")
+                or "BILINMIYOR"
+            ),
+            str(
+                trade.get("git_sha_short")
+                or "BILINMIYOR"
+            ),
+        )
+
+        today_versions[version_key] = (
+            today_versions.get(version_key, 0)
+            + 1
+        )
+
+    version_lines = []
+
+    for (
+        strategy_name,
+        config_name,
+        commit_name,
+    ), count in sorted(
+        today_versions.items(),
+        key=lambda item: -item[1],
+    )[:4]:
+        version_lines.append(
+            f"• {strategy_name} | {config_name} "
+            f"| {commit_name} → {count} işlem"
+        )
+
+    version_text = (
+        "\n".join(version_lines)
+        if version_lines
+        else "Bugün açılan sürümlü işlem yok."
+    )
 
     # -----------------------------------------------------
     # STOP SONRASI 240 DAKİKALIK TEŞHİS
@@ -2245,6 +2428,15 @@ def build_daily_r_report():
     report = f"""📊 GÜNLÜK NET + KÖK NEDEN RAPORU v5
 
 Tarih: {today}
+
+AKTİF SÜRÜM
+Bot: {runtime_version['bot_version']}
+Strateji: {runtime_version['strategy_version']}
+Config: {runtime_version['config_version']}
+Commit: {runtime_version['git_sha_short']}
+
+BUGÜN AÇILAN SÜRÜMLER
+{version_text}
 
 İŞLEM ÖZETİ
 Açılan: {len(opened_today)} | Kapanan: {len(closed_today)} | Açık: {open_total}
@@ -5581,6 +5773,10 @@ def save_open_signal(signal):
         f"{signal.get('source', 'MTF')}"
     )
 
+    version_metadata = (
+        build_runtime_version_metadata()
+    )
+
     saved_signal = {
         "trade_id": trade_id,
         "symbol": signal["symbol"],
@@ -5648,6 +5844,8 @@ def save_open_signal(signal):
         "tp2_hit": False,
         "tp3_hit": False,
         "closed": False,
+        **version_metadata,
+        "version_backfilled": False,
     }
 
     open_signals[key] = saved_signal
