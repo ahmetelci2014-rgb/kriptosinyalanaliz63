@@ -15,7 +15,7 @@ concurrency:
 jobs:
   new-listing-radar:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Repo indir
@@ -41,12 +41,55 @@ jobs:
           python -m py_compile new_listing_radar.py
           python new_listing_radar.py --self-test
 
-      - name: Yeni liste radarını çalıştır
+      - name: Yeni liste radarını hızlı takip modunda çalıştır
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
+        shell: bash
         run: |
-          python new_listing_radar.py
+          set -u
+
+          # Manuel çalıştırmada tek kontrol yeterlidir.
+          # Zamanlanmış çalışmada aynı runner içinde yaklaşık
+          # 0, 60, 120 ve 180. saniyelerde dört kontrol yapılır.
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            ROUNDS=1
+          else
+            ROUNDS=4
+          fi
+
+          START_TS=$(date +%s)
+          FAILURES=0
+
+          for ROUND in $(seq 1 "$ROUNDS")
+          do
+            echo "Yeni liste kontrol turu: ${ROUND}/${ROUNDS}"
+
+            if ! python new_listing_radar.py
+            then
+              FAILURES=$((FAILURES + 1))
+              echo "Kontrol turu hata verdi; kalan turlar devam edecek."
+            fi
+
+            if [ "$ROUND" -lt "$ROUNDS" ]
+            then
+              NEXT_TS=$((START_TS + ROUND * 60))
+              NOW_TS=$(date +%s)
+              SLEEP_SECONDS=$((NEXT_TS - NOW_TS))
+
+              if [ "$SLEEP_SECONDS" -gt 0 ]
+              then
+                echo "Sonraki kontrol için ${SLEEP_SECONDS} saniye bekleniyor."
+                sleep "$SLEEP_SECONDS"
+              fi
+            fi
+          done
+
+          if [ "$FAILURES" -gt 0 ]
+          then
+            echo "${FAILURES} kontrol turu hata verdi."
+            exit 1
+          fi
 
       - name: Radar state ve performansını kaydet
         if: always()
