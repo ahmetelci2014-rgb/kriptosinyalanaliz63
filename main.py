@@ -14,6 +14,7 @@
 # - Yeni sinyallerin trend, hacim, giris uzakligi ve hareket profili kaydedilir.
 # - Kapanan islemlere kayitli verilere dayali olasilik temelli teknik teshis eklenir.
 # - Stop sonrasi TP1'e donen islemlerde fitil / dar stop olasiligi isaretlenir.
+# - Süresi dolan işlemler 24 saat daha sessiz izlenir; hedef/koruma sırası kaydedilir.
 
 import json
 import os
@@ -90,6 +91,15 @@ TR_TIMEZONE = timezone(timedelta(hours=3))
 SL_AFTER_CHECKPOINT_MINUTES = [30, 60, 120, 180, 240]
 SL_AFTER_MAX_TRACK_MINUTES = 240
 SL_AFTER_TRACK_LIMIT = 300
+
+# Süresi dolan işlemler Telegram takibinden çıkarılır; ancak
+# yazılım yönün daha sonra hedefe mi yoksa koruma seviyesine mi
+# gittiğini 24 saat boyunca sessizce ölçmeye devam eder.
+POST_EXPIRY_CHECKPOINT_HOURS = [6, 12, 24]
+POST_EXPIRY_MAX_TRACK_HOURS = 24
+POST_EXPIRY_RESTORE_MAX_HOURS = 48
+POST_EXPIRY_TIMEFRAME = "5m"
+POST_EXPIRY_TRACK_LIMIT = 320
 
 RECENT_CLOSED_COIN_COOLDOWN_SECONDS = 4 * 60 * 60
 
@@ -2119,6 +2129,12 @@ def close_signal_result(
         exit_price,
     )
 
+    if result == "EXPIRED":
+        initialize_post_expiry_follow(
+            signal,
+            exit_price,
+        )
+
     if result == "SL":
         add_sl_after_follow(
             signal,
@@ -2147,6 +2163,872 @@ def register_partial_result(
         result,
         exit_price,
     )
+
+
+
+
+# =========================================================
+# SÜRE DOLDUKTAN SONRA SESSİZ TAKİP
+# =========================================================
+
+def calculate_directional_r(trade, price):
+    """
+    Fiyatın orijinal giriş ve stop mesafesine göre yönsel R değerini
+    hesaplar. TP1 sonrası kısmi kâr hesabını içermez; yalnızca fiyatın
+    sinyal yönündeki gerçek hareketini ölçer.
+    """
+    entry = safe_float(trade.get("entry"))
+    sl = safe_float(trade.get("sl"))
+    value = safe_float(price)
+
+    if entry is None or sl is None or value is None:
+        return None
+
+    risk = abs(entry - sl)
+
+    if risk <= 0:
+        return None
+
+    direction = str(
+        trade.get("direction", "")
+    ).upper()
+
+    if direction == "LONG":
+        return round((value - entry) / risk, 4)
+
+    if direction == "SHORT":
+        return round((entry - value) / risk, 4)
+
+    return None
+
+
+def build_post_expiry_payload(
+    trade,
+    restored=False,
+):
+    """
+    Süre dolduktan sonra hangi seviyenin önce görüleceğini izlemek için
+    gerekli takip kaydını hazırlar.
+    """
+    entry = safe_float(trade.get("entry"))
+    sl = safe_float(trade.get("sl"))
+    tp1 = safe_float(trade.get("tp1"))
+    tp3 = safe_float(trade.get("tp3"))
+
+    if entry is None or sl is None:
+        return None
+
+    # TP1 daha önce görülmüşse kalan pozisyon açısından anlamlı hedef
+    # TP3, koruma seviyesi ise giriş (BE) kabul edilir.
+    if bool(trade.get("tp1_hit", False)):
+        target_price = tp3
+        target_label = "TP3"
+        protection_price = entry
+        protection_label = "BE"
+    else:
+        target_price = tp1
+        target_label = "TP1"
+        protection_price = sl
+        protection_label = "SL"
+
+    if target_price is None or protection_price is None:
+        return None
+
+    expired_at = int(
+        trade.get("closed_at")
+        or now_ts()
+    )
+    expiry_price = safe_float(
+        trade.get("exit_price")
+    )
+
+    initial_r = calculate_directional_r(
+        trade,
+        expiry_price,
+    )
+
+    return {
+        "version": "POST_EXPIRY_V1",
+        "status": "TRACKING",
+        "restored": bool(restored),
+        "expired_at": expired_at,
+        "expiry_price": expiry_price,
+        "expiry_net_r": safe_float(
+            trade.get("r_result")
+        ),
+        "target_label": target_label,
+        "target_price": target_price,
+        "protection_label": protection_label,
+        "protection_price": protection_price,
+        "timeframe": POST_EXPIRY_TIMEFRAME,
+        "max_track_hours": POST_EXPIRY_MAX_TRACK_HOURS,
+        "checkpoints": [],
+        "last_checked_at": expired_at,
+        "best_directional_r": initial_r,
+        "worst_directional_r": initial_r,
+        "best_price": expiry_price,
+        "worst_price": expiry_price,
+        "first_event": None,
+        "first_event_at": None,
+        "resolved_at": None,
+        "elapsed_minutes": None,
+        "diagnosis": None,
+        "telegram_notified": False,
+    }
+
+
+def initialize_post_expiry_follow(
+    signal,
+    expiry_price,
+):
+    """
+    Yeni EXPIRED işlem kapanınca artçı takip kaydını oluşturur.
+    """
+    trade_id = build_trade_id(signal)
+    ledger = load_trade_ledger()
+    trade = ledger.get(
+        "trades",
+        {},
+    ).get(trade_id)
+
+    if not trade:
+        return
+
+    if str(
+        trade.get("final_result", "")
+    ).upper() != "EXPIRED":
+        return
+
+    if trade.get("post_expiry_follow"):
+        return
+
+    if trade.get("exit_price") is None:
+        trade["exit_price"] = safe_float(
+            expiry_price
+        )
+
+    payload = build_post_expiry_payload(
+        trade,
+        restored=False,
+    )
+
+    if payload is None:
+        return
+
+    trade["post_expiry_follow"] = payload
+    trade["post_expiry_status"] = "TRACKING"
+    trade["post_expiry_tp1"] = False
+    trade["post_expiry_sl"] = False
+    trade["post_expiry_best_r"] = payload.get(
+        "best_directional_r"
+    )
+    trade["post_expiry_worst_r"] = payload.get(
+        "worst_directional_r"
+    )
+    trade["expiry_diagnosis"] = None
+
+    save_trade_ledger(ledger)
+
+
+def restore_recent_expired_follow_records(
+    ledger,
+):
+    """
+    Yeni özellik yüklenmeden önce EXPIRED olmuş yakın işlemleri de
+    artçı takibe alır. Eski ve çok uzak kayıtlar Telegram kalabalığı
+    oluşturmaması için yalnız son 48 saat içinde geri yüklenir.
+    """
+    restored = 0
+    current_time = now_ts()
+
+    for trade in ledger.get(
+        "trades",
+        {},
+    ).values():
+        try:
+            if str(
+                trade.get("final_result", "")
+            ).upper() != "EXPIRED":
+                continue
+
+            if trade.get("post_expiry_follow"):
+                continue
+
+            expired_at = int(
+                trade.get("closed_at")
+                or 0
+            )
+
+            if expired_at <= 0:
+                continue
+
+            age_hours = (
+                current_time - expired_at
+            ) / 3600
+
+            if (
+                age_hours < 0
+                or age_hours
+                > POST_EXPIRY_RESTORE_MAX_HOURS
+            ):
+                continue
+
+            payload = build_post_expiry_payload(
+                trade,
+                restored=True,
+            )
+
+            if payload is None:
+                continue
+
+            trade["post_expiry_follow"] = payload
+            trade["post_expiry_status"] = "TRACKING"
+            trade["post_expiry_tp1"] = False
+            trade["post_expiry_sl"] = False
+            trade["post_expiry_best_r"] = payload.get(
+                "best_directional_r"
+            )
+            trade["post_expiry_worst_r"] = payload.get(
+                "worst_directional_r"
+            )
+            trade["expiry_diagnosis"] = None
+            restored += 1
+
+        except Exception as exc:
+            print(
+                trade.get("trade_id"),
+                "süre sonrası geri yükleme hatası:",
+                exc,
+            )
+
+    return restored
+
+
+def post_expiry_level_hits(
+    direction,
+    high,
+    low,
+    target_price,
+    protection_price,
+):
+    direction = str(direction).upper()
+
+    if direction == "LONG":
+        return (
+            high >= target_price,
+            low <= protection_price,
+        )
+
+    if direction == "SHORT":
+        return (
+            low <= target_price,
+            high >= protection_price,
+        )
+
+    return False, False
+
+
+def resolve_post_expiry_ambiguous_candle(
+    exchange,
+    trade,
+    candle_time,
+    target_price,
+    protection_price,
+    minimum_time,
+):
+    """
+    5M mumda hedef ve koruma aynı anda görünürse 1M alt mumlara iner.
+    Aynı 1M mumda da ikisi görülürse sıra kesin belirlenemediği için
+    AMBIGUOUS döndürür.
+    """
+    symbol = trade.get("symbol")
+    direction = trade.get("direction")
+
+    candles = fetch_candles_since(
+        exchange,
+        symbol,
+        "1m",
+        since_seconds=max(
+            int(minimum_time),
+            int(candle_time),
+        ),
+        limit=8,
+    )
+
+    candle_end = int(candle_time) + 5 * 60
+
+    for candle in candles:
+        minute_time = int(
+            candle.get("time", 0)
+            or 0
+        )
+
+        if minute_time < int(minimum_time):
+            continue
+
+        if minute_time >= candle_end:
+            break
+
+        target_hit, protection_hit = (
+            post_expiry_level_hits(
+                direction,
+                float(candle["high"]),
+                float(candle["low"]),
+                target_price,
+                protection_price,
+            )
+        )
+
+        if target_hit and protection_hit:
+            return "AMBIGUOUS", minute_time
+
+        if target_hit:
+            return "TARGET", minute_time
+
+        if protection_hit:
+            return "PROTECTION", minute_time
+
+    return None, None
+
+
+def update_post_expiry_excursion(
+    trade,
+    follow,
+    high,
+    low,
+):
+    direction = str(
+        trade.get("direction", "")
+    ).upper()
+
+    if direction == "LONG":
+        favorable_price = high
+        adverse_price = low
+    elif direction == "SHORT":
+        favorable_price = low
+        adverse_price = high
+    else:
+        return
+
+    favorable_r = calculate_directional_r(
+        trade,
+        favorable_price,
+    )
+    adverse_r = calculate_directional_r(
+        trade,
+        adverse_price,
+    )
+
+    current_best = safe_float(
+        follow.get("best_directional_r")
+    )
+    current_worst = safe_float(
+        follow.get("worst_directional_r")
+    )
+
+    if (
+        favorable_r is not None
+        and (
+            current_best is None
+            or favorable_r > current_best
+        )
+    ):
+        follow["best_directional_r"] = favorable_r
+        follow["best_price"] = favorable_price
+
+    if (
+        adverse_r is not None
+        and (
+            current_worst is None
+            or adverse_r < current_worst
+        )
+    ):
+        follow["worst_directional_r"] = adverse_r
+        follow["worst_price"] = adverse_price
+
+
+def post_expiry_diagnosis_text(
+    outcome,
+):
+    if outcome == "TARGET":
+        return (
+            "Süre sınırı işlemi erken kapatmış olabilir; "
+            "hedef süre dolduktan sonra görüldü."
+        )
+
+    if outcome == "PROTECTION":
+        return (
+            "Süre sınırı daha büyük kayıptan korudu; "
+            "koruma seviyesi süre dolduktan sonra önce görüldü."
+        )
+
+    if outcome == "AMBIGUOUS":
+        return (
+            "Hedef ve koruma aynı 1M mumda görüldü; "
+            "hangisinin önce olduğu kesin belirlenemedi."
+        )
+
+    return (
+        "24 saat içinde hedef veya koruma seviyesi oluşmadı; "
+        "hareket yatay veya kararsız kaldı."
+    )
+
+
+def finalize_post_expiry_follow(
+    trade,
+    follow,
+    outcome,
+    event_time,
+    event_price,
+):
+    expired_at = int(
+        follow.get("expired_at")
+        or trade.get("closed_at")
+        or event_time
+    )
+
+    elapsed_minutes = int(
+        max(
+            0,
+            (int(event_time) - expired_at) / 60,
+        )
+    )
+
+    diagnosis = post_expiry_diagnosis_text(
+        outcome
+    )
+
+    follow["status"] = "RESOLVED"
+    follow["first_event"] = outcome
+    follow["first_event_at"] = int(event_time)
+    follow["first_event_price"] = safe_float(
+        event_price
+    )
+    follow["resolved_at"] = now_ts()
+    follow["elapsed_minutes"] = elapsed_minutes
+    follow["diagnosis"] = diagnosis
+
+    target_label = str(
+        follow.get("target_label", "HEDEF")
+    )
+    protection_label = str(
+        follow.get(
+            "protection_label",
+            "KORUMA",
+        )
+    )
+
+    if outcome == "TARGET":
+        status_text = (
+            f"{target_label}_AFTER_EXPIRY"
+        )
+    elif outcome == "PROTECTION":
+        status_text = (
+            f"{protection_label}_AFTER_EXPIRY"
+        )
+    elif outcome == "AMBIGUOUS":
+        status_text = "AMBIGUOUS_AFTER_EXPIRY"
+    else:
+        status_text = "NO_DECISION_24H"
+
+    trade["post_expiry_status"] = status_text
+    trade["post_expiry_tp1"] = bool(
+        outcome == "TARGET"
+        and target_label == "TP1"
+    )
+    trade["post_expiry_sl"] = bool(
+        outcome == "PROTECTION"
+        and protection_label == "SL"
+    )
+    trade["post_expiry_target"] = bool(
+        outcome == "TARGET"
+    )
+    trade["post_expiry_protection"] = bool(
+        outcome == "PROTECTION"
+    )
+    trade["post_expiry_best_r"] = follow.get(
+        "best_directional_r"
+    )
+    trade["post_expiry_worst_r"] = follow.get(
+        "worst_directional_r"
+    )
+    trade["expiry_diagnosis"] = diagnosis
+
+    event_name = (
+        "POST_EXPIRY_"
+        + (
+            outcome
+            if outcome
+            else "NO_DECISION"
+        )
+    )
+
+    event_exists = any(
+        item.get("event") == event_name
+        for item in trade.get("events", [])
+    )
+
+    if not event_exists:
+        trade.setdefault("events", []).append({
+            "time": int(event_time),
+            "event": event_name,
+            "price": safe_float(event_price),
+        })
+
+
+def build_post_expiry_telegram(
+    trade,
+    follow,
+):
+    outcome = str(
+        follow.get("first_event")
+        or "NO_DECISION"
+    )
+    symbol = trade.get("symbol")
+    direction = trade.get("direction")
+    expiry_r = safe_float(
+        follow.get("expiry_net_r")
+    )
+    expiry_r_text = (
+        f"{expiry_r:+.3f}R"
+        if expiry_r is not None
+        else "ölçülemedi"
+    )
+    elapsed_minutes = int(
+        follow.get("elapsed_minutes")
+        or 0
+    )
+    elapsed_hours = elapsed_minutes // 60
+    remaining_minutes = elapsed_minutes % 60
+    elapsed_text = (
+        f"{elapsed_hours} saat "
+        f"{remaining_minutes} dakika"
+    )
+
+    target_label = str(
+        follow.get("target_label", "HEDEF")
+    )
+    protection_label = str(
+        follow.get(
+            "protection_label",
+            "KORUMA",
+        )
+    )
+
+    if outcome == "TARGET":
+        result_text = (
+            f"{target_label} seviyesi önce görüldü."
+        )
+    elif outcome == "PROTECTION":
+        result_text = (
+            f"{protection_label} seviyesi önce görüldü."
+        )
+    elif outcome == "AMBIGUOUS":
+        result_text = (
+            f"{target_label} ve {protection_label} "
+            f"aynı 1M mumda görüldü."
+        )
+    else:
+        result_text = (
+            f"{POST_EXPIRY_MAX_TRACK_HOURS} saat içinde "
+            f"{target_label}/{protection_label} oluşmadı."
+        )
+
+    return (
+        f"🔎 SÜRE SONRASI NİHAİ TAKİP\n\n"
+        f"Coin: {symbol}\n"
+        f"Yön: {direction}\n"
+        f"{MAX_OPEN_SIGNAL_HOURS} saat sonu: "
+        f"{expiry_r_text}\n"
+        f"Süre sonrası takip: {elapsed_text}\n\n"
+        f"Sonuç: {result_text}\n"
+        f"Teşhis: {follow.get('diagnosis')}"
+    )
+
+
+def check_post_expiry_follow(exchange):
+    """
+    EXPIRED işlemleri 24 saat boyunca arka planda izler.
+    6 ve 12 saat kontrolleri yalnız JSON'a yazılır.
+    Telegram mesajı ancak hedef/koruma sonucu netleştiğinde veya
+    24 saat sonunda gönderilir.
+    """
+    ledger = load_trade_ledger()
+    restored_count = (
+        restore_recent_expired_follow_records(
+            ledger
+        )
+    )
+    changed = restored_count > 0
+
+    if restored_count:
+        print(
+            "Süre sonrası takibe geri alınan işlem:",
+            restored_count,
+        )
+
+    current_time = now_ts()
+
+    for trade_id, trade in ledger.get(
+        "trades",
+        {},
+    ).items():
+        follow = trade.get(
+            "post_expiry_follow"
+        )
+
+        if not isinstance(follow, dict):
+            continue
+
+        if str(
+            follow.get("status", "")
+        ).upper() != "TRACKING":
+            continue
+
+        try:
+            symbol = trade.get("symbol")
+            direction = trade.get("direction")
+            expired_at = int(
+                follow.get("expired_at")
+                or trade.get("closed_at")
+                or 0
+            )
+            target_price = safe_float(
+                follow.get("target_price")
+            )
+            protection_price = safe_float(
+                follow.get("protection_price")
+            )
+
+            if (
+                expired_at <= 0
+                or target_price is None
+                or protection_price is None
+            ):
+                continue
+
+            max_end_time = (
+                expired_at
+                + POST_EXPIRY_MAX_TRACK_HOURS
+                * 3600
+            )
+
+            candles = fetch_candles_since(
+                exchange,
+                symbol,
+                POST_EXPIRY_TIMEFRAME,
+                since_seconds=max(
+                    0,
+                    expired_at - 5 * 60,
+                ),
+                limit=POST_EXPIRY_TRACK_LIMIT,
+            )
+
+            if not candles:
+                print(
+                    symbol,
+                    "süre sonrası mum verisi alınamadı.",
+                )
+                continue
+
+            outcome = None
+            outcome_time = None
+            outcome_price = None
+            last_price = safe_float(
+                follow.get("expiry_price")
+            )
+
+            for candle in candles:
+                candle_time = int(
+                    candle.get("time", 0)
+                    or 0
+                )
+                candle_end = candle_time + 5 * 60
+
+                if candle_end <= expired_at:
+                    continue
+
+                if candle_time > max_end_time:
+                    break
+
+                high = float(candle["high"])
+                low = float(candle["low"])
+                close = float(candle["close"])
+                last_price = close
+
+                update_post_expiry_excursion(
+                    trade,
+                    follow,
+                    high,
+                    low,
+                )
+
+                target_hit, protection_hit = (
+                    post_expiry_level_hits(
+                        direction,
+                        high,
+                        low,
+                        target_price,
+                        protection_price,
+                    )
+                )
+
+                # Süre sonunun içinde kaldığı ilk kısmi 5M mum veya
+                # iki seviyenin aynı 5M mumda görülmesi için 1M çözüm.
+                needs_minute_resolution = (
+                    candle_time < expired_at
+                    or (
+                        target_hit
+                        and protection_hit
+                    )
+                )
+
+                if needs_minute_resolution and (
+                    target_hit
+                    or protection_hit
+                ):
+                    minute_outcome, minute_time = (
+                        resolve_post_expiry_ambiguous_candle(
+                            exchange,
+                            trade,
+                            candle_time,
+                            target_price,
+                            protection_price,
+                            expired_at,
+                        )
+                    )
+
+                    if minute_outcome:
+                        outcome = minute_outcome
+                        outcome_time = minute_time
+                        outcome_price = (
+                            target_price
+                            if outcome == "TARGET"
+                            else (
+                                protection_price
+                                if outcome == "PROTECTION"
+                                else close
+                            )
+                        )
+                        break
+
+                    # Kısmi mumdaki hareketin süre dolmadan gerçekleşmiş
+                    # olma ihtimali varsa o mumu sonuç olarak kullanma.
+                    if candle_time < expired_at:
+                        continue
+
+                if target_hit:
+                    outcome = "TARGET"
+                    outcome_time = candle_time
+                    outcome_price = target_price
+                    break
+
+                if protection_hit:
+                    outcome = "PROTECTION"
+                    outcome_time = candle_time
+                    outcome_price = protection_price
+                    break
+
+            age_hours = max(
+                0.0,
+                (current_time - expired_at) / 3600,
+            )
+
+            checkpoints = follow.setdefault(
+                "checkpoints",
+                [],
+            )
+            existing_hours = {
+                int(item.get("hour", 0))
+                for item in checkpoints
+                if isinstance(item, dict)
+            }
+
+            current_directional_r = (
+                calculate_directional_r(
+                    trade,
+                    last_price,
+                )
+            )
+
+            for checkpoint_hour in (
+                POST_EXPIRY_CHECKPOINT_HOURS
+            ):
+                if (
+                    age_hours >= checkpoint_hour
+                    and checkpoint_hour
+                    not in existing_hours
+                ):
+                    checkpoints.append({
+                        "hour": checkpoint_hour,
+                        "observed_at": current_time,
+                        "price": last_price,
+                        "directional_r": (
+                            current_directional_r
+                        ),
+                    })
+                    changed = True
+
+            follow["last_checked_at"] = current_time
+            follow["last_price"] = last_price
+            follow["last_directional_r"] = (
+                current_directional_r
+            )
+            trade["post_expiry_best_r"] = (
+                follow.get("best_directional_r")
+            )
+            trade["post_expiry_worst_r"] = (
+                follow.get("worst_directional_r")
+            )
+            changed = True
+
+            if outcome is not None:
+                finalize_post_expiry_follow(
+                    trade,
+                    follow,
+                    outcome,
+                    outcome_time or current_time,
+                    outcome_price,
+                )
+
+            elif age_hours >= (
+                POST_EXPIRY_MAX_TRACK_HOURS
+            ):
+                finalize_post_expiry_follow(
+                    trade,
+                    follow,
+                    "NO_DECISION",
+                    max_end_time,
+                    last_price,
+                )
+
+            if (
+                str(
+                    follow.get("status", "")
+                ).upper() == "RESOLVED"
+                and not follow.get(
+                    "telegram_notified",
+                    False,
+                )
+            ):
+                send_telegram(
+                    build_post_expiry_telegram(
+                        trade,
+                        follow,
+                    )
+                )
+                follow["telegram_notified"] = True
+                changed = True
+
+        except Exception as exc:
+            print(
+                trade_id,
+                "süre sonrası takip hatası:",
+                exc,
+            )
+
+    if changed:
+        save_trade_ledger(ledger)
 
 
 
@@ -3564,6 +4446,7 @@ def main():
 
     check_open_signals(exchange)
     check_sl_after_follow(exchange)
+    check_post_expiry_follow(exchange)
     maybe_send_open_summary(exchange)
 
     risk_mode = risk_mode_active()
