@@ -19,9 +19,11 @@
 # - Stoplar olasılık temelli kök nedenlere ayrılır; işlem kuralları değişmez.
 # - TP1/TP2 tekrar mesajları ledger tabanlı tekil event korumasıyla engellenir.
 # - Her yeni işlem bot/strateji/config/Git commit sürümüyle etiketlenir.
+# - Tüm ana JSON state/ledger kayıtları atomik ve doğrulamalı yazılır.
 
 import json
 import os
+import tempfile
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -219,21 +221,147 @@ def load_json_file(filename, default=None):
         return default
 
 
-def save_json_file(filename, data):
+def fsync_parent_directory(filename):
+    """
+    os.replace sonrasında klasör kaydını da diske zorlamaya çalışır.
+    Bazı işletim sistemleri bunu desteklemeyebilir; desteklenmediğinde
+    ana JSON kaydı yine geçerlidir.
+    """
+    directory = os.path.dirname(
+        os.path.abspath(filename)
+    ) or "."
+
+    flags = getattr(
+        os,
+        "O_DIRECTORY",
+        0,
+    )
+
+    directory_fd = None
+
     try:
-        with open(filename, "w", encoding="utf-8") as handle:
+        directory_fd = os.open(
+            directory,
+            os.O_RDONLY | flags,
+        )
+        os.fsync(directory_fd)
+
+    except Exception:
+        pass
+
+    finally:
+        if directory_fd is not None:
+            try:
+                os.close(directory_fd)
+            except Exception:
+                pass
+
+
+def save_json_file(filename, data):
+    """
+    JSON dosyasını atomik biçimde kaydeder:
+
+    1. Aynı klasörde geçici dosyaya yazar.
+    2. flush + fsync ile içeriği diske zorlar.
+    3. Geçici JSON'u tekrar okuyup doğrular.
+    4. os.replace ile tek işlemde asıl dosyanın yerine geçirir.
+
+    Workflow yazım sırasında kesilirse eski sağlam dosya korunur;
+    yarım JSON asıl dosyanın üzerine yazılmaz.
+    """
+    normalized_data = (
+        data
+        if isinstance(data, dict)
+        else {}
+    )
+
+    absolute_filename = os.path.abspath(
+        filename
+    )
+    directory = os.path.dirname(
+        absolute_filename
+    ) or "."
+    base_name = os.path.basename(
+        absolute_filename
+    )
+
+    temp_path = None
+
+    try:
+        os.makedirs(
+            directory,
+            exist_ok=True,
+        )
+
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=directory,
+            prefix=f".{base_name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temp_path = handle.name
+
             json.dump(
-                data if isinstance(data, dict) else {},
+                normalized_data,
                 handle,
                 indent=2,
                 ensure_ascii=False,
             )
 
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+
+        # Yazılan geçici dosyanın bozuk olmadığını değiştirmeden önce doğrula.
+        with open(
+            temp_path,
+            "r",
+            encoding="utf-8",
+        ) as verify_handle:
+            verified_data = json.load(
+                verify_handle
+            )
+
+        if not isinstance(
+            verified_data,
+            dict,
+        ):
+            raise ValueError(
+                "Geçici JSON doğrulaması başarısız: "
+                "kök veri sözlük değil."
+            )
+
+        os.replace(
+            temp_path,
+            absolute_filename,
+        )
+        temp_path = None
+
+        fsync_parent_directory(
+            absolute_filename
+        )
+
         return True
 
     except Exception as exc:
-        print(filename, "kaydetme hatası:", exc)
+        print(
+            filename,
+            "atomik kaydetme hatası:",
+            exc,
+        )
         return False
+
+    finally:
+        if (
+            temp_path
+            and os.path.exists(temp_path)
+        ):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
 
 
 def load_open_signals():
