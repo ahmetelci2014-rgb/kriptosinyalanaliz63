@@ -20,10 +20,13 @@
 # - TP1'in geldigi ayni mumda yanlis breakeven kapanisi engellenir.
 # - Eski swing_radar_state.json kayitlariyla uyumludur.
 # - Telegram API yanit govdesi loglanmaz.
+# - State ve performans JSON dosyalari dogrulamali atomik yazilir.
+# - Ortak portfoy denetimi ayni coindeki bot cakismalarini engeller.
 
 import json
 import math
 import os
+import tempfile
 import time
 from collections import Counter
 from datetime import datetime, timedelta, timezone
@@ -31,6 +34,11 @@ from datetime import datetime, timedelta, timezone
 import ccxt
 import pandas as pd
 import requests
+
+from portfolio_risk import (
+    evaluate_portfolio_risk,
+    format_portfolio_note,
+)
 
 
 # =========================================================
@@ -287,28 +295,151 @@ def load_state():
         return empty_state()
 
 
-def save_state(state):
+
+def fsync_parent_directory(filename):
+    """
+    os.replace sonrasında klasör kaydını da diske zorlamaya çalışır.
+    Desteklenmeyen ortamlarda ana JSON kaydı yine geçerli kalır.
+    """
+    directory = os.path.dirname(
+        os.path.abspath(filename)
+    ) or "."
+
+    directory_fd = None
+
     try:
-        with open(
-            STATE_FILE,
-            "w",
+        directory_fd = os.open(
+            directory,
+            os.O_RDONLY
+            | getattr(os, "O_DIRECTORY", 0),
+        )
+        os.fsync(directory_fd)
+
+    except Exception:
+        pass
+
+    finally:
+        if directory_fd is not None:
+            try:
+                os.close(directory_fd)
+            except Exception:
+                pass
+
+
+def atomic_save_json(filename, data):
+    """
+    JSON'u aynı klasörde geçici dosyaya yazar, doğrular ve
+    os.replace ile tek adımda asıl dosyanın yerine geçirir.
+    """
+    normalized_data = (
+        data
+        if isinstance(data, dict)
+        else {}
+    )
+
+    absolute_filename = os.path.abspath(
+        filename
+    )
+    directory = os.path.dirname(
+        absolute_filename
+    ) or "."
+    base_name = os.path.basename(
+        absolute_filename
+    )
+    temp_path = None
+
+    try:
+        os.makedirs(
+            directory,
+            exist_ok=True,
+        )
+
+        with tempfile.NamedTemporaryFile(
+            mode="w",
             encoding="utf-8",
+            dir=directory,
+            prefix=f".{base_name}.",
+            suffix=".tmp",
+            delete=False,
         ) as handle:
+            temp_path = handle.name
+
             json.dump(
-                (
-                    state
-                    if isinstance(state, dict)
-                    else empty_state()
-                ),
+                normalized_data,
                 handle,
                 indent=2,
                 ensure_ascii=False,
             )
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+
+        with open(
+            temp_path,
+            "r",
+            encoding="utf-8",
+        ) as verify_handle:
+            verified = json.load(
+                verify_handle
+            )
+
+        if not isinstance(
+            verified,
+            dict,
+        ):
+            raise ValueError(
+                "Geçici JSON doğrulaması başarısız."
+            )
+
+        os.replace(
+            temp_path,
+            absolute_filename,
+        )
+        temp_path = None
+
+        fsync_parent_directory(
+            absolute_filename
+        )
 
         return True
 
     except Exception as exc:
-        print("State kaydetme hatası:", exc)
+        print(
+            filename,
+            "atomik JSON kaydetme hatası:",
+            exc,
+        )
+        return False
+
+    finally:
+        if (
+            temp_path
+            and os.path.exists(temp_path)
+        ):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
+
+
+def save_state(state):
+    try:
+        normalized_state = (
+            state
+            if isinstance(state, dict)
+            else empty_state()
+        )
+
+        return atomic_save_json(
+            STATE_FILE,
+            normalized_state,
+        )
+
+    except Exception as exc:
+        print(
+            "State kaydetme hatası:",
+            exc,
+        )
         return False
 
 
@@ -490,19 +621,10 @@ def save_swing_performance(ledger):
             ledger
         )
 
-        with open(
+        return atomic_save_json(
             PERFORMANCE_FILE,
-            "w",
-            encoding="utf-8",
-        ) as handle:
-            json.dump(
-                ledger,
-                handle,
-                indent=2,
-                ensure_ascii=False,
-            )
-
-        return True
+            ledger,
+        )
 
     except Exception as exc:
         print(
@@ -4002,6 +4124,9 @@ def save_open_signal(
         "direction_check": signal.get(
             "direction_check"
         ),
+        "portfolio_risk": signal.get(
+            "portfolio_risk"
+        ),
         "rsi_d1": signal.get("rsi_d1"),
         "rsi_4h": signal.get("rsi_4h"),
         "rsi_1h": signal.get("rsi_1h"),
@@ -5205,6 +5330,37 @@ def main():
                 )
                 continue
 
+        portfolio_risk = (
+            evaluate_portfolio_risk(
+                symbol=signal["symbol"],
+                direction=signal["direction"],
+                source_bot="SWING",
+            )
+        )
+
+        signal["portfolio_risk"] = (
+            portfolio_risk
+        )
+        signal["portfolio_note"] = (
+            format_portfolio_note(
+                portfolio_risk
+            )
+        )
+
+        if portfolio_risk.get(
+            "hard_block",
+            False,
+        ):
+            print(
+                signal["symbol"],
+                "portföy çakışması nedeniyle "
+                "Swing sinyali elendi:",
+                portfolio_risk.get(
+                    "block_reason"
+                ),
+            )
+            continue
+
         signal["current_price"] = (
             current_price
         )
@@ -5242,6 +5398,15 @@ def main():
             + "📌 Son Kontrol: "
             + "Swing giriş bölgesinde ve yapı geçerli ✅"
         )
+
+        portfolio_note = signal.get(
+            "portfolio_note"
+        )
+
+        if portfolio_note:
+            message += (
+                f"\n{portfolio_note}"
+            )
 
         if send_telegram(message):
             record_id = record_swing_performance(
