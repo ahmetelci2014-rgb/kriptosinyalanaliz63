@@ -14646,27 +14646,28 @@
         "confidence": "ORTA",
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
-          "Telegram gonderim aninda fiyat giristen uzaklasmisti."
+          "Telegram gonderim aninda fiyat giristen uzaklasmisti.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 54,
         "best_favorable_r": 0.1419,
         "worst_adverse_r": 1.4186,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "GEC_UZAK_GIRIS",
-        "preliminary_label": "Geç/uzak giriş",
+        "primary": "GEC_UZAK_GIRIS",
+        "label": "Geç/uzak giriş",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [
           "GEC_UZAK_GIRIS"
         ],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
           "Giriş ideal bölgeden veya gönderim fiyatından uzaktı."
         ],
         "metrics": {
@@ -14674,9 +14675,15 @@
           "mfe_r": 0.1419,
           "mae_r": 1.4186,
           "risk_percent": 0.948,
-          "return_minutes": null
+          "return_minutes": 254.0
         },
-        "updated_at": 1785252667
+        "updated_at": 1785267948
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 254,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1785267948
       }
     },
     "METUSDT_LONG_15M_ENTRY_1785250232": {
@@ -14886,5 +14893,5 @@
       }
     }
   },
-  "last_update": 1785264364
+  "last_update": 1785267948
 }
