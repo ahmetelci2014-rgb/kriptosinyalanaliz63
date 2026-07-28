@@ -8200,9 +8200,9 @@
       "opened": 17,
       "radar": 0,
       "tp1": 14,
-      "tp2": 9,
+      "tp2": 10,
       "tp3": 8,
-      "sl": 1,
+      "sl": 2,
       "be": 3,
       "expired": 0,
       "long": 2,
@@ -8334,7 +8334,7 @@
           "opened": 1,
           "radar": 0,
           "tp1": 1,
-          "tp2": 0,
+          "tp2": 1,
           "tp3": 0,
           "sl": 0,
           "be": 0,
@@ -8366,7 +8366,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -8382,10 +8382,12 @@
         }
       },
       "direction_stops": {
-        "LONG": 1
+        "LONG": 1,
+        "SHORT": 1
       },
       "stop_times": {
-        "SHIBUSDT": 1785192346
+        "SHIBUSDT": 1785192346,
+        "APRUSDT": 1785204070
       },
       "closed_times": {
         "ENSOUSDT": 1785189113,
@@ -8763,6 +8765,26 @@
           "exit": 0.204470003,
           "source": "15M_ENTRY",
           "score": 98
+        },
+        {
+          "time": "05:01:08",
+          "symbol": "SPCXUSDT",
+          "direction": "SHORT",
+          "result": "TP2",
+          "entry": 112.16,
+          "exit": 110.3583766591,
+          "source": "15M_ENTRY",
+          "score": 90
+        },
+        {
+          "time": "05:01:10",
+          "symbol": "APRUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.1998,
+          "exit": 0.2033,
+          "source": "15M_ENTRY",
+          "score": 100
         }
       ],
       "sl_after_tp1": 1,
@@ -8770,9 +8792,9 @@
       "sl_after_no_return": 0
     }
   },
-  "last_update": 1785203434,
+  "last_update": 1785204070,
   "last_open_summary": 1785200473,
-  "last_status_message": 1785198997,
+  "last_status_message": 1785204326,
   "last_daily_report": "2026-07-27",
   "sl_after_follow": {
     "SHIBUSDT_LONG_1785192346": {
@@ -8795,6 +8817,26 @@
         120,
         180
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "APRUSDT_SHORT_1785204070": {
+      "trade_id": "APRUSDT_SHORT_15M_ENTRY_1785202513",
+      "symbol": "APRUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.1998,
+      "tp1": 0.1981724262,
+      "tp2": 0.1966928136,
+      "tp3": 0.1950652398,
+      "sl": 0.2027592252,
+      "score": 100,
+      "risk_percent": 1.481,
+      "stopped_at": 1785204070,
+      "stop_exit": 0.2033,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
