@@ -8199,10 +8199,10 @@
     "2026-07-28": {
       "opened": 22,
       "radar": 0,
-      "tp1": 15,
+      "tp1": 16,
       "tp2": 10,
       "tp3": 8,
-      "sl": 2,
+      "sl": 3,
       "be": 4,
       "expired": 0,
       "long": 2,
@@ -8396,7 +8396,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -8413,7 +8413,7 @@
         "WALUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
+          "tp1": 1,
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
@@ -8433,11 +8433,12 @@
       },
       "direction_stops": {
         "LONG": 1,
-        "SHORT": 1
+        "SHORT": 2
       },
       "stop_times": {
         "SHIBUSDT": 1785192346,
-        "APRUSDT": 1785204070
+        "APRUSDT": 1785204070,
+        "ATUSDT": 1785209461
       },
       "closed_times": {
         "ENSOUSDT": 1785189113,
@@ -8857,6 +8858,26 @@
           "exit": 0.2063,
           "source": "15M_ENTRY",
           "score": 98
+        },
+        {
+          "time": "06:31:01",
+          "symbol": "ATUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.1323,
+          "exit": 0.133,
+          "source": "5M_RADAR",
+          "score": 100
+        },
+        {
+          "time": "06:31:02",
+          "symbol": "WALUSDT",
+          "direction": "SHORT",
+          "result": "TP1",
+          "entry": 0.02661,
+          "exit": 0.026509921,
+          "source": "15M_ENTRY",
+          "score": 96
         }
       ],
       "sl_after_tp1": 1,
@@ -8864,9 +8885,9 @@
       "sl_after_no_return": 1
     }
   },
-  "last_update": 1785208910,
+  "last_update": 1785209462,
   "last_open_summary": 1785206768,
-  "last_status_message": 1785204326,
+  "last_status_message": 1785209805,
   "last_daily_report": "2026-07-27",
   "sl_after_follow": {
     "SHIBUSDT_LONG_1785192346": {
@@ -8915,6 +8936,26 @@
         30,
         60
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "ATUSDT_SHORT_1785209461": {
+      "trade_id": "ATUSDT_SHORT_5M_RADAR_1785207929",
+      "symbol": "ATUSDT",
+      "direction": "SHORT",
+      "source": "5M_RADAR",
+      "entry": 0.1323,
+      "tp1": 0.1319239707,
+      "tp2": 0.1315821259,
+      "tp3": 0.1312060967,
+      "sl": 0.1329836896,
+      "score": 100,
+      "risk_percent": 0.517,
+      "stopped_at": 1785209461,
+      "stop_exit": 0.133,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
