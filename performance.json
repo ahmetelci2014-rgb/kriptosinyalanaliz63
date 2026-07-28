@@ -8202,8 +8202,8 @@
       "tp1": 23,
       "tp2": 14,
       "tp3": 9,
-      "sl": 6,
-      "be": 9,
+      "sl": 9,
+      "be": 10,
       "expired": 0,
       "long": 2,
       "short": 33,
@@ -8247,7 +8247,7 @@
           "tp2": 1,
           "tp3": 0,
           "sl": 0,
-          "be": 1,
+          "be": 2,
           "expired": 0
         },
         "GMTUSDT": {
@@ -8486,7 +8486,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -8506,7 +8506,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -8536,14 +8536,14 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         }
       },
       "direction_stops": {
         "LONG": 1,
-        "SHORT": 5
+        "SHORT": 8
       },
       "stop_times": {
         "SHIBUSDT": 1785192346,
@@ -8551,12 +8551,15 @@
         "ATUSDT": 1785209461,
         "SPXUSDT": 1785210347,
         "BONKUSDT": 1785214872,
-        "AIUSDT": 1785215755
+        "AIUSDT": 1785215755,
+        "TIAUSDT": 1785221146,
+        "BRETTUSDT": 1785221147,
+        "OPUSDT": 1785221148
       },
       "closed_times": {
         "ENSOUSDT": 1785189113,
         "GMTUSDT": 1785190549,
-        "RVNUSDT": 1785191463,
+        "RVNUSDT": 1785221145,
         "ETHWUSDT": 1785192350,
         "COREUSDT": 1785192352,
         "FUSDT": 1785192354,
@@ -9203,6 +9206,46 @@
           "exit": 0.02167,
           "source": "15M_ENTRY",
           "score": 98
+        },
+        {
+          "time": "09:45:45",
+          "symbol": "RVNUSDT",
+          "direction": "SHORT",
+          "result": "BE",
+          "entry": 0.003486,
+          "exit": 0.003486,
+          "source": "15M_ENTRY",
+          "score": 98
+        },
+        {
+          "time": "09:45:46",
+          "symbol": "TIAUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.3286,
+          "exit": 0.3316,
+          "source": "15M_ENTRY",
+          "score": 100
+        },
+        {
+          "time": "09:45:47",
+          "symbol": "BRETTUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.004492,
+          "exit": 0.004532,
+          "source": "15M_ENTRY",
+          "score": 100
+        },
+        {
+          "time": "09:45:48",
+          "symbol": "OPUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.08733,
+          "exit": 0.08785,
+          "source": "15M_ENTRY",
+          "score": 100
         }
       ],
       "sl_after_tp1": 1,
@@ -9210,9 +9253,9 @@
       "sl_after_no_return": 2
     }
   },
-  "last_update": 1785220577,
+  "last_update": 1785221150,
   "last_open_summary": 1785218479,
-  "last_status_message": 1785216994,
+  "last_status_message": 1785221485,
   "last_daily_report": "2026-07-27",
   "sl_after_follow": {
     "APRUSDT_SHORT_1785204070": {
@@ -9260,7 +9303,8 @@
       "reported_checkpoints": [
         30,
         60,
-        120
+        120,
+        180
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
@@ -9284,7 +9328,8 @@
       "reported_checkpoints": [
         30,
         60,
-        120
+        120,
+        180
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
@@ -9332,6 +9377,66 @@
         30,
         60
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "TIAUSDT_SHORT_1785221146": {
+      "trade_id": "TIAUSDT_SHORT_15M_ENTRY_1785214209",
+      "symbol": "TIAUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.3286,
+      "tp1": 0.3269038607,
+      "tp2": 0.3253619159,
+      "tp3": 0.3236657765,
+      "sl": 0.3316838897,
+      "score": 100,
+      "risk_percent": 0.938,
+      "stopped_at": 1785221146,
+      "stop_exit": 0.3316,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "BRETTUSDT_SHORT_1785221147": {
+      "trade_id": "BRETTUSDT_SHORT_15M_ENTRY_1785215211",
+      "symbol": "BRETTUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.004492,
+      "tp1": 0.0044709062,
+      "tp2": 0.0044517301,
+      "tp3": 0.0044306363,
+      "sl": 0.0045303523,
+      "score": 100,
+      "risk_percent": 0.854,
+      "stopped_at": 1785221147,
+      "stop_exit": 0.004532,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "OPUSDT_SHORT_1785221148": {
+      "trade_id": "OPUSDT_SHORT_15M_ENTRY_1785219656",
+      "symbol": "OPUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.08733,
+      "tp1": 0.087058728,
+      "tp2": 0.0868121171,
+      "tp3": 0.0865408451,
+      "sl": 0.0878232218,
+      "score": 100,
+      "risk_percent": 0.565,
+      "stopped_at": 1785221148,
+      "stop_exit": 0.08785,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
