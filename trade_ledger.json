@@ -15071,37 +15071,45 @@
       "duration_minutes": 24,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "ONCE LEHE GITTI, SONRA TERS DONDU",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
-          "Stop oncesinde islem en az 0.35R lehe hareket etti."
+          "Stop oncesinde islem en az 0.35R lehe hareket etti.",
+          "Stop sonrasi fiyat TP1 seviyesine dondu."
         ],
         "duration_minutes": 24,
         "best_favorable_r": 0.5986,
         "worst_adverse_r": 2.8732,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ONCE_LEHE_SONRA_TERS",
-        "preliminary_label": "Önce lehe, sonra ters",
+        "primary": "FITIL_DAR_STOP",
+        "label": "Fitil/dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası fiyat TP1 seviyesine 45 dakikada döndü.",
+          "Stop yüzdesi teşhis eşiğine göre dardı."
         ],
         "metrics": {
           "duration_minutes": 24,
           "mfe_r": 0.5986,
           "mae_r": 2.8732,
           "risk_percent": 0.589,
-          "return_minutes": null
+          "return_minutes": 45.0
         },
-        "updated_at": 1785273361
+        "updated_at": 1785276064
+      },
+      "post_stop_follow": {
+        "returned_level": "TP1",
+        "age_minutes": 45,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1785276064
       }
     },
     "VANAUSDT_LONG_5M_RADAR_1785273837": {
@@ -15221,5 +15229,5 @@
       }
     }
   },
-  "last_update": 1785275151
+  "last_update": 1785276064
 }
