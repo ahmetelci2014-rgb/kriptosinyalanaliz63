@@ -32,9 +32,14 @@
       "break_level": 0.1397,
       "entry_drift_percent": 0.0,
       "break_level_distance_percent": 0.5010737294201906,
-      "snapshots": {},
-      "latest_price": 0.1404,
-      "latest_directional_move_percent": 0.0,
+      "snapshots": {
+        "5m": 5.698,
+        "15m": 5.698,
+        "30m": 5.698,
+        "60m": 5.698
+      },
+      "latest_price": 0.1484,
+      "latest_directional_move_percent": 5.698,
       "best_favorable_percent": 0.0,
       "worst_adverse_percent": 0.0,
       "best_favorable_r": 0.0,
@@ -42,44 +47,70 @@
       "best_favorable_price": 0.1404,
       "worst_adverse_price": 0.1404,
       "last_market_price": 0.1404,
-      "direction_status": "OPEN",
-      "direction_reason": "Gönderim sonrası yön performansı izleniyor",
-      "trade_outcome": "OPEN",
-      "trade_result_r": null,
-      "milestones": [],
+      "direction_status": "DIRECTION_CORRECT",
+      "direction_reason": "60 dakika içinde sinyal yönü desteklendi",
+      "trade_outcome": "EXPIRED",
+      "trade_result_r": 5.2328,
+      "milestones": [
+        {
+          "outcome": "EXPIRED",
+          "time": 1785356197,
+          "time_tr": "2026-07-29 23:16:37",
+          "price": 0.1483,
+          "result_r": 5.2328
+        }
+      ],
       "diagnosis": {
         "version": "PUMP_DIAGNOSIS_V1",
-        "code": "OPEN",
-        "primary": "İşlem sonucu bekleniyor",
-        "confidence": "DÜŞÜK",
-        "factors": [],
-        "provisional": true
+        "code": "MOMENTUM_FADED",
+        "primary": "YÖN KISMEN DOĞRUYDU, HEDEF TAMAMLANMADI",
+        "confidence": "ORTA",
+        "factors": [
+          "Belirlenen takip süresinde TP1 gelmedi."
+        ],
+        "duration_minutes": 248,
+        "best_favorable_r": 0.0,
+        "worst_adverse_r": 0.0,
+        "provisional": false,
+        "note": "Bu teşhis kesin piyasa sebebi değildir; kayıtlı kırılım, hacim, momentum ve fiyat hareketine dayalı teknik değerlendirmedir."
       },
-      "post_stop_follow": null
+      "post_stop_follow": null,
+      "last_updated_at": 1785356197,
+      "last_updated_at_tr": "2026-07-29 23:16:37",
+      "direction_finalized_at": 1785356197,
+      "direction_finalized_at_tr": "2026-07-29 23:16:37",
+      "tp1_hit_at": 0,
+      "tp1_hit": false,
+      "tp2_hit": false,
+      "tp3_hit": false,
+      "trade_last_updated_at": 1785356197,
+      "trade_last_updated_at_tr": "2026-07-29 23:16:37",
+      "trade_closed_at": 1785356197,
+      "trade_closed_at_tr": "2026-07-29 23:16:37"
     }
   ],
   "summary": {
     "total": 1,
-    "direction_open": 1,
-    "direction_correct": 0,
+    "direction_open": 0,
+    "direction_correct": 1,
     "direction_wrong": 0,
     "direction_mixed": 0,
-    "trade_open": 1,
+    "trade_open": 0,
     "tp1": 0,
     "tp2": 0,
     "tp3": 0,
     "stop": 0,
     "breakeven": 0,
-    "expired": 0,
+    "expired": 1,
     "long": 1,
     "short": 0,
-    "diagnosis_open": 1,
+    "diagnosis_open": 0,
     "diagnosis_success": 0,
     "diagnosis_false_breakout": 0,
     "diagnosis_early_stop": 0,
-    "diagnosis_momentum_faded": 0,
+    "diagnosis_momentum_faded": 1,
     "diagnosis_no_continuation": 0
   },
-  "updated_at": 1785341309,
-  "updated_at_tr": "2026-07-29 19:08:29"
+  "updated_at": 1785356197,
+  "updated_at_tr": "2026-07-29 23:16:37"
 }
