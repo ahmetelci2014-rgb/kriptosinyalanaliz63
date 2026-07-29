@@ -9826,17 +9826,17 @@
       "sl_after_no_return": 9
     },
     "2026-07-29": {
-      "opened": 26,
+      "opened": 27,
       "radar": 0,
       "tp1": 17,
       "tp2": 11,
       "tp3": 9,
-      "sl": 5,
+      "sl": 6,
       "be": 8,
       "expired": 0,
       "long": 5,
-      "short": 21,
-      "normal": 20,
+      "short": 22,
+      "normal": 21,
       "radar_trade": 6,
       "coins": {
         "UNIUSDT": {
@@ -10085,7 +10085,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -10108,18 +10108,29 @@
           "sl": 0,
           "be": 0,
           "expired": 0
+        },
+        "ONEUSDT": {
+          "opened": 1,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 0,
+          "be": 0,
+          "expired": 0
         }
       },
       "direction_stops": {
         "LONG": 4,
-        "SHORT": 1
+        "SHORT": 2
       },
       "stop_times": {
         "IRYSUSDT": 1785273361,
         "VANAUSDT": 1785275150,
         "ONDOUSDT": 1785297668,
         "INJUSDT": 1785317460,
-        "ETHUSDT": 1785322876
+        "ETHUSDT": 1785322876,
+        "REUSDT": 1785331861
       },
       "closed_times": {
         "UNIUSDT": 1785274261,
@@ -10659,14 +10670,24 @@
           "exit": 1.389,
           "source": "5M_RADAR",
           "score": 100
+        },
+        {
+          "time": "16:31:01",
+          "symbol": "REUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.41166,
+          "exit": 0.41688,
+          "source": "5M_RADAR",
+          "score": 100
         }
       ],
       "sl_after_tp1": 2,
       "sl_after_tp2": 0,
-      "sl_after_no_return": 1
+      "sl_after_no_return": 2
     }
   },
-  "last_update": 1785330962,
+  "last_update": 1785332127,
   "last_open_summary": 1785330964,
   "last_status_message": 1785324097,
   "last_daily_report": "2026-07-28",
@@ -10689,12 +10710,15 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-07-29"
     },
     "ETHUSDT_LONG_1785322876": {
       "trade_id": "ETHUSDT_LONG_15M_ENTRY_1785318622",
@@ -10715,6 +10739,26 @@
         60,
         120
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "REUSDT_SHORT_1785331861": {
+      "trade_id": "REUSDT_SHORT_5M_RADAR_1785327632",
+      "symbol": "REUSDT",
+      "direction": "SHORT",
+      "source": "5M_RADAR",
+      "entry": 0.41166,
+      "tp1": 0.4085930979,
+      "tp2": 0.405805005,
+      "tp3": 0.4027381029,
+      "sl": 0.4172361857,
+      "score": 100,
+      "risk_percent": 1.355,
+      "stopped_at": 1785331861,
+      "stop_exit": 0.41688,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
