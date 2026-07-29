@@ -16399,12 +16399,12 @@
       "tp1_hit": true,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "EXPIRED",
+      "r_result": 0.2641,
+      "exit_price": 0.05492,
+      "closed_at": 1785363350,
+      "closed_day": "2026-07-30",
       "events": [
         {
           "time": 1785297933,
@@ -16415,6 +16415,11 @@
           "time": 1785359751,
           "event": "TP1",
           "price": 0.0543950558
+        },
+        {
+          "time": 1785363350,
+          "event": "EXPIRED",
+          "price": 0.05492
         }
       ],
       "bot_version": "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27",
@@ -16459,7 +16464,55 @@
       "worst_adverse_price": 0.05557,
       "last_market_price": 0.05486,
       "tp1_hit_at": 1785358980,
-      "last_tracking_at": 1785362460
+      "last_tracking_at": 1785362460,
+      "duration_minutes": 1090,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "YON KISMEN DOGRU, HEDEF TAMAMLANMADI",
+        "confidence": "ORTA",
+        "factors": [
+          "Islem belirlenen takip suresi icinde TP3 veya SL ile kapanmadi."
+        ],
+        "duration_minutes": 1090,
+        "best_favorable_r": 0.6644,
+        "worst_adverse_r": 0.7298,
+        "provisional": false,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "post_expiry_follow": {
+        "version": "POST_EXPIRY_V1",
+        "status": "TRACKING",
+        "restored": false,
+        "expired_at": 1785363350,
+        "expiry_price": 0.05492,
+        "expiry_net_r": 0.2641,
+        "target_label": "TP3",
+        "target_price": 0.0534310713,
+        "protection_label": "BE",
+        "protection_price": 0.0549,
+        "timeframe": "5m",
+        "max_track_hours": 24,
+        "checkpoints": [],
+        "last_checked_at": 1785363351,
+        "best_directional_r": -0.0218,
+        "worst_directional_r": -0.0545,
+        "best_price": 0.05492,
+        "worst_price": 0.05495,
+        "first_event": null,
+        "first_event_at": null,
+        "resolved_at": null,
+        "elapsed_minutes": null,
+        "diagnosis": null,
+        "telegram_notified": false,
+        "last_price": 0.05492,
+        "last_directional_r": -0.0218
+      },
+      "post_expiry_status": "TRACKING",
+      "post_expiry_tp1": false,
+      "post_expiry_sl": false,
+      "post_expiry_best_r": -0.0218,
+      "post_expiry_worst_r": -0.0545,
+      "expiry_diagnosis": null
     },
     "STXUSDT_SHORT_15M_ENTRY_1785300662": {
       "trade_id": "STXUSDT_SHORT_15M_ENTRY_1785300662",
@@ -18992,9 +19045,9 @@
       "worst_adverse_r": 0.6568,
       "best_favorable_price": 0.32522,
       "worst_adverse_price": 0.32619,
-      "last_market_price": 0.32607,
+      "last_market_price": 0.32589,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785362460
+      "last_tracking_at": 1785363300
     },
     "MOODENGUSDT_SHORT_5M_RADAR_1785361803": {
       "trade_id": "MOODENGUSDT_SHORT_5M_RADAR_1785361803",
@@ -19112,5 +19165,5 @@
       }
     }
   },
-  "last_update": 1785362478
+  "last_update": 1785363351
 }
