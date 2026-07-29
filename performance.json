@@ -9826,17 +9826,17 @@
       "sl_after_no_return": 9
     },
     "2026-07-29": {
-      "opened": 11,
+      "opened": 13,
       "radar": 0,
-      "tp1": 9,
+      "tp1": 10,
       "tp2": 2,
-      "tp3": 0,
-      "sl": 2,
+      "tp3": 1,
+      "sl": 3,
       "be": 6,
       "expired": 0,
       "long": 3,
-      "short": 8,
-      "normal": 7,
+      "short": 10,
+      "normal": 9,
       "radar_trade": 4,
       "coins": {
         "UNIUSDT": {
@@ -9925,7 +9925,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -9952,7 +9952,7 @@
         "BANDUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
+          "tp1": 1,
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
@@ -9964,6 +9964,26 @@
           "radar": 0,
           "tp1": 1,
           "tp2": 1,
+          "tp3": 1,
+          "sl": 0,
+          "be": 0,
+          "expired": 0
+        },
+        "ETCUSDT": {
+          "opened": 1,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 0,
+          "be": 0,
+          "expired": 0
+        },
+        "CROUSDT": {
+          "opened": 1,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
           "tp3": 0,
           "sl": 0,
           "be": 0,
@@ -9971,11 +9991,12 @@
         }
       },
       "direction_stops": {
-        "LONG": 2
+        "LONG": 3
       },
       "stop_times": {
         "IRYSUSDT": 1785273361,
-        "VANAUSDT": 1785275150
+        "VANAUSDT": 1785275150,
+        "ONDOUSDT": 1785297668
       },
       "closed_times": {
         "UNIUSDT": 1785274261,
@@ -9983,7 +10004,8 @@
         "PYTHUSDT": 1785284160,
         "JTOUSDT": 1785292262,
         "WLFIUSDT": 1785292263,
-        "PLUMEUSDT": 1785294073
+        "PLUMEUSDT": 1785294073,
+        "ARUSDT": 1785297670
       },
       "closed_results": {
         "UNIUSDT": "BE",
@@ -9991,7 +10013,8 @@
         "PYTHUSDT": "BE",
         "JTOUSDT": "BE",
         "WLFIUSDT": "BE",
-        "PLUMEUSDT": "BE"
+        "PLUMEUSDT": "BE",
+        "ARUSDT": "TP3"
       },
       "closed_history": [
         {
@@ -10183,6 +10206,36 @@
           "exit": 0.0172789248,
           "source": "15M_ENTRY",
           "score": 94
+        },
+        {
+          "time": "07:01:08",
+          "symbol": "ONDOUSDT",
+          "direction": "LONG",
+          "result": "SL",
+          "entry": 0.4015,
+          "exit": 0.3953,
+          "source": "5M_RADAR",
+          "score": 100
+        },
+        {
+          "time": "07:01:09",
+          "symbol": "BANDUSDT",
+          "direction": "SHORT",
+          "result": "TP1",
+          "entry": 0.1479,
+          "exit": 0.1464886404,
+          "source": "15M_ENTRY",
+          "score": 94
+        },
+        {
+          "time": "07:01:10",
+          "symbol": "ARUSDT",
+          "direction": "SHORT",
+          "result": "TP3",
+          "entry": 1.763,
+          "exit": 1.7455690968,
+          "source": "5M_RADAR",
+          "score": 100
         }
       ],
       "sl_after_tp1": 1,
@@ -10190,9 +10243,30 @@
       "sl_after_no_return": 1
     }
   },
-  "last_update": 1785296756,
+  "last_update": 1785297933,
   "last_open_summary": 1785294955,
   "last_status_message": 1785296211,
   "last_daily_report": "2026-07-28",
-  "sl_after_follow": {}
+  "sl_after_follow": {
+    "ONDOUSDT_LONG_1785297668": {
+      "trade_id": "ONDOUSDT_LONG_5M_RADAR_1785292530",
+      "symbol": "ONDOUSDT",
+      "direction": "LONG",
+      "source": "5M_RADAR",
+      "entry": 0.4015,
+      "tp1": 0.4044968773,
+      "tp2": 0.4072213111,
+      "tp3": 0.4102181884,
+      "sl": 0.3960511323,
+      "score": 100,
+      "risk_percent": 1.357,
+      "stopped_at": 1785297668,
+      "stop_exit": 0.3953,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    }
+  }
 }
