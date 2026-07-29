@@ -16420,6 +16420,11 @@
           "time": 1785363350,
           "event": "EXPIRED",
           "price": 0.05492
+        },
+        {
+          "time": 1785363360,
+          "event": "POST_EXPIRY_PROTECTION",
+          "price": 0.0549
         }
       ],
       "bot_version": "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27",
@@ -16481,7 +16486,7 @@
       },
       "post_expiry_follow": {
         "version": "POST_EXPIRY_V1",
-        "status": "TRACKING",
+        "status": "RESOLVED",
         "restored": false,
         "expired_at": 1785363350,
         "expiry_price": 0.05492,
@@ -16493,26 +16498,29 @@
         "timeframe": "5m",
         "max_track_hours": 24,
         "checkpoints": [],
-        "last_checked_at": 1785363351,
-        "best_directional_r": -0.0218,
+        "last_checked_at": 1785364261,
+        "best_directional_r": -0.0109,
         "worst_directional_r": -0.0545,
-        "best_price": 0.05492,
+        "best_price": 0.05491,
         "worst_price": 0.05495,
-        "first_event": null,
-        "first_event_at": null,
-        "resolved_at": null,
-        "elapsed_minutes": null,
-        "diagnosis": null,
-        "telegram_notified": false,
-        "last_price": 0.05492,
-        "last_directional_r": -0.0218
+        "first_event": "PROTECTION",
+        "first_event_at": 1785363360,
+        "resolved_at": 1785364262,
+        "elapsed_minutes": 0,
+        "diagnosis": "Süre sınırı daha büyük kayıptan korudu; koruma seviyesi süre dolduktan sonra önce görüldü.",
+        "telegram_notified": true,
+        "last_price": 0.05493,
+        "last_directional_r": -0.0327,
+        "first_event_price": 0.0549
       },
-      "post_expiry_status": "TRACKING",
+      "post_expiry_status": "BE_AFTER_EXPIRY",
       "post_expiry_tp1": false,
       "post_expiry_sl": false,
-      "post_expiry_best_r": -0.0218,
+      "post_expiry_best_r": -0.0109,
       "post_expiry_worst_r": -0.0545,
-      "expiry_diagnosis": null
+      "expiry_diagnosis": "Süre sınırı daha büyük kayıptan korudu; koruma seviyesi süre dolduktan sonra önce görüldü.",
+      "post_expiry_target": false,
+      "post_expiry_protection": true
     },
     "STXUSDT_SHORT_15M_ENTRY_1785300662": {
       "trade_id": "STXUSDT_SHORT_15M_ENTRY_1785300662",
@@ -19045,9 +19053,9 @@
       "worst_adverse_r": 0.6568,
       "best_favorable_price": 0.32522,
       "worst_adverse_price": 0.32619,
-      "last_market_price": 0.32589,
+      "last_market_price": 0.32598,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785363300
+      "last_tracking_at": 1785364260
     },
     "MOODENGUSDT_SHORT_5M_RADAR_1785361803": {
       "trade_id": "MOODENGUSDT_SHORT_5M_RADAR_1785361803",
@@ -19165,5 +19173,5 @@
       }
     }
   },
-  "last_update": 1785363351
+  "last_update": 1785364262
 }
