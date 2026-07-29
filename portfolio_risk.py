@@ -36,6 +36,15 @@ DEFAULT_STATE_SOURCES = {
             "open_swing_signals",
         ],
     },
+    "NEW_LISTING": {
+        "filename": "new_listing_performance_ledger.json",
+        "containers": [
+            "records",
+        ],
+        # Yalnız TP/SL içeren gerçek giriş onaylarını say.
+        # Eski "izle" performans kayıtları portföy riski değildir.
+        "required_record_type": "CONFIRMED_TRADE",
+    },
 }
 
 DEFAULT_MAX_DIRECTION_RISK = 4.0
@@ -120,6 +129,7 @@ def signal_is_open(signal):
         "CLOSED",
         "EXPIRED",
         "CANCELLED",
+        "FINAL",
     }:
         return False
 
@@ -143,6 +153,7 @@ def signal_risk_weight(signal):
 def extract_container_signals(
     loaded,
     containers,
+    required_record_type=None,
 ):
     results = []
     seen_keys = set()
@@ -165,6 +176,20 @@ def extract_container_signals(
         for key, signal in (
             candidate_container.items()
         ):
+            if not isinstance(signal, dict):
+                continue
+
+            if required_record_type:
+                record_type = str(
+                    signal.get("record_type") or ""
+                ).upper()
+
+                if (
+                    record_type
+                    != str(required_record_type).upper()
+                ):
+                    continue
+
             if not signal_is_open(signal):
                 continue
 
@@ -204,6 +229,9 @@ def collect_open_portfolio(
             "containers",
             [None],
         )
+        required_record_type = source.get(
+            "required_record_type"
+        )
 
         loaded = load_json_safely(
             filename
@@ -212,6 +240,9 @@ def collect_open_portfolio(
         for signal in extract_container_signals(
             loaded,
             containers,
+            required_record_type=(
+                required_record_type
+            ),
         ):
             records.append({
                 "bot": str(bot_name),
@@ -221,13 +252,22 @@ def collect_open_portfolio(
                 "direction": str(
                     signal.get("direction", "")
                 ).upper(),
-                "source": signal.get("source"),
+                "source": (
+                    signal.get("source")
+                    or signal.get("alert_type")
+                    or signal.get("record_type")
+                ),
                 "entry": safe_float(
                     signal.get("entry"),
                     None,
                 ),
                 "risk_percent": safe_float(
-                    signal.get("risk_percent"),
+                    (
+                        signal.get("risk_percent")
+                        if signal.get("risk_percent")
+                        is not None
+                        else signal.get("stop_percent")
+                    ),
                     None,
                 ),
                 "tp1_hit": bool(
@@ -238,7 +278,12 @@ def collect_open_portfolio(
                 ),
                 "opened_at": int(
                     safe_float(
-                        signal.get("opened_at"),
+                        (
+                            signal.get("opened_at")
+                            if signal.get("opened_at")
+                            is not None
+                            else signal.get("sent_at")
+                        ),
                         0,
                     )
                     or 0
@@ -382,7 +427,7 @@ def evaluate_portfolio_risk(
         )
 
     return {
-        "version": "PORTFOLIO_RISK_V1",
+        "version": "PORTFOLIO_RISK_V2_NEW_LISTING",
         "checked_at": int(time.time()),
         "candidate": {
             "bot": normalized_bot,
