@@ -27,7 +27,7 @@ concurrency:
 jobs:
   core-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Repo indir
@@ -37,22 +37,40 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
 
-      - name: Test dosyasını kontrol et
+      - name: Bağımlılıkları kur
+        run: |
+          python -m pip install --prefer-binary -r requirements.txt
+
+      - name: Gerekli dosyaları kontrol et
         run: |
           pwd
           ls -la
+          test -f main.py
+          test -f strategy.py
+          test -f config.py
+          test -f portfolio_risk.py
+          test -f scalp_radar.py
+          test -f pump_radar.py
+          test -f swing_radar.py
+          test -f new_listing_radar.py
+          test -f coin_analyzer.py
           test -f test_main_core.py
 
-      - name: Python dosyalarını derle
+      - name: Aktif Python dosyalarını derle
         run: |
           python -m py_compile \
             main.py \
             strategy.py \
             config.py \
+            portfolio_risk.py \
             scalp_radar.py \
             pump_radar.py \
             swing_radar.py \
+            new_listing_radar.py \
+            coin_analyzer.py \
             test_main_core.py
 
       - name: Ana bot çekirdek testlerini çalıştır
@@ -61,3 +79,10 @@ jobs:
           CHAT_ID: ""
         run: |
           python test_main_core.py -v
+
+      - name: Yeni Liste Radar self-testini çalıştır
+        env:
+          TOKEN: ""
+          CHAT_ID: ""
+        run: |
+          python new_listing_radar.py --self-test
