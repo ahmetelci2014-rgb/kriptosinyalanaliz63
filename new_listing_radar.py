@@ -54,10 +54,10 @@ MAX_NEW_MARKETS_PER_RUN = 20
 MAX_ALERTS_PER_RUN = 2
 
 # V2: Telegram'a izleme mesajı gönderilmez.
-# Adaylar sessizce tutulur; şartlar tamamlanınca en fazla 1 giriş onayı gönderilir.
+# Adaylar sessizce tutulur; en az 2 dakika sonra şartlar tamamlanınca en fazla 1 giriş onayı gönderilir.
 MAX_TRADE_SIGNALS_PER_RUN = 1
 SILENT_CANDIDATE_EXPIRY_MINUTES = 60
-MIN_CONFIRM_WATCH_AGE_MINUTES = 4
+MIN_CONFIRM_WATCH_AGE_MINUTES = 2
 TRADE_SIGNAL_COOLDOWN_SECONDS = 4 * 60 * 60
 
 MIN_CONFIRM_SCORE = 82
