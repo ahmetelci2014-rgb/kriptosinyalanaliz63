@@ -19053,9 +19053,9 @@
       "worst_adverse_r": 0.7531,
       "best_favorable_price": 0.32522,
       "worst_adverse_price": 0.3263,
-      "last_market_price": 0.32562,
+      "last_market_price": 0.32553,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785382200
+      "last_tracking_at": 1785383100
     },
     "MOODENGUSDT_SHORT_5M_RADAR_1785361803": {
       "trade_id": "MOODENGUSDT_SHORT_5M_RADAR_1785361803",
@@ -19724,37 +19724,45 @@
       "duration_minutes": 24,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "KURULUM DEVAM ETMEDI",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
-          "Islem yeterli lehe ivme olusturmadan stop oldu."
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Stop sonrasi fiyat TP1 seviyesine dondu."
         ],
         "duration_minutes": 24,
         "best_favorable_r": 0.1465,
         "worst_adverse_r": 1.1718,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "MUHTEMEL_YANLIS_YON",
-        "preliminary_label": "Muhtemel yanlış yön",
+        "primary": "ERKEN_GIRIS_VEYA_DAR_STOP",
+        "label": "Erken giriş veya dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası fiyat TP1 seviyesine 120 dakikada döndü.",
+          "Hızlı ve düşük MFE'li stop ile dar risk profili birlikte görüldü."
         ],
         "metrics": {
           "duration_minutes": 24,
           "mfe_r": 0.1465,
           "mae_r": 1.1718,
           "risk_percent": 0.528,
-          "return_minutes": null
+          "return_minutes": 120.0
         },
-        "updated_at": 1785375951
+        "updated_at": 1785383153
+      },
+      "post_stop_follow": {
+        "returned_level": "TP1",
+        "age_minutes": 120,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1785383153
       }
     },
     "MMTUSDT_LONG_15M_ENTRY_1785378288": {
@@ -19838,39 +19846,47 @@
       "duration_minutes": 51,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "ONCE LEHE GITTI, SONRA TERS DONDU",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
-          "Stop oncesinde islem en az 0.35R lehe hareket etti."
+          "Stop oncesinde islem en az 0.35R lehe hareket etti.",
+          "Stop sonrasi fiyat TP3 seviyesine dondu."
         ],
         "duration_minutes": 51,
         "best_favorable_r": 0.476,
         "worst_adverse_r": 1.258,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ONCE_LEHE_SONRA_TERS",
-        "preliminary_label": "Önce lehe, sonra ters",
+        "primary": "FITIL_DAR_STOP",
+        "label": "Fitil/dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası fiyat TP3 seviyesine 30 dakikada döndü.",
+          "Stop sonrası hedef dönüşü fitil veya giriş zamanlaması ihtimalini güçlendirdi."
         ],
         "metrics": {
           "duration_minutes": 51,
           "mfe_r": 0.476,
           "mae_r": 1.258,
           "risk_percent": 1.543,
-          "return_minutes": null
+          "return_minutes": 30.0
         },
-        "updated_at": 1785381349
+        "updated_at": 1785383154
+      },
+      "post_stop_follow": {
+        "returned_level": "TP3",
+        "age_minutes": 30,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1785383154
       }
     }
   },
-  "last_update": 1785382263
+  "last_update": 1785383154
 }
