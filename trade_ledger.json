@@ -19053,9 +19053,9 @@
       "worst_adverse_r": 0.7531,
       "best_favorable_price": 0.32522,
       "worst_adverse_price": 0.3263,
-      "last_market_price": 0.3256,
+      "last_market_price": 0.32559,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785384060
+      "last_tracking_at": 1785384900
     },
     "MOODENGUSDT_SHORT_5M_RADAR_1785361803": {
       "trade_id": "MOODENGUSDT_SHORT_5M_RADAR_1785361803",
@@ -19607,40 +19607,48 @@
       "duration_minutes": 9,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "HIZLI TERS HAREKET / YON UYUMSUZLUGU",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
           "Islem ilk 20 dakikada anlamli lehe hareket yapmadan stop oldu.",
           "5M erken giriste 15M trend gucu sinirdaydi.",
-          "Stop mesafesi cok kisa surede tamamen tuketildi."
+          "Stop mesafesi cok kisa surede tamamen tuketildi.",
+          "Stop sonrasi fiyat TP1 seviyesine dondu."
         ],
         "duration_minutes": 9,
         "best_favorable_r": 0.0,
         "worst_adverse_r": 1.2199,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "MUHTEMEL_YANLIS_YON",
-        "preliminary_label": "Muhtemel yanlış yön",
+        "primary": "ERKEN_GIRIS_VEYA_DAR_STOP",
+        "label": "Erken giriş veya dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
-          "5M erken girişte 15M trend gücü sınırdaydı."
+          "Stop sonrası fiyat TP1 seviyesine 164 dakikada döndü.",
+          "5M erken girişte 15M trend gücü sınırdaydı.",
+          "Hızlı ve düşük MFE'li stop ile dar risk profili birlikte görüldü."
         ],
         "metrics": {
           "duration_minutes": 9,
           "mfe_r": 0.0,
           "mae_r": 1.2199,
           "risk_percent": 0.35,
-          "return_minutes": null
+          "return_minutes": 164.0
         },
-        "updated_at": 1785375060
+        "updated_at": 1785384948
+      },
+      "post_stop_follow": {
+        "returned_level": "TP1",
+        "age_minutes": 164,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1785384948
       }
     },
     "CHZUSDT_SHORT_5M_RADAR_1785374485": {
@@ -19888,5 +19896,5 @@
       }
     }
   },
-  "last_update": 1785384070
+  "last_update": 1785384948
 }
