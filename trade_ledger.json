@@ -20280,34 +20280,42 @@
         "primary": "KURULUM DEVAM ETMEDI",
         "confidence": "ORTA",
         "factors": [
-          "Islem yeterli lehe ivme olusturmadan stop oldu."
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 260,
         "best_favorable_r": 0.2298,
         "worst_adverse_r": 1.0399,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "KURULUM_DEVAM_ETMEDI",
-        "preliminary_label": "Kurulum devam etmedi",
+        "primary": "KURULUM_DEVAM_ETMEDI",
+        "label": "Kurulum devam etmedi",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "İşlem yeterli lehe ivme üretmeden stop oldu."
         ],
         "metrics": {
           "duration_minutes": 260,
           "mfe_r": 0.2298,
           "mae_r": 1.0399,
           "risk_percent": 1.444,
-          "return_minutes": null
+          "return_minutes": 240.0
         },
-        "updated_at": 1785407455
+        "updated_at": 1785421865
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 240,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1785421865
       }
     },
     "DYDXUSDT_SHORT_15M_ENTRY_1785395200": {
@@ -20581,9 +20589,9 @@
       "worst_adverse_r": 0.7946,
       "best_favorable_price": 0.03736,
       "worst_adverse_price": 0.03821,
-      "last_market_price": 0.03776,
+      "last_market_price": 0.0379,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785420900
+      "last_tracking_at": 1785421860
     },
     "ORDIUSDT_SHORT_15M_ENTRY_1785397831": {
       "trade_id": "ORDIUSDT_SHORT_15M_ENTRY_1785397831",
@@ -21003,5 +21011,5 @@
       }
     }
   },
-  "last_update": 1785420958
+  "last_update": 1785421865
 }
