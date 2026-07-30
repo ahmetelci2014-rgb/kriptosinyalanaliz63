@@ -20581,9 +20581,9 @@
       "worst_adverse_r": 0.5654,
       "best_favorable_price": 0.03736,
       "worst_adverse_price": 0.03806,
-      "last_market_price": 0.03773,
+      "last_market_price": 0.03762,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785413700
+      "last_tracking_at": 1785414600
     },
     "ORDIUSDT_SHORT_15M_ENTRY_1785397831": {
       "trade_id": "ORDIUSDT_SHORT_15M_ENTRY_1785397831",
@@ -20768,25 +20768,26 @@
         "confidence": "ORTA",
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
-          "15M hacim kendi ortalamasinin altinda veya sinirdaydi."
+          "15M hacim kendi ortalamasinin altinda veya sinirdaydi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 23,
         "best_favorable_r": 0.2555,
         "worst_adverse_r": 1.1754,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ZAYIF_TREND_HACIM",
-        "preliminary_label": "Zayıf trend/hacim",
+        "primary": "ZAYIF_TREND_HACIM",
+        "label": "Zayıf trend/hacim",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
           "15M hacim oranı sınırın altındaydı."
         ],
         "metrics": {
@@ -20794,9 +20795,15 @@
           "mfe_r": 0.2555,
           "mae_r": 1.1754,
           "risk_percent": 0.808,
-          "return_minutes": null
+          "return_minutes": 240.0
         },
-        "updated_at": 1785400256
+        "updated_at": 1785414656
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 240,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1785414656
       }
     },
     "JELLYJELLYUSDT_LONG_5M_RADAR_1785400535": {
@@ -20996,5 +21003,5 @@
       }
     }
   },
-  "last_update": 1785413749
+  "last_update": 1785414656
 }
