@@ -11094,7 +11094,7 @@
       "tp1": 5,
       "tp2": 2,
       "tp3": 2,
-      "sl": 10,
+      "sl": 11,
       "be": 2,
       "expired": 1,
       "long": 3,
@@ -11208,7 +11208,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -11294,7 +11294,7 @@
         }
       },
       "direction_stops": {
-        "SHORT": 9,
+        "SHORT": 10,
         "LONG": 1
       },
       "stop_times": {
@@ -11307,7 +11307,8 @@
         "MMTUSDT": 1785381349,
         "TRXUSDT": 1785392151,
         "MORPHOUSDT": 1785395752,
-        "CHIPUSDT": 1785400256
+        "CHIPUSDT": 1785400256,
+        "XAGUSDT": 1785407455
       },
       "closed_times": {
         "CROUSDT": 1785363350,
@@ -11543,14 +11544,24 @@
           "exit": 0.05678,
           "source": "5M_RADAR",
           "score": 100
+        },
+        {
+          "time": "13:30:55",
+          "symbol": "XAGUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 57.27,
+          "exit": 58.06,
+          "source": "15M_ENTRY",
+          "score": 93
         }
       ],
       "sl_after_tp1": 3,
       "sl_after_tp2": 1,
-      "sl_after_no_return": 4
+      "sl_after_no_return": 5
     }
   },
-  "last_update": 1785405065,
+  "last_update": 1785407459,
   "last_open_summary": 1785402074,
   "last_status_message": 1785406888,
   "last_daily_report": "2026-07-29",
@@ -11573,12 +11584,15 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-07-30"
     },
     "MORPHOUSDT_SHORT_1785395752": {
       "trade_id": "MORPHOUSDT_SHORT_15M_ENTRY_1785387940",
@@ -11597,7 +11611,8 @@
       "reported_checkpoints": [
         30,
         60,
-        120
+        120,
+        180
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
@@ -11620,8 +11635,29 @@
       "stop_exit": 0.02439,
       "reported_checkpoints": [
         30,
-        60
+        60,
+        120
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "XAGUSDT_SHORT_1785407455": {
+      "trade_id": "XAGUSDT_SHORT_15M_ENTRY_1785391814",
+      "symbol": "XAGUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 57.27,
+      "tp1": 56.8151628549,
+      "tp2": 56.4016745411,
+      "tp3": 55.946837396,
+      "sl": 58.0969766275,
+      "score": 93,
+      "risk_percent": 1.444,
+      "stopped_at": 1785407455,
+      "stop_exit": 58.06,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
