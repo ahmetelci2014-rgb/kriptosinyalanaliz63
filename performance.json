@@ -11775,11 +11775,11 @@
     "2026-07-31": {
       "opened": 2,
       "radar": 0,
-      "tp1": 1,
+      "tp1": 2,
       "tp2": 0,
       "tp3": 0,
       "sl": 0,
-      "be": 0,
+      "be": 1,
       "expired": 0,
       "long": 1,
       "short": 1,
@@ -11789,7 +11789,7 @@
         "2ZUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
+          "tp1": 1,
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
@@ -11803,14 +11803,18 @@
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
-          "be": 0,
+          "be": 1,
           "expired": 0
         }
       },
       "direction_stops": {},
       "stop_times": {},
-      "closed_times": {},
-      "closed_results": {},
+      "closed_times": {
+        "UNIUSDT": 1785455149
+      },
+      "closed_results": {
+        "UNIUSDT": "BE"
+      },
       "closed_history": [
         {
           "time": "02:15:49",
@@ -11821,14 +11825,34 @@
           "exit": 4.435067437,
           "source": "15M_ENTRY",
           "score": 95
+        },
+        {
+          "time": "02:45:48",
+          "symbol": "2ZUSDT",
+          "direction": "SHORT",
+          "result": "TP1",
+          "entry": 0.05566,
+          "exit": 0.0554528707,
+          "source": "15M_ENTRY",
+          "score": 92
+        },
+        {
+          "time": "02:45:49",
+          "symbol": "UNIUSDT",
+          "direction": "LONG",
+          "result": "BE",
+          "entry": 4.409,
+          "exit": 4.409,
+          "source": "15M_ENTRY",
+          "score": 95
         }
       ],
       "sl_after_tp1": 0,
       "sl_after_tp2": 0,
-      "sl_after_no_return": 1
+      "sl_after_no_return": 2
     }
   },
-  "last_update": 1785453351,
+  "last_update": 1785455150,
   "last_open_summary": 1785454259,
   "last_status_message": 1785454625,
   "last_daily_report": "2026-07-30",
@@ -11851,12 +11875,15 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-07-31"
     },
     "NOTUSDT_SHORT_1785441671": {
       "trade_id": "NOTUSDT_SHORT_15M_ENTRY_1785438339",
