@@ -19053,9 +19053,9 @@
       "worst_adverse_r": 0.7531,
       "best_favorable_price": 0.32522,
       "worst_adverse_price": 0.3263,
-      "last_market_price": 0.32549,
+      "last_market_price": 0.32551,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785380460
+      "last_tracking_at": 1785381300
     },
     "MOODENGUSDT_SHORT_5M_RADAR_1785361803": {
       "trade_id": "MOODENGUSDT_SHORT_5M_RADAR_1785361803",
@@ -19774,17 +19774,22 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "SL",
+      "r_result": -1.0,
+      "exit_price": 0.1871,
+      "closed_at": 1785381349,
+      "closed_day": "2026-07-30",
       "events": [
         {
           "time": 1785378288,
           "event": "OPENED",
           "price": 0.1906
+        },
+        {
+          "time": 1785381349,
+          "event": "SL",
+          "price": 0.1871
         }
       ],
       "bot_version": "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27",
@@ -19822,15 +19827,50 @@
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %0.02 | ETHUSDT: 15M EMA20 üstü, 5M %-0.04 | SOLUSDT: 15M EMA20 üstü, 5M %-0.07",
       "best_favorable_percent": 0.7345,
-      "worst_adverse_percent": 1.3116,
+      "worst_adverse_percent": 1.9412,
       "best_favorable_r": 0.476,
-      "worst_adverse_r": 0.85,
+      "worst_adverse_r": 1.258,
       "best_favorable_price": 0.192,
-      "worst_adverse_price": 0.1881,
-      "last_market_price": 0.1889,
+      "worst_adverse_price": 0.1869,
+      "last_market_price": 0.1871,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785380460
+      "last_tracking_at": 1785380940,
+      "duration_minutes": 51,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "ONCE LEHE GITTI, SONRA TERS DONDU",
+        "confidence": "ORTA",
+        "factors": [
+          "Stop oncesinde islem en az 0.35R lehe hareket etti."
+        ],
+        "duration_minutes": 51,
+        "best_favorable_r": 0.476,
+        "worst_adverse_r": 1.258,
+        "provisional": true,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "stop_root_cause": {
+        "version": "STOP_ROOT_CAUSE_V1",
+        "primary": "TAKIP_SURUYOR",
+        "label": "Takip sürüyor",
+        "preliminary": "ONCE_LEHE_SONRA_TERS",
+        "preliminary_label": "Önce lehe, sonra ters",
+        "secondary": [],
+        "confidence": "DUSUK",
+        "provisional": true,
+        "factors": [
+          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+        ],
+        "metrics": {
+          "duration_minutes": 51,
+          "mfe_r": 0.476,
+          "mae_r": 1.258,
+          "risk_percent": 1.543,
+          "return_minutes": null
+        },
+        "updated_at": 1785381349
+      }
     }
   },
-  "last_update": 1785380465
+  "last_update": 1785381349
 }
