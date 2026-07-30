@@ -11093,8 +11093,8 @@
       "radar": 0,
       "tp1": 2,
       "tp2": 1,
-      "tp3": 0,
-      "sl": 7,
+      "tp3": 1,
+      "sl": 8,
       "be": 0,
       "expired": 1,
       "long": 1,
@@ -11187,7 +11187,7 @@
           "radar": 0,
           "tp1": 1,
           "tp2": 1,
-          "tp3": 0,
+          "tp3": 1,
           "sl": 0,
           "be": 0,
           "expired": 0
@@ -11211,10 +11211,20 @@
           "sl": 0,
           "be": 0,
           "expired": 0
+        },
+        "TRXUSDT": {
+          "opened": 0,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 1,
+          "be": 0,
+          "expired": 0
         }
       },
       "direction_stops": {
-        "SHORT": 6,
+        "SHORT": 7,
         "LONG": 1
       },
       "stop_times": {
@@ -11224,13 +11234,16 @@
         "DOGEUSDT": 1785375060,
         "MINAUSDT": 1785375950,
         "CHZUSDT": 1785375951,
-        "MMTUSDT": 1785381349
+        "MMTUSDT": 1785381349,
+        "TRXUSDT": 1785392151
       },
       "closed_times": {
-        "CROUSDT": 1785363350
+        "CROUSDT": 1785363350,
+        "STRKUSDT": 1785392152
       },
       "closed_results": {
-        "CROUSDT": "EXPIRED"
+        "CROUSDT": "EXPIRED",
+        "STRKUSDT": "TP3"
       },
       "closed_history": [
         {
@@ -11342,6 +11355,26 @@
           "exit": 0.0256346149,
           "source": "15M_ENTRY",
           "score": 91
+        },
+        {
+          "time": "09:15:51",
+          "symbol": "TRXUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.32544,
+          "exit": 0.32636,
+          "source": "15M_ENTRY",
+          "score": 93
+        },
+        {
+          "time": "09:15:52",
+          "symbol": "STRKUSDT",
+          "direction": "SHORT",
+          "result": "TP3",
+          "entry": 0.02608,
+          "exit": 0.025401318,
+          "source": "15M_ENTRY",
+          "score": 91
         }
       ],
       "sl_after_tp1": 3,
@@ -11349,7 +11382,7 @@
       "sl_after_no_return": 4
     }
   },
-  "last_update": 1785391814,
+  "last_update": 1785392152,
   "last_open_summary": 1785389474,
   "last_status_message": 1785389031,
   "last_daily_report": "2026-07-29",
@@ -11504,6 +11537,26 @@
       "after_sl_tp2": true,
       "after_sl_tp3": true,
       "resolved": true
+    },
+    "TRXUSDT_SHORT_1785392151": {
+      "trade_id": "TRXUSDT_SHORT_15M_ENTRY_1785355596",
+      "symbol": "TRXUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.32544,
+      "tp1": 0.3248119145,
+      "tp2": 0.3242409278,
+      "tp3": 0.3236128423,
+      "sl": 0.3265819735,
+      "score": 93,
+      "risk_percent": 0.351,
+      "stopped_at": 1785392151,
+      "stop_exit": 0.32636,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
     }
   }
 }
