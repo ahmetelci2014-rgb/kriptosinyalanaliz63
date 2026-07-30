@@ -20603,34 +20603,42 @@
         "primary": "ONCE LEHE GITTI, SONRA TERS DONDU",
         "confidence": "ORTA",
         "factors": [
-          "Stop oncesinde islem en az 0.35R lehe hareket etti."
+          "Stop oncesinde islem en az 0.35R lehe hareket etti.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 550,
         "best_favorable_r": 0.5043,
         "worst_adverse_r": 1.0544,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ONCE_LEHE_SONRA_TERS",
-        "preliminary_label": "Önce lehe, sonra ters",
+        "primary": "ONCE_LEHE_SONRA_TERS",
+        "label": "Önce lehe, sonra ters",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "İşlem stop öncesinde anlamlı lehe hareket üretmişti."
         ],
         "metrics": {
           "duration_minutes": 550,
           "mfe_r": 0.5043,
           "mae_r": 1.0544,
           "risk_percent": 1.736,
-          "return_minutes": null
+          "return_minutes": 240.0
         },
-        "updated_at": 1785429948
+        "updated_at": 1785444350
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 240,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1785444350
       }
     },
     "ORDIUSDT_SHORT_15M_ENTRY_1785397831": {
@@ -21228,9 +21236,9 @@
       "worst_adverse_r": 0.1736,
       "best_favorable_price": 0.0866,
       "worst_adverse_price": 0.08444,
-      "last_market_price": 0.08557,
+      "last_market_price": 0.08556,
       "tp1_hit_at": 1785429540,
-      "last_tracking_at": 1785443400
+      "last_tracking_at": 1785444300
     },
     "MORPHOUSDT_LONG_15M_ENTRY_1785428433": {
       "trade_id": "MORPHOUSDT_LONG_15M_ENTRY_1785428433",
@@ -21684,5 +21692,5 @@
       }
     }
   },
-  "last_update": 1785443461
+  "last_update": 1785444350
 }
