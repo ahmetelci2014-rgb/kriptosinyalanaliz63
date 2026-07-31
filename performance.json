@@ -13164,10 +13164,10 @@
       "opened": 3,
       "radar": 0,
       "tp1": 2,
-      "tp2": 1,
+      "tp2": 2,
       "tp3": 0,
       "sl": 0,
-      "be": 1,
+      "be": 2,
       "expired": 0,
       "long": 0,
       "short": 3,
@@ -13201,14 +13201,14 @@
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
-          "be": 0,
+          "be": 1,
           "expired": 0
         },
         "AVNTUSDT": {
           "opened": 0,
           "radar": 0,
           "tp1": 1,
-          "tp2": 0,
+          "tp2": 1,
           "tp3": 0,
           "sl": 0,
           "be": 0,
@@ -13248,10 +13248,12 @@
       "direction_stops": {},
       "stop_times": {},
       "closed_times": {
-        "MEGAUSDT": 1785533468
+        "MEGAUSDT": 1785533468,
+        "GRTUSDT": 1785535268
       },
       "closed_results": {
-        "MEGAUSDT": "BE"
+        "MEGAUSDT": "BE",
+        "GRTUSDT": "BE"
       },
       "closed_history": [
         {
@@ -13293,14 +13295,34 @@
           "exit": 0.03633,
           "source": "15M_ENTRY",
           "score": 98
+        },
+        {
+          "time": "01:01:08",
+          "symbol": "GRTUSDT",
+          "direction": "SHORT",
+          "result": "BE",
+          "entry": 0.01426,
+          "exit": 0.01426,
+          "source": "15M_ENTRY",
+          "score": 98
+        },
+        {
+          "time": "01:01:09",
+          "symbol": "AVNTUSDT",
+          "direction": "SHORT",
+          "result": "TP2",
+          "entry": 0.08336,
+          "exit": 0.0823305194,
+          "source": "15M_ENTRY",
+          "score": 94
         }
       ],
       "sl_after_tp1": 1,
       "sl_after_tp2": 0,
-      "sl_after_no_return": 0
+      "sl_after_no_return": 1
     }
   },
-  "last_update": 1785533473,
+  "last_update": 1785535272,
   "last_open_summary": 1785531675,
   "last_status_message": 1785533820,
   "last_daily_report": "2026-07-31",
@@ -13348,12 +13370,15 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-08-01"
     },
     "SHELLUSDT_SHORT_1785529861": {
       "trade_id": "SHELLUSDT_SHORT_15M_ENTRY_1785526540",
