@@ -11775,11 +11775,11 @@
     "2026-07-31": {
       "opened": 6,
       "radar": 0,
-      "tp1": 2,
+      "tp1": 3,
       "tp2": 0,
       "tp3": 0,
-      "sl": 0,
-      "be": 3,
+      "sl": 2,
+      "be": 4,
       "expired": 0,
       "long": 1,
       "short": 5,
@@ -11812,7 +11812,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -11822,7 +11822,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -11839,11 +11839,11 @@
         "PROVEUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
+          "tp1": 1,
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
-          "be": 0,
+          "be": 1,
           "expired": 0
         },
         "1INCHUSDT": {
@@ -11857,17 +11857,24 @@
           "expired": 0
         }
       },
-      "direction_stops": {},
-      "stop_times": {},
+      "direction_stops": {
+        "SHORT": 2
+      },
+      "stop_times": {
+        "SAHARAUSDT": 1785460549,
+        "LPTUSDT": 1785460550
+      },
       "closed_times": {
         "UNIUSDT": 1785455149,
         "2ZUSDT": 1785456946,
-        "1INCHUSDT": 1785458749
+        "1INCHUSDT": 1785458749,
+        "PROVEUSDT": 1785460551
       },
       "closed_results": {
         "UNIUSDT": "BE",
         "2ZUSDT": "BE",
-        "1INCHUSDT": "BE"
+        "1INCHUSDT": "BE",
+        "PROVEUSDT": "BE"
       },
       "closed_history": [
         {
@@ -11919,6 +11926,46 @@
           "exit": 0.08467,
           "source": "15M_ENTRY",
           "score": 100
+        },
+        {
+          "time": "04:15:49",
+          "symbol": "SAHARAUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.007648,
+          "exit": 0.007795,
+          "source": "15M_ENTRY",
+          "score": 98
+        },
+        {
+          "time": "04:15:50",
+          "symbol": "LPTUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 1.257,
+          "exit": 1.271,
+          "source": "15M_ENTRY",
+          "score": 97
+        },
+        {
+          "time": "04:15:50",
+          "symbol": "PROVEUSDT",
+          "direction": "SHORT",
+          "result": "TP1",
+          "entry": 0.1683,
+          "exit": 0.1678301764,
+          "source": "15M_ENTRY",
+          "score": 96
+        },
+        {
+          "time": "04:15:51",
+          "symbol": "PROVEUSDT",
+          "direction": "SHORT",
+          "result": "BE",
+          "entry": 0.1683,
+          "exit": 0.1683,
+          "source": "15M_ENTRY",
+          "score": 96
         }
       ],
       "sl_after_tp1": 0,
@@ -11926,38 +11973,50 @@
       "sl_after_no_return": 3
     }
   },
-  "last_update": 1785458750,
+  "last_update": 1785460552,
   "last_open_summary": 1785459668,
   "last_status_message": 1785459019,
   "last_daily_report": "2026-07-30",
   "sl_after_follow": {
-    "NOTUSDT_SHORT_1785441671": {
-      "trade_id": "NOTUSDT_SHORT_15M_ENTRY_1785438339",
-      "symbol": "NOTUSDT",
+    "SAHARAUSDT_SHORT_1785460549": {
+      "trade_id": "SAHARAUSDT_SHORT_15M_ENTRY_1785457282",
+      "symbol": "SAHARAUSDT",
       "direction": "SHORT",
       "source": "15M_ENTRY",
-      "entry": 0.0003272,
-      "tp1": 0.0003253147,
-      "tp2": 0.0003236008,
-      "tp3": 0.0003217154,
-      "sl": 0.0003306279,
-      "score": 91,
-      "risk_percent": 1.048,
-      "stopped_at": 1785441671,
-      "stop_exit": 0.0003307,
-      "reported_checkpoints": [
-        30,
-        60,
-        120,
-        180,
-        240
-      ],
+      "entry": 0.007648,
+      "tp1": 0.0075816297,
+      "tp2": 0.007521293,
+      "tp3": 0.0074549226,
+      "sl": 0.0077686734,
+      "score": 98,
+      "risk_percent": 1.578,
+      "stopped_at": 1785460549,
+      "stop_exit": 0.007795,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": true,
-      "no_return_counted": true,
-      "no_return_counted_day": "2026-07-31"
+      "resolved": false
+    },
+    "LPTUSDT_SHORT_1785460550": {
+      "trade_id": "LPTUSDT_SHORT_15M_ENTRY_1785457284",
+      "symbol": "LPTUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 1.257,
+      "tp1": 1.2495849746,
+      "tp2": 1.2428440423,
+      "tp3": 1.2354290169,
+      "sl": 1.2704818644,
+      "score": 97,
+      "risk_percent": 1.073,
+      "stopped_at": 1785460550,
+      "stop_exit": 1.271,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
     }
   }
 }
