@@ -25933,39 +25933,47 @@
       "duration_minutes": 128,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "KURULUM DEVAM ETMEDI",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
-          "15M hacim kendi ortalamasinin altinda veya sinirdaydi."
+          "15M hacim kendi ortalamasinin altinda veya sinirdaydi.",
+          "Stop sonrasi fiyat TP1 seviyesine dondu."
         ],
         "duration_minutes": 128,
         "best_favorable_r": 0.1879,
         "worst_adverse_r": 1.0232,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ZAYIF_TREND_HACIM",
-        "preliminary_label": "Zayıf trend/hacim",
+        "primary": "FITIL_DAR_STOP",
+        "label": "Fitil/dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
-          "15M hacim oranı sınırın altındaydı."
+          "Stop sonrası fiyat TP1 seviyesine 196 dakikada döndü.",
+          "15M hacim oranı sınırın altındaydı.",
+          "Stop sonrası hedef dönüşü fitil veya giriş zamanlaması ihtimalini güçlendirdi."
         ],
         "metrics": {
           "duration_minutes": 128,
           "mfe_r": 0.1879,
           "mae_r": 1.0232,
           "risk_percent": 0.854,
-          "return_minutes": null
+          "return_minutes": 196.0
         },
-        "updated_at": 1785520759
+        "updated_at": 1785532560
+      },
+      "post_stop_follow": {
+        "returned_level": "TP1",
+        "age_minutes": 196,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1785532560
       }
     },
     "LUNAUSDT_SHORT_15M_ENTRY_1785514914": {
@@ -26038,9 +26046,9 @@
       "worst_adverse_r": 0.7335,
       "best_favorable_price": 0.0404,
       "worst_adverse_price": 0.041,
-      "last_market_price": 0.0406,
+      "last_market_price": 0.04066,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785531660
+      "last_tracking_at": 1785532500
     },
     "MEGAUSDT_SHORT_15M_ENTRY_1785515240": {
       "trade_id": "MEGAUSDT_SHORT_15M_ENTRY_1785515240",
@@ -26124,7 +26132,7 @@
       "worst_adverse_price": 0.0364,
       "last_market_price": 0.03622,
       "tp1_hit_at": 1785522420,
-      "last_tracking_at": 1785531660
+      "last_tracking_at": 1785532500
     },
     "SUSDT_SHORT_15M_ENTRY_1785515803": {
       "trade_id": "SUSDT_SHORT_15M_ENTRY_1785515803",
@@ -26319,9 +26327,9 @@
       "worst_adverse_r": 0.4664,
       "best_favorable_price": 0.1993,
       "worst_adverse_price": 0.203,
-      "last_market_price": 0.2001,
+      "last_market_price": 0.2004,
       "tp1_hit_at": 1785530400,
-      "last_tracking_at": 1785531660
+      "last_tracking_at": 1785532500
     },
     "NESUSDT_SHORT_15M_ENTRY_1785523334": {
       "trade_id": "NESUSDT_SHORT_15M_ENTRY_1785523334",
@@ -26338,7 +26346,7 @@
       "opened_at": 1785523334,
       "opened_day": "2026-07-31",
       "tp1_hit": true,
-      "tp2_hit": false,
+      "tp2_hit": true,
       "tp3_hit": false,
       "status": "OPEN",
       "final_result": null,
@@ -26356,6 +26364,11 @@
           "time": 1785525347,
           "event": "TP1",
           "price": 0.2073266343
+        },
+        {
+          "time": 1785532556,
+          "event": "TP2",
+          "price": 0.20607812
         }
       ],
       "bot_version": "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27",
@@ -26392,15 +26405,15 @@
       "market_guard_long_allowed": false,
       "market_guard_short_allowed": true,
       "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %0.02 | ETHUSDT: 15M EMA20 altı, 5M %0.02 | SOLUSDT: 15M EMA20 altı, 5M %-0.05",
-      "best_favorable_percent": 0.9583,
+      "best_favorable_percent": 1.3416,
       "worst_adverse_percent": 0.0,
-      "best_favorable_r": 0.801,
+      "best_favorable_r": 1.1213,
       "worst_adverse_r": 0.0,
-      "best_favorable_price": 0.2067,
+      "best_favorable_price": 0.2059,
       "worst_adverse_price": 0.2087,
-      "last_market_price": 0.2073,
+      "last_market_price": 0.2059,
       "tp1_hit_at": 1785524700,
-      "last_tracking_at": 1785531660
+      "last_tracking_at": 1785532500
     },
     "GRTUSDT_SHORT_15M_ENTRY_1785523844": {
       "trade_id": "GRTUSDT_SHORT_15M_ENTRY_1785523844",
@@ -26416,7 +26429,7 @@
       "risk_percent": 1.098,
       "opened_at": 1785523844,
       "opened_day": "2026-07-31",
-      "tp1_hit": false,
+      "tp1_hit": true,
       "tp2_hit": false,
       "tp3_hit": false,
       "status": "OPEN",
@@ -26430,6 +26443,11 @@
           "time": 1785523844,
           "event": "OPENED",
           "price": 0.01426
+        },
+        {
+          "time": 1785532557,
+          "event": "TP1",
+          "price": 0.0141738612
         }
       ],
       "bot_version": "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27",
@@ -26466,15 +26484,15 @@
       "market_guard_long_allowed": false,
       "market_guard_short_allowed": true,
       "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %0.09 | ETHUSDT: 15M EMA20 altı, 5M %0.21 | SOLUSDT: 15M EMA20 altı, 5M %0.16",
-      "best_favorable_percent": 0.4909,
+      "best_favorable_percent": 0.7013,
       "worst_adverse_percent": 0.2104,
-      "best_favorable_r": 0.447,
+      "best_favorable_r": 0.6385,
       "worst_adverse_r": 0.1916,
-      "best_favorable_price": 0.01419,
+      "best_favorable_price": 0.01416,
       "worst_adverse_price": 0.01429,
-      "last_market_price": 0.01419,
-      "tp1_hit_at": 0,
-      "last_tracking_at": 1785531660
+      "last_market_price": 0.01421,
+      "tp1_hit_at": 1785531720,
+      "last_tracking_at": 1785532500
     },
     "STABLEUSDT_SHORT_15M_ENTRY_1785525705": {
       "trade_id": "STABLEUSDT_SHORT_15M_ENTRY_1785525705",
@@ -26546,9 +26564,9 @@
       "worst_adverse_r": 0.3053,
       "best_favorable_price": 0.0337,
       "worst_adverse_price": 0.03387,
-      "last_market_price": 0.03384,
+      "last_market_price": 0.03381,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785531660
+      "last_tracking_at": 1785532500
     },
     "SHELLUSDT_SHORT_15M_ENTRY_1785526540": {
       "trade_id": "SHELLUSDT_SHORT_15M_ENTRY_1785526540",
@@ -26776,7 +26794,7 @@
       "risk_percent": 1.176,
       "opened_at": 1785529230,
       "opened_day": "2026-07-31",
-      "tp1_hit": false,
+      "tp1_hit": true,
       "tp2_hit": false,
       "tp3_hit": false,
       "status": "OPEN",
@@ -26790,6 +26808,11 @@
           "time": 1785529230,
           "event": "OPENED",
           "price": 0.08336
+        },
+        {
+          "time": 1785532559,
+          "event": "TP1",
+          "price": 0.0828207483
         }
       ],
       "bot_version": "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27",
@@ -26826,15 +26849,15 @@
       "market_guard_long_allowed": false,
       "market_guard_short_allowed": true,
       "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %0.03 | ETHUSDT: 15M EMA20 altı, 5M %0.03 | SOLUSDT: 15M EMA20 altı, 5M %-0.08",
-      "best_favorable_percent": 0.5518,
+      "best_favorable_percent": 0.6478,
       "worst_adverse_percent": 0.2879,
-      "best_favorable_r": 0.4692,
+      "best_favorable_r": 0.5508,
       "worst_adverse_r": 0.2448,
-      "best_favorable_price": 0.0829,
+      "best_favorable_price": 0.08282,
       "worst_adverse_price": 0.0836,
-      "last_market_price": 0.08294,
-      "tp1_hit_at": 0,
-      "last_tracking_at": 1785531660
+      "last_market_price": 0.08303,
+      "tp1_hit_at": 1785531720,
+      "last_tracking_at": 1785532500
     },
     "POLUSDT_SHORT_15M_ENTRY_1785531245": {
       "trade_id": "POLUSDT_SHORT_15M_ENTRY_1785531245",
@@ -26900,15 +26923,15 @@
       "market_guard_long_allowed": false,
       "market_guard_short_allowed": true,
       "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %0.05 | ETHUSDT: 15M EMA20 altı, 5M %0.1 | SOLUSDT: 15M EMA20 altı, 5M %0.0",
-      "best_favorable_percent": 0.0988,
-      "worst_adverse_percent": 0.0423,
-      "best_favorable_r": 0.1878,
-      "worst_adverse_r": 0.0805,
-      "best_favorable_price": 0.07079,
-      "worst_adverse_price": 0.07089,
-      "last_market_price": 0.07082,
+      "best_favorable_percent": 0.2399,
+      "worst_adverse_percent": 0.127,
+      "best_favorable_r": 0.4561,
+      "worst_adverse_r": 0.2415,
+      "best_favorable_price": 0.07069,
+      "worst_adverse_price": 0.07095,
+      "last_market_price": 0.07095,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785531660
+      "last_tracking_at": 1785532500
     },
     "LINKUSDT_SHORT_15M_ENTRY_1785531959": {
       "trade_id": "LINKUSDT_SHORT_15M_ENTRY_1785531959",
@@ -26974,15 +26997,162 @@
       "market_guard_long_allowed": false,
       "market_guard_short_allowed": true,
       "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %0.01 | ETHUSDT: 15M EMA20 altı, 5M %-0.1 | SOLUSDT: 15M EMA20 altı, 5M %-0.07",
+      "best_favorable_percent": 0.0491,
+      "worst_adverse_percent": 0.1965,
+      "best_favorable_r": 0.0709,
+      "worst_adverse_r": 0.2835,
+      "best_favorable_price": 8.14,
+      "worst_adverse_price": 8.16,
+      "last_market_price": 8.152,
+      "tp1_hit_at": 0,
+      "last_tracking_at": 1785532500
+    },
+    "SEIUSDT_SHORT_15M_ENTRY_1785532830": {
+      "trade_id": "SEIUSDT_SHORT_15M_ENTRY_1785532830",
+      "symbol": "SEIUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.04142,
+      "tp1": 0.0410909545,
+      "tp2": 0.0407918222,
+      "tp3": 0.0404627767,
+      "sl": 0.0420182646,
+      "score": 100,
+      "risk_percent": 1.444,
+      "opened_at": 1785532830,
+      "opened_day": "2026-08-01",
+      "tp1_hit": false,
+      "tp2_hit": false,
+      "tp3_hit": false,
+      "status": "OPEN",
+      "final_result": null,
+      "r_result": null,
+      "exit_price": null,
+      "closed_at": null,
+      "closed_day": null,
+      "events": [
+        {
+          "time": 1785532830,
+          "event": "OPENED",
+          "price": 0.04142
+        }
+      ],
+      "bot_version": "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27",
+      "strategy_version": "PREMIUM_MTF_TP_ODAKLI_V2",
+      "config_version": "CONFIG_2026_07_27",
+      "git_sha": "86ee0cef39856ec75ce30bb1765c648a74755b10",
+      "git_sha_short": "86ee0cef3985",
+      "github_run_id": "30665908404",
+      "github_run_number": "2794",
+      "github_workflow": "Premium MTF Futures Bot",
+      "github_ref_name": "main",
+      "version_backfilled": false,
+      "quality": "A+ ANA",
+      "quality_note": "Ana aday profili: güçlü ADX, yeterli hacim, sağlıklı RSI ve makul stop. Giriş zamanlama kontrolü geçti; ideal bölgeden uzaklık %0.096.",
+      "trend_reason": "4H ana trend aşağı",
+      "confirm_reason": "1H satış onayı",
+      "entry_reason": "15M EMA pullback sonrası kırmızı dönüş; geç giriş koruması aktif",
+      "radar_reason": "5M erken giriş kaçtıysa 15M yalnızca ideal bölgeye yakınken kabul edilir",
+      "rsi_15m": 38.29,
+      "adx_15m": 31.05,
+      "adx_4h": 25.97,
+      "adx_1h": 22.17,
+      "volume_ratio": 3.0,
+      "ideal_entry": 0.04146,
+      "zone_name": "15M mum açılışı",
+      "zone_distance_percent": 0.096,
+      "rr_tp1": 0.55,
+      "rr_tp2": 1.05,
+      "rr_tp3": 1.6,
+      "leverage": "2x",
+      "sent_price": 0.04145,
+      "entry_distance_at_send_percent": 0.0724,
+      "tp1_progress_at_send_percent": -9.1173,
+      "market_guard_long_allowed": false,
+      "market_guard_short_allowed": true,
+      "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %0.07 | ETHUSDT: 15M EMA20 altı, 5M %-0.05 | SOLUSDT: 15M EMA20 altı, 5M %0.03",
       "best_favorable_percent": 0.0,
       "worst_adverse_percent": 0.0,
       "best_favorable_r": 0.0,
       "worst_adverse_r": 0.0,
-      "best_favorable_price": 8.144,
-      "worst_adverse_price": 8.144,
-      "last_market_price": 8.141,
+      "best_favorable_price": 0.04142,
+      "worst_adverse_price": 0.04142,
+      "last_market_price": 0.04145,
+      "tp1_hit_at": 0
+    },
+    "BSBUSDT_SHORT_5M_RADAR_1785532832": {
+      "trade_id": "BSBUSDT_SHORT_5M_RADAR_1785532832",
+      "symbol": "BSBUSDT",
+      "direction": "SHORT",
+      "source": "5M_RADAR",
+      "entry": 0.118,
+      "tp1": 0.1177470018,
+      "tp2": 0.1175170034,
+      "tp3": 0.1172640052,
+      "sl": 0.1184599968,
+      "score": 100,
+      "risk_percent": 0.39,
+      "opened_at": 1785532832,
+      "opened_day": "2026-08-01",
+      "tp1_hit": false,
+      "tp2_hit": false,
+      "tp3_hit": false,
+      "status": "OPEN",
+      "final_result": null,
+      "r_result": null,
+      "exit_price": null,
+      "closed_at": null,
+      "closed_day": null,
+      "events": [
+        {
+          "time": 1785532832,
+          "event": "OPENED",
+          "price": 0.118
+        }
+      ],
+      "bot_version": "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27",
+      "strategy_version": "PREMIUM_MTF_TP_ODAKLI_V2",
+      "config_version": "CONFIG_2026_07_27",
+      "git_sha": "86ee0cef39856ec75ce30bb1765c648a74755b10",
+      "git_sha_short": "86ee0cef3985",
+      "github_run_id": "30665908404",
+      "github_run_number": "2794",
+      "github_workflow": "Premium MTF Futures Bot",
+      "github_ref_name": "main",
+      "version_backfilled": false,
+      "quality": "A+ ANA",
+      "quality_note": "Ana aday profili: güçlü ADX, yeterli hacim, sağlıklı RSI ve makul stop. Erken giriş: 15M dönüş tamamen bitmeden 5M teyidi alındı. Bu nedenle stop mutlaka kullanılmalı.",
+      "trend_reason": "4H ana trend aşağı",
+      "confirm_reason": "1H satış onayı",
+      "entry_reason": "15M direnç/EMA bölgesinde, 15M kapanış beklenmeden 5M kırmızı reddedilme onayı",
+      "radar_reason": "5M erken SHORT | hareket %-0.42 | hacim 2.32x | üst fitil %14.3 | 5M RSI 44.7",
+      "rsi_15m": 41.08,
+      "adx_15m": 25.49,
+      "adx_4h": 20.56,
+      "adx_1h": 30.39,
+      "volume_ratio": 2.32,
+      "ideal_entry": 0.1181358994,
+      "zone_name": "EMA20",
+      "zone_distance_percent": 0.115,
+      "rr_tp1": 0.55,
+      "rr_tp2": 1.05,
+      "rr_tp3": 1.6,
+      "leverage": "3x",
+      "sent_price": 0.1181,
+      "entry_distance_at_send_percent": 0.0847,
+      "tp1_progress_at_send_percent": -39.526,
+      "market_guard_long_allowed": false,
+      "market_guard_short_allowed": true,
+      "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %0.07 | ETHUSDT: 15M EMA20 altı, 5M %-0.05 | SOLUSDT: 15M EMA20 altı, 5M %0.03",
+      "best_favorable_percent": 0.0,
+      "worst_adverse_percent": 0.0,
+      "best_favorable_r": 0.0,
+      "worst_adverse_r": 0.0,
+      "best_favorable_price": 0.118,
+      "worst_adverse_price": 0.118,
+      "last_market_price": 0.1181,
       "tp1_hit_at": 0
     }
   },
-  "last_update": 1785531959
+  "last_update": 1785532832
 }
