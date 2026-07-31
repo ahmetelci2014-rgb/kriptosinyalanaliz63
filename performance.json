@@ -13161,17 +13161,17 @@
       "sl_after_no_return": 12
     },
     "2026-08-01": {
-      "opened": 3,
+      "opened": 4,
       "radar": 0,
       "tp1": 2,
       "tp2": 2,
-      "tp3": 0,
-      "sl": 0,
+      "tp3": 1,
+      "sl": 1,
       "be": 2,
       "expired": 0,
       "long": 0,
-      "short": 3,
-      "normal": 2,
+      "short": 4,
+      "normal": 3,
       "radar_trade": 1,
       "coins": {
         "LINKUSDT": {
@@ -13189,7 +13189,7 @@
           "radar": 0,
           "tp1": 0,
           "tp2": 1,
-          "tp3": 0,
+          "tp3": 1,
           "sl": 0,
           "be": 0,
           "expired": 0
@@ -13230,7 +13230,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -13243,17 +13243,33 @@
           "sl": 0,
           "be": 1,
           "expired": 0
+        },
+        "RENDERUSDT": {
+          "opened": 1,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 0,
+          "be": 0,
+          "expired": 0
         }
       },
-      "direction_stops": {},
-      "stop_times": {},
+      "direction_stops": {
+        "SHORT": 1
+      },
+      "stop_times": {
+        "BSBUSDT": 1785536156
+      },
       "closed_times": {
         "MEGAUSDT": 1785533468,
-        "GRTUSDT": 1785535268
+        "GRTUSDT": 1785535268,
+        "NESUSDT": 1785536153
       },
       "closed_results": {
         "MEGAUSDT": "BE",
-        "GRTUSDT": "BE"
+        "GRTUSDT": "BE",
+        "NESUSDT": "TP3"
       },
       "closed_history": [
         {
@@ -13315,6 +13331,26 @@
           "exit": 0.0823305194,
           "source": "15M_ENTRY",
           "score": 94
+        },
+        {
+          "time": "01:15:53",
+          "symbol": "NESUSDT",
+          "direction": "SHORT",
+          "result": "TP3",
+          "entry": 0.2087,
+          "exit": 0.2047047543,
+          "source": "15M_ENTRY",
+          "score": 93
+        },
+        {
+          "time": "01:15:56",
+          "symbol": "BSBUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.118,
+          "exit": 0.1185,
+          "source": "5M_RADAR",
+          "score": 100
         }
       ],
       "sl_after_tp1": 1,
@@ -13322,7 +13358,7 @@
       "sl_after_no_return": 1
     }
   },
-  "last_update": 1785535272,
+  "last_update": 1785536427,
   "last_open_summary": 1785531675,
   "last_status_message": 1785533820,
   "last_daily_report": "2026-07-31",
@@ -13398,6 +13434,26 @@
         30,
         60
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "BSBUSDT_SHORT_1785536156": {
+      "trade_id": "BSBUSDT_SHORT_5M_RADAR_1785532832",
+      "symbol": "BSBUSDT",
+      "direction": "SHORT",
+      "source": "5M_RADAR",
+      "entry": 0.118,
+      "tp1": 0.1177470018,
+      "tp2": 0.1175170034,
+      "tp3": 0.1172640052,
+      "sl": 0.1184599968,
+      "score": 100,
+      "risk_percent": 0.39,
+      "stopped_at": 1785536156,
+      "stop_exit": 0.1185,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
