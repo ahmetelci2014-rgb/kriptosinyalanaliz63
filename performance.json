@@ -11778,7 +11778,7 @@
       "tp1": 8,
       "tp2": 1,
       "tp3": 0,
-      "sl": 5,
+      "sl": 7,
       "be": 8,
       "expired": 0,
       "long": 1,
@@ -11922,7 +11922,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -11972,7 +11972,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -11988,14 +11988,16 @@
         }
       },
       "direction_stops": {
-        "SHORT": 5
+        "SHORT": 7
       },
       "stop_times": {
         "SAHARAUSDT": 1785460549,
         "LPTUSDT": 1785460550,
         "SHELLUSDT": 1785469547,
         "YGGUSDT": 1785475858,
-        "AXSUSDT": 1785477679
+        "AXSUSDT": 1785477679,
+        "AUSDT": 1785479457,
+        "GRAMUSDT": 1785479458
       },
       "closed_times": {
         "UNIUSDT": 1785455149,
@@ -12237,6 +12239,26 @@
           "exit": 0.007641,
           "source": "5M_RADAR",
           "score": 100
+        },
+        {
+          "time": "09:30:57",
+          "symbol": "AUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.06092,
+          "exit": 0.06172,
+          "source": "15M_ENTRY",
+          "score": 100
+        },
+        {
+          "time": "09:30:58",
+          "symbol": "GRAMUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 1.402,
+          "exit": 1.408,
+          "source": "15M_ENTRY",
+          "score": 99
         }
       ],
       "sl_after_tp1": 0,
@@ -12244,67 +12266,11 @@
       "sl_after_no_return": 5
     }
   },
-  "last_update": 1785478902,
+  "last_update": 1785479460,
   "last_open_summary": 1785477683,
   "last_status_message": 1785477945,
   "last_daily_report": "2026-07-30",
   "sl_after_follow": {
-    "SAHARAUSDT_SHORT_1785460549": {
-      "trade_id": "SAHARAUSDT_SHORT_15M_ENTRY_1785457282",
-      "symbol": "SAHARAUSDT",
-      "direction": "SHORT",
-      "source": "15M_ENTRY",
-      "entry": 0.007648,
-      "tp1": 0.0075816297,
-      "tp2": 0.007521293,
-      "tp3": 0.0074549226,
-      "sl": 0.0077686734,
-      "score": 98,
-      "risk_percent": 1.578,
-      "stopped_at": 1785460549,
-      "stop_exit": 0.007795,
-      "reported_checkpoints": [
-        30,
-        60,
-        120,
-        180,
-        240
-      ],
-      "after_sl_tp1": false,
-      "after_sl_tp2": false,
-      "after_sl_tp3": false,
-      "resolved": true,
-      "no_return_counted": true,
-      "no_return_counted_day": "2026-07-31"
-    },
-    "LPTUSDT_SHORT_1785460550": {
-      "trade_id": "LPTUSDT_SHORT_15M_ENTRY_1785457284",
-      "symbol": "LPTUSDT",
-      "direction": "SHORT",
-      "source": "15M_ENTRY",
-      "entry": 1.257,
-      "tp1": 1.2495849746,
-      "tp2": 1.2428440423,
-      "tp3": 1.2354290169,
-      "sl": 1.2704818644,
-      "score": 97,
-      "risk_percent": 1.073,
-      "stopped_at": 1785460550,
-      "stop_exit": 1.271,
-      "reported_checkpoints": [
-        30,
-        60,
-        120,
-        180,
-        240
-      ],
-      "after_sl_tp1": false,
-      "after_sl_tp2": false,
-      "after_sl_tp3": false,
-      "resolved": true,
-      "no_return_counted": true,
-      "no_return_counted_day": "2026-07-31"
-    },
     "SHELLUSDT_SHORT_1785469547": {
       "trade_id": "SHELLUSDT_SHORT_5M_RADAR_1785462620",
       "symbol": "SHELLUSDT",
@@ -12344,7 +12310,8 @@
       "stopped_at": 1785475858,
       "stop_exit": 0.01774,
       "reported_checkpoints": [
-        30
+        30,
+        60
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
@@ -12365,6 +12332,46 @@
       "risk_percent": 0.46,
       "stopped_at": 1785477679,
       "stop_exit": 0.8283,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "AUSDT_SHORT_1785479457": {
+      "trade_id": "AUSDT_SHORT_15M_ENTRY_1785469876",
+      "symbol": "AUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.06092,
+      "tp1": 0.0605267758,
+      "tp2": 0.0601692992,
+      "tp3": 0.0597760749,
+      "sl": 0.0616349532,
+      "score": 100,
+      "risk_percent": 1.174,
+      "stopped_at": 1785479457,
+      "stop_exit": 0.06172,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "GRAMUSDT_SHORT_1785479458": {
+      "trade_id": "GRAMUSDT_SHORT_15M_ENTRY_1785477095",
+      "symbol": "GRAMUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 1.402,
+      "tp1": 1.398460431,
+      "tp2": 1.395242641,
+      "tp3": 1.391703072,
+      "sl": 1.40843558,
+      "score": 99,
+      "risk_percent": 0.459,
+      "stopped_at": 1785479458,
+      "stop_exit": 1.408,
       "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
