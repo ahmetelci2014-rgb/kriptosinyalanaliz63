@@ -13163,10 +13163,10 @@
     "2026-08-01": {
       "opened": 8,
       "radar": 0,
-      "tp1": 2,
+      "tp1": 3,
       "tp2": 2,
       "tp3": 1,
-      "sl": 6,
+      "sl": 7,
       "be": 4,
       "expired": 0,
       "long": 2,
@@ -13287,7 +13287,7 @@
         "ZBTUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
+          "tp1": 1,
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
@@ -13300,7 +13300,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -13326,7 +13326,8 @@
         }
       },
       "direction_stops": {
-        "SHORT": 6
+        "SHORT": 6,
+        "LONG": 1
       },
       "stop_times": {
         "BSBUSDT": 1785536156,
@@ -13334,7 +13335,8 @@
         "0GUSDT": 1785548761,
         "LUNAUSDT": 1785549669,
         "LINKUSDT": 1785549671,
-        "RENDERUSDT": 1785549673
+        "RENDERUSDT": 1785549673,
+        "METUSDT": 1785555949
       },
       "closed_times": {
         "MEGAUSDT": 1785533468,
@@ -13500,14 +13502,34 @@
           "exit": 0.2018,
           "source": "15M_ENTRY",
           "score": 100
+        },
+        {
+          "time": "06:45:47",
+          "symbol": "ZBTUSDT",
+          "direction": "LONG",
+          "result": "TP1",
+          "entry": 0.11741,
+          "exit": 0.1182458905,
+          "source": "15M_ENTRY",
+          "score": 100
+        },
+        {
+          "time": "06:45:49",
+          "symbol": "METUSDT",
+          "direction": "LONG",
+          "result": "SL",
+          "entry": 0.1787,
+          "exit": 0.1763,
+          "source": "15M_ENTRY",
+          "score": 96
         }
       ],
       "sl_after_tp1": 1,
       "sl_after_tp2": 0,
-      "sl_after_no_return": 3
+      "sl_after_no_return": 4
     }
   },
-  "last_update": 1785554515,
+  "last_update": 1785555951,
   "last_open_summary": 1785555061,
   "last_status_message": 1785553620,
   "last_daily_report": "2026-07-31",
@@ -13530,12 +13552,15 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-08-01"
     },
     "0GUSDT_SHORT_1785548761": {
       "trade_id": "0GUSDT_SHORT_15M_ENTRY_1785540956",
@@ -13624,6 +13649,26 @@
         30,
         60
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "METUSDT_LONG_1785555949": {
+      "trade_id": "METUSDT_LONG_15M_ENTRY_1785552624",
+      "symbol": "METUSDT",
+      "direction": "LONG",
+      "source": "15M_ENTRY",
+      "entry": 0.1787,
+      "tp1": 0.1801525293,
+      "tp2": 0.1814730105,
+      "tp3": 0.1829255398,
+      "sl": 0.1760590377,
+      "score": 96,
+      "risk_percent": 1.478,
+      "stopped_at": 1785555949,
+      "stop_exit": 0.1763,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
