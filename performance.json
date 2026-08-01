@@ -13161,17 +13161,17 @@
       "sl_after_no_return": 12
     },
     "2026-08-01": {
-      "opened": 27,
+      "opened": 28,
       "radar": 0,
-      "tp1": 16,
+      "tp1": 17,
       "tp2": 8,
       "tp3": 4,
       "sl": 12,
-      "be": 14,
+      "be": 15,
       "expired": 1,
       "long": 6,
-      "short": 21,
-      "normal": 23,
+      "short": 22,
+      "normal": 24,
       "radar_trade": 4,
       "coins": {
         "LINKUSDT": {
@@ -13501,10 +13501,20 @@
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
-          "be": 0,
+          "be": 1,
           "expired": 0
         },
         "APEUSDT": {
+          "opened": 1,
+          "radar": 0,
+          "tp1": 1,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 0,
+          "be": 0,
+          "expired": 0
+        },
+        "BIGTIMEUSDT": {
           "opened": 1,
           "radar": 0,
           "tp1": 0,
@@ -13552,7 +13562,8 @@
         "SHIBUSDT": 1785599159,
         "SIGNUSDT": 1785600947,
         "DOODUSDT": 1785601863,
-        "ETCUSDT": 1785602753
+        "ETCUSDT": 1785602753,
+        "WIFUSDT": 1785603667
       },
       "closed_results": {
         "MEGAUSDT": "BE",
@@ -13573,7 +13584,8 @@
         "SHIBUSDT": "TP3",
         "SIGNUSDT": "BE",
         "DOODUSDT": "BE",
-        "ETCUSDT": "BE"
+        "ETCUSDT": "BE",
+        "WIFUSDT": "BE"
       },
       "closed_history": [
         {
@@ -14125,14 +14137,34 @@
           "exit": 0.1400012088,
           "source": "15M_ENTRY",
           "score": 95
+        },
+        {
+          "time": "20:01:07",
+          "symbol": "WIFUSDT",
+          "direction": "SHORT",
+          "result": "BE",
+          "entry": 0.1408,
+          "exit": 0.1408,
+          "source": "15M_ENTRY",
+          "score": 95
+        },
+        {
+          "time": "20:01:07",
+          "symbol": "APEUSDT",
+          "direction": "SHORT",
+          "result": "TP1",
+          "entry": 0.13173,
+          "exit": 0.1311967451,
+          "source": "15M_ENTRY",
+          "score": 89
         }
       ],
-      "sl_after_tp1": 2,
-      "sl_after_tp2": 0,
-      "sl_after_no_return": 10
+      "sl_after_tp1": 3,
+      "sl_after_tp2": 1,
+      "sl_after_no_return": 11
     }
   },
-  "last_update": 1785602754,
+  "last_update": 1785603960,
   "last_open_summary": 1785602757,
   "last_status_message": 1785603092,
   "last_daily_report": "2026-07-31",
@@ -14179,12 +14211,15 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-08-01"
     },
     "STRKUSDT_SHORT_1785596485": {
       "trade_id": "STRKUSDT_SHORT_15M_ENTRY_1785594073",
@@ -14204,10 +14239,10 @@
         30,
         60
       ],
-      "after_sl_tp1": false,
-      "after_sl_tp2": false,
+      "after_sl_tp1": true,
+      "after_sl_tp2": true,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true
     },
     "SKYUSDT_SHORT_1785601865": {
       "trade_id": "SKYUSDT_SHORT_15M_ENTRY_1785598603",
@@ -14223,7 +14258,9 @@
       "risk_percent": 0.568,
       "stopped_at": 1785601865,
       "stop_exit": 0.0562,
-      "reported_checkpoints": [],
+      "reported_checkpoints": [
+        30
+      ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
