@@ -33351,9 +33351,9 @@
       "worst_adverse_r": 0.9013,
       "best_favorable_price": 0.003913,
       "worst_adverse_price": 0.003949,
-      "last_market_price": 0.003938,
+      "last_market_price": 0.003941,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785697260
+      "last_tracking_at": 1785698100
     },
     "HUMAUSDT_SHORT_15M_ENTRY_1785676867": {
       "trade_id": "HUMAUSDT_SHORT_15M_ENTRY_1785676867",
@@ -33528,9 +33528,9 @@
       "worst_adverse_r": 0.7439,
       "best_favorable_price": 0.03671,
       "worst_adverse_price": 0.03703,
-      "last_market_price": 0.03676,
+      "last_market_price": 0.03678,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785697260
+      "last_tracking_at": 1785698100
     },
     "PENDLEUSDT_SHORT_15M_ENTRY_1785679533": {
       "trade_id": "PENDLEUSDT_SHORT_15M_ENTRY_1785679533",
@@ -33800,7 +33800,7 @@
       "worst_adverse_price": 0.05622,
       "last_market_price": 0.05593,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785697260
+      "last_tracking_at": 1785698100
     },
     "LAYERUSDT_SHORT_15M_ENTRY_1785687627": {
       "trade_id": "LAYERUSDT_SHORT_15M_ENTRY_1785687627",
@@ -34111,41 +34111,49 @@
       "duration_minutes": 84,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "KURULUM DEVAM ETMEDI",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
-          "Ust zaman dilimi trend gucu sinirdaydi."
+          "Ust zaman dilimi trend gucu sinirdaydi.",
+          "Stop sonrasi fiyat TP1 seviyesine dondu."
         ],
         "duration_minutes": 84,
         "best_favorable_r": 0.3079,
         "worst_adverse_r": 1.0264,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ZAYIF_TREND_HACIM",
-        "preliminary_label": "Zayıf trend/hacim",
+        "primary": "FITIL_DAR_STOP",
+        "label": "Fitil/dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
-          "Üst zaman dilimi trend gücü sınırdaydı."
+          "Stop sonrası fiyat TP1 seviyesine 44 dakikada döndü.",
+          "Üst zaman dilimi trend gücü sınırdaydı.",
+          "Stop yüzdesi teşhis eşiğine göre dardı."
         ],
         "metrics": {
           "duration_minutes": 84,
           "mfe_r": 0.3079,
           "mae_r": 1.0264,
           "risk_percent": 0.478,
-          "return_minutes": null
+          "return_minutes": 44.0
         },
-        "updated_at": 1785695468
+        "updated_at": 1785698158
+      },
+      "post_stop_follow": {
+        "returned_level": "TP1",
+        "age_minutes": 44,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1785698158
       }
     }
   },
-  "last_update": 1785697267
+  "last_update": 1785698158
 }
