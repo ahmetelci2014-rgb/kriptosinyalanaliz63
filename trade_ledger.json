@@ -31032,27 +31032,28 @@
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
           "Giris ideal bolgeden goreceli olarak uzakti.",
-          "Ust zaman dilimi trend gucu sinirdaydi."
+          "Ust zaman dilimi trend gucu sinirdaydi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 54,
         "best_favorable_r": 0.1875,
         "worst_adverse_r": 1.2184,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "GEC_UZAK_GIRIS",
-        "preliminary_label": "Geç/uzak giriş",
+        "primary": "GEC_UZAK_GIRIS",
+        "label": "Geç/uzak giriş",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [
           "GEC_UZAK_GIRIS"
         ],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
           "Üst zaman dilimi trend gücü sınırdaydı.",
           "Giriş ideal bölgeden veya gönderim fiyatından uzaktı."
         ],
@@ -31061,9 +31062,15 @@
           "mfe_r": 0.1875,
           "mae_r": 1.2184,
           "risk_percent": 0.789,
-          "return_minutes": null
+          "return_minutes": 240.0
         },
-        "updated_at": 1785618065
+        "updated_at": 1785632512
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 240,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1785632512
       }
     },
     "IMXUSDT_SHORT_15M_ENTRY_1785617411": {
@@ -31484,8 +31491,8 @@
       "worst_adverse_price": 1.356,
       "last_market_price": 1.356,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785631500
+      "last_tracking_at": 1785632460
     }
   },
-  "last_update": 1785631557
+  "last_update": 1785632512
 }
