@@ -32927,27 +32927,28 @@
           "Stop oncesinde islem en az 0.35R lehe hareket etti.",
           "Giris ideal bolgeden goreceli olarak uzakti.",
           "Telegram gonderim aninda fiyat giristen uzaklasmisti.",
-          "Ust zaman dilimi trend gucu sinirdaydi."
+          "Ust zaman dilimi trend gucu sinirdaydi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 411,
         "best_favorable_r": 0.5022,
         "worst_adverse_r": 1.033,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "GEC_UZAK_GIRIS",
-        "preliminary_label": "Geç/uzak giriş",
+        "primary": "GEC_UZAK_GIRIS",
+        "label": "Geç/uzak giriş",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [
           "GEC_UZAK_GIRIS"
         ],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
           "Üst zaman dilimi trend gücü sınırdaydı.",
           "Giriş ideal bölgeden veya gönderim fiyatından uzaktı."
         ],
@@ -32956,9 +32957,15 @@
           "mfe_r": 0.5022,
           "mae_r": 1.033,
           "risk_percent": 1.783,
-          "return_minutes": null
+          "return_minutes": 243.0
         },
-        "updated_at": 1785696118
+        "updated_at": 1785710746
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 243,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1785710746
       }
     },
     "ICXUSDT_SHORT_5M_RADAR_1785672024": {
@@ -34158,34 +34165,42 @@
         "primary": "KURULUM DEVAM ETMEDI",
         "confidence": "ORTA",
         "factors": [
-          "Islem yeterli lehe ivme olusturmadan stop oldu."
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 115,
         "best_favorable_r": 0.0,
         "worst_adverse_r": 1.0248,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "KURULUM_DEVAM_ETMEDI",
-        "preliminary_label": "Kurulum devam etmedi",
+        "primary": "KURULUM_DEVAM_ETMEDI",
+        "label": "Kurulum devam etmedi",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "İşlem yeterli lehe ivme üretmeden stop oldu."
         ],
         "metrics": {
           "duration_minutes": 115,
           "mfe_r": 0.0,
           "mae_r": 1.0248,
           "risk_percent": 0.913,
-          "return_minutes": null
+          "return_minutes": 254.0
         },
-        "updated_at": 1785695467
+        "updated_at": 1785710746
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 254,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1785710746
       }
     },
     "SAPIENUSDT_LONG_15M_ENTRY_1785690414": {
@@ -34382,9 +34397,9 @@
       "worst_adverse_r": 0.7287,
       "best_favorable_price": 0.08079,
       "worst_adverse_price": 0.07985,
-      "last_market_price": 0.08023,
+      "last_market_price": 0.08012,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785709860
+      "last_tracking_at": 1785710700
     },
     "UNIUSDT_LONG_15M_ENTRY_1785705673": {
       "trade_id": "UNIUSDT_LONG_15M_ENTRY_1785705673",
@@ -34605,5 +34620,5 @@
       }
     }
   },
-  "last_update": 1785709867
+  "last_update": 1785710746
 }
