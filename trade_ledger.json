@@ -31619,15 +31619,15 @@
       "market_guard_long_allowed": true,
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %0.03 | ETHUSDT: 15M EMA20 üstü, 5M %0.04 | SOLUSDT: 15M EMA20 üstü, 5M %0.03",
-      "best_favorable_percent": 0.0483,
+      "best_favorable_percent": 0.2577,
       "worst_adverse_percent": 0.6764,
-      "best_favorable_r": 0.0335,
+      "best_favorable_r": 0.1789,
       "worst_adverse_r": 0.4696,
-      "best_favorable_price": 6.212e-05,
+      "best_favorable_price": 6.225e-05,
       "worst_adverse_price": 6.167e-05,
-      "last_market_price": 6.212e-05,
+      "last_market_price": 6.217e-05,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785648600
+      "last_tracking_at": 1785649500
     },
     "ZBTUSDT_LONG_5M_RADAR_1785647129": {
       "trade_id": "ZBTUSDT_LONG_5M_RADAR_1785647129",
@@ -31710,41 +31710,49 @@
       "duration_minutes": 25,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "KURULUM DEVAM ETMEDI",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
-          "Ust zaman dilimi trend gucu sinirdaydi."
+          "Ust zaman dilimi trend gucu sinirdaydi.",
+          "Stop sonrasi fiyat TP2 seviyesine dondu."
         ],
         "duration_minutes": 25,
         "best_favorable_r": 0.0938,
         "worst_adverse_r": 1.0828,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "MUHTEMEL_YANLIS_YON",
-        "preliminary_label": "Muhtemel yanlış yön",
+        "primary": "MUHTEMEL_ERKEN_GIRIS",
+        "label": "Muhtemel erken giriş",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
-          "Üst zaman dilimi trend gücü sınırdaydı."
+          "Stop sonrası fiyat TP2 seviyesine 14 dakikada döndü.",
+          "Üst zaman dilimi trend gücü sınırdaydı.",
+          "İşlem kısa sürede düşük lehe hareketle stop oldu, sonra hedefe döndü."
         ],
         "metrics": {
           "duration_minutes": 25,
           "mfe_r": 0.0938,
           "mae_r": 1.0828,
           "risk_percent": 0.963,
-          "return_minutes": null
+          "return_minutes": 14.0
         },
-        "updated_at": 1785648660
+        "updated_at": 1785649546
+      },
+      "post_stop_follow": {
+        "returned_level": "TP2",
+        "age_minutes": 14,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1785649546
       }
     }
   },
-  "last_update": 1785648660
+  "last_update": 1785649546
 }
