@@ -33584,9 +33584,9 @@
       "worst_adverse_r": 0.7439,
       "best_favorable_price": 0.03668,
       "worst_adverse_price": 0.03703,
-      "last_market_price": 0.03671,
+      "last_market_price": 0.03678,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785703320
+      "last_tracking_at": 1785704460
     },
     "PENDLEUSDT_SHORT_15M_ENTRY_1785679533": {
       "trade_id": "PENDLEUSDT_SHORT_15M_ENTRY_1785679533",
@@ -33986,34 +33986,42 @@
         "primary": "KURULUM DEVAM ETMEDI",
         "confidence": "ORTA",
         "factors": [
-          "Islem yeterli lehe ivme olusturmadan stop oldu."
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 25,
         "best_favorable_r": 0.0752,
         "worst_adverse_r": 1.0149,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "MUHTEMEL_YANLIS_YON",
-        "preliminary_label": "Muhtemel yanlış yön",
+        "primary": "MUHTEMEL_YANLIS_YON",
+        "label": "Muhtemel yanlış yön",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "İşlem çok kısa sürede anlamlı lehe hareket üretmeden stop oldu."
         ],
         "metrics": {
           "duration_minutes": 25,
           "mfe_r": 0.0752,
           "mae_r": 1.0149,
           "risk_percent": 0.437,
-          "return_minutes": null
+          "return_minutes": 255.0
         },
-        "updated_at": 1785689155
+        "updated_at": 1785704472
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 255,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1785704472
       }
     },
     "LDOUSDT_SHORT_15M_ENTRY_1785688520": {
@@ -34319,15 +34327,15 @@
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %-0.01 | ETHUSDT: 15M EMA20 üstü, 5M %-0.01 | SOLUSDT: 15M EMA20 üstü, 5M %0.0",
       "best_favorable_percent": 0.0,
-      "worst_adverse_percent": 0.656,
+      "worst_adverse_percent": 1.1635,
       "best_favorable_r": 0.0,
-      "worst_adverse_r": 0.4109,
+      "worst_adverse_r": 0.7287,
       "best_favorable_price": 0.08079,
-      "worst_adverse_price": 0.08026,
-      "last_market_price": 0.0803,
+      "worst_adverse_price": 0.07985,
+      "last_market_price": 0.07995,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785703320
+      "last_tracking_at": 1785704460
     }
   },
-  "last_update": 1785703347
+  "last_update": 1785704472
 }
