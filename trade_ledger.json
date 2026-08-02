@@ -33595,39 +33595,47 @@
       "duration_minutes": 475,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "ONCE LEHE GITTI, SONRA TERS DONDU",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
           "Stop oncesinde islem en az 0.35R lehe hareket etti.",
-          "Ust zaman dilimi trend gucu sinirdaydi."
+          "Ust zaman dilimi trend gucu sinirdaydi.",
+          "Stop sonrasi fiyat TP1 seviyesine dondu."
         ],
         "duration_minutes": 475,
         "best_favorable_r": 0.4396,
         "worst_adverse_r": 1.0482,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ZAYIF_TREND_HACIM",
-        "preliminary_label": "Zayıf trend/hacim",
+        "primary": "FITIL_DAR_STOP",
+        "label": "Fitil/dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
-          "Üst zaman dilimi trend gücü sınırdaydı."
+          "Stop sonrası fiyat TP1 seviyesine 45 dakikada döndü.",
+          "Üst zaman dilimi trend gücü sınırdaydı.",
+          "Stop yüzdesi teşhis eşiğine göre dardı."
         ],
         "metrics": {
           "duration_minutes": 475,
           "mfe_r": 0.4396,
           "mae_r": 1.0482,
           "risk_percent": 0.803,
-          "return_minutes": null
+          "return_minutes": 45.0
         },
-        "updated_at": 1785707153
+        "updated_at": 1785709867
+      },
+      "post_stop_follow": {
+        "returned_level": "TP1",
+        "age_minutes": 45,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1785709867
       }
     },
     "PENDLEUSDT_SHORT_15M_ENTRY_1785679533": {
@@ -34374,9 +34382,9 @@
       "worst_adverse_r": 0.7287,
       "best_favorable_price": 0.08079,
       "worst_adverse_price": 0.07985,
-      "last_market_price": 0.08038,
+      "last_market_price": 0.08023,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785708900
+      "last_tracking_at": 1785709860
     },
     "UNIUSDT_LONG_15M_ENTRY_1785705673": {
       "trade_id": "UNIUSDT_LONG_15M_ENTRY_1785705673",
@@ -34597,5 +34605,5 @@
       }
     }
   },
-  "last_update": 1785708953
+  "last_update": 1785709867
 }
