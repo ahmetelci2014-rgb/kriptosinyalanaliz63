@@ -34425,34 +34425,42 @@
         "primary": "KURULUM DEVAM ETMEDI",
         "confidence": "ORTA",
         "factors": [
-          "Islem yeterli lehe ivme olusturmadan stop oldu."
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 324,
         "best_favorable_r": 0.0,
         "worst_adverse_r": 1.2713,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "KURULUM_DEVAM_ETMEDI",
-        "preliminary_label": "Kurulum devam etmedi",
+        "primary": "KURULUM_DEVAM_ETMEDI",
+        "label": "Kurulum devam etmedi",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "İşlem yeterli lehe ivme üretmeden stop oldu."
         ],
         "metrics": {
           "duration_minutes": 324,
           "mfe_r": 0.0,
           "mae_r": 1.2713,
           "risk_percent": 1.597,
-          "return_minutes": null
+          "return_minutes": 240.0
         },
-        "updated_at": 1785720660
+        "updated_at": 1785735064
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 240,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1785735064
       }
     },
     "UNIUSDT_LONG_15M_ENTRY_1785705673": {
@@ -34962,9 +34970,9 @@
       "worst_adverse_r": 0.1488,
       "best_favorable_price": 6.52,
       "worst_adverse_price": 6.621,
-      "last_market_price": 6.58,
+      "last_market_price": 6.581,
       "tp1_hit_at": 1785719580,
-      "last_tracking_at": 1785734100
+      "last_tracking_at": 1785735000
     },
     "PROVEUSDT_SHORT_15M_ENTRY_1785718296": {
       "trade_id": "PROVEUSDT_SHORT_15M_ENTRY_1785718296",
@@ -35134,9 +35142,9 @@
       "worst_adverse_r": 0.9735,
       "best_favorable_price": 0.1514,
       "worst_adverse_price": 0.1539,
-      "last_market_price": 0.1536,
+      "last_market_price": 0.1532,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785734100
+      "last_tracking_at": 1785735000
     },
     "NESUSDT_SHORT_15M_ENTRY_1785719154": {
       "trade_id": "NESUSDT_SHORT_15M_ENTRY_1785719154",
@@ -35208,9 +35216,9 @@
       "worst_adverse_r": 0.9572,
       "best_favorable_price": 0.2012,
       "worst_adverse_price": 0.2048,
-      "last_market_price": 0.2023,
+      "last_market_price": 0.2024,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785734100
+      "last_tracking_at": 1785735000
     },
     "MOVEUSDT_SHORT_15M_ENTRY_1785722807": {
       "trade_id": "MOVEUSDT_SHORT_15M_ENTRY_1785722807",
@@ -35287,9 +35295,9 @@
       "worst_adverse_r": 0.2293,
       "best_favorable_price": 0.007374,
       "worst_adverse_price": 0.00749,
-      "last_market_price": 0.007424,
+      "last_market_price": 0.007422,
       "tp1_hit_at": 1785725220,
-      "last_tracking_at": 1785734100
+      "last_tracking_at": 1785735000
     },
     "AVNTUSDT_SHORT_15M_ENTRY_1785722808": {
       "trade_id": "AVNTUSDT_SHORT_15M_ENTRY_1785722808",
@@ -35361,9 +35369,9 @@
       "worst_adverse_r": 0.4404,
       "best_favorable_price": 0.08006,
       "worst_adverse_price": 0.08117,
-      "last_market_price": 0.08038,
+      "last_market_price": 0.08045,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785734100
+      "last_tracking_at": 1785735000
     },
     "PYTHUSDT_SHORT_15M_ENTRY_1785723684": {
       "trade_id": "PYTHUSDT_SHORT_15M_ENTRY_1785723684",
@@ -35662,9 +35670,9 @@
       "worst_adverse_r": 0.1405,
       "best_favorable_price": 0.05932,
       "worst_adverse_price": 0.06021,
-      "last_market_price": 0.05967,
+      "last_market_price": 0.05976,
       "tp1_hit_at": 1785728760,
-      "last_tracking_at": 1785734100
+      "last_tracking_at": 1785735000
     },
     "BERAUSDT_SHORT_15M_ENTRY_1785729969": {
       "trade_id": "BERAUSDT_SHORT_15M_ENTRY_1785729969",
@@ -35730,15 +35738,15 @@
       "market_guard_long_allowed": false,
       "market_guard_short_allowed": true,
       "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %-0.13 | ETHUSDT: 15M EMA20 altı, 5M %-0.16 | SOLUSDT: 15M EMA20 altı, 5M %-0.11",
-      "best_favorable_percent": 0.4587,
+      "best_favorable_percent": 0.5242,
       "worst_adverse_percent": 0.3932,
-      "best_favorable_r": 0.3979,
+      "best_favorable_r": 0.4547,
       "worst_adverse_r": 0.341,
-      "best_favorable_price": 0.1519,
+      "best_favorable_price": 0.1518,
       "worst_adverse_price": 0.1532,
-      "last_market_price": 0.1522,
+      "last_market_price": 0.1523,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785734100
+      "last_tracking_at": 1785735060
     },
     "JELLYJELLYUSDT_SHORT_15M_ENTRY_1785730861": {
       "trade_id": "JELLYJELLYUSDT_SHORT_15M_ENTRY_1785730861",
@@ -35804,15 +35812,15 @@
       "market_guard_long_allowed": false,
       "market_guard_short_allowed": true,
       "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %0.01 | ETHUSDT: 15M EMA20 altı, 5M %-0.01 | SOLUSDT: 15M EMA20 altı, 5M %0.03",
-      "best_favorable_percent": 0.1086,
+      "best_favorable_percent": 0.1267,
       "worst_adverse_percent": 0.1448,
-      "best_favorable_r": 0.1636,
+      "best_favorable_r": 0.1908,
       "worst_adverse_r": 0.2181,
-      "best_favorable_price": 0.05517,
+      "best_favorable_price": 0.05516,
       "worst_adverse_price": 0.05531,
-      "last_market_price": 0.05528,
+      "last_market_price": 0.05521,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785734100
+      "last_tracking_at": 1785735060
     },
     "ATUSDT_SHORT_15M_ENTRY_1785731717": {
       "trade_id": "ATUSDT_SHORT_15M_ENTRY_1785731717",
@@ -35884,10 +35892,10 @@
       "worst_adverse_r": 0.6073,
       "best_favorable_price": 0.1336,
       "worst_adverse_price": 0.1351,
-      "last_market_price": 0.1346,
+      "last_market_price": 0.1349,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785734100
+      "last_tracking_at": 1785735000
     }
   },
-  "last_update": 1785734159
+  "last_update": 1785735064
 }
