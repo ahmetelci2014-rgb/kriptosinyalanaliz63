@@ -37398,25 +37398,26 @@
         "confidence": "ORTA",
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
-          "Ust zaman dilimi trend gucu sinirdaydi."
+          "Ust zaman dilimi trend gucu sinirdaydi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 85,
         "best_favorable_r": 0.0507,
         "worst_adverse_r": 1.3169,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ZAYIF_TREND_HACIM",
-        "preliminary_label": "Zayıf trend/hacim",
+        "primary": "ZAYIF_TREND_HACIM",
+        "label": "Zayıf trend/hacim",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
           "Üst zaman dilimi trend gücü sınırdaydı."
         ],
         "metrics": {
@@ -37424,9 +37425,15 @@
           "mfe_r": 0.0507,
           "mae_r": 1.3169,
           "risk_percent": 0.81,
-          "return_minutes": null
+          "return_minutes": 254.0
         },
-        "updated_at": 1785754874
+        "updated_at": 1785770153
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 254,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1785770153
       }
     },
     "VANAUSDT_SHORT_5M_RADAR_1785754283": {
@@ -37515,27 +37522,28 @@
         "factors": [
           "Islem ilk 20 dakikada anlamli lehe hareket yapmadan stop oldu.",
           "Giris ideal bolgeden goreceli olarak uzakti.",
-          "Stop mesafesi cok kisa surede tamamen tuketildi."
+          "Stop mesafesi cok kisa surede tamamen tuketildi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 9,
         "best_favorable_r": 0.0,
         "worst_adverse_r": 1.101,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "MUHTEMEL_YANLIS_YON",
-        "preliminary_label": "Muhtemel yanlış yön",
+        "primary": "GEC_UZAK_GIRIS",
+        "label": "Geç/uzak giriş",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [
           "GEC_UZAK_GIRIS"
         ],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
           "Giriş ideal bölgeden veya gönderim fiyatından uzaktı."
         ],
         "metrics": {
@@ -37543,9 +37551,15 @@
           "mfe_r": 0.0,
           "mae_r": 1.101,
           "risk_percent": 0.552,
-          "return_minutes": null
+          "return_minutes": 254.0
         },
-        "updated_at": 1785754876
+        "updated_at": 1785770153
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 254,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1785770153
       }
     },
     "STXUSDT_SHORT_15M_ENTRY_1785755178": {
@@ -38286,15 +38300,16 @@
       "market_guard_long_allowed": true,
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %0.14 | ETHUSDT: 15M EMA20 üstü, 5M %0.24 | SOLUSDT: 15M EMA20 üstü, 5M %0.19",
-      "best_favorable_percent": 0.0,
-      "worst_adverse_percent": 0.0,
-      "best_favorable_r": 0.0,
-      "worst_adverse_r": 0.0,
-      "best_favorable_price": 2.899e-06,
-      "worst_adverse_price": 2.899e-06,
-      "last_market_price": 2.896e-06,
-      "tp1_hit_at": 0
+      "best_favorable_percent": 0.4139,
+      "worst_adverse_percent": 0.207,
+      "best_favorable_r": 0.2321,
+      "worst_adverse_r": 0.1161,
+      "best_favorable_price": 2.911e-06,
+      "worst_adverse_price": 2.893e-06,
+      "last_market_price": 2.908e-06,
+      "tp1_hit_at": 0,
+      "last_tracking_at": 1785770100
     }
   },
-  "last_update": 1785769544
+  "last_update": 1785770153
 }
