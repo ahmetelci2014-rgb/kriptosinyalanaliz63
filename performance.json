@@ -15437,17 +15437,17 @@
       "sl_after_no_return": 8
     },
     "2026-08-03": {
-      "opened": 33,
+      "opened": 34,
       "radar": 0,
       "tp1": 21,
       "tp2": 11,
       "tp3": 6,
-      "sl": 8,
-      "be": 14,
+      "sl": 10,
+      "be": 15,
       "expired": 0,
       "long": 2,
-      "short": 31,
-      "normal": 32,
+      "short": 32,
+      "normal": 33,
       "radar_trade": 1,
       "coins": {
         "UNIUSDT": {
@@ -15707,7 +15707,7 @@
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
-          "be": 0,
+          "be": 1,
           "expired": 0
         },
         "ICPUSDT": {
@@ -15716,7 +15716,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -15766,7 +15766,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -15799,10 +15799,20 @@
           "sl": 0,
           "be": 0,
           "expired": 0
+        },
+        "RIVERUSDT": {
+          "opened": 1,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 0,
+          "be": 0,
+          "expired": 0
         }
       },
       "direction_stops": {
-        "SHORT": 6,
+        "SHORT": 8,
         "LONG": 2
       },
       "stop_times": {
@@ -15813,7 +15823,9 @@
         "ATUSDT": 1785740477,
         "ENJUSDT": 1785754874,
         "VANAUSDT": 1785754875,
-        "ONTUSDT": 1785762081
+        "ONTUSDT": 1785762081,
+        "ICPUSDT": 1785762959,
+        "STXUSDT": 1785762961
       },
       "closed_times": {
         "UNIUSDT": 1785708067,
@@ -15835,7 +15847,8 @@
         "METUSDT": 1785747675,
         "BANDUSDT": 1785753063,
         "ANIMEUSDT": 1785756668,
-        "INITUSDT": 1785759354
+        "INITUSDT": 1785759354,
+        "CHIPUSDT": 1785762959
       },
       "closed_results": {
         "UNIUSDT": "BE",
@@ -15857,7 +15870,8 @@
         "METUSDT": "BE",
         "BANDUSDT": "BE",
         "ANIMEUSDT": "TP3",
-        "INITUSDT": "BE"
+        "INITUSDT": "BE",
+        "CHIPUSDT": "BE"
       },
       "closed_history": [
         {
@@ -16459,6 +16473,36 @@
           "exit": 0.03721,
           "source": "15M_ENTRY",
           "score": 93
+        },
+        {
+          "time": "16:15:59",
+          "symbol": "CHIPUSDT",
+          "direction": "SHORT",
+          "result": "BE",
+          "entry": 0.02445,
+          "exit": 0.02445,
+          "source": "15M_ENTRY",
+          "score": 93
+        },
+        {
+          "time": "16:15:59",
+          "symbol": "ICPUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 2.043,
+          "exit": 2.068,
+          "source": "15M_ENTRY",
+          "score": 99
+        },
+        {
+          "time": "16:16:01",
+          "symbol": "STXUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.1357,
+          "exit": 0.1368,
+          "source": "15M_ENTRY",
+          "score": 100
         }
       ],
       "sl_after_tp1": 2,
@@ -16466,7 +16510,7 @@
       "sl_after_no_return": 8
     }
   },
-  "last_update": 1785762343,
+  "last_update": 1785763219,
   "last_open_summary": 1785762086,
   "last_status_message": 1785757796,
   "last_daily_report": "2026-08-02",
@@ -16533,6 +16577,46 @@
       "risk_percent": 0.922,
       "stopped_at": 1785762081,
       "stop_exit": 0.03721,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "ICPUSDT_SHORT_1785762960": {
+      "trade_id": "ICPUSDT_SHORT_15M_ENTRY_1785746126",
+      "symbol": "ICPUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 2.043,
+      "tp1": 2.0294454607,
+      "tp2": 2.0171231522,
+      "tp3": 2.0035686129,
+      "sl": 2.0676446169,
+      "score": 99,
+      "risk_percent": 1.206,
+      "stopped_at": 1785762960,
+      "stop_exit": 2.068,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "STXUSDT_SHORT_1785762961": {
+      "trade_id": "STXUSDT_SHORT_15M_ENTRY_1785755178",
+      "symbol": "STXUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.1357,
+      "tp1": 0.1350715336,
+      "tp2": 0.1345002006,
+      "tp3": 0.1338717342,
+      "sl": 0.1368426661,
+      "score": 100,
+      "risk_percent": 0.842,
+      "stopped_at": 1785762961,
+      "stop_exit": 0.1368,
       "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
