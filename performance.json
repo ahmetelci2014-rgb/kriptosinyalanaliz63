@@ -16731,11 +16731,11 @@
     "2026-08-04": {
       "opened": 3,
       "radar": 0,
-      "tp1": 2,
-      "tp2": 0,
+      "tp1": 3,
+      "tp2": 1,
       "tp3": 0,
       "sl": 1,
-      "be": 3,
+      "be": 4,
       "expired": 0,
       "long": 1,
       "short": 2,
@@ -16785,8 +16785,8 @@
         "ESPUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
-          "tp2": 0,
+          "tp1": 1,
+          "tp2": 1,
           "tp3": 0,
           "sl": 0,
           "be": 0,
@@ -16801,6 +16801,16 @@
           "sl": 0,
           "be": 0,
           "expired": 0
+        },
+        "PEPEUSDT": {
+          "opened": 0,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 0,
+          "be": 1,
+          "expired": 0
         }
       },
       "direction_stops": {
@@ -16812,12 +16822,14 @@
       "closed_times": {
         "SENTUSDT": 1785790869,
         "ENAUSDT": 1785794483,
-        "DOTUSDT": 1785795359
+        "DOTUSDT": 1785795359,
+        "PEPEUSDT": 1785797155
       },
       "closed_results": {
         "SENTUSDT": "BE",
         "ENAUSDT": "BE",
-        "DOTUSDT": "BE"
+        "DOTUSDT": "BE",
+        "PEPEUSDT": "BE"
       },
       "closed_history": [
         {
@@ -16879,6 +16891,36 @@
           "exit": 0.8219,
           "source": "5M_RADAR",
           "score": 100
+        },
+        {
+          "time": "01:45:55",
+          "symbol": "PEPEUSDT",
+          "direction": "LONG",
+          "result": "BE",
+          "entry": 2.899e-06,
+          "exit": 2.899e-06,
+          "source": "15M_ENTRY",
+          "score": 95
+        },
+        {
+          "time": "01:45:56",
+          "symbol": "ESPUSDT",
+          "direction": "SHORT",
+          "result": "TP1",
+          "entry": 0.06421,
+          "exit": 0.0639584343,
+          "source": "15M_ENTRY",
+          "score": 89
+        },
+        {
+          "time": "01:45:57",
+          "symbol": "ESPUSDT",
+          "direction": "SHORT",
+          "result": "TP2",
+          "entry": 0.06421,
+          "exit": 0.0637297381,
+          "source": "15M_ENTRY",
+          "score": 89
         }
       ],
       "sl_after_tp1": 0,
@@ -16886,9 +16928,9 @@
       "sl_after_no_return": 0
     }
   },
-  "last_update": 1785796425,
+  "last_update": 1785797158,
   "last_open_summary": 1785792670,
-  "last_status_message": 1785793025,
+  "last_status_message": 1785797528,
   "last_daily_report": "2026-08-03",
   "sl_after_follow": {
     "INJUSDT_LONG_1785792667": {
@@ -16906,7 +16948,8 @@
       "stopped_at": 1785792667,
       "stop_exit": 4.977,
       "reported_checkpoints": [
-        30
+        30,
+        60
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
