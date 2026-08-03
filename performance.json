@@ -15439,10 +15439,10 @@
     "2026-08-03": {
       "opened": 8,
       "radar": 0,
-      "tp1": 3,
-      "tp2": 1,
+      "tp1": 4,
+      "tp2": 2,
       "tp3": 1,
-      "sl": 2,
+      "sl": 3,
       "be": 2,
       "expired": 0,
       "long": 2,
@@ -15503,8 +15503,8 @@
         "ETCUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
-          "tp2": 0,
+          "tp1": 1,
+          "tp2": 1,
           "tp3": 0,
           "sl": 0,
           "be": 0,
@@ -15539,15 +15539,26 @@
           "sl": 0,
           "be": 0,
           "expired": 0
+        },
+        "ACUUSDT": {
+          "opened": 0,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 1,
+          "be": 0,
+          "expired": 0
         }
       },
       "direction_stops": {
         "SHORT": 1,
-        "LONG": 1
+        "LONG": 2
       },
       "stop_times": {
         "MEGAUSDT": 1785707153,
-        "MUBARAKUSDT": 1785708952
+        "MUBARAKUSDT": 1785708952,
+        "ACUUSDT": 1785720660
       },
       "closed_times": {
         "UNIUSDT": 1785708067,
@@ -15649,6 +15660,36 @@
           "exit": 2.0436,
           "source": "15M_ENTRY",
           "score": 92
+        },
+        {
+          "time": "04:31:00",
+          "symbol": "ACUUSDT",
+          "direction": "LONG",
+          "result": "SL",
+          "entry": 0.08079,
+          "exit": 0.0793,
+          "source": "15M_ENTRY",
+          "score": 99
+        },
+        {
+          "time": "04:31:00",
+          "symbol": "ETCUSDT",
+          "direction": "SHORT",
+          "result": "TP1",
+          "entry": 6.612,
+          "exit": 6.5787315025,
+          "source": "15M_ENTRY",
+          "score": 96
+        },
+        {
+          "time": "04:31:01",
+          "symbol": "ETCUSDT",
+          "direction": "SHORT",
+          "result": "TP2",
+          "entry": 6.612,
+          "exit": 6.5484874138,
+          "source": "15M_ENTRY",
+          "score": 96
         }
       ],
       "sl_after_tp1": 2,
@@ -15656,39 +15697,11 @@
       "sl_after_no_return": 5
     }
   },
-  "last_update": 1785719154,
-  "last_open_summary": 1785714362,
-  "last_status_message": 1785713805,
+  "last_update": 1785720663,
+  "last_open_summary": 1785720664,
+  "last_status_message": 1785721005,
   "last_daily_report": "2026-08-02",
   "sl_after_follow": {
-    "SKYUSDT_SHORT_1785702659": {
-      "trade_id": "SKYUSDT_SHORT_15M_ENTRY_1785683156",
-      "symbol": "SKYUSDT",
-      "direction": "SHORT",
-      "source": "15M_ENTRY",
-      "entry": 0.0557,
-      "tp1": 0.0553839662,
-      "tp2": 0.0550966628,
-      "tp3": 0.0547806291,
-      "sl": 0.0562746068,
-      "score": 94,
-      "risk_percent": 1.032,
-      "stopped_at": 1785702659,
-      "stop_exit": 0.05616,
-      "reported_checkpoints": [
-        30,
-        60,
-        120,
-        180,
-        240
-      ],
-      "after_sl_tp1": false,
-      "after_sl_tp2": false,
-      "after_sl_tp3": false,
-      "resolved": true,
-      "no_return_counted": true,
-      "no_return_counted_day": "2026-08-03"
-    },
     "MEGAUSDT_SHORT_1785707153": {
       "trade_id": "MEGAUSDT_SHORT_15M_ENTRY_1785678604",
       "symbol": "MEGAUSDT",
@@ -15733,6 +15746,26 @@
       "after_sl_tp2": false,
       "after_sl_tp3": false,
       "resolved": true
+    },
+    "ACUUSDT_LONG_1785720660": {
+      "trade_id": "ACUUSDT_LONG_15M_ENTRY_1785701192",
+      "symbol": "ACUUSDT",
+      "direction": "LONG",
+      "source": "15M_ENTRY",
+      "entry": 0.08079,
+      "tp1": 0.0814995013,
+      "tp2": 0.0821445026,
+      "tp3": 0.0828540039,
+      "sl": 0.0794999976,
+      "score": 99,
+      "risk_percent": 1.597,
+      "stopped_at": 1785720660,
+      "stop_exit": 0.0793,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
     }
   }
 }
