@@ -40674,9 +40674,9 @@
       "worst_adverse_r": 0.1126,
       "best_favorable_price": 0.1966,
       "worst_adverse_price": 0.199,
-      "last_market_price": 0.1979,
+      "last_market_price": 0.198,
       "tp1_hit_at": 1785839520,
-      "last_tracking_at": 1785865080
+      "last_tracking_at": 1785865560
     },
     "HBARUSDT_LONG_15M_ENTRY_1785840709": {
       "trade_id": "HBARUSDT_LONG_15M_ENTRY_1785840709",
@@ -40884,34 +40884,42 @@
         "primary": "ONCE LEHE GITTI, SONRA TERS DONDU",
         "confidence": "ORTA",
         "factors": [
-          "Stop oncesinde islem en az 0.35R lehe hareket etti."
+          "Stop oncesinde islem en az 0.35R lehe hareket etti.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 113,
         "best_favorable_r": 0.4166,
         "worst_adverse_r": 1.5332,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ONCE_LEHE_SONRA_TERS",
-        "preliminary_label": "Önce lehe, sonra ters",
+        "primary": "ONCE_LEHE_SONRA_TERS",
+        "label": "Önce lehe, sonra ters",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "İşlem stop öncesinde anlamlı lehe hareket üretmişti."
         ],
         "metrics": {
           "duration_minutes": 113,
           "mfe_r": 0.4166,
           "mae_r": 1.5332,
           "risk_percent": 0.881,
-          "return_minutes": null
+          "return_minutes": 240.0
         },
-        "updated_at": 1785851154
+        "updated_at": 1785865565
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 240,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1785865565
       }
     },
     "PUMPUSDT_LONG_15M_ENTRY_1785845235": {
@@ -41211,10 +41219,10 @@
       "worst_adverse_r": 0.6381,
       "best_favorable_price": 0.04165,
       "worst_adverse_price": 0.04202,
-      "last_market_price": 0.04185,
+      "last_market_price": 0.04187,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785865080
+      "last_tracking_at": 1785865560
     }
   },
-  "last_update": 1785865127
+  "last_update": 1785865565
 }
