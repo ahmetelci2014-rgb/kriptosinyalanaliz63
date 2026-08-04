@@ -40674,9 +40674,9 @@
       "worst_adverse_r": 0.1126,
       "best_favorable_price": 0.1966,
       "worst_adverse_price": 0.199,
-      "last_market_price": 0.1975,
+      "last_market_price": 0.1976,
       "tp1_hit_at": 1785839520,
-      "last_tracking_at": 1785861060
+      "last_tracking_at": 1785861960
     },
     "HBARUSDT_LONG_15M_ENTRY_1785840709": {
       "trade_id": "HBARUSDT_LONG_15M_ENTRY_1785840709",
@@ -41090,39 +41090,47 @@
       "duration_minutes": 154,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "KURULUM DEVAM ETMEDI",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
-          "Ust zaman dilimi trend gucu sinirdaydi."
+          "Ust zaman dilimi trend gucu sinirdaydi.",
+          "Stop sonrasi fiyat TP1 seviyesine dondu."
         ],
         "duration_minutes": 154,
         "best_favorable_r": 0.0249,
         "worst_adverse_r": 2.3248,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ZAYIF_TREND_HACIM",
-        "preliminary_label": "Zayıf trend/hacim",
+        "primary": "FITIL_DAR_STOP",
+        "label": "Fitil/dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
-          "Üst zaman dilimi trend gücü sınırdaydı."
+          "Stop sonrası fiyat TP1 seviyesine 50 dakikada döndü.",
+          "Üst zaman dilimi trend gücü sınırdaydı.",
+          "Stop yüzdesi teşhis eşiğine göre dardı."
         ],
         "metrics": {
           "duration_minutes": 154,
           "mfe_r": 0.0249,
           "mae_r": 2.3248,
           "risk_percent": 0.365,
-          "return_minutes": null
+          "return_minutes": 50.0
         },
-        "updated_at": 1785858923
+        "updated_at": 1785861968
+      },
+      "post_stop_follow": {
+        "returned_level": "TP1",
+        "age_minutes": 50,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1785861968
       }
     },
     "SANDUSDT_SHORT_15M_ENTRY_1785852384": {
@@ -41195,10 +41203,10 @@
       "worst_adverse_r": 0.4148,
       "best_favorable_price": 0.04165,
       "worst_adverse_price": 0.04195,
-      "last_market_price": 0.04183,
+      "last_market_price": 0.04184,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785861060
+      "last_tracking_at": 1785861960
     }
   },
-  "last_update": 1785861075
+  "last_update": 1785861968
 }
