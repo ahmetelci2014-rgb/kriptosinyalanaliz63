@@ -7,13 +7,21 @@ V3 değişikliği:
 - Toplam açık risk ağırlığı 8.0'ı aşacaksa yeni sinyal engellenir.
 - TP1 görülmüş açık işlemler 0.5 risk ağırlığıyla sayılır.
 
-Bu modül emir açmaz. State dosyalarını yalnızca okur.
+V3.1 gölge kayıt değişikliği:
+- Her portföy kararı portfolio_risk_shadow.json dosyasına kaydedilir.
+- Sert engeller ve izin verilen adaylar birlikte tutulur.
+- Aynı karar kısa sürede tekrar oluşursa mükerrer kayıt eklenmez.
+- Canlı sinyal kararı, limitler ve Telegram davranışı değişmez.
+
+Bu modül emir açmaz. State dosyalarını yalnızca okur; yalnız gölge karar
+ledger'ını atomik biçimde yazar.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import tempfile
 import time
 from typing import Any, Dict, Iterable, List, Optional
 
@@ -44,6 +52,9 @@ DEFAULT_STATE_SOURCES = {
 
 DEFAULT_MAX_DIRECTION_RISK = 4.0
 DEFAULT_MAX_TOTAL_RISK = 8.0
+DEFAULT_SHADOW_LEDGER_FILE = "portfolio_risk_shadow.json"
+DEFAULT_SHADOW_MAX_RECORDS = 5000
+DEFAULT_SHADOW_DEDUP_SECONDS = 15 * 60
 
 
 def normalize_symbol(symbol: Any) -> str:
@@ -83,6 +94,45 @@ def load_json_safely(filename: str) -> Dict[str, Any]:
     except Exception as exc:
         print(filename, "portföy risk dosyası okuma hatası:", exc)
         return {}
+
+
+def save_json_atomically(filename: str, data: Dict[str, Any]) -> bool:
+    directory = os.path.dirname(os.path.abspath(filename)) or "."
+    os.makedirs(directory, exist_ok=True)
+    temp_path = None
+
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=directory,
+            prefix=f".{os.path.basename(filename)}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temp_path = handle.name
+            json.dump(data, handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+
+        with open(temp_path, "r", encoding="utf-8") as verify_handle:
+            verified = json.load(verify_handle)
+        if not isinstance(verified, dict):
+            raise ValueError("Gölge ledger kök verisi sözlük değil.")
+
+        os.replace(temp_path, filename)
+        temp_path = None
+        return True
+    except Exception as exc:
+        print(filename, "portföy gölge kayıt hatası:", exc)
+        return False
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
 
 
 def signal_is_open(signal: Any) -> bool:
@@ -184,6 +234,82 @@ def collect_open_portfolio(state_sources: Optional[Dict[str, Any]] = None) -> Li
     return records
 
 
+def _shadow_identity(result: Dict[str, Any]) -> str:
+    candidate = result.get("candidate") or {}
+    return "|".join([
+        str(candidate.get("bot") or "UNKNOWN"),
+        str(candidate.get("symbol") or ""),
+        str(candidate.get("direction") or ""),
+        str(result.get("block_code") or "ALLOW"),
+        str(result.get("total_risk_before") or 0),
+        str(result.get("direction_risk_before") or 0),
+    ])
+
+
+def record_portfolio_shadow_decision(
+    result: Dict[str, Any],
+    ledger_file: str = DEFAULT_SHADOW_LEDGER_FILE,
+    max_records: int = DEFAULT_SHADOW_MAX_RECORDS,
+    dedup_seconds: int = DEFAULT_SHADOW_DEDUP_SECONDS,
+) -> bool:
+    """Portföy kararını canlı davranışı değiştirmeden gölge ledger'a kaydeder."""
+    if not isinstance(result, dict):
+        return False
+
+    now = int(time.time())
+    ledger = load_json_safely(ledger_file)
+    records = ledger.get("records")
+    if not isinstance(records, list):
+        records = []
+
+    identity = _shadow_identity(result)
+    for existing in reversed(records[-100:]):
+        if not isinstance(existing, dict):
+            continue
+        if existing.get("identity") != identity:
+            continue
+        recorded_at = int(safe_float(existing.get("recorded_at"), 0) or 0)
+        if now - recorded_at < int(dedup_seconds):
+            return False
+        break
+
+    candidate = result.get("candidate") or {}
+    records.append({
+        "identity": identity,
+        "recorded_at": now,
+        "decision": "BLOCK" if result.get("hard_block") else "ALLOW",
+        "would_block": bool(result.get("hard_block")),
+        "block_code": result.get("block_code"),
+        "block_reason": result.get("block_reason"),
+        "bot": candidate.get("bot"),
+        "symbol": candidate.get("symbol"),
+        "direction": candidate.get("direction"),
+        "open_signal_count": result.get("open_signal_count"),
+        "total_risk_before": result.get("total_risk_before"),
+        "total_risk_after": result.get("total_risk_after"),
+        "direction_risk_before": result.get("direction_risk_before"),
+        "direction_risk_after": result.get("direction_risk_after"),
+        "warnings": result.get("warnings") or [],
+        "outcome": None,
+        "outcome_checked_at": None,
+    })
+
+    if len(records) > int(max_records):
+        records = records[-int(max_records):]
+
+    ledger = {
+        "version": "PORTFOLIO_RISK_SHADOW_V1",
+        "records": records,
+        "summary": {
+            "total_records": len(records),
+            "blocked_records": sum(1 for item in records if item.get("would_block")),
+            "allowed_records": sum(1 for item in records if not item.get("would_block")),
+        },
+        "last_update": now,
+    }
+    return save_json_atomically(ledger_file, ledger)
+
+
 def evaluate_portfolio_risk(
     symbol: str,
     direction: str,
@@ -191,6 +317,8 @@ def evaluate_portfolio_risk(
     state_sources: Optional[Dict[str, Any]] = None,
     max_direction_risk: float = DEFAULT_MAX_DIRECTION_RISK,
     max_total_risk: float = DEFAULT_MAX_TOTAL_RISK,
+    record_shadow: bool = True,
+    shadow_ledger_file: str = DEFAULT_SHADOW_LEDGER_FILE,
 ) -> Dict[str, Any]:
     normalized_symbol = normalize_symbol(symbol)
     normalized_direction = str(direction or "").upper()
@@ -261,8 +389,8 @@ def evaluate_portfolio_risk(
             f"{total_risk_after:.1f}/{float(max_total_risk):.1f}"
         )
 
-    return {
-        "version": "PORTFOLIO_RISK_V3_HARD_CAP",
+    result = {
+        "version": "PORTFOLIO_RISK_V3_1_SHADOW_LEDGER",
         "checked_at": int(time.time()),
         "candidate": {
             "bot": normalized_bot,
@@ -281,6 +409,11 @@ def evaluate_portfolio_risk(
         "direction_risk_after": direction_risk_after,
         "same_symbol_records": same_symbol,
     }
+
+    if record_shadow:
+        record_portfolio_shadow_decision(result, ledger_file=shadow_ledger_file)
+
+    return result
 
 
 def format_portfolio_note(result: Any) -> str:
