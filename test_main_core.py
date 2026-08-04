@@ -8,8 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 
-ROOT_DIR = Path(__file__).resolve().parents[1]
-
+ROOT_DIR = Path(__file__).resolve().parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
@@ -19,7 +18,7 @@ if str(ROOT_DIR) not in sys.path:
 # =========================================================
 # Testler piyasaya bağlanmaz, Telegram mesajı göndermez ve gerçek
 # config/strategy modüllerini çalıştırmaz. main.py içindeki saf kayıt,
-# Net R, duplicate ve teşhis fonksiyonlarını doğrular.
+# Net R, duplicate, teşhis ve portföy risk fonksiyonlarını doğrular.
 
 fake_ccxt = types.ModuleType("ccxt")
 fake_pandas = types.ModuleType("pandas")
@@ -92,18 +91,10 @@ import portfolio_risk
 class JsonSafetyTests(unittest.TestCase):
     def test_atomic_json_write_and_replace(self):
         with tempfile.TemporaryDirectory() as temp_dir:
-            filename = os.path.join(
-                temp_dir,
-                "trade_ledger.json",
-            )
-
+            filename = os.path.join(temp_dir, "trade_ledger.json")
             first_data = {
                 "version": 1,
-                "trades": {
-                    "TEST_LONG": {
-                        "status": "OPEN",
-                    }
-                },
+                "trades": {"TEST_LONG": {"status": "OPEN"}},
             }
             second_data = {
                 "version": 2,
@@ -115,40 +106,19 @@ class JsonSafetyTests(unittest.TestCase):
                 },
             }
 
-            self.assertTrue(
-                main.save_json_file(
-                    filename,
-                    first_data,
-                )
-            )
-            self.assertTrue(
-                main.save_json_file(
-                    filename,
-                    second_data,
-                )
-            )
+            self.assertTrue(main.save_json_file(filename, first_data))
+            self.assertTrue(main.save_json_file(filename, second_data))
 
-            with open(
-                filename,
-                "r",
-                encoding="utf-8",
-            ) as handle:
+            with open(filename, "r", encoding="utf-8") as handle:
                 loaded = json.load(handle)
 
-            self.assertEqual(
-                loaded,
-                second_data,
-            )
-
+            self.assertEqual(loaded, second_data)
             remaining_temp_files = [
                 name
                 for name in os.listdir(temp_dir)
                 if name.endswith(".tmp")
             ]
-            self.assertEqual(
-                remaining_temp_files,
-                [],
-            )
+            self.assertEqual(remaining_temp_files, [])
 
 
 class NetRTests(unittest.TestCase):
@@ -159,14 +129,7 @@ class NetRTests(unittest.TestCase):
             "sl": 98.0,
             "tp1_hit": False,
         }
-
-        self.assertEqual(
-            main.calculate_exit_r(
-                signal,
-                102.0,
-            ),
-            1.0,
-        )
+        self.assertEqual(main.calculate_exit_r(signal, 102.0), 1.0)
 
     def test_short_exit_r_without_tp1(self):
         signal = {
@@ -175,14 +138,7 @@ class NetRTests(unittest.TestCase):
             "sl": 102.0,
             "tp1_hit": False,
         }
-
-        self.assertEqual(
-            main.calculate_exit_r(
-                signal,
-                98.0,
-            ),
-            1.0,
-        )
+        self.assertEqual(main.calculate_exit_r(signal, 98.0), 1.0)
 
     def test_tp1_partial_then_break_even(self):
         signal = {
@@ -192,85 +148,43 @@ class NetRTests(unittest.TestCase):
             "tp1": 101.0,
             "tp1_hit": True,
         }
-
-        # TP1 = +0.50R. Pozisyonun yarısı TP1,
-        # kalan yarısı girişten kapanır: +0.25R.
-        self.assertEqual(
-            main.calculate_exit_r(
-                signal,
-                100.0,
-            ),
-            0.25,
-        )
+        # TP1 = +0.50R. Pozisyonun yarısı TP1, kalan yarısı giriş:
+        # toplam sonuç +0.25R.
+        self.assertEqual(main.calculate_exit_r(signal, 100.0), 0.25)
 
 
 class DuplicateTargetGuardTests(unittest.TestCase):
     def test_existing_tp1_event_is_detected(self):
-        signal = {
-            "trade_id":
-                "ENAUSDT_LONG_15M_ENTRY_1",
-        }
+        signal = {"trade_id": "ENAUSDT_LONG_15M_ENTRY_1"}
         ledger = {
             "trades": {
                 signal["trade_id"]: {
                     "events": [
-                        {
-                            "event": "OPENED",
-                            "time": 100,
-                        },
-                        {
-                            "event": "TP1",
-                            "time": 200,
-                        },
+                        {"event": "OPENED", "time": 100},
+                        {"event": "TP1", "time": 200},
                     ]
                 }
             }
         }
 
-        with patch.object(
-            main,
-            "load_trade_ledger",
-            return_value=ledger,
-        ):
-            exists, event_time = (
-                main.ledger_event_info(
-                    signal,
-                    "TP1",
-                )
-            )
+        with patch.object(main, "load_trade_ledger", return_value=ledger):
+            exists, event_time = main.ledger_event_info(signal, "TP1")
 
         self.assertTrue(exists)
         self.assertEqual(event_time, 200)
 
     def test_missing_tp2_event_is_not_detected(self):
-        signal = {
-            "trade_id":
-                "ENAUSDT_LONG_15M_ENTRY_1",
-        }
+        signal = {"trade_id": "ENAUSDT_LONG_15M_ENTRY_1"}
         ledger = {
             "trades": {
                 signal["trade_id"]: {
-                    "events": [
-                        {
-                            "event": "TP1",
-                            "time": 200,
-                        }
-                    ]
+                    "events": [{"event": "TP1", "time": 200}]
                 }
             }
         }
 
-        with patch.object(
-            main,
-            "load_trade_ledger",
-            return_value=ledger,
-        ):
-            exists, event_time = (
-                main.ledger_event_info(
-                    signal,
-                    "TP2",
-                )
-            )
+        with patch.object(main, "load_trade_ledger", return_value=ledger):
+            exists, event_time = main.ledger_event_info(signal, "TP2")
 
         self.assertFalse(exists)
         self.assertIsNone(event_time)
@@ -291,19 +205,9 @@ class StopRootCauseTests(unittest.TestCase):
             },
         }
 
-        result = (
-            main.classify_stop_root_cause(
-                trade
-            )
-        )
-
-        self.assertEqual(
-            result["primary"],
-            "FITIL_DAR_STOP",
-        )
-        self.assertFalse(
-            result["provisional"]
-        )
+        result = main.classify_stop_root_cause(trade)
+        self.assertEqual(result["primary"], "FITIL_DAR_STOP")
+        self.assertFalse(result["provisional"])
 
     def test_probable_early_entry(self):
         trade = {
@@ -321,16 +225,8 @@ class StopRootCauseTests(unittest.TestCase):
             },
         }
 
-        result = (
-            main.classify_stop_root_cause(
-                trade
-            )
-        )
-
-        self.assertEqual(
-            result["primary"],
-            "MUHTEMEL_ERKEN_GIRIS",
-        )
+        result = main.classify_stop_root_cause(trade)
+        self.assertEqual(result["primary"], "MUHTEMEL_ERKEN_GIRIS")
 
     def test_probable_wrong_direction(self):
         trade = {
@@ -344,16 +240,8 @@ class StopRootCauseTests(unittest.TestCase):
             },
         }
 
-        result = (
-            main.classify_stop_root_cause(
-                trade
-            )
-        )
-
-        self.assertEqual(
-            result["primary"],
-            "MUHTEMEL_YANLIS_YON",
-        )
+        result = main.classify_stop_root_cause(trade)
+        self.assertEqual(result["primary"], "MUHTEMEL_YANLIS_YON")
 
     def test_following_stop_remains_provisional(self):
         trade = {
@@ -367,56 +255,30 @@ class StopRootCauseTests(unittest.TestCase):
             },
         }
 
-        result = (
-            main.classify_stop_root_cause(
-                trade
-            )
-        )
-
-        self.assertEqual(
-            result["primary"],
-            "TAKIP_SURUYOR",
-        )
-        self.assertTrue(
-            result["provisional"]
-        )
+        result = main.classify_stop_root_cause(trade)
+        self.assertEqual(result["primary"], "TAKIP_SURUYOR")
+        self.assertTrue(result["provisional"])
 
 
 class VersionMetadataTests(unittest.TestCase):
     def test_github_commit_metadata(self):
         environment = {
-            "GITHUB_SHA":
-                "1234567890abcdef1234567890abcdef12345678",
+            "GITHUB_SHA": "1234567890abcdef1234567890abcdef12345678",
             "GITHUB_RUN_ID": "98765",
             "GITHUB_RUN_NUMBER": "42",
-            "GITHUB_WORKFLOW":
-                "Premium MTF Futures Bot",
+            "GITHUB_WORKFLOW": "Premium MTF Futures Bot",
             "GITHUB_REF_NAME": "main",
         }
 
-        with patch.dict(
-            os.environ,
-            environment,
-            clear=False,
-        ):
-            metadata = (
-                main.build_runtime_version_metadata()
-            )
+        with patch.dict(os.environ, environment, clear=False):
+            metadata = main.build_runtime_version_metadata()
 
-        self.assertEqual(
-            metadata["git_sha"],
-            environment["GITHUB_SHA"],
-        )
+        self.assertEqual(metadata["git_sha"], environment["GITHUB_SHA"])
         self.assertEqual(
             metadata["git_sha_short"],
             environment["GITHUB_SHA"][:12],
         )
-        self.assertEqual(
-            metadata["github_run_number"],
-            "42",
-        )
-
-
+        self.assertEqual(metadata["github_run_number"], "42")
 
 
 class PortfolioRiskTests(unittest.TestCase):
@@ -429,70 +291,27 @@ class PortfolioRiskTests(unittest.TestCase):
         swing_signals=None,
     ):
         paths = {
-            "main": os.path.join(
-                temp_dir,
-                "open_signals.json",
-            ),
-            "scalp": os.path.join(
-                temp_dir,
-                "scalp_radar_state.json",
-            ),
-            "pump": os.path.join(
-                temp_dir,
-                "pump_radar_state.json",
-            ),
-            "swing": os.path.join(
-                temp_dir,
-                "swing_radar_state.json",
-            ),
+            "main": os.path.join(temp_dir, "open_signals.json"),
+            "scalp": os.path.join(temp_dir, "scalp_radar_state.json"),
+            "pump": os.path.join(temp_dir, "pump_radar_state.json"),
+            "swing": os.path.join(temp_dir, "swing_radar_state.json"),
         }
 
-        with open(
-            paths["main"],
-            "w",
-            encoding="utf-8",
-        ) as handle:
+        with open(paths["main"], "w", encoding="utf-8") as handle:
+            json.dump(main_signals or {}, handle)
+
+        with open(paths["scalp"], "w", encoding="utf-8") as handle:
             json.dump(
-                main_signals or {},
+                {"open_scalp_signals": scalp_signals or {}},
                 handle,
             )
 
-        with open(
-            paths["scalp"],
-            "w",
-            encoding="utf-8",
-        ) as handle:
-            json.dump(
-                {
-                    "open_scalp_signals":
-                        scalp_signals or {}
-                },
-                handle,
-            )
+        with open(paths["pump"], "w", encoding="utf-8") as handle:
+            json.dump({"open_signals": pump_signals or {}}, handle)
 
-        with open(
-            paths["pump"],
-            "w",
-            encoding="utf-8",
-        ) as handle:
+        with open(paths["swing"], "w", encoding="utf-8") as handle:
             json.dump(
-                {
-                    "open_signals":
-                        pump_signals or {}
-                },
-                handle,
-            )
-
-        with open(
-            paths["swing"],
-            "w",
-            encoding="utf-8",
-        ) as handle:
-            json.dump(
-                {
-                    "open_swing_signals":
-                        swing_signals or {}
-                },
+                {"open_swing_signals": swing_signals or {}},
                 handle,
             )
 
@@ -503,23 +322,35 @@ class PortfolioRiskTests(unittest.TestCase):
             },
             "SCALP": {
                 "filename": paths["scalp"],
-                "containers": [
-                    "open_scalp_signals"
-                ],
+                "containers": ["open_scalp_signals"],
             },
             "PUMP_DUMP": {
                 "filename": paths["pump"],
-                "containers": [
-                    "open_signals"
-                ],
+                "containers": ["open_signals"],
             },
             "SWING": {
                 "filename": paths["swing"],
-                "containers": [
-                    "open_swing_signals"
-                ],
+                "containers": ["open_swing_signals"],
             },
         }
+
+    def evaluate(
+        self,
+        symbol,
+        direction,
+        sources,
+        max_direction_risk=4.0,
+        max_total_risk=8.0,
+    ):
+        return portfolio_risk.evaluate_portfolio_risk(
+            symbol,
+            direction,
+            "MAIN_MTF",
+            state_sources=sources,
+            max_direction_risk=max_direction_risk,
+            max_total_risk=max_total_risk,
+            record_shadow=False,
+        )
 
     def test_same_coin_same_direction_blocks(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -533,20 +364,9 @@ class PortfolioRiskTests(unittest.TestCase):
                     }
                 },
             )
+            result = self.evaluate("ENAUSDT", "LONG", sources)
 
-            result = (
-                portfolio_risk
-                .evaluate_portfolio_risk(
-                    "ENAUSDT",
-                    "LONG",
-                    "MAIN_MTF",
-                    state_sources=sources,
-                )
-            )
-
-        self.assertTrue(
-            result["hard_block"]
-        )
+        self.assertTrue(result["hard_block"])
         self.assertEqual(
             result["block_code"],
             "SAME_COIN_SAME_DIRECTION",
@@ -564,20 +384,9 @@ class PortfolioRiskTests(unittest.TestCase):
                     }
                 },
             )
+            result = self.evaluate("ENAUSDT", "LONG", sources)
 
-            result = (
-                portfolio_risk
-                .evaluate_portfolio_risk(
-                    "ENAUSDT",
-                    "LONG",
-                    "MAIN_MTF",
-                    state_sources=sources,
-                )
-            )
-
-        self.assertTrue(
-            result["hard_block"]
-        )
+        self.assertTrue(result["hard_block"])
         self.assertEqual(
             result["block_code"],
             "SAME_COIN_OPPOSITE_DIRECTION",
@@ -596,27 +405,47 @@ class PortfolioRiskTests(unittest.TestCase):
                     }
                 },
             )
+            result = self.evaluate("ETHUSDT", "LONG", sources)
 
-            result = (
-                portfolio_risk
-                .evaluate_portfolio_risk(
-                    "ETHUSDT",
-                    "LONG",
-                    "MAIN_MTF",
-                    state_sources=sources,
-                )
+        self.assertEqual(result["direction_risk_before"], 0.5)
+        self.assertEqual(result["direction_risk_after"], 1.5)
+
+    def test_direction_limit_exactly_four_is_soft_warning(self):
+        # Üç açık LONG + yeni aday = 4.0. Sınır aşılmaz;
+        # aday geçer fakat yoğunluk uyarısı oluşur.
+        with tempfile.TemporaryDirectory() as temp_dir:
+            sources = self.build_sources(
+                temp_dir,
+                main_signals={
+                    "BTC_LONG": {
+                        "symbol": "BTCUSDT",
+                        "direction": "LONG",
+                    },
+                    "ETH_LONG": {
+                        "symbol": "ETHUSDT",
+                        "direction": "LONG",
+                    },
+                },
+                scalp_signals={
+                    "SOL_LONG": {
+                        "symbol": "SOLUSDT",
+                        "direction": "LONG",
+                    },
+                },
+            )
+            result = self.evaluate(
+                "ADAUSDT",
+                "LONG",
+                sources,
+                max_direction_risk=4.0,
             )
 
-        self.assertEqual(
-            result["direction_risk_before"],
-            0.5,
-        )
-        self.assertEqual(
-            result["direction_risk_after"],
-            1.5,
-        )
+        self.assertFalse(result["hard_block"])
+        self.assertTrue(result["has_soft_warning"])
+        self.assertEqual(result["direction_risk_after"], 4.0)
 
-    def test_direction_concentration_is_soft_warning(self):
+    def test_direction_limit_above_four_hard_blocks(self):
+        # Dört açık LONG + yeni aday = 5.0. V3 hard-cap gereği engellenir.
         with tempfile.TemporaryDirectory() as temp_dir:
             sources = self.build_sources(
                 temp_dir,
@@ -641,24 +470,16 @@ class PortfolioRiskTests(unittest.TestCase):
                     },
                 },
             )
-
-            result = (
-                portfolio_risk
-                .evaluate_portfolio_risk(
-                    "ADAUSDT",
-                    "LONG",
-                    "MAIN_MTF",
-                    state_sources=sources,
-                    max_direction_risk=4.0,
-                )
+            result = self.evaluate(
+                "ADAUSDT",
+                "LONG",
+                sources,
+                max_direction_risk=4.0,
             )
 
-        self.assertFalse(
-            result["hard_block"]
-        )
-        self.assertTrue(
-            result["has_soft_warning"]
-        )
+        self.assertTrue(result["hard_block"])
+        self.assertEqual(result["block_code"], "DIRECTION_RISK_LIMIT")
+        self.assertEqual(result["direction_risk_after"], 5.0)
 
 
 if __name__ == "__main__":
