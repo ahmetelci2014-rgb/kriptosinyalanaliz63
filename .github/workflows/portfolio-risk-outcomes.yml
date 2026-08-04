@@ -1,4 +1,4 @@
-name: Portfolio Risk Outcome Shadow v1
+name: Portfolio Risk Outcome Shadow v1.1
 
 on:
   schedule:
@@ -47,6 +47,6 @@ jobs:
             echo "Portfolio risk outcome değişikliği yok."
             exit 0
           fi
-          git pull --rebase origin main
           git commit -m "Update portfolio risk outcome shadow"
+          git pull --rebase origin main
           git push origin HEAD:main
