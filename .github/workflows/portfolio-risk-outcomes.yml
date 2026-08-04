@@ -1,0 +1,52 @@
+name: Portfolio Risk Outcome Shadow v1
+
+on:
+  schedule:
+    - cron: "47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: portfolio-risk-outcome-shadow
+  cancel-in-progress: false
+
+jobs:
+  track-outcomes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run outcome tracker tests
+        run: python -m unittest -v test_portfolio_risk_outcome_tracker.py
+
+      - name: Track portfolio risk outcomes
+        run: python portfolio_risk_outcome_tracker.py
+
+      - name: Commit outcome shadow ledger
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add portfolio_risk_outcomes.json
+          if git diff --cached --quiet; then
+            echo "Portfolio risk outcome değişikliği yok."
+            exit 0
+          fi
+          git pull --rebase origin main
+          git commit -m "Update portfolio risk outcome shadow"
+          git push origin HEAD:main
