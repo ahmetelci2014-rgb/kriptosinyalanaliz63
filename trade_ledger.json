@@ -40118,9 +40118,9 @@
       "worst_adverse_r": 0.9092,
       "best_favorable_price": 0.001274,
       "worst_adverse_price": 0.00126,
-      "last_market_price": 0.001264,
+      "last_market_price": 0.001268,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785833100
+      "last_tracking_at": 1785834060
     },
     "ADAUSDT_LONG_5M_RADAR_1785821806": {
       "trade_id": "ADAUSDT_LONG_5M_RADAR_1785821806",
@@ -40301,37 +40301,45 @@
       "duration_minutes": 54,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "ONCE LEHE GITTI, SONRA TERS DONDU",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
-          "Stop oncesinde islem en az 0.35R lehe hareket etti."
+          "Stop oncesinde islem en az 0.35R lehe hareket etti.",
+          "Stop sonrasi fiyat TP1 seviyesine dondu."
         ],
         "duration_minutes": 54,
         "best_favorable_r": 0.3896,
         "worst_adverse_r": 1.1688,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ONCE_LEHE_SONRA_TERS",
-        "preliminary_label": "Önce lehe, sonra ters",
+        "primary": "FITIL_DAR_STOP",
+        "label": "Fitil/dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası fiyat TP1 seviyesine 105 dakikada döndü.",
+          "Stop yüzdesi teşhis eşiğine göre dardı."
         ],
         "metrics": {
           "duration_minutes": 54,
           "mfe_r": 0.3896,
           "mae_r": 1.1688,
           "risk_percent": 0.491,
-          "return_minutes": null
+          "return_minutes": 105.0
         },
-        "updated_at": 1785827753
+        "updated_at": 1785834084
+      },
+      "post_stop_follow": {
+        "returned_level": "TP1",
+        "age_minutes": 105,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1785834084
       }
     },
     "NESUSDT_SHORT_15M_ENTRY_1785825419": {
@@ -40599,16 +40607,16 @@
       "market_guard_long_allowed": false,
       "market_guard_short_allowed": true,
       "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %0.03 | ETHUSDT: 15M EMA20 altı, 5M %0.01 | SOLUSDT: 15M EMA20 altı, 5M %0.0",
-      "best_favorable_percent": 0.1006,
-      "worst_adverse_percent": 0.0503,
-      "best_favorable_r": 0.1126,
-      "worst_adverse_r": 0.0563,
-      "best_favorable_price": 0.1986,
-      "worst_adverse_price": 0.1989,
-      "last_market_price": 0.1988,
+      "best_favorable_percent": 0.1509,
+      "worst_adverse_percent": 0.1006,
+      "best_favorable_r": 0.1689,
+      "worst_adverse_r": 0.1126,
+      "best_favorable_price": 0.1985,
+      "worst_adverse_price": 0.199,
+      "last_market_price": 0.1986,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785833100
+      "last_tracking_at": 1785834060
     }
   },
-  "last_update": 1785833152
+  "last_update": 1785834084
 }
