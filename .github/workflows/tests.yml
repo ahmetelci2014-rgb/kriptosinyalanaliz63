@@ -57,25 +57,11 @@ jobs:
           test -f swing_radar.py
           test -f new_listing_radar.py
           test -f coin_analyzer.py
-          test -f momentum_shadow.py
           test -f test_main_core.py
-          test -f test_momentum_shadow.py
 
       - name: Aktif Python dosyalarını derle
         run: |
-          python -m py_compile \
-            main.py \
-            strategy.py \
-            config.py \
-            portfolio_risk.py \
-            scalp_radar.py \
-            pump_radar.py \
-            swing_radar.py \
-            new_listing_radar.py \
-            coin_analyzer.py \
-            momentum_shadow.py \
-            test_main_core.py \
-            test_momentum_shadow.py
+          python -m py_compile             main.py             strategy.py             config.py             portfolio_risk.py             scalp_radar.py             pump_radar.py             swing_radar.py             new_listing_radar.py             coin_analyzer.py             test_main_core.py
 
       - name: Ana bot çekirdek testlerini çalıştır
         env:
@@ -83,11 +69,6 @@ jobs:
           CHAT_ID: ""
         run: |
           python test_main_core.py -v
-
-      - name: Momentum gölge testlerini çalıştır
-        run: |
-          python momentum_shadow.py --self-test
-          python test_momentum_shadow.py -v
 
       - name: Yeni Liste Radar self-testini çalıştır
         env:
