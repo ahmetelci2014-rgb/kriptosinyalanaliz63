@@ -148,17 +148,28 @@ def first_threshold_event(
     return {"event": "NONE", "at_ms": 0}
 
 
+def make_record_key(source_record: Dict[str, Any]) -> str:
+    """Aynı karar kimliği farklı zamanlarda tekrarlandığında kayıtların ezilmesini önler."""
+    identity = str(source_record.get("identity") or "")
+    recorded_at = int(safe_float(source_record.get("recorded_at"), 0) or 0)
+    return f"{identity}|{recorded_at}" if identity and recorded_at > 0 else ""
+
+
 def select_reference_candle(
     candles: Sequence[Sequence[float]],
     recorded_at_ms: int,
 ) -> Optional[Sequence[float]]:
-    closed_before = [
-        candle for candle in candles
-        if int(candle[0]) + CANDLE_MS <= recorded_at_ms
-    ]
-    if closed_before:
-        return closed_before[-1]
-    return candles[0] if candles else None
+    """Karardan sonraki ilk tam 5M mumu seçer.
+
+    Kararın verildiği kısmi mumun karar öncesi high/low değerlerini sonuca
+    karıştırmamak için ölçüm bir sonraki tam mumun açılışından başlar. Karar
+    tam mum başlangıcında verilmişse o mum kullanılabilir.
+    """
+    tracking_start_ms = (
+        (int(recorded_at_ms) + CANDLE_MS - 1) // CANDLE_MS
+    ) * CANDLE_MS
+    eligible = [candle for candle in candles if int(candle[0]) >= tracking_start_ms]
+    return eligible[0] if eligible else None
 
 
 def analyze_window(
@@ -210,6 +221,7 @@ def analyze_record_from_candles(
     reference_candle = select_reference_candle(candles, recorded_at_ms)
 
     base = {
+        "record_key": make_record_key(source_record),
         "identity": source_record.get("identity"),
         "recorded_at": recorded_at,
         "decision": source_record.get("decision"),
@@ -235,15 +247,16 @@ def analyze_record_from_candles(
         base["data_status"] = "NO_REFERENCE_CANDLE"
         return base
 
-    reference_price = float(reference_candle[4])
+    reference_price = float(reference_candle[1])
     reference_candle_ms = int(reference_candle[0])
     future_candles = [
         candle for candle in candles
-        if int(candle[0]) > reference_candle_ms
+        if int(candle[0]) >= reference_candle_ms
         and int(candle[0]) + CANDLE_MS <= current_ts * 1000
     ]
     base["reference_price"] = reference_price
     base["reference_candle_ms"] = reference_candle_ms
+    base["tracking_start_ms"] = reference_candle_ms
 
     if not future_candles:
         base["data_status"] = "WAITING_FOR_CLOSED_CANDLE"
@@ -254,7 +267,10 @@ def analyze_record_from_candles(
         if available_minutes < minutes:
             continue
         cutoff_ms = recorded_at_ms + minutes * 60 * 1000
-        window = [candle for candle in future_candles if int(candle[0]) < cutoff_ms]
+        window = [
+            candle for candle in future_candles
+            if int(candle[0]) + CANDLE_MS <= cutoff_ms
+        ]
         if window:
             base["checkpoints"][str(minutes)] = analyze_window(
                 window, direction, reference_price
@@ -264,7 +280,7 @@ def analyze_record_from_candles(
         future_candles, direction, reference_price
     )
     base["available_minutes"] = available_minutes
-    base["completed"] = available_minutes >= max(CHECKPOINT_MINUTES)
+    base["completed"] = str(max(CHECKPOINT_MINUTES)) in base["checkpoints"]
     base["data_status"] = "COMPLETE" if base["completed"] else "TRACKING"
     return base
 
@@ -414,21 +430,36 @@ def run_tracker(
         if not isinstance(source_record, dict):
             continue
         identity = str(source_record.get("identity") or "")
+        record_key = make_record_key(source_record)
         symbol = normalize_symbol(source_record.get("symbol"))
         direction = str(source_record.get("direction") or "").upper()
         recorded_at = int(safe_float(source_record.get("recorded_at"), 0) or 0)
-        if not identity or not symbol or direction not in {"LONG", "SHORT"} or recorded_at <= 0:
+        if (
+            not identity
+            or not record_key
+            or not symbol
+            or direction not in {"LONG", "SHORT"}
+            or recorded_at <= 0
+        ):
             continue
 
-        existing = previous_records.get(identity)
+        existing = previous_records.get(record_key)
+        if not isinstance(existing, dict):
+            legacy = previous_records.get(identity)
+            if isinstance(legacy, dict) and int(legacy.get("recorded_at") or 0) == recorded_at:
+                existing = legacy
+
         if isinstance(existing, dict) and existing.get("completed"):
-            output_records[identity] = existing
+            completed_record = dict(existing)
+            completed_record["record_key"] = record_key
+            output_records[record_key] = completed_record
             continue
 
         market_symbol = market_map.get(symbol)
         if not market_symbol:
-            output_records[identity] = {
+            output_records[record_key] = {
                 **source_record,
+                "record_key": record_key,
                 "symbol": symbol,
                 "data_status": "MARKET_NOT_FOUND",
                 "completed": False,
@@ -440,30 +471,35 @@ def run_tracker(
             candles = fetch_candles_for_record(
                 exchange, market_symbol, recorded_at, current_ts
             )
-            output_records[identity] = analyze_record_from_candles(
+            output_records[record_key] = analyze_record_from_candles(
                 source_record, candles, current_ts
             )
         except Exception as exc:
             print(f"{symbol} sonuç takip hatası: {exc}")
             fallback = dict(existing) if isinstance(existing, dict) else dict(source_record)
             fallback.update({
+                "record_key": record_key,
                 "symbol": symbol,
                 "data_status": "FETCH_ERROR",
                 "fetch_error": str(exc)[:300],
                 "completed": False,
                 "last_checked_at": current_ts,
             })
-            output_records[identity] = fallback
+            output_records[record_key] = fallback
 
     if len(output_records) > MAX_OUTCOME_RECORDS:
         ordered = sorted(
             output_records.values(),
             key=lambda item: int(safe_float(item.get("recorded_at"), 0) or 0),
         )[-MAX_OUTCOME_RECORDS:]
-        output_records = {str(item.get("identity")): item for item in ordered}
+        output_records = {
+            str(item.get("record_key") or make_record_key(item)): item
+            for item in ordered
+            if str(item.get("record_key") or make_record_key(item))
+        }
 
     result = {
-        "version": "PORTFOLIO_RISK_OUTCOME_SHADOW_V1_2026_08_04",
+        "version": "PORTFOLIO_RISK_OUTCOME_SHADOW_V1_1_2026_08_04",
         "mode": "SHADOW_ANALYSIS_ONLY_NO_SIGNAL_CHANGE_NO_ORDERS",
         "source_file": source_file,
         "timeframe": TIMEFRAME,

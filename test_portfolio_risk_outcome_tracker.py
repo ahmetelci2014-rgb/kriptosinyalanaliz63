@@ -8,6 +8,7 @@ from portfolio_risk_outcome_tracker import (
     analyze_window,
     directional_return_percent,
     first_threshold_event,
+    make_record_key,
     normalize_symbol,
     summarize_records,
 )
@@ -65,6 +66,31 @@ class PortfolioRiskOutcomeTests(unittest.TestCase):
         self.assertEqual(result["reference_price"], 100)
         self.assertIn("60", result["checkpoints"])
         self.assertEqual(result["data_status"], "TRACKING")
+
+
+    def test_record_key_keeps_repeated_decisions_separate(self):
+        first = {"identity": "MAIN|BTCUSDT|LONG|ALLOW|1|1", "recorded_at": 100}
+        second = {"identity": "MAIN|BTCUSDT|LONG|ALLOW|1|1", "recorded_at": 200}
+        self.assertNotEqual(make_record_key(first), make_record_key(second))
+
+    def test_partial_decision_candle_is_excluded(self):
+        record = {
+            "identity": "MAIN|BTCUSDT|LONG|ALLOW|0|0",
+            "recorded_at": 620,
+            "decision": "ALLOW",
+            "would_block": False,
+            "symbol": "BTCUSDT",
+            "direction": "LONG",
+        }
+        candles = [
+            [600000, 100, 110, 90, 100, 1],  # kararın verildiği kısmi mum: dışlanmalı
+            [900000, 100, 100.4, 99.8, 100.2, 1],
+        ]
+        result = analyze_record_from_candles(record, candles, current_ts=1210)
+        self.assertEqual(result["reference_candle_ms"], 900000)
+        self.assertEqual(result["reference_price"], 100)
+        self.assertEqual(result["latest_analysis"]["max_favorable_percent"], 0.4)
+        self.assertEqual(result["latest_analysis"]["max_adverse_percent"], 0.2)
 
     def test_summary_separates_block_allow(self):
         records = [
