@@ -52,10 +52,13 @@ jobs:
 
           for file in \
             swing_radar_state.json \
-            swing_performance_ledger.json
+            swing_performance_ledger.json \
+            portfolio_risk_shadow.json
           do
             if [ -f "$file" ]; then
               git add "$file"
+            else
+              echo "$file henüz oluşmamış; atlandı."
             fi
           done
 
@@ -64,7 +67,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update swing state performance and diagnosis"
+          git commit -m "Update swing state performance and portfolio risk shadow"
 
           for attempt in 1 2 3
           do

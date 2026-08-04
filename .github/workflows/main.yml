@@ -50,7 +50,12 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          for file in             open_signals.json             performance.json             last_signals.json             trade_ledger.json
+          for file in \
+            open_signals.json \
+            performance.json \
+            last_signals.json \
+            trade_ledger.json \
+            portfolio_risk_shadow.json
           do
             if [ -f "$file" ]; then
               git add "$file"
@@ -64,7 +69,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update main bot state"
+          git commit -m "Update main bot state and portfolio risk shadow"
 
           for attempt in 1 2 3
           do

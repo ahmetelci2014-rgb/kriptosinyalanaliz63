@@ -49,9 +49,6 @@ jobs:
         run: |
           set -u
 
-          # Manuel çalıştırmada tek kontrol yeterlidir.
-          # Zamanlanmış çalışmada aynı runner içinde yaklaşık
-          # 0, 60, 120 ve 180. saniyelerde dört kontrol yapılır.
           if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
             ROUNDS=1
           else
@@ -102,7 +99,8 @@ jobs:
 
           for file in \
             new_listing_radar_state.json \
-            new_listing_performance_ledger.json
+            new_listing_performance_ledger.json \
+            portfolio_risk_shadow.json
           do
             if [ -f "$file" ]; then
               git add "$file"
@@ -116,7 +114,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update new listing radar state"
+          git commit -m "Update new listing state and portfolio risk shadow"
 
           for attempt in 1 2 3
           do
