@@ -40674,9 +40674,9 @@
       "worst_adverse_r": 0.1126,
       "best_favorable_price": 0.1966,
       "worst_adverse_price": 0.199,
-      "last_market_price": 0.1983,
+      "last_market_price": 0.1978,
       "tp1_hit_at": 1785839520,
-      "last_tracking_at": 1785863700
+      "last_tracking_at": 1785864660
     },
     "HBARUSDT_LONG_15M_ENTRY_1785840709": {
       "trade_id": "HBARUSDT_LONG_15M_ENTRY_1785840709",
@@ -40762,34 +40762,42 @@
         "primary": "KURULUM DEVAM ETMEDI",
         "confidence": "ORTA",
         "factors": [
-          "Islem yeterli lehe ivme olusturmadan stop oldu."
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 156,
         "best_favorable_r": 0.0,
         "worst_adverse_r": 1.0353,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "KURULUM_DEVAM_ETMEDI",
-        "preliminary_label": "Kurulum devam etmedi",
+        "primary": "KURULUM_DEVAM_ETMEDI",
+        "label": "Kurulum devam etmedi",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "İşlem yeterli lehe ivme üretmeden stop oldu."
         ],
         "metrics": {
           "duration_minutes": 156,
           "mfe_r": 0.0,
           "mae_r": 1.0353,
           "risk_percent": 1.084,
-          "return_minutes": null
+          "return_minutes": 243.0
         },
-        "updated_at": 1785850081
+        "updated_at": 1785864663
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 243,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1785864663
       }
     },
     "AVAXUSDT_LONG_15M_ENTRY_1785844318": {
@@ -41203,10 +41211,10 @@
       "worst_adverse_r": 0.6381,
       "best_favorable_price": 0.04165,
       "worst_adverse_price": 0.04202,
-      "last_market_price": 0.04194,
+      "last_market_price": 0.0419,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785863700
+      "last_tracking_at": 1785864660
     }
   },
-  "last_update": 1785863759
+  "last_update": 1785864663
 }
