@@ -1,19 +1,1123 @@
 {
-  "version": "PORTFOLIO_RISK_OUTCOME_SHADOW_V1_2026_08_04",
+  "version": "PORTFOLIO_RISK_OUTCOME_SHADOW_V1_1_2026_08_04",
   "mode": "SHADOW_ANALYSIS_ONLY_NO_SIGNAL_CHANGE_NO_ORDERS",
   "source_file": "portfolio_risk_shadow.json",
   "timeframe": "5m",
-  "checkpoints_minutes": [60, 240, 720, 1440],
-  "thresholds_percent": [0.5, 1.0],
-  "records": {},
+  "checkpoints_minutes": [
+    60,
+    240,
+    720,
+    1440
+  ],
+  "thresholds_percent": [
+    0.5,
+    1.0
+  ],
+  "records": {
+    "MAIN_MTF|XTZUSDT|SHORT|ALLOW|4.5|2.5|1785832633": {
+      "record_key": "MAIN_MTF|XTZUSDT|SHORT|ALLOW|4.5|2.5|1785832633",
+      "identity": "MAIN_MTF|XTZUSDT|SHORT|ALLOW|4.5|2.5",
+      "recorded_at": 1785832633,
+      "decision": "ALLOW",
+      "would_block": false,
+      "block_code": null,
+      "block_reason": null,
+      "bot": "MAIN_MTF",
+      "symbol": "XTZUSDT",
+      "direction": "SHORT",
+      "open_signal_count": 5,
+      "total_risk_before": 4.5,
+      "direction_risk_before": 2.5,
+      "data_status": "TRACKING",
+      "reference_price": 0.1989,
+      "reference_candle_ms": 1785832800000,
+      "checkpoints": {
+        "60": {
+          "checked_candle_ms": 1785835800000,
+          "close_price": 0.1983,
+          "directional_return_percent": 0.3017,
+          "max_favorable_percent": 0.3017,
+          "max_adverse_percent": 0.0503,
+          "first_0_5_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        },
+        "240": {
+          "checked_candle_ms": 1785846600000,
+          "close_price": 0.1972,
+          "directional_return_percent": 0.8547,
+          "max_favorable_percent": 0.905,
+          "max_adverse_percent": 0.0503,
+          "first_0_5_percent": {
+            "event": "FAVORABLE_FIRST",
+            "at_ms": 1785839400000
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        }
+      },
+      "latest_analysis": {
+        "checked_candle_ms": 1785858900000,
+        "close_price": 0.1979,
+        "directional_return_percent": 0.5028,
+        "max_favorable_percent": 1.1564,
+        "max_adverse_percent": 0.0503,
+        "first_0_5_percent": {
+          "event": "FAVORABLE_FIRST",
+          "at_ms": 1785839400000
+        },
+        "first_1_0_percent": {
+          "event": "FAVORABLE_FIRST",
+          "at_ms": 1785849300000
+        }
+      },
+      "completed": false,
+      "last_checked_at": 1785859445,
+      "tracking_start_ms": 1785832800000,
+      "available_minutes": 446
+    },
+    "MAIN_MTF|DOODUSDT|SHORT|DIRECTION_RISK_LIMIT|5.5|3.5|1785833493": {
+      "record_key": "MAIN_MTF|DOODUSDT|SHORT|DIRECTION_RISK_LIMIT|5.5|3.5|1785833493",
+      "identity": "MAIN_MTF|DOODUSDT|SHORT|DIRECTION_RISK_LIMIT|5.5|3.5",
+      "recorded_at": 1785833493,
+      "decision": "BLOCK",
+      "would_block": true,
+      "block_code": "DIRECTION_RISK_LIMIT",
+      "block_reason": "SHORT yön ağırlığı 4.5/4.0 sınırını aşacak.",
+      "bot": "MAIN_MTF",
+      "symbol": "DOODUSDT",
+      "direction": "SHORT",
+      "open_signal_count": 6,
+      "total_risk_before": 5.5,
+      "direction_risk_before": 3.5,
+      "data_status": "TRACKING",
+      "reference_price": 0.001247,
+      "reference_candle_ms": 1785833700000,
+      "checkpoints": {
+        "60": {
+          "checked_candle_ms": 1785836700000,
+          "close_price": 0.001246,
+          "directional_return_percent": 0.0802,
+          "max_favorable_percent": 0.1604,
+          "max_adverse_percent": 0.1604,
+          "first_0_5_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        },
+        "240": {
+          "checked_candle_ms": 1785847500000,
+          "close_price": 0.001253,
+          "directional_return_percent": -0.4812,
+          "max_favorable_percent": 0.4812,
+          "max_adverse_percent": 1.6038,
+          "first_0_5_percent": {
+            "event": "ADVERSE_FIRST",
+            "at_ms": 1785844500000
+          },
+          "first_1_0_percent": {
+            "event": "ADVERSE_FIRST",
+            "at_ms": 1785844800000
+          }
+        }
+      },
+      "latest_analysis": {
+        "checked_candle_ms": 1785858900000,
+        "close_price": 0.00125,
+        "directional_return_percent": -0.2406,
+        "max_favorable_percent": 0.4812,
+        "max_adverse_percent": 1.6038,
+        "first_0_5_percent": {
+          "event": "ADVERSE_FIRST",
+          "at_ms": 1785844500000
+        },
+        "first_1_0_percent": {
+          "event": "ADVERSE_FIRST",
+          "at_ms": 1785844800000
+        }
+      },
+      "completed": false,
+      "last_checked_at": 1785859445,
+      "tracking_start_ms": 1785833700000,
+      "available_minutes": 432
+    },
+    "MAIN_MTF|SIGNUSDT|SHORT|SAME_COIN_SAME_DIRECTION|4.5|3.5|1785836221": {
+      "record_key": "MAIN_MTF|SIGNUSDT|SHORT|SAME_COIN_SAME_DIRECTION|4.5|3.5|1785836221",
+      "identity": "MAIN_MTF|SIGNUSDT|SHORT|SAME_COIN_SAME_DIRECTION|4.5|3.5",
+      "recorded_at": 1785836221,
+      "decision": "BLOCK",
+      "would_block": true,
+      "block_code": "SAME_COIN_SAME_DIRECTION",
+      "block_reason": "SIGNUSDT aynı yönde başka açık sinyalle çakışıyor: SWING.",
+      "bot": "MAIN_MTF",
+      "symbol": "SIGNUSDT",
+      "direction": "SHORT",
+      "open_signal_count": 5,
+      "total_risk_before": 4.5,
+      "direction_risk_before": 3.5,
+      "data_status": "TRACKING",
+      "reference_price": 0.006685,
+      "reference_candle_ms": 1785836400000,
+      "checkpoints": {
+        "60": {
+          "checked_candle_ms": 1785839400000,
+          "close_price": 0.006653,
+          "directional_return_percent": 0.4787,
+          "max_favorable_percent": 0.6133,
+          "max_adverse_percent": 0.2842,
+          "first_0_5_percent": {
+            "event": "FAVORABLE_FIRST",
+            "at_ms": 1785837600000
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        },
+        "240": {
+          "checked_candle_ms": 1785850200000,
+          "close_price": 0.006708,
+          "directional_return_percent": -0.3441,
+          "max_favorable_percent": 0.6133,
+          "max_adverse_percent": 0.4787,
+          "first_0_5_percent": {
+            "event": "FAVORABLE_FIRST",
+            "at_ms": 1785837600000
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        }
+      },
+      "latest_analysis": {
+        "checked_candle_ms": 1785858900000,
+        "close_price": 0.00664,
+        "directional_return_percent": 0.6731,
+        "max_favorable_percent": 1.092,
+        "max_adverse_percent": 0.4787,
+        "first_0_5_percent": {
+          "event": "FAVORABLE_FIRST",
+          "at_ms": 1785837600000
+        },
+        "first_1_0_percent": {
+          "event": "FAVORABLE_FIRST",
+          "at_ms": 1785857100000
+        }
+      },
+      "completed": false,
+      "last_checked_at": 1785859445,
+      "tracking_start_ms": 1785836400000,
+      "available_minutes": 387
+    },
+    "MAIN_MTF|ALLOUSDT|SHORT|DIRECTION_RISK_LIMIT|4.5|3.5|1785836222": {
+      "record_key": "MAIN_MTF|ALLOUSDT|SHORT|DIRECTION_RISK_LIMIT|4.5|3.5|1785836222",
+      "identity": "MAIN_MTF|ALLOUSDT|SHORT|DIRECTION_RISK_LIMIT|4.5|3.5",
+      "recorded_at": 1785836222,
+      "decision": "BLOCK",
+      "would_block": true,
+      "block_code": "DIRECTION_RISK_LIMIT",
+      "block_reason": "SHORT yön ağırlığı 4.5/4.0 sınırını aşacak.",
+      "bot": "MAIN_MTF",
+      "symbol": "ALLOUSDT",
+      "direction": "SHORT",
+      "open_signal_count": 5,
+      "total_risk_before": 4.5,
+      "direction_risk_before": 3.5,
+      "data_status": "TRACKING",
+      "reference_price": 0.26022,
+      "reference_candle_ms": 1785836400000,
+      "checkpoints": {
+        "60": {
+          "checked_candle_ms": 1785839400000,
+          "close_price": 0.26076,
+          "directional_return_percent": -0.2075,
+          "max_favorable_percent": 0.3497,
+          "max_adverse_percent": 1.4065,
+          "first_0_5_percent": {
+            "event": "ADVERSE_FIRST",
+            "at_ms": 1785837000000
+          },
+          "first_1_0_percent": {
+            "event": "ADVERSE_FIRST",
+            "at_ms": 1785837000000
+          }
+        },
+        "240": {
+          "checked_candle_ms": 1785850200000,
+          "close_price": 0.2586,
+          "directional_return_percent": 0.6226,
+          "max_favorable_percent": 1.1913,
+          "max_adverse_percent": 1.4065,
+          "first_0_5_percent": {
+            "event": "ADVERSE_FIRST",
+            "at_ms": 1785837000000
+          },
+          "first_1_0_percent": {
+            "event": "ADVERSE_FIRST",
+            "at_ms": 1785837000000
+          }
+        }
+      },
+      "latest_analysis": {
+        "checked_candle_ms": 1785858900000,
+        "close_price": 0.25286,
+        "directional_return_percent": 2.8284,
+        "max_favorable_percent": 3.7891,
+        "max_adverse_percent": 1.4065,
+        "first_0_5_percent": {
+          "event": "ADVERSE_FIRST",
+          "at_ms": 1785837000000
+        },
+        "first_1_0_percent": {
+          "event": "ADVERSE_FIRST",
+          "at_ms": 1785837000000
+        }
+      },
+      "completed": false,
+      "last_checked_at": 1785859445,
+      "tracking_start_ms": 1785836400000,
+      "available_minutes": 387
+    },
+    "MAIN_MTF|ARXUSDT|SHORT|DIRECTION_RISK_LIMIT|4.5|3.5|1785837033": {
+      "record_key": "MAIN_MTF|ARXUSDT|SHORT|DIRECTION_RISK_LIMIT|4.5|3.5|1785837033",
+      "identity": "MAIN_MTF|ARXUSDT|SHORT|DIRECTION_RISK_LIMIT|4.5|3.5",
+      "recorded_at": 1785837033,
+      "decision": "BLOCK",
+      "would_block": true,
+      "block_code": "DIRECTION_RISK_LIMIT",
+      "block_reason": "SHORT yön ağırlığı 4.5/4.0 sınırını aşacak.",
+      "bot": "MAIN_MTF",
+      "symbol": "ARXUSDT",
+      "direction": "SHORT",
+      "open_signal_count": 5,
+      "total_risk_before": 4.5,
+      "direction_risk_before": 3.5,
+      "data_status": "TRACKING",
+      "reference_price": 0.1468,
+      "reference_candle_ms": 1785837300000,
+      "checkpoints": {
+        "60": {
+          "checked_candle_ms": 1785840300000,
+          "close_price": 0.1479,
+          "directional_return_percent": -0.7493,
+          "max_favorable_percent": 0.6131,
+          "max_adverse_percent": 0.8174,
+          "first_0_5_percent": {
+            "event": "FAVORABLE_FIRST",
+            "at_ms": 1785837900000
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        },
+        "240": {
+          "checked_candle_ms": 1785851100000,
+          "close_price": 0.1468,
+          "directional_return_percent": 0.0,
+          "max_favorable_percent": 0.6131,
+          "max_adverse_percent": 0.8174,
+          "first_0_5_percent": {
+            "event": "FAVORABLE_FIRST",
+            "at_ms": 1785837900000
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        }
+      },
+      "latest_analysis": {
+        "checked_candle_ms": 1785858900000,
+        "close_price": 0.1444,
+        "directional_return_percent": 1.6349,
+        "max_favorable_percent": 2.9292,
+        "max_adverse_percent": 0.8174,
+        "first_0_5_percent": {
+          "event": "FAVORABLE_FIRST",
+          "at_ms": 1785837900000
+        },
+        "first_1_0_percent": {
+          "event": "FAVORABLE_FIRST",
+          "at_ms": 1785852900000
+        }
+      },
+      "completed": false,
+      "last_checked_at": 1785859445,
+      "tracking_start_ms": 1785837300000,
+      "available_minutes": 373
+    },
+    "MAIN_MTF|ETCUSDT|SHORT|DIRECTION_RISK_LIMIT|3.5|3.5|1785838879": {
+      "record_key": "MAIN_MTF|ETCUSDT|SHORT|DIRECTION_RISK_LIMIT|3.5|3.5|1785838879",
+      "identity": "MAIN_MTF|ETCUSDT|SHORT|DIRECTION_RISK_LIMIT|3.5|3.5",
+      "recorded_at": 1785838879,
+      "decision": "BLOCK",
+      "would_block": true,
+      "block_code": "DIRECTION_RISK_LIMIT",
+      "block_reason": "SHORT yön ağırlığı 4.5/4.0 sınırını aşacak.",
+      "bot": "MAIN_MTF",
+      "symbol": "ETCUSDT",
+      "direction": "SHORT",
+      "open_signal_count": 4,
+      "total_risk_before": 3.5,
+      "direction_risk_before": 3.5,
+      "data_status": "TRACKING",
+      "reference_price": 6.577,
+      "reference_candle_ms": 1785839100000,
+      "checkpoints": {
+        "60": {
+          "checked_candle_ms": 1785842100000,
+          "close_price": 6.586,
+          "directional_return_percent": -0.1368,
+          "max_favorable_percent": 0.0912,
+          "max_adverse_percent": 0.4865,
+          "first_0_5_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        },
+        "240": {
+          "checked_candle_ms": 1785852900000,
+          "close_price": 6.56,
+          "directional_return_percent": 0.2585,
+          "max_favorable_percent": 0.2889,
+          "max_adverse_percent": 0.7906,
+          "first_0_5_percent": {
+            "event": "ADVERSE_FIRST",
+            "at_ms": 1785845400000
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        }
+      },
+      "latest_analysis": {
+        "checked_candle_ms": 1785858900000,
+        "close_price": 6.58,
+        "directional_return_percent": -0.0456,
+        "max_favorable_percent": 0.4105,
+        "max_adverse_percent": 0.7906,
+        "first_0_5_percent": {
+          "event": "ADVERSE_FIRST",
+          "at_ms": 1785845400000
+        },
+        "first_1_0_percent": {
+          "event": "NONE",
+          "at_ms": 0
+        }
+      },
+      "completed": false,
+      "last_checked_at": 1785859445,
+      "tracking_start_ms": 1785839100000,
+      "available_minutes": 342
+    },
+    "MAIN_MTF|CFXUSDT|SHORT|DIRECTION_RISK_LIMIT|3.5|3.5|1785839815": {
+      "record_key": "MAIN_MTF|CFXUSDT|SHORT|DIRECTION_RISK_LIMIT|3.5|3.5|1785839815",
+      "identity": "MAIN_MTF|CFXUSDT|SHORT|DIRECTION_RISK_LIMIT|3.5|3.5",
+      "recorded_at": 1785839815,
+      "decision": "BLOCK",
+      "would_block": true,
+      "block_code": "DIRECTION_RISK_LIMIT",
+      "block_reason": "SHORT yön ağırlığı 4.5/4.0 sınırını aşacak.",
+      "bot": "MAIN_MTF",
+      "symbol": "CFXUSDT",
+      "direction": "SHORT",
+      "open_signal_count": 4,
+      "total_risk_before": 3.5,
+      "direction_risk_before": 3.5,
+      "data_status": "TRACKING",
+      "reference_price": 0.03915,
+      "reference_candle_ms": 1785840000000,
+      "checkpoints": {
+        "60": {
+          "checked_candle_ms": 1785843000000,
+          "close_price": 0.0392,
+          "directional_return_percent": -0.1277,
+          "max_favorable_percent": 0.0511,
+          "max_adverse_percent": 0.5619,
+          "first_0_5_percent": {
+            "event": "ADVERSE_FIRST",
+            "at_ms": 1785841200000
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        },
+        "240": {
+          "checked_candle_ms": 1785853800000,
+          "close_price": 0.03895,
+          "directional_return_percent": 0.5109,
+          "max_favorable_percent": 0.9195,
+          "max_adverse_percent": 0.5619,
+          "first_0_5_percent": {
+            "event": "ADVERSE_FIRST",
+            "at_ms": 1785841200000
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        }
+      },
+      "latest_analysis": {
+        "checked_candle_ms": 1785858900000,
+        "close_price": 0.03929,
+        "directional_return_percent": -0.3576,
+        "max_favorable_percent": 0.9195,
+        "max_adverse_percent": 0.5619,
+        "first_0_5_percent": {
+          "event": "ADVERSE_FIRST",
+          "at_ms": 1785841200000
+        },
+        "first_1_0_percent": {
+          "event": "NONE",
+          "at_ms": 0
+        }
+      },
+      "completed": false,
+      "last_checked_at": 1785859445,
+      "tracking_start_ms": 1785840000000,
+      "available_minutes": 327
+    },
+    "MAIN_MTF|ETCUSDT|SHORT|DIRECTION_RISK_LIMIT|3.5|3.5|1785839816": {
+      "record_key": "MAIN_MTF|ETCUSDT|SHORT|DIRECTION_RISK_LIMIT|3.5|3.5|1785839816",
+      "identity": "MAIN_MTF|ETCUSDT|SHORT|DIRECTION_RISK_LIMIT|3.5|3.5",
+      "recorded_at": 1785839816,
+      "decision": "BLOCK",
+      "would_block": true,
+      "block_code": "DIRECTION_RISK_LIMIT",
+      "block_reason": "SHORT yön ağırlığı 4.5/4.0 sınırını aşacak.",
+      "bot": "MAIN_MTF",
+      "symbol": "ETCUSDT",
+      "direction": "SHORT",
+      "open_signal_count": 4,
+      "total_risk_before": 3.5,
+      "direction_risk_before": 3.5,
+      "data_status": "TRACKING",
+      "reference_price": 6.58,
+      "reference_candle_ms": 1785840000000,
+      "checkpoints": {
+        "60": {
+          "checked_candle_ms": 1785843000000,
+          "close_price": 6.588,
+          "directional_return_percent": -0.1216,
+          "max_favorable_percent": 0.0,
+          "max_adverse_percent": 0.4407,
+          "first_0_5_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        },
+        "240": {
+          "checked_candle_ms": 1785853800000,
+          "close_price": 6.572,
+          "directional_return_percent": 0.1216,
+          "max_favorable_percent": 0.4559,
+          "max_adverse_percent": 0.7447,
+          "first_0_5_percent": {
+            "event": "ADVERSE_FIRST",
+            "at_ms": 1785845400000
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        }
+      },
+      "latest_analysis": {
+        "checked_candle_ms": 1785858900000,
+        "close_price": 6.58,
+        "directional_return_percent": 0.0,
+        "max_favorable_percent": 0.4559,
+        "max_adverse_percent": 0.7447,
+        "first_0_5_percent": {
+          "event": "ADVERSE_FIRST",
+          "at_ms": 1785845400000
+        },
+        "first_1_0_percent": {
+          "event": "NONE",
+          "at_ms": 0
+        }
+      },
+      "completed": false,
+      "last_checked_at": 1785859445,
+      "tracking_start_ms": 1785840000000,
+      "available_minutes": 327
+    },
+    "MAIN_MTF|HBARUSDT|LONG|ALLOW|3.0|0|1785840709": {
+      "record_key": "MAIN_MTF|HBARUSDT|LONG|ALLOW|3.0|0|1785840709",
+      "identity": "MAIN_MTF|HBARUSDT|LONG|ALLOW|3.0|0",
+      "recorded_at": 1785840709,
+      "decision": "ALLOW",
+      "would_block": false,
+      "block_code": null,
+      "block_reason": null,
+      "bot": "MAIN_MTF",
+      "symbol": "HBARUSDT",
+      "direction": "LONG",
+      "open_signal_count": 4,
+      "total_risk_before": 3.0,
+      "direction_risk_before": 0,
+      "data_status": "TRACKING",
+      "reference_price": 0.07123,
+      "reference_candle_ms": 1785840900000,
+      "checkpoints": {
+        "60": {
+          "checked_candle_ms": 1785843900000,
+          "close_price": 0.07089,
+          "directional_return_percent": -0.4773,
+          "max_favorable_percent": 0.0,
+          "max_adverse_percent": 0.5616,
+          "first_0_5_percent": {
+            "event": "ADVERSE_FIRST",
+            "at_ms": 1785842100000
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        },
+        "240": {
+          "checked_candle_ms": 1785854700000,
+          "close_price": 0.06956,
+          "directional_return_percent": -2.3445,
+          "max_favorable_percent": 0.0,
+          "max_adverse_percent": 2.9061,
+          "first_0_5_percent": {
+            "event": "ADVERSE_FIRST",
+            "at_ms": 1785842100000
+          },
+          "first_1_0_percent": {
+            "event": "ADVERSE_FIRST",
+            "at_ms": 1785849300000
+          }
+        }
+      },
+      "latest_analysis": {
+        "checked_candle_ms": 1785858900000,
+        "close_price": 0.06964,
+        "directional_return_percent": -2.2322,
+        "max_favorable_percent": 0.0,
+        "max_adverse_percent": 2.9201,
+        "first_0_5_percent": {
+          "event": "ADVERSE_FIRST",
+          "at_ms": 1785842100000
+        },
+        "first_1_0_percent": {
+          "event": "ADVERSE_FIRST",
+          "at_ms": 1785849300000
+        }
+      },
+      "completed": false,
+      "last_checked_at": 1785859445,
+      "tracking_start_ms": 1785840900000,
+      "available_minutes": 312
+    },
+    "MAIN_MTF|AVAXUSDT|LONG|ALLOW|4.0|1.0|1785844318": {
+      "record_key": "MAIN_MTF|AVAXUSDT|LONG|ALLOW|4.0|1.0|1785844318",
+      "identity": "MAIN_MTF|AVAXUSDT|LONG|ALLOW|4.0|1.0",
+      "recorded_at": 1785844318,
+      "decision": "ALLOW",
+      "would_block": false,
+      "block_code": null,
+      "block_reason": null,
+      "bot": "MAIN_MTF",
+      "symbol": "AVAXUSDT",
+      "direction": "LONG",
+      "open_signal_count": 5,
+      "total_risk_before": 4.0,
+      "direction_risk_before": 1.0,
+      "data_status": "TRACKING",
+      "reference_price": 6.821,
+      "reference_candle_ms": 1785844500000,
+      "checkpoints": {
+        "60": {
+          "checked_candle_ms": 1785847500000,
+          "close_price": 6.803,
+          "directional_return_percent": -0.2639,
+          "max_favorable_percent": 0.0586,
+          "max_adverse_percent": 0.5864,
+          "first_0_5_percent": {
+            "event": "ADVERSE_FIRST",
+            "at_ms": 1785846000000
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        },
+        "240": {
+          "checked_candle_ms": 1785858300000,
+          "close_price": 6.74,
+          "directional_return_percent": -1.1875,
+          "max_favorable_percent": 0.2346,
+          "max_adverse_percent": 1.9938,
+          "first_0_5_percent": {
+            "event": "ADVERSE_FIRST",
+            "at_ms": 1785846000000
+          },
+          "first_1_0_percent": {
+            "event": "ADVERSE_FIRST",
+            "at_ms": 1785850200000
+          }
+        }
+      },
+      "latest_analysis": {
+        "checked_candle_ms": 1785858900000,
+        "close_price": 6.755,
+        "directional_return_percent": -0.9676,
+        "max_favorable_percent": 0.2346,
+        "max_adverse_percent": 1.9938,
+        "first_0_5_percent": {
+          "event": "ADVERSE_FIRST",
+          "at_ms": 1785846000000
+        },
+        "first_1_0_percent": {
+          "event": "ADVERSE_FIRST",
+          "at_ms": 1785850200000
+        }
+      },
+      "completed": false,
+      "last_checked_at": 1785859445,
+      "tracking_start_ms": 1785844500000,
+      "available_minutes": 252
+    },
+    "MAIN_MTF|PUMPUSDT|LONG|ALLOW|5.0|2.0|1785845235": {
+      "record_key": "MAIN_MTF|PUMPUSDT|LONG|ALLOW|5.0|2.0|1785845235",
+      "identity": "MAIN_MTF|PUMPUSDT|LONG|ALLOW|5.0|2.0",
+      "recorded_at": 1785845235,
+      "decision": "ALLOW",
+      "would_block": false,
+      "block_code": null,
+      "block_reason": null,
+      "bot": "MAIN_MTF",
+      "symbol": "PUMPUSDT",
+      "direction": "LONG",
+      "open_signal_count": 6,
+      "total_risk_before": 5.0,
+      "direction_risk_before": 2.0,
+      "data_status": "TRACKING",
+      "reference_price": 0.002236,
+      "reference_candle_ms": 1785845400000,
+      "checkpoints": {
+        "60": {
+          "checked_candle_ms": 1785848400000,
+          "close_price": 0.002234,
+          "directional_return_percent": -0.0894,
+          "max_favorable_percent": 0.5367,
+          "max_adverse_percent": 0.3131,
+          "first_0_5_percent": {
+            "event": "FAVORABLE_FIRST",
+            "at_ms": 1785846000000
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        }
+      },
+      "latest_analysis": {
+        "checked_candle_ms": 1785858900000,
+        "close_price": 0.002258,
+        "directional_return_percent": 0.9839,
+        "max_favorable_percent": 2.5045,
+        "max_adverse_percent": 0.805,
+        "first_0_5_percent": {
+          "event": "FAVORABLE_FIRST",
+          "at_ms": 1785846000000
+        },
+        "first_1_0_percent": {
+          "event": "FAVORABLE_FIRST",
+          "at_ms": 1785852900000
+        }
+      },
+      "completed": false,
+      "last_checked_at": 1785859445,
+      "tracking_start_ms": 1785845400000,
+      "available_minutes": 236
+    },
+    "MAIN_MTF|TRXUSDT|LONG|ALLOW|6.0|3.0|1785849644": {
+      "record_key": "MAIN_MTF|TRXUSDT|LONG|ALLOW|6.0|3.0|1785849644",
+      "identity": "MAIN_MTF|TRXUSDT|LONG|ALLOW|6.0|3.0",
+      "recorded_at": 1785849644,
+      "decision": "ALLOW",
+      "would_block": false,
+      "block_code": null,
+      "block_reason": null,
+      "bot": "MAIN_MTF",
+      "symbol": "TRXUSDT",
+      "direction": "LONG",
+      "open_signal_count": 7,
+      "total_risk_before": 6.0,
+      "direction_risk_before": 3.0,
+      "data_status": "TRACKING",
+      "reference_price": 0.32978,
+      "reference_candle_ms": 1785849900000,
+      "checkpoints": {
+        "60": {
+          "checked_candle_ms": 1785852900000,
+          "close_price": 0.32949,
+          "directional_return_percent": -0.0879,
+          "max_favorable_percent": 0.0364,
+          "max_adverse_percent": 0.1213,
+          "first_0_5_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        }
+      },
+      "latest_analysis": {
+        "checked_candle_ms": 1785858900000,
+        "close_price": 0.32834,
+        "directional_return_percent": -0.4367,
+        "max_favorable_percent": 0.0364,
+        "max_adverse_percent": 0.8127,
+        "first_0_5_percent": {
+          "event": "ADVERSE_FIRST",
+          "at_ms": 1785858600000
+        },
+        "first_1_0_percent": {
+          "event": "NONE",
+          "at_ms": 0
+        }
+      },
+      "completed": false,
+      "last_checked_at": 1785859445,
+      "tracking_start_ms": 1785849900000,
+      "available_minutes": 163
+    },
+    "MAIN_MTF|SANDUSDT|SHORT|ALLOW|5.0|3.0|1785852384": {
+      "record_key": "MAIN_MTF|SANDUSDT|SHORT|ALLOW|5.0|3.0|1785852384",
+      "identity": "MAIN_MTF|SANDUSDT|SHORT|ALLOW|5.0|3.0",
+      "recorded_at": 1785852384,
+      "decision": "ALLOW",
+      "would_block": false,
+      "block_code": null,
+      "block_reason": null,
+      "bot": "MAIN_MTF",
+      "symbol": "SANDUSDT",
+      "direction": "SHORT",
+      "open_signal_count": 6,
+      "total_risk_before": 5.0,
+      "direction_risk_before": 3.0,
+      "data_status": "TRACKING",
+      "reference_price": 0.0418,
+      "reference_candle_ms": 1785852600000,
+      "checkpoints": {
+        "60": {
+          "checked_candle_ms": 1785855600000,
+          "close_price": 0.04193,
+          "directional_return_percent": -0.311,
+          "max_favorable_percent": 0.3589,
+          "max_adverse_percent": 0.3589,
+          "first_0_5_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        }
+      },
+      "latest_analysis": {
+        "checked_candle_ms": 1785858900000,
+        "close_price": 0.04189,
+        "directional_return_percent": -0.2153,
+        "max_favorable_percent": 0.3589,
+        "max_adverse_percent": 0.3589,
+        "first_0_5_percent": {
+          "event": "NONE",
+          "at_ms": 0
+        },
+        "first_1_0_percent": {
+          "event": "NONE",
+          "at_ms": 0
+        }
+      },
+      "completed": false,
+      "last_checked_at": 1785859445,
+      "tracking_start_ms": 1785852600000,
+      "available_minutes": 117
+    },
+    "MAIN_MTF|IMXUSDT|SHORT|DIRECTION_RISK_LIMIT|5.5|4.0|1785853223": {
+      "record_key": "MAIN_MTF|IMXUSDT|SHORT|DIRECTION_RISK_LIMIT|5.5|4.0|1785853223",
+      "identity": "MAIN_MTF|IMXUSDT|SHORT|DIRECTION_RISK_LIMIT|5.5|4.0",
+      "recorded_at": 1785853223,
+      "decision": "BLOCK",
+      "would_block": true,
+      "block_code": "DIRECTION_RISK_LIMIT",
+      "block_reason": "SHORT yön ağırlığı 5.0/4.0 sınırını aşacak.",
+      "bot": "MAIN_MTF",
+      "symbol": "IMXUSDT",
+      "direction": "SHORT",
+      "open_signal_count": 7,
+      "total_risk_before": 5.5,
+      "direction_risk_before": 4.0,
+      "data_status": "TRACKING",
+      "reference_price": 0.1089,
+      "reference_candle_ms": 1785853500000,
+      "checkpoints": {
+        "60": {
+          "checked_candle_ms": 1785856500000,
+          "close_price": 0.1087,
+          "directional_return_percent": 0.1837,
+          "max_favorable_percent": 0.2755,
+          "max_adverse_percent": 0.3673,
+          "first_0_5_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        }
+      },
+      "latest_analysis": {
+        "checked_candle_ms": 1785858900000,
+        "close_price": 0.1097,
+        "directional_return_percent": -0.7346,
+        "max_favorable_percent": 0.4591,
+        "max_adverse_percent": 0.7346,
+        "first_0_5_percent": {
+          "event": "ADVERSE_FIRST",
+          "at_ms": 1785858300000
+        },
+        "first_1_0_percent": {
+          "event": "NONE",
+          "at_ms": 0
+        }
+      },
+      "completed": false,
+      "last_checked_at": 1785859445,
+      "tracking_start_ms": 1785853500000,
+      "available_minutes": 103
+    },
+    "MAIN_MTF|SIGNUSDT|SHORT|SAME_COIN_SAME_DIRECTION|5.5|4.0|1785854073": {
+      "record_key": "MAIN_MTF|SIGNUSDT|SHORT|SAME_COIN_SAME_DIRECTION|5.5|4.0|1785854073",
+      "identity": "MAIN_MTF|SIGNUSDT|SHORT|SAME_COIN_SAME_DIRECTION|5.5|4.0",
+      "recorded_at": 1785854073,
+      "decision": "BLOCK",
+      "would_block": true,
+      "block_code": "SAME_COIN_SAME_DIRECTION",
+      "block_reason": "SIGNUSDT aynı yönde başka açık sinyalle çakışıyor: SWING.",
+      "bot": "MAIN_MTF",
+      "symbol": "SIGNUSDT",
+      "direction": "SHORT",
+      "open_signal_count": 7,
+      "total_risk_before": 5.5,
+      "direction_risk_before": 4.0,
+      "data_status": "TRACKING",
+      "reference_price": 0.006639,
+      "reference_candle_ms": 1785854100000,
+      "checkpoints": {
+        "60": {
+          "checked_candle_ms": 1785857100000,
+          "close_price": 0.006618,
+          "directional_return_percent": 0.3163,
+          "max_favorable_percent": 0.3464,
+          "max_adverse_percent": 0.2109,
+          "first_0_5_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          },
+          "first_1_0_percent": {
+            "event": "NONE",
+            "at_ms": 0
+          }
+        }
+      },
+      "latest_analysis": {
+        "checked_candle_ms": 1785858900000,
+        "close_price": 0.00664,
+        "directional_return_percent": -0.0151,
+        "max_favorable_percent": 0.4067,
+        "max_adverse_percent": 0.2109,
+        "first_0_5_percent": {
+          "event": "NONE",
+          "at_ms": 0
+        },
+        "first_1_0_percent": {
+          "event": "NONE",
+          "at_ms": 0
+        }
+      },
+      "completed": false,
+      "last_checked_at": 1785859445,
+      "tracking_start_ms": 1785854100000,
+      "available_minutes": 89
+    },
+    "MAIN_MTF|NESUSDT|SHORT|DIRECTION_RISK_LIMIT|5.0|4.0|1785857735": {
+      "record_key": "MAIN_MTF|NESUSDT|SHORT|DIRECTION_RISK_LIMIT|5.0|4.0|1785857735",
+      "identity": "MAIN_MTF|NESUSDT|SHORT|DIRECTION_RISK_LIMIT|5.0|4.0",
+      "recorded_at": 1785857735,
+      "decision": "BLOCK",
+      "would_block": true,
+      "block_code": "DIRECTION_RISK_LIMIT",
+      "block_reason": "SHORT yön ağırlığı 5.0/4.0 sınırını aşacak.",
+      "bot": "MAIN_MTF",
+      "symbol": "NESUSDT",
+      "direction": "SHORT",
+      "open_signal_count": 6,
+      "total_risk_before": 5.0,
+      "direction_risk_before": 4.0,
+      "data_status": "TRACKING",
+      "reference_price": 0.1982,
+      "reference_candle_ms": 1785858000000,
+      "checkpoints": {},
+      "latest_analysis": {
+        "checked_candle_ms": 1785858900000,
+        "close_price": 0.1976,
+        "directional_return_percent": 0.3027,
+        "max_favorable_percent": 0.3027,
+        "max_adverse_percent": 0.0,
+        "first_0_5_percent": {
+          "event": "NONE",
+          "at_ms": 0
+        },
+        "first_1_0_percent": {
+          "event": "NONE",
+          "at_ms": 0
+        }
+      },
+      "completed": false,
+      "last_checked_at": 1785859445,
+      "tracking_start_ms": 1785858000000,
+      "available_minutes": 28
+    }
+  },
   "summary": {
-    "source_records": 0,
-    "tracked_records": 0,
-    "tracking_records": 0,
+    "source_records": 16,
+    "tracked_records": 16,
+    "tracking_records": 16,
     "completed_records": 0,
     "data_error_records": 0,
-    "by_decision": {},
-    "by_block_code": {}
+    "by_decision": {
+      "ALLOW": {
+        "records": 6,
+        "records_60m": 6,
+        "avg_return_60m_percent": -0.1546,
+        "avg_mfe_60m_percent": 0.2154,
+        "avg_mae_60m_percent": 0.3319,
+        "records_240m": 3,
+        "avg_return_240m_percent": -0.8924,
+        "avg_mfe_240m_percent": 0.3799,
+        "avg_mae_240m_percent": 1.6501,
+        "first_0_5_favorable": 2,
+        "first_0_5_adverse": 3,
+        "first_0_5_ambiguous": 0,
+        "first_0_5_none": 1,
+        "first_1_0_favorable": 2,
+        "first_1_0_adverse": 2,
+        "first_1_0_ambiguous": 0,
+        "first_1_0_none": 2
+      },
+      "BLOCK": {
+        "records": 10,
+        "records_60m": 9,
+        "avg_return_60m_percent": -0.0316,
+        "avg_mfe_60m_percent": 0.2779,
+        "avg_mae_60m_percent": 0.5262,
+        "records_240m": 7,
+        "avg_return_240m_percent": 0.0983,
+        "avg_mfe_240m_percent": 0.6519,
+        "avg_mae_240m_percent": 0.9148,
+        "first_0_5_favorable": 2,
+        "first_0_5_adverse": 6,
+        "first_0_5_ambiguous": 0,
+        "first_0_5_none": 2,
+        "first_1_0_favorable": 2,
+        "first_1_0_adverse": 2,
+        "first_1_0_ambiguous": 0,
+        "first_1_0_none": 6
+      }
+    },
+    "by_block_code": {
+      "ALLOW": {
+        "records": 6,
+        "records_60m": 6,
+        "avg_return_60m_percent": -0.1546,
+        "avg_mfe_60m_percent": 0.2154,
+        "avg_mae_60m_percent": 0.3319,
+        "records_240m": 3,
+        "avg_return_240m_percent": -0.8924,
+        "avg_mfe_240m_percent": 0.3799,
+        "avg_mae_240m_percent": 1.6501,
+        "first_0_5_favorable": 2,
+        "first_0_5_adverse": 3,
+        "first_0_5_ambiguous": 0,
+        "first_0_5_none": 1,
+        "first_1_0_favorable": 2,
+        "first_1_0_adverse": 2,
+        "first_1_0_ambiguous": 0,
+        "first_1_0_none": 2
+      },
+      "DIRECTION_RISK_LIMIT": {
+        "records": 8,
+        "records_60m": 7,
+        "avg_return_60m_percent": -0.1541,
+        "avg_mfe_60m_percent": 0.2201,
+        "avg_mae_60m_percent": 0.6058,
+        "records_240m": 6,
+        "avg_return_240m_percent": 0.1721,
+        "avg_mfe_240m_percent": 0.6583,
+        "avg_mae_240m_percent": 0.9875,
+        "first_0_5_favorable": 1,
+        "first_0_5_adverse": 6,
+        "first_0_5_ambiguous": 0,
+        "first_0_5_none": 1,
+        "first_1_0_favorable": 1,
+        "first_1_0_adverse": 2,
+        "first_1_0_ambiguous": 0,
+        "first_1_0_none": 5
+      },
+      "SAME_COIN_SAME_DIRECTION": {
+        "records": 2,
+        "records_60m": 2,
+        "avg_return_60m_percent": 0.3975,
+        "avg_mfe_60m_percent": 0.4798,
+        "avg_mae_60m_percent": 0.2475,
+        "records_240m": 1,
+        "avg_return_240m_percent": -0.3441,
+        "avg_mfe_240m_percent": 0.6133,
+        "avg_mae_240m_percent": 0.4787,
+        "first_0_5_favorable": 1,
+        "first_0_5_adverse": 0,
+        "first_0_5_ambiguous": 0,
+        "first_0_5_none": 1,
+        "first_1_0_favorable": 1,
+        "first_1_0_adverse": 0,
+        "first_1_0_ambiguous": 0,
+        "first_1_0_none": 1
+      }
+    }
   },
-  "last_update": 0
+  "last_update": 1785859445
 }
