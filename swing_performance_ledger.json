@@ -2247,7 +2247,7 @@
       "worst_adverse_r": 0.5919,
       "best_favorable_price": 0.02701,
       "worst_adverse_price": 0.02864,
-      "last_market_price": 0.02769,
+      "last_market_price": 0.02789,
       "direction_status": "DIRECTION_CORRECT",
       "direction_reason": "24 saat son fiyatına göre sınıflandırıldı",
       "trade_outcome": "TP1",
@@ -2278,7 +2278,7 @@
       "post_stop_follow": null,
       "last_updated_at": 1785696020,
       "last_updated_at_tr": "2026-08-02 21:40:20",
-      "last_tracking_at": 1785903900,
+      "last_tracking_at": 1785914400,
       "tp1_hit_at": 1785728700,
       "tp1_hit": true,
       "tp2_hit": false,
@@ -2673,19 +2673,26 @@
       ],
       "diagnosis": {
         "version": "SWING_DIAGNOSIS_V1",
-        "code": "DIRECTION_CORRECT",
-        "primary": "ÖNCE LEHE GİTTİ, SONRA SWING YAPISI BOZULDU",
-        "confidence": "ORTA",
+        "code": "DIRECTION_RIGHT_STOP_TIGHT",
+        "primary": "YÖN DOĞRUYDU, STOP ERKEN / DAR KALDI",
+        "confidence": "YÜKSEK",
         "factors": [
-          "Stop öncesinde işlem en az 0.35R lehe hareket etti."
+          "Stop öncesinde işlem en az 0.35R lehe hareket etti.",
+          "Stop sonrası fiyat TP1 seviyesine ulaştı."
         ],
         "duration_minutes": 1993,
         "best_favorable_r": 0.7642,
         "worst_adverse_r": 1.673,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teşhis kesin piyasa sebebi değildir; kayıtlı zamanlama, trend, hacim ve fiyat hareketine dayalı teknik değerlendirmedir."
       },
-      "post_stop_follow": null,
+      "post_stop_follow": {
+        "status": "TARGET_RETURN",
+        "returned_level": "TP1",
+        "age_minutes": 175,
+        "updated_at": 1785914641,
+        "updated_at_tr": "2026-08-05 10:24:01"
+      },
       "last_updated_at": 1785876146,
       "last_updated_at_tr": "2026-08-04 23:42:26",
       "last_tracking_at": 1785891300,
@@ -2848,19 +2855,20 @@
         "30m": 1.148,
         "60m": 1.148,
         "240m": 0.0499,
-        "720m": -0.4742
+        "720m": -0.4742,
+        "1440m": -3.0696
       },
-      "latest_price": 0.08211,
-      "latest_directional_move_percent": -2.4582,
+      "latest_price": 0.0826,
+      "latest_directional_move_percent": -3.0696,
       "best_favorable_percent": 1.1981,
-      "worst_adverse_percent": 2.7455,
+      "worst_adverse_percent": 3.0696,
       "best_favorable_r": 0.5333,
       "worst_adverse_r": 1.222,
       "best_favorable_price": 0.07917,
       "worst_adverse_price": 0.08233,
       "last_market_price": 0.08218,
-      "direction_status": "OPEN",
-      "direction_reason": "Gönderim sonrası Swing yönü izleniyor",
+      "direction_status": "DIRECTION_WRONG",
+      "direction_reason": "24 saat içinde fiyat Swing yönünün tersine gitti",
       "trade_outcome": "STOP",
       "trade_result_r": -1.1387,
       "milestones": [
@@ -2887,8 +2895,8 @@
         "note": "Bu teşhis kesin piyasa sebebi değildir; kayıtlı zamanlama, trend, hacim ve fiyat hareketine dayalı teknik değerlendirmedir."
       },
       "post_stop_follow": null,
-      "last_updated_at": 1785904127,
-      "last_updated_at_tr": "2026-08-05 07:28:47",
+      "last_updated_at": 1785914640,
+      "last_updated_at_tr": "2026-08-05 10:24:00",
       "last_tracking_at": 1785900900,
       "tp1_hit_at": 0,
       "tp1_hit": false,
@@ -2897,7 +2905,9 @@
       "trade_last_updated_at": 1785904128,
       "trade_last_updated_at_tr": "2026-08-05 07:28:48",
       "trade_closed_at": 1785904128,
-      "trade_closed_at_tr": "2026-08-05 07:28:48"
+      "trade_closed_at_tr": "2026-08-05 07:28:48",
+      "direction_finalized_at": 1785914640,
+      "direction_finalized_at_tr": "2026-08-05 10:24:00"
     },
     {
       "id": "CELOUSDT_SHORT_1H_ONAYLI_1785904310",
@@ -2942,16 +2952,19 @@
       "vol_4h": 1.5464916492502903,
       "vol_1h": 1.343375943893283,
       "vol_15m": 0.045950722528329345,
-      "snapshots": {},
-      "latest_price": 0.06031,
-      "latest_directional_move_percent": 0.0,
-      "best_favorable_percent": 0.0,
-      "worst_adverse_percent": 0.0,
-      "best_favorable_r": 0.0,
-      "worst_adverse_r": 0.0,
-      "best_favorable_price": 0.06031,
-      "worst_adverse_price": 0.06031,
-      "last_market_price": 0.06031,
+      "snapshots": {
+        "30m": -0.0663,
+        "60m": -0.0663
+      },
+      "latest_price": 0.06035,
+      "latest_directional_move_percent": -0.0663,
+      "best_favorable_percent": 0.1325,
+      "worst_adverse_percent": 0.6296,
+      "best_favorable_r": 0.0778,
+      "worst_adverse_r": 0.3694,
+      "best_favorable_price": 0.06028,
+      "worst_adverse_price": 0.06074,
+      "last_market_price": 0.06035,
       "direction_status": "OPEN",
       "direction_reason": "Gönderim sonrası Swing yönü izleniyor",
       "trade_outcome": "OPEN",
@@ -2965,14 +2978,21 @@
         "factors": [],
         "provisional": true
       },
-      "post_stop_follow": null
+      "post_stop_follow": null,
+      "last_updated_at": 1785914640,
+      "last_updated_at_tr": "2026-08-05 10:24:00",
+      "last_tracking_at": 1785914400,
+      "tp1_hit_at": 0,
+      "tp1_hit": false,
+      "tp2_hit": false,
+      "tp3_hit": false
     }
   ],
   "summary": {
     "total": 28,
-    "direction_open": 2,
+    "direction_open": 1,
     "direction_correct": 12,
-    "direction_wrong": 11,
+    "direction_wrong": 12,
     "direction_mixed": 3,
     "trade_open": 1,
     "tp1": 1,
@@ -2988,10 +3008,10 @@
     "diagnosis_open": 1,
     "diagnosis_success": 3,
     "diagnosis_early_failed": 0,
-    "diagnosis_delayed_direction": 7,
+    "diagnosis_delayed_direction": 8,
     "diagnosis_weak_trend": 0,
     "diagnosis_setup_failed": 1
   },
-  "updated_at": 1785904310,
-  "updated_at_tr": "2026-08-05 07:31:50"
+  "updated_at": 1785914641,
+  "updated_at_tr": "2026-08-05 10:24:01"
 }
