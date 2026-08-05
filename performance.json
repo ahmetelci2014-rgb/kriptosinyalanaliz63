@@ -18306,8 +18306,8 @@
       "radar": 0,
       "tp1": 2,
       "tp2": 2,
-      "tp3": 0,
-      "sl": 2,
+      "tp3": 1,
+      "sl": 3,
       "be": 0,
       "expired": 0,
       "long": 3,
@@ -18330,7 +18330,7 @@
           "radar": 0,
           "tp1": 1,
           "tp2": 1,
-          "tp3": 0,
+          "tp3": 1,
           "sl": 0,
           "be": 0,
           "expired": 0
@@ -18371,21 +18371,26 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         }
       },
       "direction_stops": {
         "LONG": 1,
-        "SHORT": 1
+        "SHORT": 2
       },
       "stop_times": {
         "TRUSTUSDT": 1785965464,
-        "RLSUSDT": 1785966350
+        "RLSUSDT": 1785966350,
+        "APRUSDT": 1785968151
       },
-      "closed_times": {},
-      "closed_results": {},
+      "closed_times": {
+        "SOONUSDT": 1785968150
+      },
+      "closed_results": {
+        "SOONUSDT": "TP3"
+      },
       "closed_history": [
         {
           "time": "00:31:04",
@@ -18446,6 +18451,26 @@
           "exit": 0.22608715,
           "source": "15M_ENTRY",
           "score": 96
+        },
+        {
+          "time": "01:15:50",
+          "symbol": "SOONUSDT",
+          "direction": "LONG",
+          "result": "TP3",
+          "entry": 0.2232,
+          "exit": 0.2275994667,
+          "source": "15M_ENTRY",
+          "score": 96
+        },
+        {
+          "time": "01:15:51",
+          "symbol": "APRUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.1933,
+          "exit": 0.1952,
+          "source": "15M_ENTRY",
+          "score": 92
         }
       ],
       "sl_after_tp1": 0,
@@ -18453,9 +18478,9 @@
       "sl_after_no_return": 0
     }
   },
-  "last_update": 1785967278,
+  "last_update": 1785968152,
   "last_open_summary": 1785962761,
-  "last_status_message": 1785962145,
+  "last_status_message": 1785968407,
   "last_daily_report": "2026-08-05",
   "sl_after_follow": {
     "TRUSTUSDT_LONG_1785965464": {
@@ -18494,6 +18519,28 @@
       "risk_percent": 0.358,
       "stopped_at": 1785966351,
       "stop_exit": 0.001698,
+      "reported_checkpoints": [
+        30
+      ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "APRUSDT_SHORT_1785968151": {
+      "trade_id": "APRUSDT_SHORT_15M_ENTRY_1785966628",
+      "symbol": "APRUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.1933,
+      "tp1": 0.192299467,
+      "tp2": 0.1913898915,
+      "tp3": 0.1903893585,
+      "sl": 0.195119151,
+      "score": 92,
+      "risk_percent": 0.941,
+      "stopped_at": 1785968151,
+      "stop_exit": 0.1952,
       "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
