@@ -17615,17 +17615,17 @@
       "sl_after_no_return": 4
     },
     "2026-08-05": {
-      "opened": 14,
+      "opened": 15,
       "radar": 0,
       "tp1": 10,
       "tp2": 2,
       "tp3": 1,
-      "sl": 5,
+      "sl": 6,
       "be": 10,
       "expired": 0,
       "long": 4,
-      "short": 10,
-      "normal": 10,
+      "short": 11,
+      "normal": 11,
       "radar_trade": 4,
       "coins": {
         "HUSDT": {
@@ -17674,7 +17674,7 @@
           "tp1": 1,
           "tp2": 1,
           "tp3": 1,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -17729,7 +17729,7 @@
           "expired": 0
         },
         "ETCUSDT": {
-          "opened": 1,
+          "opened": 2,
           "radar": 0,
           "tp1": 1,
           "tp2": 1,
@@ -17800,7 +17800,7 @@
         }
       },
       "direction_stops": {
-        "LONG": 1,
+        "LONG": 2,
         "SHORT": 4
       },
       "stop_times": {
@@ -17808,7 +17808,8 @@
         "ORDIUSDT": 1785915965,
         "REUSDT": 1785916875,
         "BLENDUSDT": 1785921360,
-        "ZBTUSDT": 1785933961
+        "ZBTUSDT": 1785933961,
+        "ENAUSDT": 1785935767
       },
       "closed_times": {
         "HUSDT": 1785877278,
@@ -18116,14 +18117,24 @@
           "exit": 0.10579,
           "source": "5M_RADAR",
           "score": 100
+        },
+        {
+          "time": "16:16:07",
+          "symbol": "ENAUSDT",
+          "direction": "LONG",
+          "result": "SL",
+          "entry": 0.09196,
+          "exit": 0.09103,
+          "source": "15M_ENTRY",
+          "score": 96
         }
       ],
       "sl_after_tp1": 1,
       "sl_after_tp2": 0,
-      "sl_after_no_return": 2
+      "sl_after_no_return": 3
     }
   },
-  "last_update": 1785934877,
+  "last_update": 1785935974,
   "last_open_summary": 1785931282,
   "last_status_message": 1785934167,
   "last_daily_report": "2026-08-04",
@@ -18146,12 +18157,15 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-08-05"
     },
     "ZBTUSDT_SHORT_1785933961": {
       "trade_id": "ZBTUSDT_SHORT_5M_RADAR_1785931549",
@@ -18167,6 +18181,28 @@
       "risk_percent": 1.477,
       "stopped_at": 1785933961,
       "stop_exit": 0.10579,
+      "reported_checkpoints": [
+        30
+      ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "ENAUSDT_LONG_1785935767": {
+      "trade_id": "ENAUSDT_LONG_15M_ENTRY_1785933343",
+      "symbol": "ENAUSDT",
+      "direction": "LONG",
+      "source": "15M_ENTRY",
+      "entry": 0.09196,
+      "tp1": 0.0924710997,
+      "tp2": 0.0929357358,
+      "tp3": 0.0934468355,
+      "sl": 0.0910307278,
+      "score": 96,
+      "risk_percent": 1.011,
+      "stopped_at": 1785935767,
+      "stop_exit": 0.09103,
       "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
