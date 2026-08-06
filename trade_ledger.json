@@ -45590,17 +45590,22 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "SL",
+      "r_result": -1.0,
+      "exit_price": 62.53,
+      "closed_at": 1786024870,
+      "closed_day": "2026-08-06",
       "events": [
         {
           "time": 1786023327,
           "event": "OPENED",
           "price": 61.39
+        },
+        {
+          "time": 1786024870,
+          "event": "SL",
+          "price": 62.53
         }
       ],
       "bot_version": "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27",
@@ -45638,15 +45643,52 @@
       "market_guard_short_allowed": true,
       "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %0.05 | ETHUSDT: 15M EMA20 altı, 5M %0.09 | SOLUSDT: 15M EMA20 altı, 5M %0.08",
       "best_favorable_percent": 0.5213,
-      "worst_adverse_percent": 0.8633,
+      "worst_adverse_percent": 1.8896,
       "best_favorable_r": 0.2975,
-      "worst_adverse_r": 0.4927,
+      "worst_adverse_r": 1.0783,
       "best_favorable_price": 61.07,
-      "worst_adverse_price": 61.92,
-      "last_market_price": 61.8,
+      "worst_adverse_price": 62.55,
+      "last_market_price": 62.53,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786023960
+      "last_tracking_at": 1786024620,
+      "duration_minutes": 25,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "KURULUM DEVAM ETMEDI",
+        "confidence": "ORTA",
+        "factors": [
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Ust zaman dilimi trend gucu sinirdaydi."
+        ],
+        "duration_minutes": 25,
+        "best_favorable_r": 0.2975,
+        "worst_adverse_r": 1.0783,
+        "provisional": true,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "stop_root_cause": {
+        "version": "STOP_ROOT_CAUSE_V1",
+        "primary": "TAKIP_SURUYOR",
+        "label": "Takip sürüyor",
+        "preliminary": "ZAYIF_TREND_HACIM",
+        "preliminary_label": "Zayıf trend/hacim",
+        "secondary": [],
+        "confidence": "DUSUK",
+        "provisional": true,
+        "factors": [
+          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Üst zaman dilimi trend gücü sınırdaydı."
+        ],
+        "metrics": {
+          "duration_minutes": 25,
+          "mfe_r": 0.2975,
+          "mae_r": 1.0783,
+          "risk_percent": 1.752,
+          "return_minutes": null
+        },
+        "updated_at": 1786024870
+      }
     }
   },
-  "last_update": 1786023968
+  "last_update": 1786024870
 }
