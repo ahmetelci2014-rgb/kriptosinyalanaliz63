@@ -18304,9 +18304,9 @@
     "2026-08-06": {
       "opened": 7,
       "radar": 0,
-      "tp1": 2,
-      "tp2": 2,
-      "tp3": 2,
+      "tp1": 3,
+      "tp2": 3,
+      "tp3": 3,
       "sl": 4,
       "be": 0,
       "expired": 0,
@@ -18388,9 +18388,9 @@
         "KATUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
-          "tp2": 0,
-          "tp3": 0,
+          "tp1": 1,
+          "tp2": 1,
+          "tp3": 1,
           "sl": 0,
           "be": 0,
           "expired": 0
@@ -18408,11 +18408,13 @@
       },
       "closed_times": {
         "SOONUSDT": 1785968150,
-        "THETAUSDT": 1785977152
+        "THETAUSDT": 1785977152,
+        "KATUSDT": 1785979867
       },
       "closed_results": {
         "SOONUSDT": "TP3",
-        "THETAUSDT": "TP3"
+        "THETAUSDT": "TP3",
+        "KATUSDT": "TP3"
       },
       "closed_history": [
         {
@@ -18514,14 +18516,44 @@
           "exit": 0.1771,
           "source": "5M_RADAR",
           "score": 98
+        },
+        {
+          "time": "04:31:06",
+          "symbol": "KATUSDT",
+          "direction": "SHORT",
+          "result": "TP1",
+          "entry": 0.004409,
+          "exit": 0.004395137,
+          "source": "5M_RADAR",
+          "score": 100
+        },
+        {
+          "time": "04:31:06",
+          "symbol": "KATUSDT",
+          "direction": "SHORT",
+          "result": "TP2",
+          "entry": 0.004409,
+          "exit": 0.0043825342,
+          "source": "5M_RADAR",
+          "score": 100
+        },
+        {
+          "time": "04:31:07",
+          "symbol": "KATUSDT",
+          "direction": "SHORT",
+          "result": "TP3",
+          "entry": 0.004409,
+          "exit": 0.0043686711,
+          "source": "5M_RADAR",
+          "score": 100
         }
       ],
       "sl_after_tp1": 0,
       "sl_after_tp2": 0,
-      "sl_after_no_return": 0
+      "sl_after_no_return": 1
     }
   },
-  "last_update": 1785978953,
+  "last_update": 1785979869,
   "last_open_summary": 1785974472,
   "last_status_message": 1785976544,
   "last_daily_report": "2026-08-05",
@@ -18544,12 +18576,15 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-08-06"
     },
     "RLSUSDT_SHORT_1785966351": {
       "trade_id": "RLSUSDT_SHORT_5M_RADAR_1785965688",
@@ -18615,7 +18650,9 @@
       "risk_percent": 0.676,
       "stopped_at": 1785978066,
       "stop_exit": 0.1771,
-      "reported_checkpoints": [],
+      "reported_checkpoints": [
+        30
+      ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
