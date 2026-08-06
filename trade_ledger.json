@@ -45901,39 +45901,47 @@
       "duration_minutes": 314,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "ONCE LEHE GITTI, SONRA TERS DONDU",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
           "Stop oncesinde islem en az 0.35R lehe hareket etti.",
-          "Ust zaman dilimi trend gucu sinirdaydi."
+          "Ust zaman dilimi trend gucu sinirdaydi.",
+          "Stop sonrasi fiyat TP2 seviyesine dondu."
         ],
         "duration_minutes": 314,
         "best_favorable_r": 0.5465,
         "worst_adverse_r": 1.0339,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ZAYIF_TREND_HACIM",
-        "preliminary_label": "Zayıf trend/hacim",
+        "primary": "FITIL_DAR_STOP",
+        "label": "Fitil/dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
-          "Üst zaman dilimi trend gücü sınırdaydı."
+          "Stop sonrası fiyat TP2 seviyesine 69 dakikada döndü.",
+          "Üst zaman dilimi trend gücü sınırdaydı.",
+          "Stop sonrası hedef dönüşü fitil veya giriş zamanlaması ihtimalini güçlendirdi."
         ],
         "metrics": {
           "duration_minutes": 314,
           "mfe_r": 0.5465,
           "mae_r": 1.0339,
           "risk_percent": 1.652,
-          "return_minutes": null
+          "return_minutes": 69.0
         },
-        "updated_at": 1786047534
+        "updated_at": 1786051687
+      },
+      "post_stop_follow": {
+        "returned_level": "TP2",
+        "age_minutes": 69,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1786051687
       }
     },
     "GPSUSDT_LONG_15M_ENTRY_1786029651": {
@@ -46059,5 +46067,5 @@
       }
     }
   },
-  "last_update": 1786047534
+  "last_update": 1786051687
 }
