@@ -1,5 +1,5 @@
 {
-  "version": "RANGE_CYCLE_SHADOW_V2_2026_08_04",
+  "version": "RANGE_CYCLE_SHADOW_V3_DIAGNOSTIC_2026_08_06",
   "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS",
   "cycle_logic": "SUPPORT_LONG_TO_RESISTANCE_EXIT_THEN_SHORT_TO_SUPPORT_EXIT",
   "open_positions": {
@@ -44,13 +44,26 @@
       "status": "OPEN",
       "opened_at": 1785989260,
       "entry_candle_ms": 1785988800000,
-      "last_checked_candle_ms": 1785998100000,
+      "last_checked_candle_ms": 1786000500000,
       "gross_r": 0.0,
       "net_r": 0.0,
       "outcome": null,
       "closed_at": 0,
       "reverse_ready": false,
-      "last_market_price": 196.8
+      "last_market_price": 196.3,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5728,
+        "cost_to_stop_percent_ratio": 0.5728,
+        "confirmation_count": 1,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      }
     },
     "COAIUSDT_LONG_1785988800000": {
       "symbol": "COAIUSDT",
@@ -93,56 +106,198 @@
       "status": "OPEN",
       "opened_at": 1785989260,
       "entry_candle_ms": 1785988800000,
-      "last_checked_candle_ms": 1785998100000,
+      "last_checked_candle_ms": 1786000500000,
       "gross_r": 0.0,
       "net_r": 0.0,
       "outcome": null,
       "closed_at": 0,
       "reverse_ready": false,
-      "last_market_price": 0.3394
+      "last_market_price": 0.3378,
+      "entry_diagnostics": {
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.26,
+        "cost_to_stop_percent_ratio": 0.26,
+        "confirmation_count": 1,
+        "flags": [
+          "SINGLE_CONFIRMATION",
+          "TREND_PRESSURE"
+        ],
+        "shadow_only": true
+      }
     },
-    "HYPEUSDT_LONG_1785998100000": {
-      "symbol": "HYPEUSDT",
-      "direction": "LONG",
+    "BCHUSDT_SHORT_1786000500000": {
+      "symbol": "BCHUSDT",
+      "direction": "SHORT",
       "source": "RANGE_CYCLE_SHADOW",
       "timeframe": "5m",
-      "entry": 56.155,
-      "sl": 56.021828225302,
-      "target": 56.657990073231,
-      "target_zone": "RESISTANCE",
-      "next_direction": "SHORT",
-      "cycle_leg": "SUPPORT_TO_RESISTANCE",
-      "support": 56.083,
-      "resistance": 56.668,
-      "midpoint": 56.3755,
-      "range_width_percent": 1.0377,
-      "range_score": 100,
+      "entry": 215.1,
+      "sl": 215.568691858227,
+      "target": 213.2352,
+      "target_zone": "SUPPORT",
+      "next_direction": "LONG",
+      "cycle_leg": "RESISTANCE_TO_SUPPORT",
+      "support": 213.2,
+      "resistance": 215.4,
+      "midpoint": 214.3,
+      "range_width_percent": 1.0266,
+      "range_score": 92,
       "score": 100,
-      "support_touches": 5,
-      "resistance_touches": 4,
-      "adx_5m": 20.78,
-      "adx_15m": 18.66,
-      "ema_spread_5m_percent": 0.1519,
-      "ema_spread_15m_percent": 0.3843,
-      "rsi_5m": 37.4,
-      "volume_ratio_5m": 1.053,
-      "quote_volume_usdt": 1505423593.08,
-      "lower_wick_percent": 45.65,
-      "upper_wick_percent": 28.26,
+      "support_touches": 4,
+      "resistance_touches": 5,
+      "adx_5m": 20.56,
+      "adx_15m": 17.25,
+      "ema_spread_5m_percent": 0.1308,
+      "ema_spread_15m_percent": 0.1361,
+      "rsi_5m": 57.81,
+      "volume_ratio_5m": 1.026,
+      "quote_volume_usdt": 164990891.76,
+      "lower_wick_percent": 0.0,
+      "upper_wick_percent": 33.33,
       "confirmation": [
-        "ALT_FITIL_RED"
+        "KIRMIZI_DONUS_MUMU",
+        "UST_FITIL_RED",
+        "KAPANIS_ZAYIFLIYOR"
       ],
-      "risk_percent": 0.2372,
-      "expected_target_r": 3.777,
-      "distance_to_zone_percent": 0.1282,
+      "risk_percent": 0.2179,
+      "expected_target_r": 3.9787,
+      "distance_to_zone_percent": 0.1395,
       "estimated_round_trip_cost_percent": 0.12,
-      "signal_candle_ms": 1785998100000,
-      "created_at": 1785998536,
-      "position_id": "HYPEUSDT_LONG_1785998100000",
+      "signal_candle_ms": 1786000500000,
+      "created_at": 1786000921,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5507,
+        "cost_to_stop_percent_ratio": 0.5507,
+        "confirmation_count": 3,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK"
+        ],
+        "shadow_only": true
+      },
+      "position_id": "BCHUSDT_SHORT_1786000500000",
       "status": "OPEN",
-      "opened_at": 1785998551,
-      "entry_candle_ms": 1785998100000,
-      "last_checked_candle_ms": 1785998100000,
+      "opened_at": 1786000930,
+      "entry_candle_ms": 1786000500000,
+      "last_checked_candle_ms": 1786000500000,
+      "gross_r": 0.0,
+      "net_r": 0.0,
+      "outcome": null,
+      "closed_at": 0,
+      "reverse_ready": false
+    },
+    "DASHUSDT_SHORT_1786000500000": {
+      "symbol": "DASHUSDT",
+      "direction": "SHORT",
+      "source": "RANGE_CYCLE_SHADOW",
+      "timeframe": "5m",
+      "entry": 30.87,
+      "sl": 30.949831384482,
+      "target": 30.62496,
+      "target_zone": "SUPPORT",
+      "next_direction": "LONG",
+      "cycle_leg": "RESISTANCE_TO_SUPPORT",
+      "support": 30.62,
+      "resistance": 30.93,
+      "midpoint": 30.775,
+      "range_width_percent": 1.0073,
+      "range_score": 92,
+      "score": 100,
+      "support_touches": 4,
+      "resistance_touches": 5,
+      "adx_5m": 12.11,
+      "adx_15m": 24.84,
+      "ema_spread_5m_percent": 0.0724,
+      "ema_spread_15m_percent": 0.2632,
+      "rsi_5m": 56.66,
+      "volume_ratio_5m": 0.992,
+      "quote_volume_usdt": 222523933.72,
+      "lower_wick_percent": 50.0,
+      "upper_wick_percent": 50.0,
+      "confirmation": [
+        "UST_FITIL_RED",
+        "KAPANIS_ZAYIFLIYOR"
+      ],
+      "risk_percent": 0.2586,
+      "expected_target_r": 3.0695,
+      "distance_to_zone_percent": 0.1944,
+      "estimated_round_trip_cost_percent": 0.12,
+      "signal_candle_ms": 1786000500000,
+      "created_at": 1786000921,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.464,
+        "cost_to_stop_percent_ratio": 0.464,
+        "confirmation_count": 2,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "TREND_PRESSURE"
+        ],
+        "shadow_only": true
+      },
+      "position_id": "DASHUSDT_SHORT_1786000500000",
+      "status": "OPEN",
+      "opened_at": 1786000930,
+      "entry_candle_ms": 1786000500000,
+      "last_checked_candle_ms": 1786000500000,
+      "gross_r": 0.0,
+      "net_r": 0.0,
+      "outcome": null,
+      "closed_at": 0,
+      "reverse_ready": false
+    },
+    "LINKUSDT_SHORT_1786000500000": {
+      "symbol": "LINKUSDT",
+      "direction": "SHORT",
+      "source": "RANGE_CYCLE_SHADOW",
+      "timeframe": "5m",
+      "entry": 8.192,
+      "sl": 8.223202443271,
+      "target": 8.102856,
+      "target_zone": "SUPPORT",
+      "next_direction": "LONG",
+      "cycle_leg": "RESISTANCE_TO_SUPPORT",
+      "support": 8.101,
+      "resistance": 8.217,
+      "midpoint": 8.159,
+      "range_width_percent": 1.4217,
+      "range_score": 92,
+      "score": 100,
+      "support_touches": 8,
+      "resistance_touches": 5,
+      "adx_5m": 16.5,
+      "adx_15m": 17.7,
+      "ema_spread_5m_percent": 0.1648,
+      "ema_spread_15m_percent": 0.0885,
+      "rsi_5m": 54.35,
+      "volume_ratio_5m": 1.382,
+      "quote_volume_usdt": 16214340.06,
+      "lower_wick_percent": 54.55,
+      "upper_wick_percent": 0.0,
+      "confirmation": [
+        "KIRMIZI_DONUS_MUMU",
+        "KAPANIS_ZAYIFLIYOR"
+      ],
+      "risk_percent": 0.3809,
+      "expected_target_r": 2.857,
+      "distance_to_zone_percent": 0.3052,
+      "estimated_round_trip_cost_percent": 0.12,
+      "signal_candle_ms": 1786000500000,
+      "created_at": 1786000927,
+      "entry_diagnostics": {
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.315,
+        "cost_to_stop_percent_ratio": 0.315,
+        "confirmation_count": 2,
+        "flags": [],
+        "shadow_only": true
+      },
+      "position_id": "LINKUSDT_SHORT_1786000500000",
+      "status": "OPEN",
+      "opened_at": 1786000930,
+      "entry_candle_ms": 1786000500000,
+      "last_checked_candle_ms": 1786000500000,
       "gross_r": 0.0,
       "net_r": 0.0,
       "outcome": null,
@@ -201,7 +356,31 @@
       "closed_at": 1785851100,
       "reverse_ready": false,
       "last_market_price": 0.13302,
-      "exit_price": 0.132672845906
+      "exit_price": 0.132672845906,
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.8517,
+        "cost_to_stop_percent_ratio": 0.8517,
+        "confirmation_count": 3,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.8517,
+      "close_diagnostics": {
+        "primary_reason": "TIGHT_STOP_COST_DOMINATED",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.8517,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "KSMUSDT",
@@ -252,7 +431,27 @@
       "closed_at": 1785849600,
       "reverse_ready": false,
       "last_market_price": 3.125,
-      "exit_price": 3.119191726083
+      "exit_price": 3.119191726083,
+      "entry_diagnostics": {
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.3182,
+        "cost_to_stop_percent_ratio": 0.3182,
+        "confirmation_count": 2,
+        "flags": [
+          "LOW_VOLUME"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.3182,
+      "close_diagnostics": {
+        "primary_reason": "LOW_VOLUME_NO_CONTINUATION",
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.3182,
+        "entry_flags": [
+          "LOW_VOLUME"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "SUIUSDT",
@@ -302,7 +501,33 @@
       "closed_at": 1785850500,
       "reverse_ready": false,
       "last_market_price": 0.695,
-      "exit_price": 0.695344080014
+      "exit_price": 0.695344080014,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5391,
+        "cost_to_stop_percent_ratio": 0.5391,
+        "confirmation_count": 1,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION",
+          "LOW_VOLUME"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.5391,
+      "close_diagnostics": {
+        "primary_reason": "WEAK_SINGLE_CONFIRMATION",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5391,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION",
+          "LOW_VOLUME"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "WLDUSDT",
@@ -352,7 +577,27 @@
       "closed_at": 1785862200,
       "reverse_ready": false,
       "last_market_price": 0.32,
-      "exit_price": 0.318033207971
+      "exit_price": 0.318033207971,
+      "entry_diagnostics": {
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.2056,
+        "cost_to_stop_percent_ratio": 0.2056,
+        "confirmation_count": 1,
+        "flags": [
+          "SINGLE_CONFIRMATION"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.2056,
+      "close_diagnostics": {
+        "primary_reason": "WEAK_SINGLE_CONFIRMATION",
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.2056,
+        "entry_flags": [
+          "SINGLE_CONFIRMATION"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "ARUSDT",
@@ -403,7 +648,31 @@
       "closed_at": 1785858300,
       "reverse_ready": false,
       "last_market_price": 1.825,
-      "exit_price": 1.825067609472
+      "exit_price": 1.825067609472,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5372,
+        "cost_to_stop_percent_ratio": 0.5372,
+        "confirmation_count": 2,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "TREND_PRESSURE"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.5372,
+      "close_diagnostics": {
+        "primary_reason": "RANGE_BROKEN_BY_TREND_PRESSURE",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5372,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "TREND_PRESSURE"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "ENSUSDT",
@@ -455,7 +724,29 @@
       "reverse_ready": true,
       "last_market_price": 4.222,
       "exit_price": 4.247276940784,
-      "reverse_zone": "RESISTANCE"
+      "reverse_zone": "RESISTANCE",
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.6814,
+        "cost_to_stop_percent_ratio": 0.6814,
+        "confirmation_count": 2,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "HIGH_COST_TO_RISK"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.6814,
+      "close_diagnostics": {
+        "primary_reason": "COMPLETED_RANGE_LEG",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.6814,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "HIGH_COST_TO_RISK"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "SOLUSDT",
@@ -506,7 +797,31 @@
       "reverse_ready": true,
       "last_market_price": 73.89,
       "exit_price": 73.984386906433,
-      "reverse_zone": "RESISTANCE"
+      "reverse_zone": "RESISTANCE",
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.4093,
+        "cost_to_stop_percent_ratio": 0.4093,
+        "confirmation_count": 1,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.4093,
+      "close_diagnostics": {
+        "primary_reason": "COMPLETED_RANGE_LEG",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.4093,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "AAPLUSDT",
@@ -556,7 +871,27 @@
       "closed_at": 1785861600,
       "reverse_ready": false,
       "last_market_price": 307.25,
-      "exit_price": 307.909649186177
+      "exit_price": 307.909649186177,
+      "entry_diagnostics": {
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.2485,
+        "cost_to_stop_percent_ratio": 0.2485,
+        "confirmation_count": 1,
+        "flags": [
+          "SINGLE_CONFIRMATION"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.2485,
+      "close_diagnostics": {
+        "primary_reason": "WEAK_SINGLE_CONFIRMATION",
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.2485,
+        "entry_flags": [
+          "SINGLE_CONFIRMATION"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "OKBUSDT",
@@ -607,7 +942,33 @@
       "closed_at": 1785865800,
       "reverse_ready": false,
       "last_market_price": 86.91,
-      "exit_price": 86.948335006199
+      "exit_price": 86.948335006199,
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 1.3304,
+        "cost_to_stop_percent_ratio": 1.3304,
+        "confirmation_count": 2,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "LOW_VOLUME",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 1.3304,
+      "close_diagnostics": {
+        "primary_reason": "TIGHT_STOP_COST_DOMINATED",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 1.3304,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "LOW_VOLUME",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "SUIUSDT",
@@ -658,7 +1019,31 @@
       "closed_at": 1785867300,
       "reverse_ready": false,
       "last_market_price": 0.6962,
-      "exit_price": 0.696723765006
+      "exit_price": 0.696723765006,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.4839,
+        "cost_to_stop_percent_ratio": 0.4839,
+        "confirmation_count": 2,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "LOW_VOLUME"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.4839,
+      "close_diagnostics": {
+        "primary_reason": "LOW_VOLUME_NO_CONTINUATION",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.4839,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "LOW_VOLUME"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "SOLUSDT",
@@ -709,7 +1094,27 @@
       "closed_at": 1785867600,
       "reverse_ready": false,
       "last_market_price": 74.18,
-      "exit_price": 74.239089439019
+      "exit_price": 74.239089439019,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.3877,
+        "cost_to_stop_percent_ratio": 0.3877,
+        "confirmation_count": 2,
+        "flags": [
+          "TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.3877,
+      "close_diagnostics": {
+        "primary_reason": "DIRECTION_OR_ENTRY_TIMING_FAILURE",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.3877,
+        "entry_flags": [
+          "TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "ICPUSDT",
@@ -762,7 +1167,31 @@
       "reverse_ready": true,
       "last_market_price": 2.101,
       "exit_price": 2.10359706823,
-      "reverse_zone": "RESISTANCE"
+      "reverse_zone": "RESISTANCE",
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 1.707,
+        "cost_to_stop_percent_ratio": 1.707,
+        "confirmation_count": 3,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 1.707,
+      "close_diagnostics": {
+        "primary_reason": "COMPLETED_RANGE_LEG",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 1.707,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "DOTUSDT",
@@ -814,7 +1243,29 @@
       "closed_at": 1785873600,
       "reverse_ready": false,
       "last_market_price": 0.8408,
-      "exit_price": 0.845687742575
+      "exit_price": 0.845687742575,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.3764,
+        "cost_to_stop_percent_ratio": 0.3764,
+        "confirmation_count": 3,
+        "flags": [
+          "TIGHT_STOP",
+          "TREND_PRESSURE"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.3764,
+      "close_diagnostics": {
+        "primary_reason": "RANGE_BROKEN_BY_TREND_PRESSURE",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.3764,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "TREND_PRESSURE"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "CBRSUSDT",
@@ -866,7 +1317,29 @@
       "closed_at": 1785870000,
       "reverse_ready": false,
       "last_market_price": 224.1,
-      "exit_price": 225.410651932256
+      "exit_price": 225.410651932256,
+      "entry_diagnostics": {
+        "risk_band": "GTE_0_60",
+        "estimated_cost_r": 0.1569,
+        "cost_to_stop_percent_ratio": 0.1569,
+        "confirmation_count": 3,
+        "flags": [
+          "LOW_VOLUME",
+          "TREND_PRESSURE"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.1569,
+      "close_diagnostics": {
+        "primary_reason": "RANGE_BROKEN_BY_TREND_PRESSURE",
+        "risk_band": "GTE_0_60",
+        "estimated_cost_r": 0.1569,
+        "entry_flags": [
+          "LOW_VOLUME",
+          "TREND_PRESSURE"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "MSFTUSDT",
@@ -918,7 +1391,33 @@
       "closed_at": 1785883200,
       "reverse_ready": false,
       "last_market_price": 491.73,
-      "exit_price": 491.217186558964
+      "exit_price": 491.217186558964,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5507,
+        "cost_to_stop_percent_ratio": 0.5507,
+        "confirmation_count": 3,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "LOW_VOLUME",
+          "TREND_PRESSURE"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.5507,
+      "close_diagnostics": {
+        "primary_reason": "RANGE_BROKEN_BY_TREND_PRESSURE",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5507,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "LOW_VOLUME",
+          "TREND_PRESSURE"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "BCHUSDT",
@@ -970,7 +1469,31 @@
       "reverse_ready": true,
       "last_market_price": 213.4,
       "exit_price": 213.025083783616,
-      "reverse_zone": "SUPPORT"
+      "reverse_zone": "SUPPORT",
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5666,
+        "cost_to_stop_percent_ratio": 0.5666,
+        "confirmation_count": 2,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "LOW_VOLUME"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.5666,
+      "close_diagnostics": {
+        "primary_reason": "COMPLETED_RANGE_LEG",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5666,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "LOW_VOLUME"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "HYPEUSDT",
@@ -1022,7 +1545,31 @@
       "closed_at": 1785888300,
       "reverse_ready": false,
       "last_market_price": 55.111,
-      "exit_price": 54.979000277958
+      "exit_price": 54.979000277958,
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.7682,
+        "cost_to_stop_percent_ratio": 0.7682,
+        "confirmation_count": 3,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.7682,
+      "close_diagnostics": {
+        "primary_reason": "TIGHT_STOP_COST_DOMINATED",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.7682,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "EGLDUSDT",
@@ -1072,7 +1619,33 @@
       "closed_at": 1785888300,
       "reverse_ready": false,
       "last_market_price": 2.742,
-      "exit_price": 2.736284031505
+      "exit_price": 2.736284031505,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5755,
+        "cost_to_stop_percent_ratio": 0.5755,
+        "confirmation_count": 1,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION",
+          "LOW_VOLUME"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.5755,
+      "close_diagnostics": {
+        "primary_reason": "WEAK_SINGLE_CONFIRMATION",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5755,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION",
+          "LOW_VOLUME"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "KAITOUSDT",
@@ -1123,7 +1696,27 @@
       "closed_at": 1785903300,
       "reverse_ready": false,
       "last_market_price": 0.9209,
-      "exit_price": 0.9209
+      "exit_price": 0.9209,
+      "entry_diagnostics": {
+        "risk_band": "GTE_0_60",
+        "estimated_cost_r": 0.092,
+        "cost_to_stop_percent_ratio": 0.092,
+        "confirmation_count": 2,
+        "flags": [
+          "LOW_VOLUME"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.092,
+      "close_diagnostics": {
+        "primary_reason": "TIMEOUT_PARTIAL_FAVORABLE_MOVE",
+        "risk_band": "GTE_0_60",
+        "estimated_cost_r": 0.092,
+        "entry_flags": [
+          "LOW_VOLUME"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "AAVEUSDT",
@@ -1173,7 +1766,33 @@
       "closed_at": 1785892500,
       "reverse_ready": false,
       "last_market_price": 89.94,
-      "exit_price": 89.824776661872
+      "exit_price": 89.824776661872,
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 1.6529,
+        "cost_to_stop_percent_ratio": 1.6529,
+        "confirmation_count": 1,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 1.6529,
+      "close_diagnostics": {
+        "primary_reason": "TIGHT_STOP_COST_DOMINATED",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 1.6529,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "BTCUSDT",
@@ -1224,7 +1843,33 @@
       "reverse_ready": true,
       "last_market_price": 64312.0,
       "exit_price": 64458.1008,
-      "reverse_zone": "RESISTANCE"
+      "reverse_zone": "RESISTANCE",
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 2.027,
+        "cost_to_stop_percent_ratio": 2.027,
+        "confirmation_count": 1,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 2.027,
+      "close_diagnostics": {
+        "primary_reason": "COMPLETED_RANGE_LEG",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 2.027,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "CBRSUSDT",
@@ -1274,7 +1919,31 @@
       "closed_at": 1785893100,
       "reverse_ready": false,
       "last_market_price": 221.24,
-      "exit_price": 221.144659649758
+      "exit_price": 221.144659649758,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.4624,
+        "cost_to_stop_percent_ratio": 0.4624,
+        "confirmation_count": 1,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.4624,
+      "close_diagnostics": {
+        "primary_reason": "WEAK_SINGLE_CONFIRMATION",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.4624,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "PLTRUSDT",
@@ -1325,7 +1994,27 @@
       "closed_at": 1785912000,
       "reverse_ready": false,
       "last_market_price": 160.21,
-      "exit_price": 160.21
+      "exit_price": 160.21,
+      "entry_diagnostics": {
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.3136,
+        "cost_to_stop_percent_ratio": 0.3136,
+        "confirmation_count": 2,
+        "flags": [
+          "LOW_VOLUME"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.3136,
+      "close_diagnostics": {
+        "primary_reason": "TIMEOUT_PARTIAL_FAVORABLE_MOVE",
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.3136,
+        "entry_flags": [
+          "LOW_VOLUME"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "CBRSUSDT",
@@ -1376,7 +2065,33 @@
       "closed_at": 1785904200,
       "reverse_ready": false,
       "last_market_price": 224.08,
-      "exit_price": 224.204161487505
+      "exit_price": 224.204161487505,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5911,
+        "cost_to_stop_percent_ratio": 0.5911,
+        "confirmation_count": 2,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "LOW_VOLUME",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.5911,
+      "close_diagnostics": {
+        "primary_reason": "LOW_VOLUME_NO_CONTINUATION",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5911,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "LOW_VOLUME",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "KAITOUSDT",
@@ -1428,7 +2143,27 @@
       "closed_at": 1785906300,
       "reverse_ready": false,
       "last_market_price": 0.9197,
-      "exit_price": 0.926116795575
+      "exit_price": 0.926116795575,
+      "entry_diagnostics": {
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.2118,
+        "cost_to_stop_percent_ratio": 0.2118,
+        "confirmation_count": 3,
+        "flags": [
+          "LOW_VOLUME"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.2118,
+      "close_diagnostics": {
+        "primary_reason": "LOW_VOLUME_NO_CONTINUATION",
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.2118,
+        "entry_flags": [
+          "LOW_VOLUME"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "MUUSDT",
@@ -1480,7 +2215,27 @@
       "closed_at": 1785904800,
       "reverse_ready": false,
       "last_market_price": 895.09,
-      "exit_price": 897.124502295745
+      "exit_price": 897.124502295745,
+      "entry_diagnostics": {
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.2101,
+        "cost_to_stop_percent_ratio": 0.2101,
+        "confirmation_count": 3,
+        "flags": [
+          "LOW_VOLUME"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.2101,
+      "close_diagnostics": {
+        "primary_reason": "LOW_VOLUME_NO_CONTINUATION",
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.2101,
+        "entry_flags": [
+          "LOW_VOLUME"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "EWYUSDT",
@@ -1530,7 +2285,35 @@
       "closed_at": 1785914400,
       "reverse_ready": false,
       "last_market_price": 169.95,
-      "exit_price": 169.721818318782
+      "exit_price": 169.721818318782,
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 1.1439,
+        "cost_to_stop_percent_ratio": 1.1439,
+        "confirmation_count": 1,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "LOW_VOLUME",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 1.1439,
+      "close_diagnostics": {
+        "primary_reason": "TIGHT_STOP_COST_DOMINATED",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 1.1439,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "LOW_VOLUME",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "KORUUSDT",
@@ -1580,7 +2363,27 @@
       "closed_at": 1785914700,
       "reverse_ready": false,
       "last_market_price": 18.62,
-      "exit_price": 18.597760332412
+      "exit_price": 18.597760332412,
+      "entry_diagnostics": {
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.2432,
+        "cost_to_stop_percent_ratio": 0.2432,
+        "confirmation_count": 1,
+        "flags": [
+          "SINGLE_CONFIRMATION"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.2432,
+      "close_diagnostics": {
+        "primary_reason": "WEAK_SINGLE_CONFIRMATION",
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.2432,
+        "entry_flags": [
+          "SINGLE_CONFIRMATION"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "PLTRUSDT",
@@ -1633,7 +2436,31 @@
       "reverse_ready": true,
       "last_market_price": 159.77,
       "exit_price": 160.444138268821,
-      "reverse_zone": "RESISTANCE"
+      "reverse_zone": "RESISTANCE",
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.4894,
+        "cost_to_stop_percent_ratio": 0.4894,
+        "confirmation_count": 3,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "TREND_PRESSURE"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.4894,
+      "close_diagnostics": {
+        "primary_reason": "COMPLETED_RANGE_LEG",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.4894,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "TREND_PRESSURE"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "LINKUSDT",
@@ -1686,7 +2513,29 @@
       "reverse_ready": true,
       "last_market_price": 8.158,
       "exit_price": 8.141948376336,
-      "reverse_zone": "SUPPORT"
+      "reverse_zone": "SUPPORT",
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.6221,
+        "cost_to_stop_percent_ratio": 0.6221,
+        "confirmation_count": 3,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "HIGH_COST_TO_RISK"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.6221,
+      "close_diagnostics": {
+        "primary_reason": "COMPLETED_RANGE_LEG",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.6221,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "HIGH_COST_TO_RISK"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "WLDUSDT",
@@ -1738,7 +2587,23 @@
       "closed_at": 1785935400,
       "reverse_ready": false,
       "last_market_price": 0.3179,
-      "exit_price": 0.3179
+      "exit_price": 0.3179,
+      "entry_diagnostics": {
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.3028,
+        "cost_to_stop_percent_ratio": 0.3028,
+        "confirmation_count": 3,
+        "flags": [],
+        "shadow_only": true
+      },
+      "cost_r": 0.3028,
+      "close_diagnostics": {
+        "primary_reason": "TIMEOUT_PARTIAL_FAVORABLE_MOVE",
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.3028,
+        "entry_flags": [],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "SOLUSDT",
@@ -1788,7 +2653,31 @@
       "closed_at": 1785932400,
       "reverse_ready": false,
       "last_market_price": 74.08,
-      "exit_price": 74.213954798517
+      "exit_price": 74.213954798517,
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.7802,
+        "cost_to_stop_percent_ratio": 0.7802,
+        "confirmation_count": 1,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.7802,
+      "close_diagnostics": {
+        "primary_reason": "TIGHT_STOP_COST_DOMINATED",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.7802,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "TAOUSDT",
@@ -1838,7 +2727,31 @@
       "outcome": "SL",
       "closed_at": 1785929700,
       "reverse_ready": false,
-      "exit_price": 195.916272994843
+      "exit_price": 195.916272994843,
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.6138,
+        "cost_to_stop_percent_ratio": 0.6138,
+        "confirmation_count": 2,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "TREND_PRESSURE"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.6138,
+      "close_diagnostics": {
+        "primary_reason": "TIGHT_STOP_COST_DOMINATED",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.6138,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "TREND_PRESSURE"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "LINKUSDT",
@@ -1891,7 +2804,29 @@
       "reverse_ready": true,
       "last_market_price": 8.158,
       "exit_price": 8.198881522817,
-      "reverse_zone": "RESISTANCE"
+      "reverse_zone": "RESISTANCE",
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5197,
+        "cost_to_stop_percent_ratio": 0.5197,
+        "confirmation_count": 3,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.5197,
+      "close_diagnostics": {
+        "primary_reason": "COMPLETED_RANGE_LEG",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5197,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "AAVEUSDT",
@@ -1941,7 +2876,29 @@
       "outcome": "SL",
       "closed_at": 1785929700,
       "reverse_ready": false,
-      "exit_price": 90.907112454087
+      "exit_price": 90.907112454087,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.3868,
+        "cost_to_stop_percent_ratio": 0.3868,
+        "confirmation_count": 2,
+        "flags": [
+          "TIGHT_STOP",
+          "LOW_VOLUME"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.3868,
+      "close_diagnostics": {
+        "primary_reason": "LOW_VOLUME_NO_CONTINUATION",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.3868,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "LOW_VOLUME"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "LINKUSDT",
@@ -1991,7 +2948,31 @@
       "closed_at": 1785936300,
       "reverse_ready": false,
       "last_market_price": 8.138,
-      "exit_price": 8.132130346933
+      "exit_price": 8.132130346933,
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.7046,
+        "cost_to_stop_percent_ratio": 0.7046,
+        "confirmation_count": 1,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.7046,
+      "close_diagnostics": {
+        "primary_reason": "TIGHT_STOP_COST_DOMINATED",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.7046,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "TSLAUSDT",
@@ -2040,7 +3021,33 @@
       "outcome": "SL",
       "closed_at": 1785935700,
       "reverse_ready": false,
-      "exit_price": 323.410982267447
+      "exit_price": 323.410982267447,
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.974,
+        "cost_to_stop_percent_ratio": 0.974,
+        "confirmation_count": 1,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "TREND_PRESSURE"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.974,
+      "close_diagnostics": {
+        "primary_reason": "TIGHT_STOP_COST_DOMINATED",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.974,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "TREND_PRESSURE"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "NBISUSDT",
@@ -2089,7 +3096,29 @@
       "outcome": "SL",
       "closed_at": 1785935700,
       "reverse_ready": false,
-      "exit_price": 219.461287659492
+      "exit_price": 219.461287659492,
+      "entry_diagnostics": {
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.3351,
+        "cost_to_stop_percent_ratio": 0.3351,
+        "confirmation_count": 1,
+        "flags": [
+          "SINGLE_CONFIRMATION",
+          "TREND_PRESSURE"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.3351,
+      "close_diagnostics": {
+        "primary_reason": "RANGE_BROKEN_BY_TREND_PRESSURE",
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.3351,
+        "entry_flags": [
+          "SINGLE_CONFIRMATION",
+          "TREND_PRESSURE"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "TAOUSDT",
@@ -2138,7 +3167,33 @@
       "outcome": "SL",
       "closed_at": 1785943800,
       "reverse_ready": false,
-      "exit_price": 198.515760093353
+      "exit_price": 198.515760093353,
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 1.1029,
+        "cost_to_stop_percent_ratio": 1.1029,
+        "confirmation_count": 1,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 1.1029,
+      "close_diagnostics": {
+        "primary_reason": "TIGHT_STOP_COST_DOMINATED",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 1.1029,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "ZROUSDT",
@@ -2188,7 +3243,31 @@
       "closed_at": 1785945000,
       "reverse_ready": false,
       "last_market_price": 0.7759,
-      "exit_price": 0.774470460093
+      "exit_price": 0.774470460093,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.4591,
+        "cost_to_stop_percent_ratio": 0.4591,
+        "confirmation_count": 1,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.4591,
+      "close_diagnostics": {
+        "primary_reason": "WEAK_SINGLE_CONFIRMATION",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.4591,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "TSLAUSDT",
@@ -2238,7 +3317,35 @@
       "closed_at": 1785954600,
       "reverse_ready": false,
       "last_market_price": 322.32,
-      "exit_price": 321.908809086365
+      "exit_price": 321.908809086365,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5224,
+        "cost_to_stop_percent_ratio": 0.5224,
+        "confirmation_count": 1,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION",
+          "LOW_VOLUME",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.5224,
+      "close_diagnostics": {
+        "primary_reason": "WEAK_SINGLE_CONFIRMATION",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5224,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION",
+          "LOW_VOLUME",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "MSFTUSDT",
@@ -2288,7 +3395,35 @@
       "closed_at": 1785953100,
       "reverse_ready": false,
       "last_market_price": 489.38,
-      "exit_price": 487.237323375276
+      "exit_price": 487.237323375276,
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.6637,
+        "cost_to_stop_percent_ratio": 0.6637,
+        "confirmation_count": 1,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION",
+          "TREND_PRESSURE",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.6637,
+      "close_diagnostics": {
+        "primary_reason": "TIGHT_STOP_COST_DOMINATED",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.6637,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION",
+          "TREND_PRESSURE",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "SOLUSDT",
@@ -2338,7 +3473,33 @@
       "closed_at": 1785951300,
       "reverse_ready": false,
       "last_market_price": 74.17,
-      "exit_price": 74.462045510093
+      "exit_price": 74.462045510093,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5181,
+        "cost_to_stop_percent_ratio": 0.5181,
+        "confirmation_count": 1,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION",
+          "LOW_VOLUME"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.5181,
+      "close_diagnostics": {
+        "primary_reason": "WEAK_SINGLE_CONFIRMATION",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5181,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION",
+          "LOW_VOLUME"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "VVVUSDT",
@@ -2391,7 +3552,23 @@
       "reverse_ready": true,
       "last_market_price": 11.334,
       "exit_price": 11.364697696777,
-      "reverse_zone": "RESISTANCE"
+      "reverse_zone": "RESISTANCE",
+      "entry_diagnostics": {
+        "risk_band": "GTE_0_60",
+        "estimated_cost_r": 0.186,
+        "cost_to_stop_percent_ratio": 0.186,
+        "confirmation_count": 3,
+        "flags": [],
+        "shadow_only": true
+      },
+      "cost_r": 0.186,
+      "close_diagnostics": {
+        "primary_reason": "COMPLETED_RANGE_LEG",
+        "risk_band": "GTE_0_60",
+        "estimated_cost_r": 0.186,
+        "entry_flags": [],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "KAITOUSDT",
@@ -2443,7 +3620,23 @@
       "closed_at": 1785955500,
       "reverse_ready": false,
       "last_market_price": 0.9264,
-      "exit_price": 0.933009983575
+      "exit_price": 0.933009983575,
+      "entry_diagnostics": {
+        "risk_band": "GTE_0_60",
+        "estimated_cost_r": 0.182,
+        "cost_to_stop_percent_ratio": 0.182,
+        "confirmation_count": 3,
+        "flags": [],
+        "shadow_only": true
+      },
+      "cost_r": 0.182,
+      "close_diagnostics": {
+        "primary_reason": "DIRECTION_OR_ENTRY_TIMING_FAILURE",
+        "risk_band": "GTE_0_60",
+        "estimated_cost_r": 0.182,
+        "entry_flags": [],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "WLDUSDT",
@@ -2496,7 +3689,33 @@
       "reverse_ready": true,
       "last_market_price": 0.3156,
       "exit_price": 0.314928,
-      "reverse_zone": "SUPPORT"
+      "reverse_zone": "SUPPORT",
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5698,
+        "cost_to_stop_percent_ratio": 0.5698,
+        "confirmation_count": 3,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "TREND_PRESSURE",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.5698,
+      "close_diagnostics": {
+        "primary_reason": "COMPLETED_RANGE_LEG",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5698,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "TREND_PRESSURE",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "LDOUSDT",
@@ -2545,7 +3764,31 @@
       "outcome": "SL",
       "closed_at": 1785960600,
       "reverse_ready": false,
-      "exit_price": 0.295951464446
+      "exit_price": 0.295951464446,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.3756,
+        "cost_to_stop_percent_ratio": 0.3756,
+        "confirmation_count": 1,
+        "flags": [
+          "TIGHT_STOP",
+          "SINGLE_CONFIRMATION",
+          "TREND_PRESSURE"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.3756,
+      "close_diagnostics": {
+        "primary_reason": "RANGE_BROKEN_BY_TREND_PRESSURE",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.3756,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "SINGLE_CONFIRMATION",
+          "TREND_PRESSURE"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "HYPEUSDT",
@@ -2596,7 +3839,27 @@
       "outcome": "SL",
       "closed_at": 1785960600,
       "reverse_ready": false,
-      "exit_price": 57.071315431025
+      "exit_price": 57.071315431025,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.3642,
+        "cost_to_stop_percent_ratio": 0.3642,
+        "confirmation_count": 3,
+        "flags": [
+          "TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.3642,
+      "close_diagnostics": {
+        "primary_reason": "DIRECTION_OR_ENTRY_TIMING_FAILURE",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.3642,
+        "entry_flags": [
+          "TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "TAOUSDT",
@@ -2646,7 +3909,33 @@
       "closed_at": 1785965700,
       "reverse_ready": false,
       "last_market_price": 196.0,
-      "exit_price": 195.936359114538
+      "exit_price": 195.936359114538,
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.8929,
+        "cost_to_stop_percent_ratio": 0.8929,
+        "confirmation_count": 1,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.8929,
+      "close_diagnostics": {
+        "primary_reason": "TIGHT_STOP_COST_DOMINATED",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.8929,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "PLTRUSDT",
@@ -2697,7 +3986,33 @@
       "closed_at": 1785966000,
       "reverse_ready": false,
       "last_market_price": 156.89,
-      "exit_price": 156.647372042894
+      "exit_price": 156.647372042894,
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.9288,
+        "cost_to_stop_percent_ratio": 0.9288,
+        "confirmation_count": 2,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "LOW_VOLUME",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.9288,
+      "close_diagnostics": {
+        "primary_reason": "TIGHT_STOP_COST_DOMINATED",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.9288,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "LOW_VOLUME",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "SOLUSDT",
@@ -2747,7 +4062,33 @@
       "closed_at": 1785965700,
       "reverse_ready": false,
       "last_market_price": 74.1,
-      "exit_price": 74.049357218134
+      "exit_price": 74.049357218134,
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 2.1858,
+        "cost_to_stop_percent_ratio": 2.1858,
+        "confirmation_count": 1,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 2.1858,
+      "close_diagnostics": {
+        "primary_reason": "TIGHT_STOP_COST_DOMINATED",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 2.1858,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "SUIUSDT",
@@ -2796,7 +4137,33 @@
       "outcome": "SL",
       "closed_at": 1785965400,
       "reverse_ready": false,
-      "exit_price": 0.689731711833
+      "exit_price": 0.689731711833,
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 1.7699,
+        "cost_to_stop_percent_ratio": 1.7699,
+        "confirmation_count": 1,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 1.7699,
+      "close_diagnostics": {
+        "primary_reason": "TIGHT_STOP_COST_DOMINATED",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 1.7699,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "FILUSDT",
@@ -2846,7 +4213,31 @@
       "closed_at": 1785970800,
       "reverse_ready": false,
       "last_market_price": 0.7189,
-      "exit_price": 0.718520751827
+      "exit_price": 0.718520751827,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.4368,
+        "cost_to_stop_percent_ratio": 0.4368,
+        "confirmation_count": 1,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.4368,
+      "close_diagnostics": {
+        "primary_reason": "WEAK_SINGLE_CONFIRMATION",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.4368,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "LTCUSDT",
@@ -2898,7 +4289,31 @@
       "closed_at": 1785974700,
       "reverse_ready": false,
       "last_market_price": 45.34,
-      "exit_price": 45.391578797533
+      "exit_price": 45.391578797533,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.4128,
+        "cost_to_stop_percent_ratio": 0.4128,
+        "confirmation_count": 3,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "TREND_PRESSURE"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.4128,
+      "close_diagnostics": {
+        "primary_reason": "RANGE_BROKEN_BY_TREND_PRESSURE",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.4128,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "TREND_PRESSURE"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "KAITOUSDT",
@@ -2949,7 +4364,23 @@
       "closed_at": 1785975900,
       "reverse_ready": false,
       "last_market_price": 0.9362,
-      "exit_price": 0.945771228154
+      "exit_price": 0.945771228154,
+      "entry_diagnostics": {
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.2271,
+        "cost_to_stop_percent_ratio": 0.2271,
+        "confirmation_count": 2,
+        "flags": [],
+        "shadow_only": true
+      },
+      "cost_r": 0.2271,
+      "close_diagnostics": {
+        "primary_reason": "DIRECTION_OR_ENTRY_TIMING_FAILURE",
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.2271,
+        "entry_flags": [],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "TAOUSDT",
@@ -2999,7 +4430,35 @@
       "closed_at": 1785973800,
       "reverse_ready": false,
       "last_market_price": 197.5,
-      "exit_price": 197.924826956679
+      "exit_price": 197.924826956679,
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 1.0554,
+        "cost_to_stop_percent_ratio": 1.0554,
+        "confirmation_count": 1,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "TREND_PRESSURE",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 1.0554,
+      "close_diagnostics": {
+        "primary_reason": "TIGHT_STOP_COST_DOMINATED",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 1.0554,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "TREND_PRESSURE",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "NVDAUSDT",
@@ -3052,7 +4511,35 @@
       "reverse_ready": true,
       "last_market_price": 219.69,
       "exit_price": 219.13264,
-      "reverse_zone": "SUPPORT"
+      "reverse_zone": "SUPPORT",
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.7926,
+        "cost_to_stop_percent_ratio": 0.7926,
+        "confirmation_count": 3,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "LOW_VOLUME",
+          "TREND_PRESSURE",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.7926,
+      "close_diagnostics": {
+        "primary_reason": "COMPLETED_RANGE_LEG",
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.7926,
+        "entry_flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "LOW_VOLUME",
+          "TREND_PRESSURE",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "UNIUSDT",
@@ -3104,7 +4591,29 @@
       "closed_at": 1785978300,
       "reverse_ready": false,
       "last_market_price": 4.099,
-      "exit_price": 4.104293645245
+      "exit_price": 4.104293645245,
+      "entry_diagnostics": {
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.2015,
+        "cost_to_stop_percent_ratio": 0.2015,
+        "confirmation_count": 3,
+        "flags": [
+          "LOW_VOLUME",
+          "TREND_PRESSURE"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.2015,
+      "close_diagnostics": {
+        "primary_reason": "RANGE_BROKEN_BY_TREND_PRESSURE",
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.2015,
+        "entry_flags": [
+          "LOW_VOLUME",
+          "TREND_PRESSURE"
+        ],
+        "gross_positive_net_negative": false
+      }
     },
     {
       "symbol": "SPCXUSDT",
@@ -3155,7 +4664,23 @@
       "closed_at": 1785998100,
       "reverse_ready": false,
       "last_market_price": 110.03,
-      "exit_price": 110.03
+      "exit_price": 110.03,
+      "entry_diagnostics": {
+        "risk_band": "GTE_0_60",
+        "estimated_cost_r": 0.1462,
+        "cost_to_stop_percent_ratio": 0.1462,
+        "confirmation_count": 2,
+        "flags": [],
+        "shadow_only": true
+      },
+      "cost_r": 0.1462,
+      "close_diagnostics": {
+        "primary_reason": "TIMEOUT_EDGE_ERASED_BY_COST",
+        "risk_band": "GTE_0_60",
+        "estimated_cost_r": 0.1462,
+        "entry_flags": [],
+        "gross_positive_net_negative": true
+      }
     },
     {
       "symbol": "CRCLUSDT",
@@ -3207,10 +4732,30 @@
       "closed_at": 1785990000,
       "reverse_ready": false,
       "last_market_price": 62.26,
-      "exit_price": 62.291048377809
-    }
-  ],
-  "latest_candidates": [
+      "exit_price": 62.291048377809,
+      "entry_diagnostics": {
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.2852,
+        "cost_to_stop_percent_ratio": 0.2852,
+        "confirmation_count": 3,
+        "flags": [
+          "LOW_VOLUME",
+          "TREND_PRESSURE"
+        ],
+        "shadow_only": true
+      },
+      "cost_r": 0.2852,
+      "close_diagnostics": {
+        "primary_reason": "RANGE_BROKEN_BY_TREND_PRESSURE",
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.2852,
+        "entry_flags": [
+          "LOW_VOLUME",
+          "TREND_PRESSURE"
+        ],
+        "gross_positive_net_negative": false
+      }
+    },
     {
       "symbol": "HYPEUSDT",
       "direction": "LONG",
@@ -3247,35 +4792,441 @@
       "distance_to_zone_percent": 0.1282,
       "estimated_round_trip_cost_percent": 0.12,
       "signal_candle_ms": 1785998100000,
-      "created_at": 1785998536
+      "created_at": 1785998536,
+      "position_id": "HYPEUSDT_LONG_1785998100000",
+      "status": "CLOSED",
+      "opened_at": 1785998551,
+      "entry_candle_ms": 1785998100000,
+      "last_checked_candle_ms": 1785999600000,
+      "gross_r": -1.0,
+      "net_r": -1.5059,
+      "outcome": "SL",
+      "closed_at": 1785999600,
+      "reverse_ready": false,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5059,
+        "cost_to_stop_percent_ratio": 0.5059,
+        "confirmation_count": 1,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION"
+        ],
+        "shadow_only": true
+      },
+      "last_market_price": 56.158,
+      "cost_r": 0.5059,
+      "close_diagnostics": {
+        "primary_reason": "WEAK_SINGLE_CONFIRMATION",
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5059,
+        "entry_flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "SINGLE_CONFIRMATION"
+        ],
+        "gross_positive_net_negative": false
+      },
+      "exit_price": 56.021828225302
+    }
+  ],
+  "latest_candidates": [
+    {
+      "symbol": "COAIUSDT",
+      "direction": "LONG",
+      "source": "RANGE_CYCLE_SHADOW",
+      "timeframe": "5m",
+      "entry": 0.3378,
+      "sl": 0.337106940589,
+      "target": 0.3420264,
+      "target_zone": "RESISTANCE",
+      "next_direction": "SHORT",
+      "cycle_leg": "SUPPORT_TO_RESISTANCE",
+      "support": 0.3375,
+      "resistance": 0.3421,
+      "midpoint": 0.3398,
+      "range_width_percent": 1.3537,
+      "range_score": 100,
+      "score": 100,
+      "support_touches": 8,
+      "resistance_touches": 3,
+      "adx_5m": 12.39,
+      "adx_15m": 11.33,
+      "ema_spread_5m_percent": 0.1809,
+      "ema_spread_15m_percent": 0.2448,
+      "rsi_5m": 37.05,
+      "volume_ratio_5m": 1.889,
+      "quote_volume_usdt": 7874101.46,
+      "lower_wick_percent": 16.67,
+      "upper_wick_percent": 66.67,
+      "confirmation": [
+        "ALT_FITIL_RED",
+        "KAPANIS_TOPARLANIYOR"
+      ],
+      "risk_percent": 0.2052,
+      "expected_target_r": 6.0982,
+      "distance_to_zone_percent": 0.0888,
+      "estimated_round_trip_cost_percent": 0.12,
+      "signal_candle_ms": 1786000500000,
+      "created_at": 1786000930,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5848,
+        "cost_to_stop_percent_ratio": 0.5848,
+        "confirmation_count": 2,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      }
+    },
+    {
+      "symbol": "BCHUSDT",
+      "direction": "SHORT",
+      "source": "RANGE_CYCLE_SHADOW",
+      "timeframe": "5m",
+      "entry": 215.1,
+      "sl": 215.568691858227,
+      "target": 213.2352,
+      "target_zone": "SUPPORT",
+      "next_direction": "LONG",
+      "cycle_leg": "RESISTANCE_TO_SUPPORT",
+      "support": 213.2,
+      "resistance": 215.4,
+      "midpoint": 214.3,
+      "range_width_percent": 1.0266,
+      "range_score": 92,
+      "score": 100,
+      "support_touches": 4,
+      "resistance_touches": 5,
+      "adx_5m": 20.56,
+      "adx_15m": 17.25,
+      "ema_spread_5m_percent": 0.1308,
+      "ema_spread_15m_percent": 0.1361,
+      "rsi_5m": 57.81,
+      "volume_ratio_5m": 1.026,
+      "quote_volume_usdt": 164990891.76,
+      "lower_wick_percent": 0.0,
+      "upper_wick_percent": 33.33,
+      "confirmation": [
+        "KIRMIZI_DONUS_MUMU",
+        "UST_FITIL_RED",
+        "KAPANIS_ZAYIFLIYOR"
+      ],
+      "risk_percent": 0.2179,
+      "expected_target_r": 3.9787,
+      "distance_to_zone_percent": 0.1395,
+      "estimated_round_trip_cost_percent": 0.12,
+      "signal_candle_ms": 1786000500000,
+      "created_at": 1786000921,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.5507,
+        "cost_to_stop_percent_ratio": 0.5507,
+        "confirmation_count": 3,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK"
+        ],
+        "shadow_only": true
+      }
+    },
+    {
+      "symbol": "DASHUSDT",
+      "direction": "SHORT",
+      "source": "RANGE_CYCLE_SHADOW",
+      "timeframe": "5m",
+      "entry": 30.87,
+      "sl": 30.949831384482,
+      "target": 30.62496,
+      "target_zone": "SUPPORT",
+      "next_direction": "LONG",
+      "cycle_leg": "RESISTANCE_TO_SUPPORT",
+      "support": 30.62,
+      "resistance": 30.93,
+      "midpoint": 30.775,
+      "range_width_percent": 1.0073,
+      "range_score": 92,
+      "score": 100,
+      "support_touches": 4,
+      "resistance_touches": 5,
+      "adx_5m": 12.11,
+      "adx_15m": 24.84,
+      "ema_spread_5m_percent": 0.0724,
+      "ema_spread_15m_percent": 0.2632,
+      "rsi_5m": 56.66,
+      "volume_ratio_5m": 0.992,
+      "quote_volume_usdt": 222523933.72,
+      "lower_wick_percent": 50.0,
+      "upper_wick_percent": 50.0,
+      "confirmation": [
+        "UST_FITIL_RED",
+        "KAPANIS_ZAYIFLIYOR"
+      ],
+      "risk_percent": 0.2586,
+      "expected_target_r": 3.0695,
+      "distance_to_zone_percent": 0.1944,
+      "estimated_round_trip_cost_percent": 0.12,
+      "signal_candle_ms": 1786000500000,
+      "created_at": 1786000921,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.464,
+        "cost_to_stop_percent_ratio": 0.464,
+        "confirmation_count": 2,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK",
+          "TREND_PRESSURE"
+        ],
+        "shadow_only": true
+      }
+    },
+    {
+      "symbol": "LINKUSDT",
+      "direction": "SHORT",
+      "source": "RANGE_CYCLE_SHADOW",
+      "timeframe": "5m",
+      "entry": 8.192,
+      "sl": 8.223202443271,
+      "target": 8.102856,
+      "target_zone": "SUPPORT",
+      "next_direction": "LONG",
+      "cycle_leg": "RESISTANCE_TO_SUPPORT",
+      "support": 8.101,
+      "resistance": 8.217,
+      "midpoint": 8.159,
+      "range_width_percent": 1.4217,
+      "range_score": 92,
+      "score": 100,
+      "support_touches": 8,
+      "resistance_touches": 5,
+      "adx_5m": 16.5,
+      "adx_15m": 17.7,
+      "ema_spread_5m_percent": 0.1648,
+      "ema_spread_15m_percent": 0.0885,
+      "rsi_5m": 54.35,
+      "volume_ratio_5m": 1.382,
+      "quote_volume_usdt": 16214340.06,
+      "lower_wick_percent": 54.55,
+      "upper_wick_percent": 0.0,
+      "confirmation": [
+        "KIRMIZI_DONUS_MUMU",
+        "KAPANIS_ZAYIFLIYOR"
+      ],
+      "risk_percent": 0.3809,
+      "expected_target_r": 2.857,
+      "distance_to_zone_percent": 0.3052,
+      "estimated_round_trip_cost_percent": 0.12,
+      "signal_candle_ms": 1786000500000,
+      "created_at": 1786000927,
+      "entry_diagnostics": {
+        "risk_band": "0_35_TO_0_60",
+        "estimated_cost_r": 0.315,
+        "cost_to_stop_percent_ratio": 0.315,
+        "confirmation_count": 2,
+        "flags": [],
+        "shadow_only": true
+      }
+    },
+    {
+      "symbol": "SPCXUSDT",
+      "direction": "SHORT",
+      "source": "RANGE_CYCLE_SHADOW",
+      "timeframe": "5m",
+      "entry": 110.14,
+      "sl": 110.40654488905,
+      "target": 109.585798254572,
+      "target_zone": "SUPPORT",
+      "next_direction": "LONG",
+      "cycle_leg": "RESISTANCE_TO_SUPPORT",
+      "support": 109.57,
+      "resistance": 110.31,
+      "midpoint": 109.94,
+      "range_width_percent": 0.6731,
+      "range_score": 84,
+      "score": 94,
+      "support_touches": 8,
+      "resistance_touches": 7,
+      "adx_5m": 10.95,
+      "adx_15m": 7.74,
+      "ema_spread_5m_percent": 0.0862,
+      "ema_spread_15m_percent": 0.3085,
+      "rsi_5m": 55.82,
+      "volume_ratio_5m": 1.708,
+      "quote_volume_usdt": 760364267.95,
+      "lower_wick_percent": 33.33,
+      "upper_wick_percent": 4.17,
+      "confirmation": [
+        "KIRMIZI_DONUS_MUMU",
+        "KAPANIS_ZAYIFLIYOR"
+      ],
+      "risk_percent": 0.242,
+      "expected_target_r": 2.0792,
+      "distance_to_zone_percent": 0.1543,
+      "estimated_round_trip_cost_percent": 0.12,
+      "signal_candle_ms": 1786000500000,
+      "created_at": 1786000920,
+      "entry_diagnostics": {
+        "risk_band": "0_20_TO_0_35",
+        "estimated_cost_r": 0.4959,
+        "cost_to_stop_percent_ratio": 0.4959,
+        "confirmation_count": 2,
+        "flags": [
+          "TIGHT_STOP",
+          "HIGH_COST_TO_RISK"
+        ],
+        "shadow_only": true
+      }
+    },
+    {
+      "symbol": "DOTUSDT",
+      "direction": "LONG",
+      "source": "RANGE_CYCLE_SHADOW",
+      "timeframe": "5m",
+      "entry": 0.8351,
+      "sl": 0.833808270435,
+      "target": 0.8432576,
+      "target_zone": "RESISTANCE",
+      "next_direction": "SHORT",
+      "cycle_leg": "SUPPORT_TO_RESISTANCE",
+      "support": 0.8345,
+      "resistance": 0.8434,
+      "midpoint": 0.83895,
+      "range_width_percent": 1.0608,
+      "range_score": 82,
+      "score": 89,
+      "support_touches": 7,
+      "resistance_touches": 8,
+      "adx_5m": 23.39,
+      "adx_15m": 23.34,
+      "ema_spread_5m_percent": 0.225,
+      "ema_spread_15m_percent": 0.3722,
+      "rsi_5m": 40.55,
+      "volume_ratio_5m": 0.68,
+      "quote_volume_usdt": 8334882.34,
+      "lower_wick_percent": 40.0,
+      "upper_wick_percent": 40.0,
+      "confirmation": [
+        "ALT_FITIL_RED"
+      ],
+      "risk_percent": 0.1547,
+      "expected_target_r": 6.3153,
+      "distance_to_zone_percent": 0.0718,
+      "estimated_round_trip_cost_percent": 0.12,
+      "signal_candle_ms": 1786000500000,
+      "created_at": 1786000929,
+      "entry_diagnostics": {
+        "risk_band": "LT_0_20",
+        "estimated_cost_r": 0.7757,
+        "cost_to_stop_percent_ratio": 0.7757,
+        "confirmation_count": 1,
+        "flags": [
+          "VERY_TIGHT_STOP",
+          "COST_DOMINATES_RISK",
+          "SINGLE_CONFIRMATION",
+          "LOW_VOLUME",
+          "TREND_PRESSURE",
+          "EXPECTED_R_INFLATED_BY_TIGHT_STOP"
+        ],
+        "shadow_only": true
+      }
     }
   ],
   "summary": {
-    "total_opened": 63,
-    "total_closed": 60,
-    "open_count": 3,
+    "total_opened": 66,
+    "total_closed": 61,
+    "open_count": 5,
     "resistance_exit_count": 7,
     "support_exit_count": 4,
     "completed_cycle_legs": 11,
-    "sl_count": 45,
+    "sl_count": 46,
     "timeout_count": 4,
     "ambiguous_count": 0,
-    "gross_r": 28.7279,
-    "net_r": -8.9217,
-    "win_rate_percent": 23.33
+    "gross_r": 27.7279,
+    "net_r": -10.4276,
+    "gross_to_net_cost_r": 38.1555,
+    "average_cost_r_per_closed": 0.6255,
+    "cost_flipped_positive_gross_count": 1,
+    "risk_band_stats": {
+      "LT_0_20": {
+        "closed": 21,
+        "wins": 5,
+        "sl": 16,
+        "gross_r": 25.6861,
+        "net_r": 2.4369,
+        "win_rate_percent": 23.81
+      },
+      "0_35_TO_0_60": {
+        "closed": 12,
+        "wins": 2,
+        "sl": 10,
+        "gross_r": -4.3328,
+        "net_r": -7.4355,
+        "win_rate_percent": 16.67
+      },
+      "0_20_TO_0_35": {
+        "closed": 23,
+        "wins": 5,
+        "sl": 18,
+        "gross_r": 4.9498,
+        "net_r": -6.0907,
+        "win_rate_percent": 21.74
+      },
+      "GTE_0_60": {
+        "closed": 5,
+        "wins": 2,
+        "sl": 2,
+        "gross_r": 1.4248,
+        "net_r": 0.6617,
+        "win_rate_percent": 40.0
+      }
+    },
+    "direction_stats": {
+      "LONG": {
+        "closed": 35,
+        "wins": 9,
+        "sl": 26,
+        "gross_r": 20.3179,
+        "net_r": -4.9992,
+        "win_rate_percent": 25.71
+      },
+      "SHORT": {
+        "closed": 26,
+        "wins": 5,
+        "sl": 20,
+        "gross_r": 7.41,
+        "net_r": -5.4284,
+        "win_rate_percent": 19.23
+      }
+    },
+    "close_reason_counts": {
+      "TIGHT_STOP_COST_DOMINATED": 16,
+      "LOW_VOLUME_NO_CONTINUATION": 6,
+      "WEAK_SINGLE_CONFIRMATION": 11,
+      "RANGE_BROKEN_BY_TREND_PRESSURE": 9,
+      "COMPLETED_RANGE_LEG": 11,
+      "DIRECTION_OR_ENTRY_TIMING_FAILURE": 4,
+      "TIMEOUT_PARTIAL_FAVORABLE_MOVE": 3,
+      "TIMEOUT_EDGE_ERASED_BY_COST": 1
+    },
+    "win_rate_percent": 22.95
   },
   "last_cycle": {
     "scanned_coins": 80,
-    "range_coins": 35,
-    "candidate_count": 1,
-    "new_positions": 1,
-    "updated_open_positions": 4,
-    "resolved_positions": 2,
+    "range_coins": 44,
+    "candidate_count": 6,
+    "new_positions": 3,
+    "updated_open_positions": 3,
+    "resolved_positions": 1,
     "global_guard": {
       "allowed": true,
       "reason": "OK",
-      "btc_5m_move_percent": 0.0028
+      "btc_5m_move_percent": -0.0243
     }
   },
-  "last_update": 1785998551
+  "last_update": 1786000930
 }
