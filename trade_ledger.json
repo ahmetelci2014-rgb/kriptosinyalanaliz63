@@ -44916,27 +44916,28 @@
         "factors": [
           "Islem ilk 20 dakikada anlamli lehe hareket yapmadan stop oldu.",
           "Giris ideal bolgeden goreceli olarak uzakti.",
-          "Stop mesafesi cok kisa surede tamamen tuketildi."
+          "Stop mesafesi cok kisa surede tamamen tuketildi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 10,
         "best_favorable_r": 0.0,
         "worst_adverse_r": 3.4755,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "MUHTEMEL_YANLIS_YON",
-        "preliminary_label": "Muhtemel yanlış yön",
+        "primary": "GEC_UZAK_GIRIS",
+        "label": "Geç/uzak giriş",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [
           "GEC_UZAK_GIRIS"
         ],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
           "Giriş ideal bölgeden veya gönderim fiyatından uzaktı."
         ],
         "metrics": {
@@ -44944,9 +44945,15 @@
           "mfe_r": 0.0,
           "mae_r": 3.4755,
           "risk_percent": 1.468,
-          "return_minutes": null
+          "return_minutes": 248.0
         },
-        "updated_at": 1785993360
+        "updated_at": 1786008263
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 248,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1786008263
       }
     },
     "HUSDT_LONG_15M_ENTRY_1785993620": {
@@ -45379,12 +45386,12 @@
       "tp1_hit": true,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "TP1_SONRASI_BE",
+      "r_result": 0.275,
+      "exit_price": 0.5969,
+      "closed_at": 1786008263,
+      "closed_day": "2026-08-06",
       "events": [
         {
           "time": 1786006158,
@@ -45395,6 +45402,11 @@
           "time": 1786006881,
           "event": "TP1",
           "price": 0.5982728313
+        },
+        {
+          "time": 1786008263,
+          "event": "BE",
+          "price": 0.5969
         }
       ],
       "bot_version": "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27",
@@ -45431,16 +45443,30 @@
       "market_guard_long_allowed": true,
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 2/3 | SHORT uygun: 1/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %0.0 | ETHUSDT: 15M EMA20 üstü, 5M %0.04 | SOLUSDT: 15M EMA20 altı, 5M %0.07",
-      "best_favorable_percent": 0.2848,
-      "worst_adverse_percent": 0.0335,
-      "best_favorable_r": 0.6811,
-      "worst_adverse_r": 0.0801,
-      "best_favorable_price": 0.5986,
-      "worst_adverse_price": 0.5967,
-      "last_market_price": 0.5971,
+      "best_favorable_percent": 0.3016,
+      "worst_adverse_percent": 0.1005,
+      "best_favorable_r": 0.7211,
+      "worst_adverse_r": 0.2404,
+      "best_favorable_price": 0.5987,
+      "worst_adverse_price": 0.5963,
+      "last_market_price": 0.5963,
       "tp1_hit_at": 1786006380,
-      "last_tracking_at": 1786006860
+      "last_tracking_at": 1786007220,
+      "duration_minutes": 35,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "YON DOGRU, DEVAM GUCU ZAYIFLADI",
+        "confidence": "YUKSEK",
+        "factors": [
+          "Islem hedef gordukten sonra kalan kisim giristen kapandi."
+        ],
+        "duration_minutes": 35,
+        "best_favorable_r": 0.7211,
+        "worst_adverse_r": 0.2404,
+        "provisional": false,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      }
     }
   },
-  "last_update": 1786006882
+  "last_update": 1786008263
 }
