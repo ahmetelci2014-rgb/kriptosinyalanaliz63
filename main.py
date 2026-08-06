@@ -3426,6 +3426,127 @@ def count_open_signal_risk():
     return risky, reduced, len(open_signals)
 
 
+
+def build_short_trade_message(
+    signal,
+    current_price=None,
+    portfolio_risk=None,
+):
+    """
+    Premium MTF yeni işlem mesajını kısa ve okunaklı hazırlar.
+
+    Yalnız Telegram görünümünü değiştirir; sinyal seçimi, TP/SL,
+    Portfolio Risk kararı, açık işlem kaydı ve takip mantığı değişmez.
+    """
+    direction = str(
+        signal.get("direction", "")
+    ).upper()
+
+    icon = (
+        "🟢"
+        if direction == "LONG"
+        else "🔴"
+    )
+
+    symbol = str(
+        signal.get("symbol")
+        or "UNKNOWN"
+    )
+
+    source = str(
+        signal.get("source")
+        or "MTF"
+    ).replace("_", " ")
+
+    score = signal.get("score")
+    score_text = (
+        str(score)
+        if score is not None
+        else "-"
+    )
+
+    quality = str(
+        signal.get("quality")
+        or "A"
+    )
+
+    leverage = str(
+        signal.get("leverage")
+        or "2x"
+    )
+
+    rr_values = []
+
+    for key in (
+        "rr_tp1",
+        "rr_tp2",
+        "rr_tp3",
+    ):
+        value = safe_float(
+            signal.get(key)
+        )
+
+        if value is not None:
+            rr_values.append(
+                f"{value:.2f}"
+            )
+
+    rr_text = (
+        " / ".join(rr_values)
+        if rr_values
+        else "-"
+    )
+
+    portfolio_text = "ALLOW"
+
+    if isinstance(
+        portfolio_risk,
+        dict,
+    ):
+        if portfolio_risk.get(
+            "hard_block",
+            False,
+        ):
+            portfolio_text = "BLOCK"
+        elif (
+            portfolio_risk.get("warnings")
+            or portfolio_risk.get("warning")
+            or portfolio_risk.get("soft_warning")
+        ):
+            portfolio_text = "ALLOW ⚠️"
+
+    current_line = ""
+
+    if current_price is not None:
+        current_line = (
+            f"\n📍 Güncel: "
+            f"{format_price(current_price)}"
+            f" | Girişe yakın ✅"
+        )
+
+    return (
+        f"🚀 PREMIUM FUTURES\n\n"
+        f"{icon} {direction} | {symbol}\n"
+        f"💰 Giriş: "
+        f"{format_price(float(signal['entry']))}\n\n"
+        f"🎯 TP1: "
+        f"{format_price(float(signal['tp1']))}\n"
+        f"🎯 TP2: "
+        f"{format_price(float(signal['tp2']))}\n"
+        f"🎯 TP3: "
+        f"{format_price(float(signal['tp3']))}\n"
+        f"🛑 SL: "
+        f"{format_price(float(signal['sl']))}\n\n"
+        f"⭐ %{score_text} | {quality}\n"
+        f"⚖️ R/R: {rr_text}\n"
+        f"🔧 {leverage} | Isolated\n"
+        f"⏱ {source}\n"
+        f"🛡️ Portfolio: {portfolio_text}"
+        f"{current_line}\n\n"
+        f"⚠️ Finansal tavsiye değildir."
+    )
+
+
 def build_limit_watch_message(
     signal,
     current_price=None,
@@ -6434,20 +6555,13 @@ def main():
             market_status.get("reason")
         )
 
-        extra = (
-            f"\n💰 Güncel Fiyat: "
-            f"{format_price(current_price)}\n"
-            f"📌 Son Kontrol: Girişe yakın ✅"
+        short_message = build_short_trade_message(
+            signal=signal,
+            current_price=current_price,
+            portfolio_risk=portfolio_risk,
         )
 
-        if portfolio_note:
-            extra += (
-                f"\n{portfolio_note}"
-            )
-
-        if send_telegram(
-            signal["message"] + extra
-        ):
+        if send_telegram(short_message):
             save_open_signal(signal)
             mark_sent(
                 signal,
