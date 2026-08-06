@@ -1,20 +1,18 @@
 """
-Range Cycle Shadow v2 — bağımsız destek/direnç bant döngü gölge motoru.
+Range Cycle Shadow v3 Diagnostic — bağımsız destek/direnç bant döngü gölge motoru.
 
-Önemli güvenlik özellikleri:
-- Mevcut ana bot, Scalp, Swing, Pump/Dump ve Yeni Liste sistemlerini import etmez.
+Güvenlik:
+- Ana bot, Scalp, Swing, Pump/Dump ve Yeni Liste sistemlerini import etmez.
 - Telegram mesajı göndermez.
 - OKX hesabına bağlanmaz, API anahtarı kullanmaz ve emir açmaz.
 - Yalnız herkese açık piyasa verisini okuyarak sanal işlemler üretir.
 - Sonuçları yalnız range_shadow.json dosyasına atomik biçimde yazar.
 
-Amaç:
-- Likit OKX USDT perpetual coinlerini 5M grafikte taramak.
-- Yatay bant (range), destek/direnç teması ve dönüş onayı aramak.
-- Destekte sanal LONG açmak ve direnç bölgesinde tamamını kapatmak.
-- Dirençte sanal SHORT açmak ve destek bölgesinde tamamını kapatmak.
-- Bant sınırına ulaşınca karşı yön için yeni dönüş onayı aramak.
-- Ara TP kullanmadan hedef bölge/SL/timeout sonuçlarını Net R ile ölçmek.
+V3 Diagnostic:
+- Giriş, hedef, stop ve timeout mantığını değiştirmez.
+- Stop mesafesi/risk bandı, maliyet-R oranı ve giriş uyarıları kaydeder.
+- Kapanışları teşhis nedenleriyle sınıflandırır.
+- LONG/SHORT ve risk bandı bazında Gross R / Net R özeti üretir.
 """
 
 from __future__ import annotations
@@ -30,7 +28,7 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 try:
     import ccxt
-except ImportError:  # Saf test ortamında opsiyonel.
+except ImportError:
     ccxt = None
 
 try:
@@ -38,7 +36,7 @@ try:
     from ta.momentum import RSIIndicator
     from ta.trend import ADXIndicator, EMAIndicator
     from ta.volatility import AverageTrueRange
-except ImportError:  # Saf self-test için opsiyonel.
+except ImportError:
     pd = None
     RSIIndicator = None
     ADXIndicator = None
@@ -46,7 +44,7 @@ except ImportError:  # Saf self-test için opsiyonel.
     AverageTrueRange = None
 
 
-VERSION = "RANGE_CYCLE_SHADOW_V2_2026_08_04"
+VERSION = "RANGE_CYCLE_SHADOW_V3_DIAGNOSTIC_2026_08_06"
 LEDGER_FILE = "range_shadow.json"
 
 TIMEFRAME = "5m"
@@ -78,8 +76,14 @@ MIN_EXPECTED_TARGET_R = 1.10
 BTC_HARD_MOVE_PERCENT = 1.20
 
 # Taker ücretleri, spread ve kayma için ihtiyatlı toplam tahmin.
-# Canlı emir değildir; yalnız gölge Net R hesabında kullanılır.
 ESTIMATED_ROUND_TRIP_COST_PERCENT = 0.12
+
+RISK_BANDS = (
+    (0.20, "LT_0_20"),
+    (0.35, "0_20_TO_0_35"),
+    (0.60, "0_35_TO_0_60"),
+    (float("inf"), "GTE_0_60"),
+)
 
 
 def now_ts() -> int:
@@ -170,10 +174,116 @@ def save_json_atomically(filename: str, data: Dict[str, Any]) -> bool:
                 pass
 
 
+def risk_band(risk_percent: float) -> str:
+    value = max(0.0, safe_float(risk_percent))
+    for upper, label in RISK_BANDS:
+        if value < upper:
+            return label
+    return "UNKNOWN"
+
+
+def cost_r_from_risk_percent(risk_percent: float) -> float:
+    value = safe_float(risk_percent)
+    if value <= 0:
+        return 0.0
+    return ESTIMATED_ROUND_TRIP_COST_PERCENT / value
+
+
+def build_entry_diagnostics(candidate: Dict[str, Any]) -> Dict[str, Any]:
+    risk_pct = safe_float(candidate.get("risk_percent"))
+    cost_r = cost_r_from_risk_percent(risk_pct)
+    confirmations = list(candidate.get("confirmation") or [])
+    adx_5m = safe_float(candidate.get("adx_5m"))
+    adx_15m = safe_float(candidate.get("adx_15m"))
+    volume_ratio = safe_float(candidate.get("volume_ratio_5m"))
+    expected_r = safe_float(candidate.get("expected_target_r"))
+
+    flags: List[str] = []
+    if risk_pct < 0.20:
+        flags.append("VERY_TIGHT_STOP")
+    elif risk_pct < 0.35:
+        flags.append("TIGHT_STOP")
+
+    if cost_r >= 0.75:
+        flags.append("COST_DOMINATES_RISK")
+    elif cost_r >= 0.40:
+        flags.append("HIGH_COST_TO_RISK")
+
+    if len(confirmations) <= 1:
+        flags.append("SINGLE_CONFIRMATION")
+    if volume_ratio < 0.70:
+        flags.append("LOW_VOLUME")
+    if adx_5m >= 22.0 or adx_15m >= 24.0:
+        flags.append("TREND_PRESSURE")
+    if expected_r >= 5.0 and risk_pct < 0.25:
+        flags.append("EXPECTED_R_INFLATED_BY_TIGHT_STOP")
+
+    return {
+        "risk_band": risk_band(risk_pct),
+        "estimated_cost_r": round(cost_r, 4),
+        "cost_to_stop_percent_ratio": (
+            round(ESTIMATED_ROUND_TRIP_COST_PERCENT / risk_pct, 4)
+            if risk_pct > 0
+            else 0.0
+        ),
+        "confirmation_count": len(confirmations),
+        "flags": flags,
+        "shadow_only": True,
+    }
+
+
+def classify_close_diagnostics(
+    position: Dict[str, Any],
+    outcome: str,
+    gross_r: float,
+    net_r: float,
+) -> Dict[str, Any]:
+    entry_diag = position.get("entry_diagnostics")
+    if not isinstance(entry_diag, dict):
+        entry_diag = build_entry_diagnostics(position)
+
+    flags = list(entry_diag.get("flags") or [])
+    reason = "UNCLASSIFIED"
+
+    if outcome in {"RESISTANCE_EXIT", "SUPPORT_EXIT"}:
+        reason = "COMPLETED_RANGE_LEG"
+    elif outcome == "TIMEOUT":
+        if gross_r > 0 and net_r <= 0:
+            reason = "TIMEOUT_EDGE_ERASED_BY_COST"
+        elif gross_r > 0:
+            reason = "TIMEOUT_PARTIAL_FAVORABLE_MOVE"
+        elif gross_r < 0:
+            reason = "TIMEOUT_DIRECTION_WEAK"
+        else:
+            reason = "TIMEOUT_NO_DIRECTION"
+    elif outcome.startswith("AMBIGUOUS"):
+        reason = "SAME_CANDLE_PATH_AMBIGUOUS"
+    elif outcome == "SL":
+        if "COST_DOMINATES_RISK" in flags or "VERY_TIGHT_STOP" in flags:
+            reason = "TIGHT_STOP_COST_DOMINATED"
+        elif "TREND_PRESSURE" in flags:
+            reason = "RANGE_BROKEN_BY_TREND_PRESSURE"
+        elif "SINGLE_CONFIRMATION" in flags:
+            reason = "WEAK_SINGLE_CONFIRMATION"
+        elif "LOW_VOLUME" in flags:
+            reason = "LOW_VOLUME_NO_CONTINUATION"
+        else:
+            reason = "DIRECTION_OR_ENTRY_TIMING_FAILURE"
+
+    return {
+        "primary_reason": reason,
+        "risk_band": entry_diag.get("risk_band"),
+        "estimated_cost_r": entry_diag.get("estimated_cost_r"),
+        "entry_flags": flags,
+        "gross_positive_net_negative": bool(gross_r > 0 and net_r <= 0),
+    }
+
+
 def empty_ledger() -> Dict[str, Any]:
     return {
         "version": VERSION,
         "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS",
+        "cycle_logic": "SUPPORT_LONG_TO_RESISTANCE_EXIT_THEN_SHORT_TO_SUPPORT_EXIT",
         "open_positions": {},
         "closed_positions": [],
         "latest_candidates": [],
@@ -189,6 +299,12 @@ def empty_ledger() -> Dict[str, Any]:
             "ambiguous_count": 0,
             "gross_r": 0.0,
             "net_r": 0.0,
+            "gross_to_net_cost_r": 0.0,
+            "average_cost_r_per_closed": 0.0,
+            "cost_flipped_positive_gross_count": 0,
+            "risk_band_stats": {},
+            "direction_stats": {},
+            "close_reason_counts": {},
             "win_rate_percent": 0.0,
         },
         "last_cycle": {},
@@ -282,11 +398,9 @@ def percent_change(old: float, new: float) -> float:
 
 
 def detect_range(frame: Any) -> Dict[str, Any]:
-    """Son kapanmış mumlarda robust bant yapısını değerlendirir."""
     if frame is None or len(frame) < RANGE_WINDOW + 2:
         return {"is_range": False, "reason": "YETERSIZ_VERI", "score": 0}
 
-    # Son satır henüz açık mum olabilir; analiz yalnız kapanmış mumlarla yapılır.
     closed = frame.iloc[:-1].tail(RANGE_WINDOW).copy()
     if len(closed) < RANGE_WINDOW:
         return {"is_range": False, "reason": "YETERSIZ_KAPANMIS_MUM", "score": 0}
@@ -465,7 +579,6 @@ def evaluate_entry_candidate(
 
     atr = safe_float(last.get("atr"))
     stop_buffer = max(atr * 0.55, zone_width * 0.55)
-    # Hedef, dolum ihtimalini artırmak için karşı bölgenin iç kenarıdır.
     target_inset = zone_width * 0.20
 
     if direction == "LONG":
@@ -509,7 +622,7 @@ def evaluate_entry_candidate(
         score += 4
     score = max(0, min(100, score))
 
-    return {
+    candidate = {
         "symbol": normalize_symbol(symbol),
         "direction": direction,
         "source": "RANGE_CYCLE_SHADOW",
@@ -547,6 +660,8 @@ def evaluate_entry_candidate(
         "signal_candle_ms": int(range_info.get("last_closed_candle_ms") or 0),
         "created_at": now_ts(),
     }
+    candidate["entry_diagnostics"] = build_entry_diagnostics(candidate)
+    return candidate
 
 
 def position_id(candidate: Dict[str, Any]) -> str:
@@ -558,6 +673,8 @@ def position_id(candidate: Dict[str, Any]) -> str:
 
 def build_position(candidate: Dict[str, Any]) -> Dict[str, Any]:
     result = copy.deepcopy(candidate)
+    if not isinstance(result.get("entry_diagnostics"), dict):
+        result["entry_diagnostics"] = build_entry_diagnostics(result)
     result.update(
         {
             "position_id": position_id(candidate),
@@ -582,10 +699,7 @@ def risk_amount(position: Dict[str, Any]) -> float:
 
 
 def cost_in_r(position: Dict[str, Any]) -> float:
-    risk_pct = safe_float(position.get("risk_percent"))
-    if risk_pct <= 0:
-        return 0.0
-    return ESTIMATED_ROUND_TRIP_COST_PERCENT / risk_pct
+    return cost_r_from_risk_percent(safe_float(position.get("risk_percent")))
 
 
 def close_shadow_position(
@@ -599,8 +713,16 @@ def close_shadow_position(
     result["status"] = "CLOSED"
     result["outcome"] = outcome
     result["gross_r"] = round(gross_r, 4)
-    result["net_r"] = round(gross_r - cost_in_r(result), 4)
-    result["closed_at"] = int(closed_at_ms / 1000) if closed_at_ms > 10_000_000_000 else int(closed_at_ms)
+    result["cost_r"] = round(cost_in_r(result), 4)
+    result["net_r"] = round(result["gross_r"] - result["cost_r"], 4)
+    result["close_diagnostics"] = classify_close_diagnostics(
+        result, outcome, result["gross_r"], result["net_r"]
+    )
+    result["closed_at"] = (
+        int(closed_at_ms / 1000)
+        if closed_at_ms > 10_000_000_000
+        else int(closed_at_ms)
+    )
     result["exit_price"] = round(exit_price, 12)
     result["last_checked_candle_ms"] = int(closed_at_ms)
     return result
@@ -610,7 +732,6 @@ def simulate_position_on_candles(
     position: Dict[str, Any],
     candles: Sequence[Dict[str, Any]],
 ) -> Dict[str, Any]:
-    """Kapanmış mumları sırayla işleyerek tam bant hedefli sanal sonuç üretir."""
     result = copy.deepcopy(position)
     if result.get("status") != "OPEN":
         return result
@@ -618,8 +739,6 @@ def simulate_position_on_candles(
     direction = str(result.get("direction") or "").upper()
     entry = safe_float(result.get("entry"))
     sl = safe_float(result.get("sl"))
-    # V1 dosyası yanlışlıkla yüklenmişse açık kaydı güvenli biçimde izleyebilmek için
-    # eski tp2 alanı yalnız geçiş yedeği olarak kabul edilir. Yeni kayıtlarda target vardır.
     target = safe_float(result.get("target"), safe_float(result.get("tp2")))
     risk = risk_amount(result)
     if direction not in {"LONG", "SHORT"} or risk <= 0 or target <= 0:
@@ -707,7 +826,6 @@ def recent_duplicate(
 ) -> bool:
     normalized = normalize_symbol(symbol)
     for position in (ledger.get("open_positions") or {}).values():
-        # Aynı coinde aynı anda LONG ve SHORT açılmaz. Önce mevcut bant ayağı kapanır.
         if normalize_symbol(position.get("symbol")) == normalized:
             return True
 
@@ -730,6 +848,64 @@ def calculate_summary(ledger: Dict[str, Any]) -> Dict[str, Any]:
     total_closed = len(closed)
     resistance_exits = outcomes.count("RESISTANCE_EXIT")
     support_exits = outcomes.count("SUPPORT_EXIT")
+    gross_total = sum(safe_float(item.get("gross_r")) for item in closed)
+    net_total = sum(safe_float(item.get("net_r")) for item in closed)
+    total_cost_r = gross_total - net_total
+
+    risk_band_stats: Dict[str, Dict[str, Any]] = {}
+    direction_stats: Dict[str, Dict[str, Any]] = {}
+    close_reason_counts: Dict[str, int] = {}
+    cost_flipped = 0
+
+    for item in closed:
+        band = str(
+            ((item.get("entry_diagnostics") or {}).get("risk_band"))
+            or risk_band(safe_float(item.get("risk_percent")))
+        )
+        direction = str(item.get("direction") or "UNKNOWN").upper()
+        gross = safe_float(item.get("gross_r"))
+        net = safe_float(item.get("net_r"))
+        outcome = str(item.get("outcome") or "")
+
+        band_row = risk_band_stats.setdefault(
+            band,
+            {"closed": 0, "wins": 0, "sl": 0, "gross_r": 0.0, "net_r": 0.0},
+        )
+        band_row["closed"] += 1
+        band_row["wins"] += int(net > 0)
+        band_row["sl"] += int(outcome == "SL")
+        band_row["gross_r"] += gross
+        band_row["net_r"] += net
+
+        direction_row = direction_stats.setdefault(
+            direction,
+            {"closed": 0, "wins": 0, "sl": 0, "gross_r": 0.0, "net_r": 0.0},
+        )
+        direction_row["closed"] += 1
+        direction_row["wins"] += int(net > 0)
+        direction_row["sl"] += int(outcome == "SL")
+        direction_row["gross_r"] += gross
+        direction_row["net_r"] += net
+
+        close_diag = item.get("close_diagnostics")
+        if not isinstance(close_diag, dict):
+            close_diag = classify_close_diagnostics(item, outcome, gross, net)
+        reason = str(close_diag.get("primary_reason") or "UNCLASSIFIED")
+        close_reason_counts[reason] = close_reason_counts.get(reason, 0) + 1
+
+        if gross > 0 and net <= 0:
+            cost_flipped += 1
+
+    for group in (risk_band_stats, direction_stats):
+        for row in group.values():
+            row["gross_r"] = round(safe_float(row["gross_r"]), 4)
+            row["net_r"] = round(safe_float(row["net_r"]), 4)
+            row["win_rate_percent"] = (
+                round(row["wins"] / row["closed"] * 100.0, 2)
+                if row["closed"]
+                else 0.0
+            )
+
     return {
         "total_opened": total_closed + len(ledger.get("open_positions") or {}),
         "total_closed": total_closed,
@@ -742,12 +918,16 @@ def calculate_summary(ledger: Dict[str, Any]) -> Dict[str, Any]:
         "ambiguous_count": sum(
             1 for value in outcomes if value.startswith("AMBIGUOUS")
         ),
-        "gross_r": round(
-            sum(safe_float(item.get("gross_r")) for item in closed), 4
+        "gross_r": round(gross_total, 4),
+        "net_r": round(net_total, 4),
+        "gross_to_net_cost_r": round(total_cost_r, 4),
+        "average_cost_r_per_closed": (
+            round(total_cost_r / total_closed, 4) if total_closed else 0.0
         ),
-        "net_r": round(
-            sum(safe_float(item.get("net_r")) for item in closed), 4
-        ),
+        "cost_flipped_positive_gross_count": cost_flipped,
+        "risk_band_stats": risk_band_stats,
+        "direction_stats": direction_stats,
+        "close_reason_counts": close_reason_counts,
         "win_rate_percent": (
             round(wins / total_closed * 100.0, 2) if total_closed else 0.0
         ),
@@ -804,8 +984,12 @@ def get_scan_universe(exchange: Any) -> List[Tuple[str, str, float]]:
     return candidates[:MAX_SCAN_COINS]
 
 
-def fetch_indicator_frame(exchange: Any, okx_symbol: str, timeframe: str) -> Optional[Any]:
-    rows = exchange.fetch_ohlcv(okx_symbol, timeframe=timeframe, limit=OHLCV_LIMIT)
+def fetch_indicator_frame(
+    exchange: Any, okx_symbol: str, timeframe: str
+) -> Optional[Any]:
+    rows = exchange.fetch_ohlcv(
+        okx_symbol, timeframe=timeframe, limit=OHLCV_LIMIT
+    )
     return add_indicators(frame_from_ohlcv(rows))
 
 
@@ -816,7 +1000,9 @@ def btc_hard_move_guard(exchange: Any) -> Dict[str, Any]:
             return {"allowed": True, "reason": "BTC_VERI_YOK"}
         closed = frame.iloc[:-1]
         last = closed.iloc[-1]
-        move = percent_change(safe_float(last.get("open")), safe_float(last.get("close")))
+        move = percent_change(
+            safe_float(last.get("open")), safe_float(last.get("close"))
+        )
         allowed = abs(move) < BTC_HARD_MOVE_PERCENT
         return {
             "allowed": allowed,
@@ -824,7 +1010,6 @@ def btc_hard_move_guard(exchange: Any) -> Dict[str, Any]:
             "btc_5m_move_percent": round(move, 4),
         }
     except Exception as exc:
-        # Veri hatası canlı işlem olmadığı için çalışma döngüsünü öldürmez.
         return {"allowed": True, "reason": f"BTC_GUARD_HATA:{type(exc).__name__}"}
 
 
@@ -887,7 +1072,6 @@ def scan_new_candidates(
                 continue
             range_count += 1
 
-            # 15M yalnız banda yakın olası girişlerde istenir; gereksiz API çağrısı azaltılır.
             close = safe_float(range_info.get("last_close"))
             support = safe_float(range_info.get("support"))
             resistance = safe_float(range_info.get("resistance"))
@@ -895,17 +1079,17 @@ def scan_new_candidates(
             if width <= 0:
                 continue
             position = (close - support) / width
-            if not (-0.08 <= position <= ENTRY_ZONE_FRACTION or (1 - ENTRY_ZONE_FRACTION) <= position <= 1.08):
+            near_zone = (
+                -0.08 <= position <= ENTRY_ZONE_FRACTION
+                or (1 - ENTRY_ZONE_FRACTION) <= position <= 1.08
+            )
+            if not near_zone:
                 continue
 
             frame15 = fetch_indicator_frame(exchange, okx_symbol, "15m")
             guard15 = trend_guard_15m(frame15)
             candidate = evaluate_entry_candidate(
-                symbol,
-                frame5,
-                range_info,
-                guard15,
-                quote_volume,
+                symbol, frame5, range_info, guard15, quote_volume
             )
             if candidate:
                 candidates.append(candidate)
@@ -947,19 +1131,46 @@ def apply_new_candidates(
     return added
 
 
+def enrich_legacy_diagnostics(ledger: Dict[str, Any]) -> None:
+    for position in (ledger.get("open_positions") or {}).values():
+        if not isinstance(position.get("entry_diagnostics"), dict):
+            position["entry_diagnostics"] = build_entry_diagnostics(position)
+
+    for position in ledger.get("closed_positions") or []:
+        if not isinstance(position.get("entry_diagnostics"), dict):
+            position["entry_diagnostics"] = build_entry_diagnostics(position)
+        if "cost_r" not in position:
+            position["cost_r"] = round(cost_in_r(position), 4)
+        if not isinstance(position.get("close_diagnostics"), dict):
+            position["close_diagnostics"] = classify_close_diagnostics(
+                position,
+                str(position.get("outcome") or ""),
+                safe_float(position.get("gross_r")),
+                safe_float(position.get("net_r")),
+            )
+
+
 def run_cycle(filename: str = LEDGER_FILE) -> Dict[str, Any]:
     ledger = load_json(filename, empty_ledger())
     if ledger.get("version") != VERSION:
-        # Eski veri kaybolmaz; yeni şemaya güvenli alanlar eklenir.
         ledger["version"] = VERSION
+        ledger.setdefault("mode", "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS")
+        ledger.setdefault(
+            "cycle_logic",
+            "SUPPORT_LONG_TO_RESISTANCE_EXIT_THEN_SHORT_TO_SUPPORT_EXIT",
+        )
         ledger.setdefault("open_positions", {})
         ledger.setdefault("closed_positions", [])
         ledger.setdefault("latest_candidates", [])
 
+    enrich_legacy_diagnostics(ledger)
+
     exchange = create_exchange()
     updated, resolved = update_existing_positions(exchange, ledger)
     global_guard = btc_hard_move_guard(exchange)
-    candidates, scanned, range_count = scan_new_candidates(exchange, ledger, global_guard)
+    candidates, scanned, range_count = scan_new_candidates(
+        exchange, ledger, global_guard
+    )
     ledger["latest_candidates"] = list(candidates[:MAX_CANDIDATES_SAVED])
     added = apply_new_candidates(ledger, candidates)
     ledger["summary"] = calculate_summary(ledger)
@@ -977,14 +1188,20 @@ def run_cycle(filename: str = LEDGER_FILE) -> Dict[str, Any]:
     if not save_json_atomically(filename, ledger):
         raise RuntimeError("range_shadow.json kaydedilemedi.")
 
-    print("Range Cycle Shadow v2 tamamlandı.")
+    print("Range Cycle Shadow v3 Diagnostic tamamlandı.")
     print("Taranan coin:", scanned)
     print("Bant bulunan:", range_count)
     print("Bant döngü adayı:", len(candidates))
     print("Yeni sanal işlem:", added)
     print("Açık sanal işlem:", len(ledger.get("open_positions") or {}))
     print("Sonuçlanan:", resolved)
+    print("Gross R:", ledger["summary"].get("gross_r"))
     print("Net R:", ledger["summary"].get("net_r"))
+    print(
+        "Brüt-Net maliyet farkı R:",
+        ledger["summary"].get("gross_to_net_cost_r"),
+    )
+    print("Stop/kapanış nedenleri:", ledger["summary"].get("close_reason_counts"))
     print("Telegram: KAPALI | Gerçek emir: KAPALI")
     return ledger
 
@@ -1000,12 +1217,13 @@ def _synthetic_range_rows(count: int = 190) -> List[List[float]]:
         high = max(opened, close) + 0.18
         low = min(opened, close) - 0.18
         volume = 1000.0 + (index % 7) * 20.0
-        rows.append([base_ts + index * 300_000, opened, high, low, close, volume])
+        rows.append(
+            [base_ts + index * 300_000, opened, high, low, close, volume]
+        )
     return rows
 
 
 def self_test() -> None:
-    # LONG: destekten aç, dirençte tamamını kapat ve SHORT yönüne hazır ol.
     base_candidate = {
         "symbol": "TESTUSDT",
         "direction": "LONG",
@@ -1016,6 +1234,11 @@ def self_test() -> None:
         "next_direction": "SHORT",
         "risk_percent": 1.0,
         "signal_candle_ms": 1_700_000_000_000,
+        "confirmation": ["YESIL_DONUS_MUMU", "ALT_FITIL_RED"],
+        "adx_5m": 18.0,
+        "adx_15m": 18.0,
+        "volume_ratio_5m": 1.0,
+        "expected_target_r": 2.0,
     }
     position = build_position(base_candidate)
     later = [
@@ -1032,9 +1255,57 @@ def self_test() -> None:
     assert resolved["reverse_ready"] is True
     assert resolved["next_direction"] == "SHORT"
     assert resolved["net_r"] < resolved["gross_r"]
+    assert resolved["cost_r"] > 0
+    assert (
+        resolved["close_diagnostics"]["primary_reason"]
+        == "COMPLETED_RANGE_LEG"
+    )
 
-    # pandas/ta varsa bant geometrisini de doğrular. Workflow requirements kurduğu için
-    # GitHub Actions'ta bu bölüm mutlaka çalışır.
+    tight_candidate = copy.deepcopy(base_candidate)
+    tight_candidate["sl"] = 99.85
+    tight_candidate["risk_percent"] = 0.15
+    tight_candidate["target"] = 100.60
+    tight_candidate["expected_target_r"] = 4.0
+    tight_position = build_position(tight_candidate)
+    stopped = simulate_position_on_candles(
+        tight_position,
+        [
+            {
+                "timestamp": tight_position["entry_candle_ms"] + 300_000,
+                "open": 100.0,
+                "high": 100.1,
+                "low": 99.80,
+                "close": 99.90,
+            }
+        ],
+    )
+    assert stopped["outcome"] == "SL"
+    assert stopped["net_r"] < -1.0
+    assert (
+        stopped["close_diagnostics"]["primary_reason"]
+        == "TIGHT_STOP_COST_DOMINATED"
+    )
+
+    timeout_candidate = copy.deepcopy(base_candidate)
+    timeout_candidate["risk_percent"] = 0.20
+    timeout_candidate["sl"] = 99.80
+    timeout_position_data = build_position(timeout_candidate)
+    timeout_position_data["opened_at"] = now_ts() - (MAX_HOLD_MINUTES + 1) * 60
+    timeout_result = timeout_position(
+        timeout_position_data,
+        {
+            "timestamp": timeout_position_data["entry_candle_ms"] + 300_000,
+            "close": 100.05,
+        },
+    )
+    assert timeout_result["outcome"] == "TIMEOUT"
+    assert timeout_result["gross_r"] > 0
+    assert timeout_result["net_r"] <= 0
+    assert (
+        timeout_result["close_diagnostics"]["primary_reason"]
+        == "TIMEOUT_EDGE_ERASED_BY_COST"
+    )
+
     if pd is not None and RSIIndicator is not None:
         frame = add_indicators(frame_from_ohlcv(_synthetic_range_rows()))
         assert frame is not None
@@ -1063,18 +1334,34 @@ def self_test() -> None:
             "ema_spread_15m_percent": 0.4,
         }
         candidate = evaluate_entry_candidate(
-            "TESTUSDT", candidate_frame, refreshed, guard, 10_000_000
+            "TESTUSDT",
+            candidate_frame,
+            refreshed,
+            guard,
+            10_000_000,
         )
         assert candidate is not None
         assert candidate["direction"] == "LONG"
         assert candidate["target_zone"] == "RESISTANCE"
+        assert "entry_diagnostics" in candidate
         assert "tp1" not in candidate and "tp2" not in candidate
 
-    print("Range Cycle Shadow v2 self-test BAŞARILI")
+    sample_ledger = empty_ledger()
+    sample_ledger["closed_positions"] = [resolved, stopped, timeout_result]
+    summary = calculate_summary(sample_ledger)
+    assert summary["total_closed"] == 3
+    assert summary["gross_to_net_cost_r"] > 0
+    assert summary["risk_band_stats"]
+    assert summary["direction_stats"]
+    assert summary["close_reason_counts"]
+
+    print("Range Cycle Shadow v3 Diagnostic self-test BAŞARILI")
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Range Cycle Shadow v2")
+    parser = argparse.ArgumentParser(
+        description="Range Cycle Shadow v3 Diagnostic"
+    )
     parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--ledger", default=LEDGER_FILE)
     return parser.parse_args()
