@@ -45138,34 +45138,42 @@
         "primary": "KURULUM DEVAM ETMEDI",
         "confidence": "ORTA",
         "factors": [
-          "Islem yeterli lehe ivme olusturmadan stop oldu."
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 87,
         "best_favorable_r": 0.3241,
         "worst_adverse_r": 1.1096,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "KURULUM_DEVAM_ETMEDI",
-        "preliminary_label": "Kurulum devam etmedi",
+        "primary": "KURULUM_DEVAM_ETMEDI",
+        "label": "Kurulum devam etmedi",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "İşlem yeterli lehe ivme üretmeden stop oldu."
         ],
         "metrics": {
           "duration_minutes": 87,
           "mfe_r": 0.3241,
           "mae_r": 1.1096,
           "risk_percent": 0.961,
-          "return_minutes": null
+          "return_minutes": 254.0
         },
-        "updated_at": 1785999680
+        "updated_at": 1786014954
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 254,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1786014954
       }
     },
     "RAVEUSDT_LONG_5M_RADAR_1785996346": {
@@ -45468,5 +45476,5 @@
       }
     }
   },
-  "last_update": 1786008263
+  "last_update": 1786014954
 }
