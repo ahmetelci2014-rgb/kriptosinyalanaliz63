@@ -45770,39 +45770,47 @@
       "duration_minutes": 202,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "KURULUM DEVAM ETMEDI",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
-          "Ust zaman dilimi trend gucu sinirdaydi."
+          "Ust zaman dilimi trend gucu sinirdaydi.",
+          "Stop sonrasi fiyat TP2 seviyesine dondu."
         ],
         "duration_minutes": 202,
         "best_favorable_r": 0.2736,
         "worst_adverse_r": 1.0683,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ZAYIF_TREND_HACIM",
-        "preliminary_label": "Zayıf trend/hacim",
+        "primary": "FITIL_DAR_STOP",
+        "label": "Fitil/dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
-          "Üst zaman dilimi trend gücü sınırdaydı."
+          "Stop sonrası fiyat TP2 seviyesine 99 dakikada döndü.",
+          "Üst zaman dilimi trend gücü sınırdaydı.",
+          "Stop yüzdesi teşhis eşiğine göre dardı."
         ],
         "metrics": {
           "duration_minutes": 202,
           "mfe_r": 0.2736,
           "mae_r": 1.0683,
           "risk_percent": 0.735,
-          "return_minutes": null
+          "return_minutes": 99.0
         },
-        "updated_at": 1786038153
+        "updated_at": 1786044145
+      },
+      "post_stop_follow": {
+        "returned_level": "TP2",
+        "age_minutes": 99,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1786044145
       }
     },
     "RECALLUSDT_LONG_15M_ENTRY_1786028675": {
@@ -45870,14 +45878,14 @@
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %0.09 | ETHUSDT: 15M EMA20 üstü, 5M %0.15 | SOLUSDT: 15M EMA20 üstü, 5M %0.1",
       "best_favorable_percent": 0.9027,
-      "worst_adverse_percent": 0.244,
+      "worst_adverse_percent": 0.5611,
       "best_favorable_r": 0.5465,
-      "worst_adverse_r": 0.1477,
+      "worst_adverse_r": 0.3397,
       "best_favorable_price": 0.04136,
-      "worst_adverse_price": 0.04089,
-      "last_market_price": 0.04093,
+      "worst_adverse_price": 0.04076,
+      "last_market_price": 0.04077,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786038120
+      "last_tracking_at": 1786044120
     },
     "GPSUSDT_LONG_15M_ENTRY_1786029651": {
       "trade_id": "GPSUSDT_LONG_15M_ENTRY_1786029651",
@@ -45960,39 +45968,47 @@
       "duration_minutes": 141,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "KURULUM DEVAM ETMEDI",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
-          "Islem yeterli lehe ivme olusturmadan stop oldu."
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Stop sonrasi fiyat TP1 seviyesine dondu."
         ],
         "duration_minutes": 141,
         "best_favorable_r": 0.0596,
         "worst_adverse_r": 1.2525,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "KURULUM_DEVAM_ETMEDI",
-        "preliminary_label": "Kurulum devam etmedi",
+        "primary": "FITIL_DAR_STOP",
+        "label": "Fitil/dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası fiyat TP1 seviyesine 99 dakikada döndü.",
+          "Stop yüzdesi teşhis eşiğine göre dardı."
         ],
         "metrics": {
           "duration_minutes": 141,
           "mfe_r": 0.0596,
           "mae_r": 1.2525,
           "risk_percent": 0.702,
-          "return_minutes": null
+          "return_minutes": 99.0
         },
-        "updated_at": 1786038155
+        "updated_at": 1786044146
+      },
+      "post_stop_follow": {
+        "returned_level": "TP1",
+        "age_minutes": 99,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1786044146
       }
     }
   },
-  "last_update": 1786038155
+  "last_update": 1786044146
 }
