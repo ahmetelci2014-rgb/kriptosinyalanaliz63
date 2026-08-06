@@ -45658,25 +45658,26 @@
         "confidence": "ORTA",
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
-          "Ust zaman dilimi trend gucu sinirdaydi."
+          "Ust zaman dilimi trend gucu sinirdaydi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 25,
         "best_favorable_r": 0.2975,
         "worst_adverse_r": 1.0783,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ZAYIF_TREND_HACIM",
-        "preliminary_label": "Zayıf trend/hacim",
+        "primary": "ZAYIF_TREND_HACIM",
+        "label": "Zayıf trend/hacim",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
           "Üst zaman dilimi trend gücü sınırdaydı."
         ],
         "metrics": {
@@ -45684,9 +45685,15 @@
           "mfe_r": 0.2975,
           "mae_r": 1.0783,
           "risk_percent": 1.752,
-          "return_minutes": null
+          "return_minutes": 330.0
         },
-        "updated_at": 1786024870
+        "updated_at": 1786044683
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 330,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1786044683
       }
     },
     "XRPUSDT_SHORT_15M_ENTRY_1786026020": {
@@ -45878,14 +45885,14 @@
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %0.09 | ETHUSDT: 15M EMA20 üstü, 5M %0.15 | SOLUSDT: 15M EMA20 üstü, 5M %0.1",
       "best_favorable_percent": 0.9027,
-      "worst_adverse_percent": 0.5611,
+      "worst_adverse_percent": 1.2198,
       "best_favorable_r": 0.5465,
-      "worst_adverse_r": 0.3397,
+      "worst_adverse_r": 0.7385,
       "best_favorable_price": 0.04136,
-      "worst_adverse_price": 0.04076,
-      "last_market_price": 0.04077,
+      "worst_adverse_price": 0.04049,
+      "last_market_price": 0.04052,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786044120
+      "last_tracking_at": 1786044660
     },
     "GPSUSDT_LONG_15M_ENTRY_1786029651": {
       "trade_id": "GPSUSDT_LONG_15M_ENTRY_1786029651",
@@ -46010,5 +46017,5 @@
       }
     }
   },
-  "last_update": 1786044146
+  "last_update": 1786044683
 }
