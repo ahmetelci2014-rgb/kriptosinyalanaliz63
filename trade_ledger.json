@@ -44354,35 +44354,43 @@
         "confidence": "ORTA",
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
-          "15M hacim kendi ortalamasinin altinda veya sinirdaydi."
+          "15M hacim kendi ortalamasinin altinda veya sinirdaydi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 25,
         "best_favorable_r": 0.0,
         "worst_adverse_r": 1.2643,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "MUHTEMEL_YANLIS_YON",
-        "preliminary_label": "Muhtemel yanlış yön",
+        "primary": "MUHTEMEL_YANLIS_YON",
+        "label": "Muhtemel yanlış yön",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
-          "15M hacim oranı sınırın altındaydı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "15M hacim oranı sınırın altındaydı.",
+          "İşlem çok kısa sürede anlamlı lehe hareket üretmeden stop oldu."
         ],
         "metrics": {
           "duration_minutes": 25,
           "mfe_r": 0.0,
           "mae_r": 1.2643,
           "risk_percent": 0.941,
-          "return_minutes": null
+          "return_minutes": 255.0
         },
-        "updated_at": 1785968151
+        "updated_at": 1785983458
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 255,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1785983458
       }
     },
     "LQTYUSDT_SHORT_5M_RADAR_1785971187": {
@@ -44676,10 +44684,10 @@
       "worst_adverse_r": 0.2393,
       "best_favorable_price": 0.10219,
       "worst_adverse_price": 0.1031,
-      "last_market_price": 0.10243,
+      "last_market_price": 0.1024,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1785982500
+      "last_tracking_at": 1785983400
     }
   },
-  "last_update": 1785982545
+  "last_update": 1785983458
 }
