@@ -45837,17 +45837,22 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "SL",
+      "r_result": -1.0,
+      "exit_price": 0.04041,
+      "closed_at": 1786047534,
+      "closed_day": "2026-08-06",
       "events": [
         {
           "time": 1786028675,
           "event": "OPENED",
           "price": 0.04099
+        },
+        {
+          "time": 1786047534,
+          "event": "SL",
+          "price": 0.04041
         }
       ],
       "bot_version": "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27",
@@ -45885,14 +45890,51 @@
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %0.09 | ETHUSDT: 15M EMA20 üstü, 5M %0.15 | SOLUSDT: 15M EMA20 üstü, 5M %0.1",
       "best_favorable_percent": 0.9027,
-      "worst_adverse_percent": 1.2198,
+      "worst_adverse_percent": 1.7077,
       "best_favorable_r": 0.5465,
-      "worst_adverse_r": 0.7385,
+      "worst_adverse_r": 1.0339,
       "best_favorable_price": 0.04136,
-      "worst_adverse_price": 0.04049,
-      "last_market_price": 0.04052,
+      "worst_adverse_price": 0.04029,
+      "last_market_price": 0.04041,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786044660
+      "last_tracking_at": 1786045200,
+      "duration_minutes": 314,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "ONCE LEHE GITTI, SONRA TERS DONDU",
+        "confidence": "ORTA",
+        "factors": [
+          "Stop oncesinde islem en az 0.35R lehe hareket etti.",
+          "Ust zaman dilimi trend gucu sinirdaydi."
+        ],
+        "duration_minutes": 314,
+        "best_favorable_r": 0.5465,
+        "worst_adverse_r": 1.0339,
+        "provisional": true,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "stop_root_cause": {
+        "version": "STOP_ROOT_CAUSE_V1",
+        "primary": "TAKIP_SURUYOR",
+        "label": "Takip sürüyor",
+        "preliminary": "ZAYIF_TREND_HACIM",
+        "preliminary_label": "Zayıf trend/hacim",
+        "secondary": [],
+        "confidence": "DUSUK",
+        "provisional": true,
+        "factors": [
+          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Üst zaman dilimi trend gücü sınırdaydı."
+        ],
+        "metrics": {
+          "duration_minutes": 314,
+          "mfe_r": 0.5465,
+          "mae_r": 1.0339,
+          "risk_percent": 1.652,
+          "return_minutes": null
+        },
+        "updated_at": 1786047534
+      }
     },
     "GPSUSDT_LONG_15M_ENTRY_1786029651": {
       "trade_id": "GPSUSDT_LONG_15M_ENTRY_1786029651",
@@ -46017,5 +46059,5 @@
       }
     }
   },
-  "last_update": 1786044683
+  "last_update": 1786047534
 }
