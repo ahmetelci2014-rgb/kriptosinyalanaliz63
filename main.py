@@ -3659,6 +3659,36 @@ def close_signal_result(
     result,
     exit_price,
 ):
+    """
+    Nihai sonucu ledger tabanlı tekil event kilidiyle kaydeder.
+
+    open_signals.json kısa süreli eski kalsa bile aynı TP3 / SL / BE /
+    EXPIRED sonucu ikinci kez işlenmez ve Telegram tekrarına yol açmaz.
+    True yalnızca ilk kayıt sırasında döner.
+    """
+    result = str(result).upper()
+
+    event_exists, _ = ledger_event_info(
+        signal,
+        result,
+    )
+
+    if event_exists:
+        print(
+            symbol,
+            result,
+            "nihai bildirimi tekrar olduğu için engellendi.",
+        )
+        return False
+
+    # Önce kalıcı ledger'a yaz. Böylece bir sonraki workflow eski state
+    # okusa bile aynı nihai olay yeniden gönderilemez.
+    ledger_record_event(
+        signal,
+        result,
+        exit_price,
+    )
+
     update_performance(
         symbol=symbol,
         result=result,
@@ -3667,12 +3697,6 @@ def close_signal_result(
         entry=signal.get("entry"),
         exit_price=exit_price,
         score=signal.get("score"),
-    )
-
-    ledger_record_event(
-        signal,
-        result,
-        exit_price,
     )
 
     if result == "EXPIRED":
@@ -3686,6 +3710,8 @@ def close_signal_result(
             signal,
             exit_price,
         )
+
+    return True
 
 
 
@@ -5086,18 +5112,16 @@ def check_sl_after_follow(exchange):
                     age_minutes=age_minutes,
                 )
 
-                send_telegram(
-                    f"📊 SL SONRASI TAKİP\n\n"
-                    f"Coin: {symbol}\n"
-                    f"Yön: {direction}\n"
-                    f"Giriş: {format_price(entry)}\n"
-                    f"SL: {format_price(sl)}\n"
-                    f"Stop sonrası geçen süre: "
-                    f"{age_minutes} dakika\n\n"
-                    f"Sonuç: Stop sonrası fiyat "
-                    f"{level_text} seviyesine döndü.\n"
-                    f"Yorum: Stop dar kalmış veya "
-                    f"fitil stop olmuş olabilir."
+                # SL sonrası takip analizi Telegram'a gönderilmez.
+                # Sonuç performance.json ve trade_ledger.json içinde
+                # saklanmaya devam eder.
+                print(
+                    symbol,
+                    "SL sonrası sessiz takip:",
+                    level_text,
+                    "seviyesine döndü;",
+                    age_minutes,
+                    "dakika.",
                 )
 
                 continue
@@ -5156,17 +5180,13 @@ def check_sl_after_follow(exchange):
                             age_minutes=age_minutes,
                         )
 
-                    send_telegram(
-                        f"📊 SL SONRASI TAKİP\n\n"
-                        f"Coin: {symbol}\n"
-                        f"Yön: {direction}\n"
-                        f"Giriş: {format_price(entry)}\n"
-                        f"SL: {format_price(sl)}\n"
-                        f"Kontrol: {checkpoint}. dakika\n\n"
-                        f"Sonuç: Stop sonrası henüz "
-                        f"TP1 seviyesine dönüş yok.\n"
-                        f"Takip penceresi: "
-                        f"{SL_AFTER_MAX_TRACK_MINUTES} dakika."
+                    # Kontrol noktaları Telegram'a gönderilmez; yalnız
+                    # JSON performans/teşhis verisi olarak tutulur.
+                    print(
+                        symbol,
+                        "SL sonrası sessiz kontrol:",
+                        checkpoint,
+                        "dakika; TP1 dönüşü yok.",
                     )
                     break
 
@@ -5293,26 +5313,25 @@ def check_open_signals(exchange):
                     else "ölçülemedi"
                 )
 
-                send_telegram(
-                    f"⏳ SİNYAL SÜRESİ DOLDU\n\n"
-                    f"Coin: {symbol}\n"
-                    f"Yön: {direction}\n"
-                    f"Giriş: {format_price(entry)}\n"
-                    f"Süre Sonu Fiyatı: "
-                    f"{format_price(expiry_price)}\n"
-                    f"Yaklaşık Net Sonuç: "
-                    f"{expiry_r_text}\n\n"
-                    f"{MAX_OPEN_SIGNAL_HOURS} saat içinde "
-                    f"TP3/SL ile netleşmediği için "
-                    f"takipten çıkarıldı."
-                )
-
-                close_signal_result(
+                if close_signal_result(
                     symbol,
                     signal,
                     "EXPIRED",
                     expiry_price,
-                )
+                ):
+                    send_telegram(
+                        f"⏳ SİNYAL SÜRESİ DOLDU\n\n"
+                        f"Coin: {symbol}\n"
+                        f"Yön: {direction}\n"
+                        f"Giriş: {format_price(entry)}\n"
+                        f"Süre Sonu Fiyatı: "
+                        f"{format_price(expiry_price)}\n"
+                        f"Yaklaşık Net Sonuç: "
+                        f"{expiry_r_text}\n\n"
+                        f"{MAX_OPEN_SIGNAL_HOURS} saat içinde "
+                        f"TP3/SL ile netleşmediği için "
+                        f"takipten çıkarıldı."
+                    )
                 continue
 
             candles = fetch_candles_since(
@@ -5403,6 +5422,31 @@ def check_open_signals(exchange):
                                         f"SL girişe çek."
                                     )
                             else:
+                                if close_signal_result(
+                                    symbol,
+                                    signal,
+                                    "SL",
+                                    close,
+                                ):
+                                    send_telegram(
+                                        f"❌ STOP OLDU\n\n"
+                                        f"Coin: {symbol}\n"
+                                        f"Yön: LONG 🟢\n"
+                                        f"Giriş: {format_price(entry)}\n"
+                                        f"SL: {format_price(sl)}\n"
+                                        f"Güncel: {format_price(close)}"
+                                    )
+
+                                closed = True
+                                break
+
+                        elif low <= sl:
+                            if close_signal_result(
+                                symbol,
+                                signal,
+                                "SL",
+                                close,
+                            ):
                                 send_telegram(
                                     f"❌ STOP OLDU\n\n"
                                     f"Coin: {symbol}\n"
@@ -5411,33 +5455,6 @@ def check_open_signals(exchange):
                                     f"SL: {format_price(sl)}\n"
                                     f"Güncel: {format_price(close)}"
                                 )
-
-                                close_signal_result(
-                                    symbol,
-                                    signal,
-                                    "SL",
-                                    close,
-                                )
-
-                                closed = True
-                                break
-
-                        elif low <= sl:
-                            send_telegram(
-                                f"❌ STOP OLDU\n\n"
-                                f"Coin: {symbol}\n"
-                                f"Yön: LONG 🟢\n"
-                                f"Giriş: {format_price(entry)}\n"
-                                f"SL: {format_price(sl)}\n"
-                                f"Güncel: {format_price(close)}"
-                            )
-
-                            close_signal_result(
-                                symbol,
-                                signal,
-                                "SL",
-                                close,
-                            )
 
                             closed = True
                             break
@@ -5495,20 +5512,19 @@ def check_open_signals(exchange):
                         signal["tp3_hit"] = True
                         signal["closed"] = True
 
-                        send_telegram(
-                            f"🏁 TP3 GELDİ\n\n"
-                            f"Coin: {symbol}\n"
-                            f"Yön: LONG 🟢\n"
-                            f"TP3: {format_price(tp3)}\n"
-                            f"Sinyal maksimum hedefe ulaştı."
-                        )
-
-                        close_signal_result(
+                        if close_signal_result(
                             symbol,
                             signal,
                             "TP3",
                             tp3,
-                        )
+                        ):
+                            send_telegram(
+                                f"🏁 TP3 GELDİ\n\n"
+                                f"Coin: {symbol}\n"
+                                f"Yön: LONG 🟢\n"
+                                f"TP3: {format_price(tp3)}\n"
+                                f"Sinyal maksimum hedefe ulaştı."
+                            )
 
                         closed = True
                         break
@@ -5521,19 +5537,18 @@ def check_open_signals(exchange):
                     ):
                         signal["closed"] = True
 
-                        send_telegram(
-                            f"🟡 KALAN İŞLEM GİRİŞTEN KAPANDI\n\n"
-                            f"Coin: {symbol}\n"
-                            f"Yön: LONG 🟢\n"
-                            f"Giriş: {format_price(entry)}"
-                        )
-
-                        close_signal_result(
+                        if close_signal_result(
                             symbol,
                             signal,
                             "BE",
                             entry,
-                        )
+                        ):
+                            send_telegram(
+                                f"🟡 KALAN İŞLEM GİRİŞTEN KAPANDI\n\n"
+                                f"Coin: {symbol}\n"
+                                f"Yön: LONG 🟢\n"
+                                f"Giriş: {format_price(entry)}"
+                            )
 
                         closed = True
                         break
@@ -5564,6 +5579,31 @@ def check_open_signals(exchange):
                                         f"SL girişe çek."
                                     )
                             else:
+                                if close_signal_result(
+                                    symbol,
+                                    signal,
+                                    "SL",
+                                    close,
+                                ):
+                                    send_telegram(
+                                        f"❌ STOP OLDU\n\n"
+                                        f"Coin: {symbol}\n"
+                                        f"Yön: SHORT 🔴\n"
+                                        f"Giriş: {format_price(entry)}\n"
+                                        f"SL: {format_price(sl)}\n"
+                                        f"Güncel: {format_price(close)}"
+                                    )
+
+                                closed = True
+                                break
+
+                        elif high >= sl:
+                            if close_signal_result(
+                                symbol,
+                                signal,
+                                "SL",
+                                close,
+                            ):
                                 send_telegram(
                                     f"❌ STOP OLDU\n\n"
                                     f"Coin: {symbol}\n"
@@ -5572,33 +5612,6 @@ def check_open_signals(exchange):
                                     f"SL: {format_price(sl)}\n"
                                     f"Güncel: {format_price(close)}"
                                 )
-
-                                close_signal_result(
-                                    symbol,
-                                    signal,
-                                    "SL",
-                                    close,
-                                )
-
-                                closed = True
-                                break
-
-                        elif high >= sl:
-                            send_telegram(
-                                f"❌ STOP OLDU\n\n"
-                                f"Coin: {symbol}\n"
-                                f"Yön: SHORT 🔴\n"
-                                f"Giriş: {format_price(entry)}\n"
-                                f"SL: {format_price(sl)}\n"
-                                f"Güncel: {format_price(close)}"
-                            )
-
-                            close_signal_result(
-                                symbol,
-                                signal,
-                                "SL",
-                                close,
-                            )
 
                             closed = True
                             break
@@ -5656,20 +5669,19 @@ def check_open_signals(exchange):
                         signal["tp3_hit"] = True
                         signal["closed"] = True
 
-                        send_telegram(
-                            f"🏁 TP3 GELDİ\n\n"
-                            f"Coin: {symbol}\n"
-                            f"Yön: SHORT 🔴\n"
-                            f"TP3: {format_price(tp3)}\n"
-                            f"Sinyal maksimum hedefe ulaştı."
-                        )
-
-                        close_signal_result(
+                        if close_signal_result(
                             symbol,
                             signal,
                             "TP3",
                             tp3,
-                        )
+                        ):
+                            send_telegram(
+                                f"🏁 TP3 GELDİ\n\n"
+                                f"Coin: {symbol}\n"
+                                f"Yön: SHORT 🔴\n"
+                                f"TP3: {format_price(tp3)}\n"
+                                f"Sinyal maksimum hedefe ulaştı."
+                            )
 
                         closed = True
                         break
@@ -5682,19 +5694,18 @@ def check_open_signals(exchange):
                     ):
                         signal["closed"] = True
 
-                        send_telegram(
-                            f"🟡 KALAN İŞLEM GİRİŞTEN KAPANDI\n\n"
-                            f"Coin: {symbol}\n"
-                            f"Yön: SHORT 🔴\n"
-                            f"Giriş: {format_price(entry)}"
-                        )
-
-                        close_signal_result(
+                        if close_signal_result(
                             symbol,
                             signal,
                             "BE",
                             entry,
-                        )
+                        ):
+                            send_telegram(
+                                f"🟡 KALAN İŞLEM GİRİŞTEN KAPANDI\n\n"
+                                f"Coin: {symbol}\n"
+                                f"Yön: SHORT 🔴\n"
+                                f"Giriş: {format_price(entry)}"
+                            )
 
                         closed = True
                         break
