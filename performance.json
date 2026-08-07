@@ -18934,18 +18934,18 @@
       "sl_after_no_return": 7
     },
     "2026-08-07": {
-      "opened": 10,
+      "opened": 12,
       "radar": 0,
       "tp1": 6,
       "tp2": 4,
-      "tp3": 2,
-      "sl": 2,
+      "tp3": 3,
+      "sl": 3,
       "be": 3,
       "expired": 0,
-      "long": 5,
+      "long": 7,
       "short": 5,
-      "normal": 6,
-      "radar_trade": 4,
+      "normal": 7,
+      "radar_trade": 5,
       "coins": {
         "GRAMUSDT": {
           "opened": 1,
@@ -19002,7 +19002,7 @@
           "radar": 0,
           "tp1": 1,
           "tp2": 1,
-          "tp3": 0,
+          "tp3": 1,
           "sl": 0,
           "be": 0,
           "expired": 0
@@ -19043,31 +19043,54 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
+          "sl": 1,
+          "be": 0,
+          "expired": 0
+        },
+        "BOMEUSDT": {
+          "opened": 1,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 0,
+          "be": 0,
+          "expired": 0
+        },
+        "LQTYUSDT": {
+          "opened": 1,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
           "sl": 0,
           "be": 0,
           "expired": 0
         }
       },
       "direction_stops": {
-        "LONG": 2
+        "LONG": 3
       },
       "stop_times": {
         "SATSUSDT": 1786070757,
-        "ONEUSDT": 1786076150
+        "ONEUSDT": 1786076150,
+        "LIGHTUSDT": 1786085164
       },
       "closed_times": {
         "ENAUSDT": 1786067152,
         "MEWUSDT": 1786068069,
         "GRAMUSDT": 1786068960,
         "BLENDUSDT": 1786080660,
-        "SPACEUSDT": 1786080661
+        "SPACEUSDT": 1786080661,
+        "XAGUSDT": 1786085163
       },
       "closed_results": {
         "ENAUSDT": "BE",
         "MEWUSDT": "BE",
         "GRAMUSDT": "TP3",
         "BLENDUSDT": "BE",
-        "SPACEUSDT": "TP3"
+        "SPACEUSDT": "TP3",
+        "XAGUSDT": "TP3"
       },
       "closed_history": [
         {
@@ -19239,14 +19262,34 @@
           "exit": 63.3298077854,
           "source": "15M_ENTRY",
           "score": 91
+        },
+        {
+          "time": "09:46:03",
+          "symbol": "XAGUSDT",
+          "direction": "LONG",
+          "result": "TP3",
+          "entry": 62.25,
+          "exit": 63.8954213873,
+          "source": "15M_ENTRY",
+          "score": 91
+        },
+        {
+          "time": "09:46:04",
+          "symbol": "LIGHTUSDT",
+          "direction": "LONG",
+          "result": "SL",
+          "entry": 0.1613,
+          "exit": 0.1599,
+          "source": "5M_RADAR",
+          "score": 99
         }
       ],
       "sl_after_tp1": 2,
       "sl_after_tp2": 1,
-      "sl_after_no_return": 0
+      "sl_after_no_return": 1
     }
   },
-  "last_update": 1786084808,
+  "last_update": 1786085370,
   "last_open_summary": 1786083356,
   "last_status_message": 1786082736,
   "last_daily_report": "2026-08-05",
@@ -19269,12 +19312,15 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-08-07"
     },
     "ONEUSDT_LONG_1786076150": {
       "trade_id": "ONEUSDT_LONG_15M_ENTRY_1786068361",
@@ -19298,6 +19344,26 @@
       "after_sl_tp2": false,
       "after_sl_tp3": false,
       "resolved": true
+    },
+    "LIGHTUSDT_LONG_1786085164": {
+      "trade_id": "LIGHTUSDT_LONG_5M_RADAR_1786084807",
+      "symbol": "LIGHTUSDT",
+      "direction": "LONG",
+      "source": "5M_RADAR",
+      "entry": 0.1613,
+      "tp1": 0.1618208355,
+      "tp2": 0.1622943222,
+      "tp3": 0.1628151577,
+      "sl": 0.1603530264,
+      "score": 99,
+      "risk_percent": 0.587,
+      "stopped_at": 1786085164,
+      "stop_exit": 0.1599,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
     }
   }
 }
