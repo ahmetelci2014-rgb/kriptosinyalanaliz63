@@ -46938,17 +46938,22 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "SL",
+      "r_result": -1.0,
+      "exit_price": 0.07838,
+      "closed_at": 1786102280,
+      "closed_day": "2026-08-07",
       "events": [
         {
           "time": 1786080938,
           "event": "OPENED",
           "price": 0.07746
+        },
+        {
+          "time": 1786102280,
+          "event": "SL",
+          "price": 0.07838
         }
       ],
       "bot_version": "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27",
@@ -46986,14 +46991,53 @@
       "market_guard_short_allowed": true,
       "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %0.0 | ETHUSDT: 15M EMA20 altı, 5M %0.0 | SOLUSDT: 15M EMA20 altı, 5M %-0.04",
       "best_favorable_percent": 0.0258,
-      "worst_adverse_percent": 0.8521,
+      "worst_adverse_percent": 1.3426,
       "best_favorable_r": 0.0202,
-      "worst_adverse_r": 0.6677,
+      "worst_adverse_r": 1.0521,
       "best_favorable_price": 0.07744,
-      "worst_adverse_price": 0.07812,
-      "last_market_price": 0.07785,
+      "worst_adverse_price": 0.0785,
+      "last_market_price": 0.07838,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786101300
+      "last_tracking_at": 1786102200,
+      "duration_minutes": 355,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "KURULUM DEVAM ETMEDI",
+        "confidence": "ORTA",
+        "factors": [
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Giris ideal bolgeden goreceli olarak uzakti."
+        ],
+        "duration_minutes": 355,
+        "best_favorable_r": 0.0202,
+        "worst_adverse_r": 1.0521,
+        "provisional": true,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "stop_root_cause": {
+        "version": "STOP_ROOT_CAUSE_V1",
+        "primary": "TAKIP_SURUYOR",
+        "label": "Takip sürüyor",
+        "preliminary": "GEC_UZAK_GIRIS",
+        "preliminary_label": "Geç/uzak giriş",
+        "secondary": [
+          "GEC_UZAK_GIRIS"
+        ],
+        "confidence": "DUSUK",
+        "provisional": true,
+        "factors": [
+          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Giriş ideal bölgeden veya gönderim fiyatından uzaktı."
+        ],
+        "metrics": {
+          "duration_minutes": 355,
+          "mfe_r": 0.0202,
+          "mae_r": 1.0521,
+          "risk_percent": 1.276,
+          "return_minutes": null
+        },
+        "updated_at": 1786102280
+      }
     },
     "LIGHTUSDT_LONG_5M_RADAR_1786084807": {
       "trade_id": "LIGHTUSDT_LONG_5M_RADAR_1786084807",
@@ -47752,5 +47796,5 @@
       }
     }
   },
-  "last_update": 1786101348
+  "last_update": 1786102280
 }
