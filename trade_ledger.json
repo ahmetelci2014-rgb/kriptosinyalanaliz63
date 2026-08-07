@@ -46081,7 +46081,7 @@
       "opened_at": 1786053047,
       "opened_day": "2026-08-07",
       "tp1_hit": true,
-      "tp2_hit": false,
+      "tp2_hit": true,
       "tp3_hit": false,
       "status": "OPEN",
       "final_result": null,
@@ -46099,6 +46099,11 @@
           "time": 1786058158,
           "event": "TP1",
           "price": 1.3677769563
+        },
+        {
+          "time": 1786067150,
+          "event": "TP2",
+          "price": 1.3621196438
         }
       ],
       "bot_version": "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27",
@@ -46135,15 +46140,15 @@
       "market_guard_long_allowed": false,
       "market_guard_short_allowed": true,
       "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %0.04 | ETHUSDT: 15M EMA20 altı, 5M %0.01 | SOLUSDT: 15M EMA20 altı, 5M %0.0",
-      "best_favorable_percent": 0.8006,
+      "best_favorable_percent": 0.9461,
       "worst_adverse_percent": 0.3639,
-      "best_favorable_r": 0.9722,
+      "best_favorable_r": 1.149,
       "worst_adverse_r": 0.4419,
-      "best_favorable_price": 1.363,
+      "best_favorable_price": 1.361,
       "worst_adverse_price": 1.379,
-      "last_market_price": 1.366,
+      "last_market_price": 1.363,
       "tp1_hit_at": 1786057380,
-      "last_tracking_at": 1786066200
+      "last_tracking_at": 1786067100
     },
     "MEWUSDT_SHORT_15M_ENTRY_1786058356": {
       "trade_id": "MEWUSDT_SHORT_15M_ENTRY_1786058356",
@@ -46225,9 +46230,9 @@
       "worst_adverse_r": 0.3927,
       "best_favorable_price": 0.000322,
       "worst_adverse_price": 0.0003261,
-      "last_market_price": 0.0003236,
+      "last_market_price": 0.0003249,
       "tp1_hit_at": 1786061700,
-      "last_tracking_at": 1786066260
+      "last_tracking_at": 1786067100
     },
     "ENAUSDT_LONG_5M_RADAR_1786066519": {
       "trade_id": "ENAUSDT_LONG_5M_RADAR_1786066519",
@@ -46243,19 +46248,29 @@
       "risk_percent": 0.886,
       "opened_at": 1786066519,
       "opened_day": "2026-08-07",
-      "tp1_hit": false,
+      "tp1_hit": true,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "TP1_SONRASI_BE",
+      "r_result": 0.275,
+      "exit_price": 0.09279,
+      "closed_at": 1786067152,
+      "closed_day": "2026-08-07",
       "events": [
         {
           "time": 1786066519,
           "event": "OPENED",
+          "price": 0.09279
+        },
+        {
+          "time": 1786067151,
+          "event": "TP1",
+          "price": 0.0932419692
+        },
+        {
+          "time": 1786067152,
+          "event": "BE",
           "price": 0.09279
         }
       ],
@@ -46293,15 +46308,30 @@
       "market_guard_long_allowed": true,
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %0.14 | ETHUSDT: 15M EMA20 üstü, 5M %0.09 | SOLUSDT: 15M EMA20 üstü, 5M %0.17",
-      "best_favorable_percent": 0.0,
-      "worst_adverse_percent": 0.0,
-      "best_favorable_r": 0.0,
-      "worst_adverse_r": 0.0,
-      "best_favorable_price": 0.09279,
-      "worst_adverse_price": 0.09279,
-      "last_market_price": 0.09268,
-      "tp1_hit_at": 0
+      "best_favorable_percent": 0.5712,
+      "worst_adverse_percent": 0.097,
+      "best_favorable_r": 0.645,
+      "worst_adverse_r": 0.1095,
+      "best_favorable_price": 0.09332,
+      "worst_adverse_price": 0.0927,
+      "last_market_price": 0.09276,
+      "tp1_hit_at": 1786066680,
+      "last_tracking_at": 1786066800,
+      "duration_minutes": 10,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "YON DOGRU, DEVAM GUCU ZAYIFLADI",
+        "confidence": "YUKSEK",
+        "factors": [
+          "Islem hedef gordukten sonra kalan kisim giristen kapandi."
+        ],
+        "duration_minutes": 10,
+        "best_favorable_r": 0.645,
+        "worst_adverse_r": 0.1095,
+        "provisional": false,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      }
     }
   },
-  "last_update": 1786066519
+  "last_update": 1786067152
 }
