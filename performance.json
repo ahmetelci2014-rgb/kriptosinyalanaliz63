@@ -18936,11 +18936,11 @@
     "2026-08-07": {
       "opened": 15,
       "radar": 0,
-      "tp1": 8,
+      "tp1": 9,
       "tp2": 5,
       "tp3": 4,
-      "sl": 3,
-      "be": 3,
+      "sl": 4,
+      "be": 4,
       "expired": 0,
       "long": 9,
       "short": 6,
@@ -19083,28 +19083,30 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
         "ALGOUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
+          "tp1": 1,
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
-          "be": 0,
+          "be": 1,
           "expired": 0
         }
       },
       "direction_stops": {
-        "LONG": 3
+        "LONG": 3,
+        "SHORT": 1
       },
       "stop_times": {
         "SATSUSDT": 1786070757,
         "ONEUSDT": 1786076150,
-        "LIGHTUSDT": 1786085164
+        "LIGHTUSDT": 1786085164,
+        "INJUSDT": 1786092349
       },
       "closed_times": {
         "ENAUSDT": 1786067152,
@@ -19113,7 +19115,8 @@
         "BLENDUSDT": 1786080660,
         "SPACEUSDT": 1786080661,
         "XAGUSDT": 1786085163,
-        "BOMEUSDT": 1786086961
+        "BOMEUSDT": 1786086961,
+        "ALGOUSDT": 1786092351
       },
       "closed_results": {
         "ENAUSDT": "BE",
@@ -19122,7 +19125,8 @@
         "BLENDUSDT": "BE",
         "SPACEUSDT": "TP3",
         "XAGUSDT": "TP3",
-        "BOMEUSDT": "TP3"
+        "BOMEUSDT": "TP3",
+        "ALGOUSDT": "BE"
       },
       "closed_history": [
         {
@@ -19354,6 +19358,36 @@
           "exit": 0.1865151931,
           "source": "15M_ENTRY",
           "score": 93
+        },
+        {
+          "time": "11:45:49",
+          "symbol": "INJUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 4.489,
+          "exit": 4.525,
+          "source": "15M_ENTRY",
+          "score": 96
+        },
+        {
+          "time": "11:45:50",
+          "symbol": "ALGOUSDT",
+          "direction": "LONG",
+          "result": "TP1",
+          "entry": 0.08979,
+          "exit": 0.0902898858,
+          "source": "15M_ENTRY",
+          "score": 100
+        },
+        {
+          "time": "11:45:51",
+          "symbol": "ALGOUSDT",
+          "direction": "LONG",
+          "result": "BE",
+          "entry": 0.08979,
+          "exit": 0.08979,
+          "source": "15M_ENTRY",
+          "score": 100
         }
       ],
       "sl_after_tp1": 3,
@@ -19361,7 +19395,7 @@
       "sl_after_no_return": 1
     }
   },
-  "last_update": 1786091466,
+  "last_update": 1786092351,
   "last_open_summary": 1786089278,
   "last_status_message": 1786091669,
   "last_daily_report": "2026-08-05",
@@ -19408,6 +19442,26 @@
       "after_sl_tp2": false,
       "after_sl_tp3": false,
       "resolved": true
+    },
+    "INJUSDT_SHORT_1786092350": {
+      "trade_id": "INJUSDT_SHORT_15M_ENTRY_1786089887",
+      "symbol": "INJUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 4.489,
+      "tp1": 4.4678779502,
+      "tp2": 4.4486760867,
+      "tp3": 4.4275540368,
+      "sl": 4.527403727,
+      "score": 96,
+      "risk_percent": 0.856,
+      "stopped_at": 1786092350,
+      "stop_exit": 4.525,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
     }
   }
 }
