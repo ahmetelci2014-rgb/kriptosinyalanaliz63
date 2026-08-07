@@ -46991,9 +46991,9 @@
       "worst_adverse_r": 0.6677,
       "best_favorable_price": 0.07744,
       "worst_adverse_price": 0.07812,
-      "last_market_price": 0.07759,
+      "last_market_price": 0.07778,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786096860
+      "last_tracking_at": 1786097700
     },
     "LIGHTUSDT_LONG_5M_RADAR_1786084807": {
       "trade_id": "LIGHTUSDT_LONG_5M_RADAR_1786084807",
@@ -47710,39 +47710,47 @@
       "duration_minutes": 24,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "KURULUM DEVAM ETMEDI",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
-          "Islem yeterli lehe ivme olusturmadan stop oldu."
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Stop sonrasi fiyat TP1 seviyesine dondu."
         ],
         "duration_minutes": 24,
         "best_favorable_r": 0.0982,
         "worst_adverse_r": 1.1402,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "MUHTEMEL_YANLIS_YON",
-        "preliminary_label": "Muhtemel yanlış yön",
+        "primary": "MUHTEMEL_ERKEN_GIRIS",
+        "label": "Muhtemel erken giriş",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası fiyat TP1 seviyesine 31 dakikada döndü.",
+          "İşlem kısa sürede düşük lehe hareketle stop oldu, sonra hedefe döndü."
         ],
         "metrics": {
           "duration_minutes": 24,
           "mfe_r": 0.0982,
           "mae_r": 1.1402,
           "risk_percent": 1.288,
-          "return_minutes": null
+          "return_minutes": 31.0
         },
-        "updated_at": 1786095876
+        "updated_at": 1786097753
+      },
+      "post_stop_follow": {
+        "returned_level": "TP1",
+        "age_minutes": 31,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1786097753
       }
     }
   },
-  "last_update": 1786096873
+  "last_update": 1786097753
 }
