@@ -46986,14 +46986,14 @@
       "market_guard_short_allowed": true,
       "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %0.0 | ETHUSDT: 15M EMA20 altı, 5M %0.0 | SOLUSDT: 15M EMA20 altı, 5M %-0.04",
       "best_favorable_percent": 0.0,
-      "worst_adverse_percent": 0.7875,
+      "worst_adverse_percent": 0.8262,
       "best_favorable_r": 0.0,
-      "worst_adverse_r": 0.6171,
+      "worst_adverse_r": 0.6474,
       "best_favorable_price": 0.07746,
-      "worst_adverse_price": 0.07807,
-      "last_market_price": 0.07805,
+      "worst_adverse_price": 0.0781,
+      "last_market_price": 0.07799,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786085160
+      "last_tracking_at": 1786086900
     },
     "LIGHTUSDT_LONG_5M_RADAR_1786084807": {
       "trade_id": "LIGHTUSDT_LONG_5M_RADAR_1786084807",
@@ -47076,38 +47076,46 @@
       "duration_minutes": 5,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "HIZLI TERS HAREKET / YON UYUMSUZLUGU",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
           "Islem ilk 20 dakikada anlamli lehe hareket yapmadan stop oldu.",
-          "Stop mesafesi cok kisa surede tamamen tuketildi."
+          "Stop mesafesi cok kisa surede tamamen tuketildi.",
+          "Stop sonrasi fiyat TP1 seviyesine dondu."
         ],
         "duration_minutes": 5,
         "best_favorable_r": 0.0,
         "worst_adverse_r": 1.7952,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "MUHTEMEL_YANLIS_YON",
-        "preliminary_label": "Muhtemel yanlış yön",
+        "primary": "ERKEN_GIRIS_VEYA_DAR_STOP",
+        "label": "Erken giriş veya dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası fiyat TP1 seviyesine 29 dakikada döndü.",
+          "Hızlı ve düşük MFE'li stop ile dar risk profili birlikte görüldü."
         ],
         "metrics": {
           "duration_minutes": 5,
           "mfe_r": 0.0,
           "mae_r": 1.7952,
           "risk_percent": 0.587,
-          "return_minutes": null
+          "return_minutes": 29.0
         },
-        "updated_at": 1786085164
+        "updated_at": 1786086962
+      },
+      "post_stop_follow": {
+        "returned_level": "TP1",
+        "age_minutes": 29,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1786086962
       }
     },
     "BOMEUSDT_LONG_5M_RADAR_1786085368": {
@@ -47124,20 +47132,35 @@
       "risk_percent": 0.359,
       "opened_at": 1786085368,
       "opened_day": "2026-08-07",
-      "tp1_hit": false,
-      "tp2_hit": false,
-      "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "tp1_hit": true,
+      "tp2_hit": true,
+      "tp3_hit": true,
+      "status": "CLOSED",
+      "final_result": "TP3",
+      "r_result": 1.075,
+      "exit_price": 0.0006013316,
+      "closed_at": 1786086961,
+      "closed_day": "2026-08-07",
       "events": [
         {
           "time": 1786085368,
           "event": "OPENED",
           "price": 0.0005979
+        },
+        {
+          "time": 1786086960,
+          "event": "TP1",
+          "price": 0.0005990796
+        },
+        {
+          "time": 1786086960,
+          "event": "TP2",
+          "price": 0.000600152
+        },
+        {
+          "time": 1786086961,
+          "event": "TP3",
+          "price": 0.0006013316
         }
       ],
       "bot_version": "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27",
@@ -47174,14 +47197,29 @@
       "market_guard_long_allowed": true,
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %-0.01 | ETHUSDT: 15M EMA20 üstü, 5M %-0.03 | SOLUSDT: 15M EMA20 üstü, 5M %-0.07",
-      "best_favorable_percent": 0.0,
+      "best_favorable_percent": 0.9868,
       "worst_adverse_percent": 0.0,
-      "best_favorable_r": 0.0,
+      "best_favorable_r": 2.7508,
       "worst_adverse_r": 0.0,
-      "best_favorable_price": 0.0005979,
+      "best_favorable_price": 0.0006038,
       "worst_adverse_price": 0.0005979,
-      "last_market_price": 0.0005978,
-      "tp1_hit_at": 0
+      "last_market_price": 0.0006027,
+      "tp1_hit_at": 1786085400,
+      "last_tracking_at": 1786085820,
+      "duration_minutes": 26,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "KURULUM BASARILI",
+        "confidence": "YUKSEK",
+        "factors": [
+          "Sinyal maksimum hedef TP3'e ulasti."
+        ],
+        "duration_minutes": 26,
+        "best_favorable_r": 2.7508,
+        "worst_adverse_r": 0.0,
+        "provisional": false,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      }
     },
     "LQTYUSDT_LONG_15M_ENTRY_1786085370": {
       "trade_id": "LQTYUSDT_LONG_15M_ENTRY_1786085370",
@@ -47247,15 +47285,16 @@
       "market_guard_long_allowed": true,
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %-0.01 | ETHUSDT: 15M EMA20 üstü, 5M %-0.03 | SOLUSDT: 15M EMA20 üstü, 5M %-0.07",
-      "best_favorable_percent": 0.0,
-      "worst_adverse_percent": 0.0,
-      "best_favorable_r": 0.0,
-      "worst_adverse_r": 0.0,
-      "best_favorable_price": 0.1852,
-      "worst_adverse_price": 0.1852,
-      "last_market_price": 0.1852,
-      "tp1_hit_at": 0
+      "best_favorable_percent": 0.162,
+      "worst_adverse_percent": 0.6479,
+      "best_favorable_r": 0.1255,
+      "worst_adverse_r": 0.5018,
+      "best_favorable_price": 0.1855,
+      "worst_adverse_price": 0.184,
+      "last_market_price": 0.1841,
+      "tp1_hit_at": 0,
+      "last_tracking_at": 1786086960
     }
   },
-  "last_update": 1786085370
+  "last_update": 1786086962
 }
