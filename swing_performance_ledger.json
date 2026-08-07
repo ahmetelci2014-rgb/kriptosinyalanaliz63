@@ -2916,15 +2916,22 @@
         "primary": "ÖNCE LEHE GİTTİ, SONRA SWING YAPISI BOZULDU",
         "confidence": "ORTA",
         "factors": [
-          "Stop öncesinde işlem en az 0.35R lehe hareket etti."
+          "Stop öncesinde işlem en az 0.35R lehe hareket etti.",
+          "Stop sonrası 48 saat içinde giriş veya TP1 yönlü dönüş oluşmadı."
         ],
         "duration_minutes": 1433,
         "best_favorable_r": 0.5333,
         "worst_adverse_r": 1.222,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teşhis kesin piyasa sebebi değildir; kayıtlı zamanlama, trend, hacim ve fiyat hareketine dayalı teknik değerlendirmedir."
       },
-      "post_stop_follow": null,
+      "post_stop_follow": {
+        "status": "NO_RETURN",
+        "returned_level": null,
+        "age_minutes": 2934,
+        "updated_at": 1786080199,
+        "updated_at_tr": "2026-08-07 08:23:19"
+      },
       "last_updated_at": 1785914640,
       "last_updated_at_tr": "2026-08-05 10:24:00",
       "last_tracking_at": 1785900900,
@@ -3098,7 +3105,7 @@
       "worst_adverse_r": 0.3899,
       "best_favorable_price": 0.5986,
       "worst_adverse_price": 0.609,
-      "last_market_price": 0.5996,
+      "last_market_price": 0.601,
       "direction_status": "DIRECTION_CORRECT",
       "direction_reason": "24 saat içinde Swing yönü desteklendi",
       "trade_outcome": "TP2",
@@ -3136,7 +3143,7 @@
       "post_stop_follow": null,
       "last_updated_at": 1786062713,
       "last_updated_at_tr": "2026-08-07 03:31:53",
-      "last_tracking_at": 1786073700,
+      "last_tracking_at": 1786080000,
       "tp1_hit_at": 1786012800,
       "tp1_hit": true,
       "tp2_hit": true,
@@ -3193,7 +3200,8 @@
         "30m": -0.6309,
         "60m": -0.6309,
         "240m": 0.1652,
-        "720m": -0.661
+        "720m": -0.661,
+        "1440m": -0.706
       },
       "latest_price": 0.06704,
       "latest_directional_move_percent": -0.706,
@@ -3204,8 +3212,8 @@
       "best_favorable_price": 0.06613,
       "worst_adverse_price": 0.06753,
       "last_market_price": 0.06704,
-      "direction_status": "OPEN",
-      "direction_reason": "Gönderim sonrası Swing yönü izleniyor",
+      "direction_status": "DIRECTION_WRONG",
+      "direction_reason": "24 saat içinde fiyat Swing yönünün tersine gitti",
       "trade_outcome": "OPEN",
       "trade_result_r": null,
       "milestones": [],
@@ -3218,13 +3226,15 @@
         "provisional": true
       },
       "post_stop_follow": null,
-      "last_updated_at": 1786073920,
-      "last_updated_at_tr": "2026-08-07 06:38:40",
-      "last_tracking_at": 1786073700,
+      "last_updated_at": 1786080198,
+      "last_updated_at_tr": "2026-08-07 08:23:18",
+      "last_tracking_at": 1786080000,
       "tp1_hit_at": 0,
       "tp1_hit": false,
       "tp2_hit": false,
-      "tp3_hit": false
+      "tp3_hit": false,
+      "direction_finalized_at": 1786080198,
+      "direction_finalized_at_tr": "2026-08-07 08:23:18"
     },
     {
       "id": "JUPUSDT_SHORT_1H_ONAYLI_1786062950",
@@ -3271,17 +3281,18 @@
       "vol_15m": 0.47409280921769065,
       "snapshots": {
         "30m": -0.3878,
-        "60m": -0.3878
+        "60m": -0.3878,
+        "240m": -0.1662
       },
-      "latest_price": 0.1812,
-      "latest_directional_move_percent": -0.3878,
-      "best_favorable_percent": 0.1663,
+      "latest_price": 0.1808,
+      "latest_directional_move_percent": -0.1662,
+      "best_favorable_percent": 0.2217,
       "worst_adverse_percent": 0.6652,
-      "best_favorable_r": 0.0802,
+      "best_favorable_r": 0.1069,
       "worst_adverse_r": 0.3208,
-      "best_favorable_price": 0.1801,
+      "best_favorable_price": 0.18,
       "worst_adverse_price": 0.1816,
-      "last_market_price": 0.1812,
+      "last_market_price": 0.1808,
       "direction_status": "OPEN",
       "direction_reason": "Gönderim sonrası Swing yönü izleniyor",
       "trade_outcome": "OPEN",
@@ -3296,9 +3307,9 @@
         "provisional": true
       },
       "post_stop_follow": null,
-      "last_updated_at": 1786073920,
-      "last_updated_at_tr": "2026-08-07 06:38:40",
-      "last_tracking_at": 1786073700,
+      "last_updated_at": 1786080198,
+      "last_updated_at_tr": "2026-08-07 08:23:18",
+      "last_tracking_at": 1786080000,
       "tp1_hit_at": 0,
       "tp1_hit": false,
       "tp2_hit": false,
@@ -3307,9 +3318,9 @@
   ],
   "summary": {
     "total": 31,
-    "direction_open": 2,
+    "direction_open": 1,
     "direction_correct": 13,
-    "direction_wrong": 13,
+    "direction_wrong": 14,
     "direction_mixed": 3,
     "trade_open": 2,
     "tp1": 0,
@@ -3329,6 +3340,6 @@
     "diagnosis_weak_trend": 0,
     "diagnosis_setup_failed": 0
   },
-  "updated_at": 1786073920,
-  "updated_at_tr": "2026-08-07 06:38:40"
+  "updated_at": 1786080199,
+  "updated_at_tr": "2026-08-07 08:23:19"
 }
