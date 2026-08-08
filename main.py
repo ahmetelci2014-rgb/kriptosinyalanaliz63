@@ -22,6 +22,7 @@
 # - Tüm ana JSON state/ledger kayıtları atomik ve doğrulamalı yazılır.
 # - Ortak portföy denetimi aynı coindeki bot çakışmalarını engeller.
 
+import hashlib
 import json
 import os
 import tempfile
@@ -119,6 +120,22 @@ POST_EXPIRY_RESTORE_MAX_HOURS = 48
 POST_EXPIRY_TIMEFRAME = "5m"
 POST_EXPIRY_TRACK_LIMIT = 320
 
+# TP3 sonrası sessiz devam ölçümü. Gerçek işlem kuralını değiştirmez.
+# TP3 kapanışından sonra fiyatın devam/geri dönüş davranışı yalnız ledger'a yazılır.
+TP3_POST_FOLLOW_VERSION = "TP3_POST_FOLLOW_V1_2026_08_08"
+TP3_POST_FOLLOW_CHECKPOINT_MINUTES = [15, 30, 60, 120]
+TP3_POST_FOLLOW_MAX_MINUTES = 120
+TP3_POST_FOLLOW_RESTORE_MAX_HOURS = 6
+TP3_POST_FOLLOW_TIMEFRAME = "1m"
+TP3_POST_FOLLOW_LIMIT = 150
+TP3_POST_FOLLOW_CANDLE_SECONDS = 60
+
+# Aynı sonuç metninin aynı workflow içinde veya state senkron gecikmesinde
+# ikinci kez Telegram'a çıkmasına karşı ek katman.
+TELEGRAM_RESULT_GUARD_SECONDS = 24 * 60 * 60
+TELEGRAM_RESULT_GUARD_KEEP_DAYS = 7
+_TELEGRAM_RUNTIME_RESULT_GUARD = set()
+
 # Stop kök neden sınıflandırma eşikleri yalnız teşhis içindir.
 # Sinyal üretimi, TP/SL veya işlem filtrelerini değiştirmez.
 STOP_CAUSE_QUICK_MINUTES = 30
@@ -181,9 +198,125 @@ def safe_float(value, default=None):
         return default
 
 
+def _telegram_result_fingerprint(message):
+    """
+    Yalnız işlem SONUÇ mesajlarını tekilleştirir.
+    Yeni işlem sinyalleri bu katmandan etkilenmez.
+    """
+    text = str(message or "").strip()
+    upper = text.upper()
+
+    result_markers = (
+        "TP1 GELDİ",
+        "TP2 GELDİ",
+        "TP3 GELDİ",
+        "STOP OLDU",
+        "GİRİŞTEN KAPANDI",
+    )
+
+    if not any(marker in upper for marker in result_markers):
+        return None
+
+    normalized = " ".join(text.split())
+    return hashlib.sha256(
+        normalized.encode("utf-8")
+    ).hexdigest()
+
+
+def _claim_telegram_result(message):
+    """
+    Sonuç mesajı için ikinci güvenlik katmanı.
+
+    Claim, Telegram çağrısından ÖNCE performance.json'a yazılır.
+    Aynı süreçte bellek kilidi de kullanılır. Kayıt yapılamazsa mesaj
+    gönderilmez; sonraki workflow tekrar deneyebilir.
+    """
+    fingerprint = _telegram_result_fingerprint(message)
+
+    if fingerprint is None:
+        return True, None
+
+    if fingerprint in _TELEGRAM_RUNTIME_RESULT_GUARD:
+        print("Telegram sonuç duplicate bellek kilidiyle engellendi.")
+        return False, fingerprint
+
+    performance = load_performance()
+    guard = performance.setdefault(
+        "telegram_result_guard",
+        {},
+    )
+
+    current = now_ts()
+    cutoff = current - (
+        TELEGRAM_RESULT_GUARD_KEEP_DAYS * 24 * 60 * 60
+    )
+
+    for old_key, old_ts in list(guard.items()):
+        try:
+            if int(old_ts or 0) < cutoff:
+                guard.pop(old_key, None)
+        except Exception:
+            guard.pop(old_key, None)
+
+    previous = int(guard.get(fingerprint) or 0)
+
+    if (
+        previous > 0
+        and current - previous < TELEGRAM_RESULT_GUARD_SECONDS
+    ):
+        _TELEGRAM_RUNTIME_RESULT_GUARD.add(fingerprint)
+        print("Telegram sonuç duplicate kalıcı kilitle engellendi.")
+        return False, fingerprint
+
+    guard[fingerprint] = current
+
+    if not save_performance(performance):
+        # Kritik TP/SL mesajını kaybetmemek için gönderime devam et.
+        # Bellek kilidi aynı workflow içindeki ikinci çağrıyı yine engeller.
+        print(
+            "Telegram sonuç claim kalıcı kaydedilemedi; "
+            "bellek kilidiyle gönderime devam ediliyor."
+        )
+
+    _TELEGRAM_RUNTIME_RESULT_GUARD.add(fingerprint)
+    return True, fingerprint
+
+
+def _release_telegram_result_claim(fingerprint):
+    if not fingerprint:
+        return
+
+    _TELEGRAM_RUNTIME_RESULT_GUARD.discard(fingerprint)
+
+    try:
+        performance = load_performance()
+        guard = performance.setdefault(
+            "telegram_result_guard",
+            {},
+        )
+        guard.pop(fingerprint, None)
+        save_performance(performance)
+    except Exception as exc:
+        print(
+            "Telegram sonuç claim geri alma hatası:",
+            exc,
+        )
+
+
 def send_telegram(message):
     if not TOKEN or not CHAT_ID:
         print("TOKEN veya CHAT_ID eksik.")
+        return False
+
+    claimed, fingerprint = _claim_telegram_result(
+        message
+    )
+
+    if not claimed:
+        # Duplicate ise çağıran taraf işlemi tekrar state'e sokmasın.
+        # Claim kayıt hatasında ise False dönerek bir sonraki turda retry edilir.
+        if fingerprint in _TELEGRAM_RUNTIME_RESULT_GUARD:
+            return True
         return False
 
     try:
@@ -198,10 +331,20 @@ def send_telegram(message):
 
         print("Telegram cevap:", response.status_code)
 
-        return response.status_code == 200
+        success = response.status_code == 200
+
+        if not success:
+            _release_telegram_result_claim(
+                fingerprint
+            )
+
+        return success
 
     except Exception as exc:
         print("Telegram gönderim hatası:", exc)
+        _release_telegram_result_claim(
+            fingerprint
+        )
         return False
 
 
@@ -1599,6 +1742,373 @@ def sync_open_signals_to_ledger():
         save_trade_ledger(ledger)
 
 
+def initialize_tp3_post_follow_for_trade(
+    trade,
+    started_at,
+    tp3_price,
+):
+    """TP3 sonrası ölçümü trade_ledger içindeki aynı işleme ekler."""
+    if not isinstance(trade, dict):
+        return False
+
+    existing = trade.get("tp3_post_follow")
+
+    if isinstance(existing, dict):
+        return False
+
+    trade["tp3_post_follow"] = {
+        "version": TP3_POST_FOLLOW_VERSION,
+        "status": "TRACKING",
+        "started_at": int(started_at or now_ts()),
+        "tp3_price": safe_float(
+            tp3_price,
+            safe_float(trade.get("tp3")),
+        ),
+        "timeframe": TP3_POST_FOLLOW_TIMEFRAME,
+        "checkpoints": {},
+        "max_favorable_percent": 0.0,
+        "max_adverse_percent": 0.0,
+        "best_price": safe_float(
+            tp3_price,
+            safe_float(trade.get("tp3")),
+        ),
+        "worst_price": safe_float(
+            tp3_price,
+            safe_float(trade.get("tp3")),
+        ),
+        "last_checked_at": 0,
+        "completed_at": 0,
+        "shadow_only": True,
+    }
+    return True
+
+
+def _tp3_directional_percent(
+    direction,
+    reference_price,
+    current_price,
+):
+    reference = safe_float(reference_price)
+    current = safe_float(current_price)
+
+    if (
+        reference is None
+        or current is None
+        or reference <= 0
+    ):
+        return None
+
+    raw = (
+        (current - reference)
+        / reference
+        * 100.0
+    )
+
+    if str(direction).upper() == "SHORT":
+        raw = -raw
+
+    return round(raw, 4)
+
+
+def check_tp3_post_follow(exchange):
+    """
+    TP3'e ulaşmış işlemleri 15/30/60/120 dakika sessiz izler.
+    Telegram göndermez, sinyal/TP/SL davranışını değiştirmez.
+    """
+    ledger = load_trade_ledger()
+    trades = ledger.get("trades", {})
+    current_ts = now_ts()
+    changed = False
+    tracked = 0
+
+    for trade_id, trade in trades.items():
+        try:
+            if str(
+                trade.get("final_result", "")
+            ).upper() != "TP3":
+                continue
+
+            closed_at = int(
+                trade.get("closed_at")
+                or 0
+            )
+
+            if closed_at <= 0:
+                continue
+
+            age_seconds = current_ts - closed_at
+
+            follow = trade.get("tp3_post_follow")
+
+            if not isinstance(follow, dict):
+                # Yeni sürüm yüklenmeden hemen önce TP3 olan işlemleri de
+                # kısa bir pencere içinde geriye dönük yakala.
+                if age_seconds > (
+                    TP3_POST_FOLLOW_RESTORE_MAX_HOURS
+                    * 60
+                    * 60
+                ):
+                    continue
+
+                if initialize_tp3_post_follow_for_trade(
+                    trade,
+                    closed_at,
+                    trade.get("exit_price")
+                    or trade.get("tp3"),
+                ):
+                    changed = True
+
+                follow = trade.get("tp3_post_follow")
+
+            if not isinstance(follow, dict):
+                continue
+
+            if str(
+                follow.get("status", "TRACKING")
+            ).upper() == "COMPLETED":
+                continue
+
+            symbol = str(trade.get("symbol") or "")
+            direction = str(
+                trade.get("direction") or ""
+            ).upper()
+            tp3_price = safe_float(
+                follow.get("tp3_price"),
+                safe_float(trade.get("tp3")),
+            )
+            started_at = int(
+                follow.get("started_at")
+                or closed_at
+            )
+
+            if (
+                not symbol
+                or direction not in {"LONG", "SHORT"}
+                or tp3_price is None
+                or tp3_price <= 0
+            ):
+                continue
+
+            candles = fetch_candles_since(
+                exchange,
+                symbol,
+                TP3_POST_FOLLOW_TIMEFRAME,
+                since_seconds=max(0, started_at - 5 * 60),
+                limit=TP3_POST_FOLLOW_LIMIT,
+            )
+
+            if not candles:
+                continue
+
+            tracking_end_ts = min(
+                current_ts,
+                started_at
+                + TP3_POST_FOLLOW_MAX_MINUTES * 60,
+            )
+
+            relevant = [
+                candle
+                for candle in candles
+                if (
+                    int(candle.get("time") or 0) >= started_at
+                    and int(candle.get("time") or 0)
+                    + TP3_POST_FOLLOW_CANDLE_SECONDS
+                    <= tracking_end_ts
+                )
+            ]
+
+            if not relevant:
+                continue
+
+            tracked += 1
+
+            if direction == "LONG":
+                best_price = max(
+                    [tp3_price]
+                    + [float(c["high"]) for c in relevant]
+                )
+                worst_price = min(
+                    [tp3_price]
+                    + [float(c["low"]) for c in relevant]
+                )
+                max_favorable = max(
+                    0.0,
+                    (best_price - tp3_price)
+                    / tp3_price
+                    * 100.0,
+                )
+                max_adverse = max(
+                    0.0,
+                    (tp3_price - worst_price)
+                    / tp3_price
+                    * 100.0,
+                )
+            else:
+                best_price = min(
+                    [tp3_price]
+                    + [float(c["low"]) for c in relevant]
+                )
+                worst_price = max(
+                    [tp3_price]
+                    + [float(c["high"]) for c in relevant]
+                )
+                max_favorable = max(
+                    0.0,
+                    (tp3_price - best_price)
+                    / tp3_price
+                    * 100.0,
+                )
+                max_adverse = max(
+                    0.0,
+                    (worst_price - tp3_price)
+                    / tp3_price
+                    * 100.0,
+                )
+
+            follow["best_price"] = round(best_price, 12)
+            follow["worst_price"] = round(worst_price, 12)
+            follow["max_favorable_percent"] = round(
+                max_favorable,
+                4,
+            )
+            follow["max_adverse_percent"] = round(
+                max_adverse,
+                4,
+            )
+            follow["last_checked_at"] = current_ts
+
+            checkpoints = follow.setdefault(
+                "checkpoints",
+                {},
+            )
+            age_minutes = max(
+                0,
+                int((current_ts - started_at) / 60),
+            )
+
+            for checkpoint in TP3_POST_FOLLOW_CHECKPOINT_MINUTES:
+                key = str(checkpoint)
+
+                if key in checkpoints:
+                    continue
+
+                if age_minutes < checkpoint:
+                    continue
+
+                target_ts = started_at + checkpoint * 60
+                eligible = [
+                    candle
+                    for candle in relevant
+                    if int(candle.get("time") or 0)
+                    + TP3_POST_FOLLOW_CANDLE_SECONDS
+                    <= target_ts
+                ]
+
+                if not eligible:
+                    continue
+
+                checkpoint_candle = eligible[-1]
+                through_checkpoint = [
+                    candle
+                    for candle in relevant
+                    if int(candle.get("time") or 0)
+                    + TP3_POST_FOLLOW_CANDLE_SECONDS
+                    <= target_ts
+                ]
+
+                close_price = float(
+                    checkpoint_candle["close"]
+                )
+                directional_return = _tp3_directional_percent(
+                    direction,
+                    tp3_price,
+                    close_price,
+                )
+
+                if direction == "LONG":
+                    cp_best = max(
+                        [tp3_price]
+                        + [float(c["high"]) for c in through_checkpoint]
+                    )
+                    cp_worst = min(
+                        [tp3_price]
+                        + [float(c["low"]) for c in through_checkpoint]
+                    )
+                    cp_mfe = max(
+                        0.0,
+                        (cp_best - tp3_price)
+                        / tp3_price
+                        * 100.0,
+                    )
+                    cp_mae = max(
+                        0.0,
+                        (tp3_price - cp_worst)
+                        / tp3_price
+                        * 100.0,
+                    )
+                else:
+                    cp_best = min(
+                        [tp3_price]
+                        + [float(c["low"]) for c in through_checkpoint]
+                    )
+                    cp_worst = max(
+                        [tp3_price]
+                        + [float(c["high"]) for c in through_checkpoint]
+                    )
+                    cp_mfe = max(
+                        0.0,
+                        (tp3_price - cp_best)
+                        / tp3_price
+                        * 100.0,
+                    )
+                    cp_mae = max(
+                        0.0,
+                        (cp_worst - tp3_price)
+                        / tp3_price
+                        * 100.0,
+                    )
+
+                checkpoints[key] = {
+                    "target_at": target_ts,
+                    "candle_time": int(
+                        checkpoint_candle.get("time") or 0
+                    ),
+                    "close_price": round(close_price, 12),
+                    "directional_return_percent": directional_return,
+                    "max_favorable_percent": round(cp_mfe, 4),
+                    "max_adverse_percent": round(cp_mae, 4),
+                }
+                changed = True
+
+            if (
+                age_minutes >= TP3_POST_FOLLOW_MAX_MINUTES
+                and str(TP3_POST_FOLLOW_MAX_MINUTES) in checkpoints
+            ):
+                follow["status"] = "COMPLETED"
+                follow["completed_at"] = current_ts
+                changed = True
+            else:
+                follow["status"] = "TRACKING"
+
+            changed = True
+
+        except Exception as exc:
+            print(
+                trade_id,
+                "TP3 sonrası sessiz takip hatası:",
+                exc,
+            )
+
+    if changed:
+        save_trade_ledger(ledger)
+
+    if tracked:
+        print(
+            "TP3 sonrası sessiz takip aktif işlem:",
+            tracked,
+        )
+
+
 def ledger_record_event(signal, result, exit_price=None):
     result = str(result).upper()
     trade_id = ensure_ledger_trade(signal)
@@ -1607,7 +2117,7 @@ def ledger_record_event(signal, result, exit_price=None):
     trade = ledger["trades"].get(trade_id)
 
     if trade is None:
-        return
+        return False
 
     apply_signal_tracking_to_trade(
         trade,
@@ -1641,8 +2151,7 @@ def ledger_record_event(signal, result, exit_price=None):
         trade["tp3_hit"] = True
 
     if result in {"TP1", "TP2"}:
-        save_trade_ledger(ledger)
-        return
+        return save_trade_ledger(ledger)
 
     tp1_r = ledger_target_r(trade, "tp1")
     tp3_r = ledger_target_r(trade, "tp3")
@@ -1683,8 +2192,7 @@ def ledger_record_event(signal, result, exit_price=None):
         )
 
     else:
-        save_trade_ledger(ledger)
-        return
+        return save_trade_ledger(ledger)
 
     trade["status"] = "CLOSED"
     trade["exit_price"] = safe_float(exit_price)
@@ -1707,7 +2215,14 @@ def ledger_record_event(signal, result, exit_price=None):
     if result == "SL":
         update_trade_stop_root_cause(trade)
 
-    save_trade_ledger(ledger)
+    if result == "TP3":
+        initialize_tp3_post_follow_for_trade(
+            trade,
+            event_time,
+            exit_price,
+        )
+
+    return save_trade_ledger(ledger)
 
 
 def build_daily_r_report():
@@ -3683,11 +4198,17 @@ def close_signal_result(
 
     # Önce kalıcı ledger'a yaz. Böylece bir sonraki workflow eski state
     # okusa bile aynı nihai olay yeniden gönderilemez.
-    ledger_record_event(
+    if not ledger_record_event(
         signal,
         result,
         exit_price,
-    )
+    ):
+        print(
+            symbol,
+            result,
+            "ledger kaydı başarısız; Telegram sonucu ertelendi.",
+        )
+        return False
 
     update_performance(
         symbol=symbol,
@@ -3840,11 +4361,17 @@ def register_partial_result(
         return False
 
     # Önce kalıcı ledger kaydı oluşturulur.
-    ledger_record_event(
+    if not ledger_record_event(
         signal,
         result,
         exit_price,
-    )
+    ):
+        print(
+            symbol,
+            result,
+            "ledger kaydı başarısız; Telegram sonucu ertelendi.",
+        )
+        return False
 
     update_performance(
         symbol=symbol,
@@ -6130,6 +6657,7 @@ def main():
     check_open_signals(exchange)
     check_sl_after_follow(exchange)
     check_post_expiry_follow(exchange)
+    check_tp3_post_follow(exchange)
     maybe_send_open_summary(exchange)
 
     risk_mode = risk_mode_active()
