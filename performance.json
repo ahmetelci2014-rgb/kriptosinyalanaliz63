@@ -19719,17 +19719,17 @@
       "sl_after_no_return": 4
     },
     "2026-08-08": {
-      "opened": 6,
+      "opened": 7,
       "radar": 0,
-      "tp1": 2,
+      "tp1": 3,
       "tp2": 3,
-      "tp3": 0,
-      "sl": 0,
+      "tp3": 1,
+      "sl": 1,
       "be": 1,
       "expired": 0,
       "long": 4,
-      "short": 2,
-      "normal": 6,
+      "short": 3,
+      "normal": 7,
       "radar_trade": 0,
       "coins": {
         "STRKUSDT": {
@@ -19787,7 +19787,7 @@
           "radar": 0,
           "tp1": 1,
           "tp2": 1,
-          "tp3": 0,
+          "tp3": 1,
           "sl": 0,
           "be": 0,
           "expired": 0
@@ -19798,11 +19798,21 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
         "RAVEUSDT": {
+          "opened": 1,
+          "radar": 0,
+          "tp1": 1,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 0,
+          "be": 0,
+          "expired": 0
+        },
+        "IMXUSDT": {
           "opened": 1,
           "radar": 0,
           "tp1": 0,
@@ -19813,13 +19823,19 @@
           "expired": 0
         }
       },
-      "direction_stops": {},
-      "stop_times": {},
+      "direction_stops": {
+        "SHORT": 1
+      },
+      "stop_times": {
+        "LDOUSDT": 1786148157
+      },
       "closed_times": {
-        "STRKUSDT": 1786136472
+        "STRKUSDT": 1786136472,
+        "ARXUSDT": 1786148156
       },
       "closed_results": {
-        "STRKUSDT": "BE"
+        "STRKUSDT": "BE",
+        "ARXUSDT": "TP3"
       },
       "closed_history": [
         {
@@ -19881,6 +19897,36 @@
           "exit": 0.0099415036,
           "source": "15M_ENTRY",
           "score": 98
+        },
+        {
+          "time": "03:15:56",
+          "symbol": "ARXUSDT",
+          "direction": "SHORT",
+          "result": "TP3",
+          "entry": 0.1413,
+          "exit": 0.1398026347,
+          "source": "15M_ENTRY",
+          "score": 99
+        },
+        {
+          "time": "03:15:57",
+          "symbol": "LDOUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.2832,
+          "exit": 0.2876,
+          "source": "15M_ENTRY",
+          "score": 89
+        },
+        {
+          "time": "03:15:58",
+          "symbol": "RAVEUSDT",
+          "direction": "LONG",
+          "result": "TP1",
+          "entry": 0.3087,
+          "exit": 0.3101400614,
+          "source": "15M_ENTRY",
+          "score": 96
         }
       ],
       "sl_after_tp1": 0,
@@ -19888,9 +19934,30 @@
       "sl_after_no_return": 1
     }
   },
-  "last_update": 1786146714,
+  "last_update": 1786148560,
   "last_open_summary": 1786146720,
   "last_status_message": 1786147471,
   "last_daily_report": "2026-08-07",
-  "sl_after_follow": {}
+  "sl_after_follow": {
+    "LDOUSDT_SHORT_1786148157": {
+      "trade_id": "LDOUSDT_SHORT_15M_ENTRY_1786143885",
+      "symbol": "LDOUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.2832,
+      "tp1": 0.2808299399,
+      "tp2": 0.2786753398,
+      "tp3": 0.2763052797,
+      "sl": 0.2875092002,
+      "score": 89,
+      "risk_percent": 1.522,
+      "stopped_at": 1786148157,
+      "stop_exit": 0.2876,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    }
+  }
 }
