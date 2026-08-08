@@ -49476,9 +49476,9 @@
       "worst_adverse_r": 0.8013,
       "best_favorable_price": 0.1092,
       "worst_adverse_price": 0.1099,
-      "last_market_price": 0.1094,
+      "last_market_price": 0.1095,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786179660
+      "last_tracking_at": 1786180500
     },
     "JELLYJELLYUSDT_LONG_15M_ENTRY_1786151128": {
       "trade_id": "JELLYJELLYUSDT_LONG_15M_ENTRY_1786151128",
@@ -49801,27 +49801,28 @@
         "confidence": "ORTA",
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
-          "Giris ideal bolgeden goreceli olarak uzakti."
+          "Giris ideal bolgeden goreceli olarak uzakti.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 115,
         "best_favorable_r": 0.0356,
         "worst_adverse_r": 1.1566,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "GEC_UZAK_GIRIS",
-        "preliminary_label": "Geç/uzak giriş",
+        "primary": "GEC_UZAK_GIRIS",
+        "label": "Geç/uzak giriş",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [
           "GEC_UZAK_GIRIS"
         ],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
           "Giriş ideal bölgeden veya gönderim fiyatından uzaktı."
         ],
         "metrics": {
@@ -49829,9 +49830,15 @@
           "mfe_r": 0.0356,
           "mae_r": 1.1566,
           "risk_percent": 1.332,
-          "return_minutes": null
+          "return_minutes": 240.0
         },
-        "updated_at": 1786166153
+        "updated_at": 1786180556
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 240,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1786180556
       }
     },
     "ONEUSDT_LONG_15M_ENTRY_1786160076": {
@@ -50130,9 +50137,9 @@
       "worst_adverse_r": 0.0,
       "best_favorable_price": 0.004229,
       "worst_adverse_price": 0.004155,
-      "last_market_price": 0.004179,
+      "last_market_price": 0.00419,
       "tp1_hit_at": 1786174440,
-      "last_tracking_at": 1786179660
+      "last_tracking_at": 1786180500
     },
     "AVNTUSDT_LONG_5M_RADAR_1786174468": {
       "trade_id": "AVNTUSDT_LONG_5M_RADAR_1786174468",
@@ -50272,11 +50279,11 @@
         "max_adverse_percent": 0.9537,
         "best_price": 0.08968,
         "worst_price": 0.08849,
-        "last_checked_at": 1786179673,
+        "last_checked_at": 1786180557,
         "completed_at": 0,
         "shadow_only": true
       }
     }
   },
-  "last_update": 1786179673
+  "last_update": 1786180557
 }
