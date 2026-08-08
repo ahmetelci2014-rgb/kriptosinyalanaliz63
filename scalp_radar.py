@@ -1148,8 +1148,16 @@ def update_real_scalp_outcome(
             str(item.get("outcome", "")).upper() == outcome
             for item in record.setdefault("trade_events", [])
         )
-        if not existing:
-            record["trade_events"].append(event)
+        if existing:
+            print(
+                symbol,
+                direction,
+                outcome,
+                "duplicate Scalp sonucu ledger tarafından engellendi.",
+            )
+            return False
+
+        record["trade_events"].append(event)
 
         record["trade_outcome"] = outcome
         record["trade_last_updated_at"] = now_ts()
@@ -3286,21 +3294,16 @@ def notify_tp1(
     tp1,
     signal=None,
 ):
+    if not update_real_scalp_outcome(
+        symbol, direction, "TP1", tp1, signal
+    ):
+        return
+    increment_stat(state, "tp1")
     send_telegram(
         f"✅ SCALP TP1 GELDİ\n\n"
-        f"Coin: {symbol}\n"
-        f"Yön: {direction}\n"
-        f"Giriş: {format_price(entry)}\n"
+        f"Coin: {symbol} | Yön: {direction}\n"
         f"TP1: {format_price(tp1)}\n"
-        f"Öneri: %50 kâr al, SL girişe çek."
-    )
-    increment_stat(state, "tp1")
-    update_real_scalp_outcome(
-        symbol,
-        direction,
-        "TP1",
-        tp1,
-        signal,
+        f"%50 kâr al, SL girişe çek."
     )
 
 
@@ -3311,19 +3314,15 @@ def notify_tp2(
     tp2,
     signal=None,
 ):
+    if not update_real_scalp_outcome(
+        symbol, direction, "TP2", tp2, signal
+    ):
+        return
+    increment_stat(state, "tp2")
     send_telegram(
         f"✅ SCALP TP2 GELDİ\n\n"
-        f"Coin: {symbol}\n"
-        f"Yön: {direction}\n"
+        f"Coin: {symbol} | Yön: {direction}\n"
         f"TP2: {format_price(tp2)}"
-    )
-    increment_stat(state, "tp2")
-    update_real_scalp_outcome(
-        symbol,
-        direction,
-        "TP2",
-        tp2,
-        signal,
     )
 
 
@@ -3334,20 +3333,15 @@ def notify_tp3(
     tp3,
     signal=None,
 ):
+    if not update_real_scalp_outcome(
+        symbol, direction, "TP3", tp3, signal
+    ):
+        return
+    increment_stat(state, "tp3")
     send_telegram(
         f"🏁 SCALP TP3 GELDİ\n\n"
-        f"Coin: {symbol}\n"
-        f"Yön: {direction}\n"
-        f"TP3: {format_price(tp3)}\n"
-        f"Scalp maksimum hedefe ulaştı."
-    )
-    increment_stat(state, "tp3")
-    update_real_scalp_outcome(
-        symbol,
-        direction,
-        "TP3",
-        tp3,
-        signal,
+        f"Coin: {symbol} | Yön: {direction}\n"
+        f"TP3: {format_price(tp3)}"
     )
 
 
@@ -3360,23 +3354,15 @@ def notify_stop(
     close,
     signal=None,
 ):
+    if not update_real_scalp_outcome(
+        symbol, direction, "STOP", close, signal
+    ):
+        return
+    increment_stat(state, "stop")
     send_telegram(
         f"❌ SCALP STOP OLDU\n\n"
-        f"Coin: {symbol}\n"
-        f"Yön: {direction}\n"
-        f"Giriş: {format_price(entry)}\n"
-        f"SL: {format_price(sl)}\n"
-        f"Güncel: {format_price(close)}\n\n"
-        f"📊 Teşhis kaydı 120 dakika boyunca yönün "
-        f"sonradan doğrulanıp doğrulanmadığını izleyecek."
-    )
-    increment_stat(state, "stop")
-    update_real_scalp_outcome(
-        symbol,
-        direction,
-        "STOP",
-        close,
-        signal,
+        f"Coin: {symbol} | Yön: {direction}\n"
+        f"SL: {format_price(sl)}"
     )
 
 
@@ -3387,19 +3373,14 @@ def notify_breakeven(
     entry,
     signal=None,
 ):
+    if not update_real_scalp_outcome(
+        symbol, direction, "BREAKEVEN", entry, signal
+    ):
+        return
+    increment_stat(state, "breakeven")
     send_telegram(
         f"🟡 SCALP KALAN GİRİŞTEN KAPANDI\n\n"
-        f"Coin: {symbol}\n"
-        f"Yön: {direction}\n"
-        f"Giriş: {format_price(entry)}"
-    )
-    increment_stat(state, "breakeven")
-    update_real_scalp_outcome(
-        symbol,
-        direction,
-        "BREAKEVEN",
-        entry,
-        signal,
+        f"Coin: {symbol} | Yön: {direction}"
     )
 
 
@@ -3446,24 +3427,19 @@ def check_open_signals(exchange, state):
                     symbol,
                 )
 
-                send_telegram(
-                    f"⏳ SCALP SİNYAL SÜRESİ DOLDU\n\n"
-                    f"Coin: {symbol}\n"
-                    f"Yön: {direction}\n"
-                    f"Giriş: {format_price(entry)}\n"
-                    f"Güncel: "
-                    f"{format_price(expiry_price or entry)}\n\n"
-                    f"{MAX_OPEN_SIGNAL_MINUTES} dakika içinde "
-                    f"TP1 gelmediği için takipten çıkarıldı."
-                )
-                increment_stat(state, "expired")
-                update_real_scalp_outcome(
+                if update_real_scalp_outcome(
                     symbol,
                     direction,
                     "EXPIRED",
                     expiry_price or entry,
                     signal,
-                )
+                ):
+                    increment_stat(state, "expired")
+                    print(
+                        symbol,
+                        direction,
+                        "SCALP EXPIRED sessiz kaydedildi.",
+                    )
                 continue
 
             candles = fetch_candles_since(
@@ -4082,12 +4058,10 @@ def main():
     print("Arka planda izlenecek ön izleme:", len(selected_prewatch))
 
     if selected:
-        send_telegram(
-            f"⚡ {BOT_NAME} çalıştı.\n"
-            f"Taranan coin: {scanned}\n"
-            f"Kaliteli scalp adayı: {len(all_signals)}\n"
-            f"Açık scalp: {open_count}/{MAX_OPEN_SCALP_SIGNALS}\n"
-            f"Gönderilecek sinyal: {len(selected)}"
+        print(
+            BOT_NAME,
+            "gerçek Scalp sinyal adayı bulundu:",
+            len(selected),
         )
 
     for signal in selected:
@@ -4108,7 +4082,19 @@ def main():
                 f"\n{portfolio_note}"
             )
 
-        if send_telegram(signal["message"] + extra):
+        compact_message = (
+            f"🚀 SCALP SİNYALİ\n\n"
+            f"{'🟢' if signal['direction'] == 'LONG' else '🔴'} "
+            f"{signal['direction']} | {signal['symbol']}\n"
+            f"💰 Giriş: {format_price(signal['entry'])}\n"
+            f"🎯 TP1: {format_price(signal['tp1'])}\n"
+            f"🎯 TP2: {format_price(signal['tp2'])}\n"
+            f"🎯 TP3: {format_price(signal['tp3'])}\n"
+            f"🛑 SL: {format_price(signal['sl'])}\n"
+            f"⭐ Skor: {signal['score']}/100"
+        )
+
+        if send_telegram(compact_message):
             record_id = record_scalp_performance(
                 "REAL_SIGNAL",
                 signal,
@@ -4176,14 +4162,7 @@ def main():
         )
 
         if should_send_no_signal_report(state):
-            send_telegram(
-                build_no_signal_report(
-                    scanned,
-                    len(all_signals),
-                    reason_counter,
-                    top_candidates,
-                )
-            )
+            print("Scalp no-signal raporu Telegram yerine sessiz tutuldu.")
             state["last_no_signal_report"] = now_ts()
             save_state(state)
 
