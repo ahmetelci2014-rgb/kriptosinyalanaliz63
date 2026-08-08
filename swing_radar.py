@@ -1667,6 +1667,20 @@ def update_swing_trade_outcome(
             ),
         )
 
+        # Aynı TP/SL/BE/EXPIRED olayı performans ledger'ında
+        # daha önce kaydedildiyse ikinci Telegram sonucunu engelle.
+        if any(
+            str(item.get("outcome", "")).upper() == outcome
+            for item in record.setdefault("milestones", [])
+        ):
+            print(
+                symbol,
+                direction,
+                outcome,
+                "duplicate sonuç ledger tarafından engellendi.",
+            )
+            return False
+
         current = safe_float(
             current_price
         )
@@ -4206,28 +4220,16 @@ def notify_tp1(
     entry,
     tp1,
 ):
+    if not update_swing_trade_outcome(
+        symbol, direction, "TP1", current_price=tp1
+    ):
+        return
     increment_stat(state, "tp1")
-
-    update_swing_trade_outcome(
-        symbol,
-        direction,
-        "TP1",
-        current_price=tp1,
-    )
-
-    icon = (
-        "🟢"
-        if direction == "LONG"
-        else "🔴"
-    )
-
     send_telegram(
         f"✅ SWING TP1 GELDİ\n\n"
-        f"{icon} {symbol} {direction}\n"
-        f"Giriş: {format_price(entry)}\n"
-        f"TP1: {format_price(tp1)}\n\n"
-        f"Öneri: %50 kâr al, "
-        f"SL giriş fiyatına çek."
+        f"{symbol} | {direction}\n"
+        f"TP1: {format_price(tp1)}\n"
+        f"%50 kâr al, SL girişe çek."
     )
 
 
@@ -4237,18 +4239,14 @@ def notify_tp2(
     direction,
     tp2,
 ):
+    if not update_swing_trade_outcome(
+        symbol, direction, "TP2", current_price=tp2
+    ):
+        return
     increment_stat(state, "tp2")
-
-    update_swing_trade_outcome(
-        symbol,
-        direction,
-        "TP2",
-        current_price=tp2,
-    )
-
     send_telegram(
         f"✅ SWING TP2 GELDİ\n\n"
-        f"{symbol} {direction}\n"
+        f"{symbol} | {direction}\n"
         f"TP2: {format_price(tp2)}"
     )
 
@@ -4259,20 +4257,15 @@ def notify_tp3(
     direction,
     tp3,
 ):
+    if not update_swing_trade_outcome(
+        symbol, direction, "TP3", current_price=tp3
+    ):
+        return
     increment_stat(state, "tp3")
-
-    update_swing_trade_outcome(
-        symbol,
-        direction,
-        "TP3",
-        current_price=tp3,
-    )
-
     send_telegram(
         f"🏁 SWING TP3 GELDİ\n\n"
-        f"{symbol} {direction}\n"
-        f"TP3: {format_price(tp3)}\n"
-        f"Swing sinyali maksimum hedefe ulaştı."
+        f"{symbol} | {direction}\n"
+        f"TP3: {format_price(tp3)}"
     )
 
 
@@ -4284,21 +4277,15 @@ def notify_stop(
     sl,
     current,
 ):
+    if not update_swing_trade_outcome(
+        symbol, direction, "STOP", current_price=current
+    ):
+        return
     increment_stat(state, "stop")
-
-    update_swing_trade_outcome(
-        symbol,
-        direction,
-        "STOP",
-        current_price=current,
-    )
-
     send_telegram(
         f"❌ SWING STOP OLDU\n\n"
-        f"{symbol} {direction}\n"
-        f"Giriş: {format_price(entry)}\n"
-        f"SL: {format_price(sl)}\n"
-        f"Son fiyat: {format_price(current)}"
+        f"{symbol} | {direction}\n"
+        f"SL: {format_price(sl)}"
     )
 
 
@@ -4308,24 +4295,15 @@ def notify_breakeven(
     direction,
     entry,
 ):
-    increment_stat(
-        state,
-        "breakeven",
-    )
-
-    update_swing_trade_outcome(
-        symbol,
-        direction,
-        "BREAKEVEN",
-        current_price=entry,
-        result_r=0.0,
-    )
-
+    if not update_swing_trade_outcome(
+        symbol, direction, "BREAKEVEN",
+        current_price=entry, result_r=0.0,
+    ):
+        return
+    increment_stat(state, "breakeven")
     send_telegram(
-        f"🟡 SWING KALAN İŞLEM "
-        f"GİRİŞTEN KAPANDI\n\n"
-        f"{symbol} {direction}\n"
-        f"Giriş: {format_price(entry)}"
+        f"🟡 SWING KALAN GİRİŞTEN KAPANDI\n\n"
+        f"{symbol} | {direction}"
     )
 
 
@@ -4338,44 +4316,20 @@ def notify_expired(
     result_r,
     tp1_hit,
 ):
-    increment_stat(
-        state,
-        "expired",
-    )
-
-    update_swing_trade_outcome(
+    if update_swing_trade_outcome(
         symbol,
         direction,
         "EXPIRED",
         current_price=current_price,
         result_r=result_r,
-    )
-
-    result_text = (
-        f"{result_r:+.3f}R"
-        if result_r is not None
-        else "ölçülemedi"
-    )
-
-    tp1_text = (
-        "Evet"
-        if tp1_hit
-        else "Hayır"
-    )
-
-    send_telegram(
-        f"⏳ SWING SİNYAL SÜRESİ DOLDU\n\n"
-        f"{symbol} {direction}\n"
-        f"Giriş: {format_price(entry)}\n"
-        f"Süre Sonu Fiyatı: "
-        f"{format_price(current_price)}\n"
-        f"Yaklaşık Açık Sonuç: "
-        f"{result_text}\n"
-        f"TP1 Daha Önce Geldi mi: "
-        f"{tp1_text}\n\n"
-        f"{MAX_OPEN_SIGNAL_HOURS} saat sonunda "
-        f"takipten çıkarıldı."
-    )
+    ):
+        increment_stat(state, "expired")
+        print(
+            symbol,
+            direction,
+            "SWING EXPIRED sessiz kaydedildi:",
+            result_r,
+        )
 
 
 # =========================================================
@@ -5408,7 +5362,19 @@ def main():
                 f"\n{portfolio_note}"
             )
 
-        if send_telegram(message):
+        compact_message = (
+            f"🚀 SWING SİNYALİ\n\n"
+            f"{'🟢' if signal['direction'] == 'LONG' else '🔴'} "
+            f"{signal['direction']} | {signal['symbol']}\n"
+            f"💰 Giriş: {format_price(signal['entry'])}\n"
+            f"🎯 TP1: {format_price(signal['tp1'])}\n"
+            f"🎯 TP2: {format_price(signal['tp2'])}\n"
+            f"🎯 TP3: {format_price(signal['tp3'])}\n"
+            f"🛑 SL: {format_price(signal['sl'])}\n"
+            f"⭐ Skor: {signal['score']}/100"
+        )
+
+        if send_telegram(compact_message):
             record_id = record_swing_performance(
                 signal
             )
@@ -5445,18 +5411,7 @@ def main():
             state
         )
     ):
-        send_telegram(
-            build_no_signal_report(
-                scanned_count=scanned,
-                new_signal_count=len(
-                    all_signals
-                ),
-                long_counter=long_reasons,
-                short_counter=short_reasons,
-                top_candidates=top_candidates,
-            )
-        )
-
+        print("Swing no-signal raporu Telegram yerine sessiz tutuldu.")
         mark_no_signal_report_sent(
             state
         )
