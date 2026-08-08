@@ -20682,8 +20682,8 @@
       "tp1": 4,
       "tp2": 2,
       "tp3": 1,
-      "sl": 0,
-      "be": 1,
+      "sl": 1,
+      "be": 2,
       "expired": 0,
       "long": 1,
       "short": 1,
@@ -20707,7 +20707,7 @@
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
-          "be": 0,
+          "be": 1,
           "expired": 0
         },
         "SUSDT": {
@@ -20729,17 +20729,33 @@
           "sl": 0,
           "be": 0,
           "expired": 0
+        },
+        "PEPEUSDT": {
+          "opened": 0,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 1,
+          "be": 0,
+          "expired": 0
         }
       },
-      "direction_stops": {},
-      "stop_times": {},
+      "direction_stops": {
+        "LONG": 1
+      },
+      "stop_times": {
+        "PEPEUSDT": 1786230948
+      },
       "closed_times": {
         "SUSDT": 1786228264,
-        "ZRXUSDT": 1786229154
+        "ZRXUSDT": 1786229154,
+        "EDGEUSDT": 1786230950
       },
       "closed_results": {
         "SUSDT": "TP3",
-        "ZRXUSDT": "BE"
+        "ZRXUSDT": "BE",
+        "EDGEUSDT": "BE"
       },
       "closed_history": [
         {
@@ -20821,6 +20837,26 @@
           "exit": 0.3044963791,
           "source": "15M_ENTRY",
           "score": 100
+        },
+        {
+          "time": "02:15:48",
+          "symbol": "PEPEUSDT",
+          "direction": "LONG",
+          "result": "SL",
+          "entry": 2.88e-06,
+          "exit": 2.846e-06,
+          "source": "15M_ENTRY",
+          "score": 93
+        },
+        {
+          "time": "02:15:50",
+          "symbol": "EDGEUSDT",
+          "direction": "LONG",
+          "result": "BE",
+          "entry": 0.388,
+          "exit": 0.388,
+          "source": "15M_ENTRY",
+          "score": 87
         }
       ],
       "sl_after_tp1": 0,
@@ -20828,11 +20864,32 @@
       "sl_after_no_return": 0
     }
   },
-  "last_update": 1786230073,
+  "last_update": 1786230950,
   "last_open_summary": 1786227354,
   "last_status_message": 1786227610,
   "last_daily_report": "2026-08-08",
-  "sl_after_follow": {},
+  "sl_after_follow": {
+    "PEPEUSDT_LONG_1786230948": {
+      "trade_id": "PEPEUSDT_LONG_15M_ENTRY_1786201468",
+      "symbol": "PEPEUSDT",
+      "direction": "LONG",
+      "source": "15M_ENTRY",
+      "entry": 2.88e-06,
+      "tp1": 2.8976e-06,
+      "tp2": 2.9136e-06,
+      "tp3": 2.9313e-06,
+      "sl": 2.848e-06,
+      "score": 93,
+      "risk_percent": 1.112,
+      "stopped_at": 1786230948,
+      "stop_exit": 2.846e-06,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    }
+  },
   "telegram_result_guard": {
     "dc48c6f2bc36af573d20eab458cf05251738c17135a933dc77b333bb7ea769ac": 1786185949,
     "5ded6b782edb86bab37329fb38ea1d25718e7bd51b77ead037e620cbbf64909c": 1786189550,
@@ -20870,6 +20927,8 @@
     "0ab80f0f066c2e334f44fa678c6ae54db1918abe3ae75085b165f701b7ded20c": 1786227352,
     "78251f3f8f0d577b9e9048095527953153e6fca33396ee1117537343f69b6420": 1786228264,
     "3a5f3b22cf7f5d0640d1cd4c4f62e3ea009807abb17aa6563e87735c77336cd5": 1786229154,
-    "5fff6588e887905d72f772f671bc3d9c85112d088a0a33765ed67ec746900fb8": 1786230072
+    "5fff6588e887905d72f772f671bc3d9c85112d088a0a33765ed67ec746900fb8": 1786230072,
+    "b1a5b6d344ee6d03a1cf7a875fb6f15ce4e5589114e4b22b095f644f7840d537": 1786230948,
+    "e864f4b8c80fd30608515527329d518be97e99e29f02708eb2a894e2274bff55": 1786230950
   }
 }
