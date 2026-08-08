@@ -4705,11 +4705,11 @@ def check_post_expiry_follow(exchange):
                     False,
                 )
             ):
-                send_telegram(
-                    build_post_expiry_telegram(
-                        trade,
-                        follow,
-                    )
+                # Süre sonrası teşhis arka planda ledger'da tutulur.
+                # Telegram yalnız gerçek işlem ve TP/SL/BE sonuçları içindir.
+                print(
+                    trade_id,
+                    "süre sonrası nihai takip sessiz kaydedildi.",
                 )
                 follow["telegram_notified"] = True
                 changed = True
@@ -5319,18 +5319,11 @@ def check_open_signals(exchange):
                     "EXPIRED",
                     expiry_price,
                 ):
-                    send_telegram(
-                        f"⏳ SİNYAL SÜRESİ DOLDU\n\n"
-                        f"Coin: {symbol}\n"
-                        f"Yön: {direction}\n"
-                        f"Giriş: {format_price(entry)}\n"
-                        f"Süre Sonu Fiyatı: "
-                        f"{format_price(expiry_price)}\n"
-                        f"Yaklaşık Net Sonuç: "
-                        f"{expiry_r_text}\n\n"
-                        f"{MAX_OPEN_SIGNAL_HOURS} saat içinde "
-                        f"TP3/SL ile netleşmediği için "
-                        f"takipten çıkarıldı."
+                    print(
+                        symbol,
+                        direction,
+                        "EXPIRED sessiz kaydedildi:",
+                        expiry_r_text,
                     )
                 continue
 
@@ -5845,7 +5838,7 @@ def maybe_send_open_summary(exchange):
                 exc,
             )
 
-    send_telegram("\n".join(lines))
+    print("Açık işlem özeti Telegram yerine arka planda tutuldu.")
 
     performance["last_open_summary"] = now_ts()
     save_performance(performance)
@@ -6010,9 +6003,9 @@ def maybe_send_daily_report():
     ) == today:
         return
 
-    # Eski olay raporu Telegram'a gönderilmez.
-    # Tek kaynaklı birleşik Net R + teşhis raporu gönderilir.
-    send_telegram(build_daily_r_report())
+    # Günlük teşhis/Net R raporu artık Telegram'a gönderilmez.
+    # Altındaki ledger/performance verileri arka planda tutulmaya devam eder.
+    print("Günlük Net R + teşhis raporu sessiz tamamlandı.")
 
     performance["last_daily_report"] = today
     save_performance(performance)
@@ -6423,31 +6416,16 @@ def main():
     ]
 
     if selected_trade:
-        send_telegram(
-            f"✅ {BOT_NAME} çalıştı.\n"
-            f"Taranan coin: {len(scan_coins)}\n"
-            f"A kalite aday: {len(trade_candidates)}\n"
-            f"Riskli açık sinyal: "
-            f"{risky_open}/{MAX_OPEN_SIGNALS}\n"
-            f"TP1 görmüş takipte sinyal: "
-            f"{reduced_open}\n"
-            f"Son kontrole seçilen işlem adayı: "
-            f"{len(selected_trade)}\n"
-            f"Risk Modu: "
-            f"{'AKTİF' if risk_mode else 'Kapalı'}\n"
-            f"Sistem: {SYSTEM_NOTE}"
+        print(
+            BOT_NAME,
+            "gerçek işlem adayı bulundu:",
+            len(selected_trade),
         )
 
     if selected_limit_watch:
-        send_telegram(
-            f"⚠️ {BOT_NAME} güçlü aday buldu "
-            f"ama riskli açık sinyal sınırı dolu.\n"
-            f"Riskli açık sinyal: "
-            f"{risky_open}/{MAX_OPEN_SIGNALS}\n"
-            f"TP1 görmüş takipte sinyal: "
-            f"{reduced_open}\n"
-            f"Yeni işlem kaydı açılmadı; "
-            f"yalnızca takip uyarısı gönderilecek."
+        print(
+            BOT_NAME,
+            "güçlü aday var ancak açık risk limiti dolu; sessiz izleniyor.",
         )
 
     for signal in selected_trade:
@@ -6614,18 +6592,20 @@ def main():
             current_price=current_price,
         )
 
-        if send_telegram(watch_message):
-            mark_sent(
-                signal,
-                radar=True,
-            )
-            time.sleep(1)
+        print(
+            signal["symbol"],
+            "limit-dolu güçlü aday Telegram yerine sessiz kaydedildi.",
+        )
+        mark_sent(
+            signal,
+            radar=True,
+        )
 
     if selected_radar:
-        send_telegram(
-            f"📡 {BOT_NAME} radar çalıştı.\n"
-            f"Radar uyarısı: {len(selected_radar)}\n"
-            f"Bu mesajlar işlem sinyali değildir."
+        print(
+            BOT_NAME,
+            "radar adayları Telegram yerine sessiz izleniyor:",
+            len(selected_radar),
         )
 
     for signal in selected_radar:
@@ -6634,22 +6614,24 @@ def main():
             "5M / 15M RADAR - İŞLEM AÇMA",
         )
 
-        if send_telegram(radar_message):
-            mark_sent(
-                signal,
-                radar=True,
-            )
+        print(
+            signal["symbol"],
+            signal["direction"],
+            "5M/15M radar adayı sessiz kaydedildi.",
+        )
+        mark_sent(
+            signal,
+            radar=True,
+        )
 
-            update_performance(
-                signal["symbol"],
-                "RADAR",
-                direction=signal["direction"],
-                source=signal.get("source"),
-                entry=signal.get("entry"),
-                score=signal.get("score"),
-            )
-
-            time.sleep(1)
+        update_performance(
+            signal["symbol"],
+            "RADAR",
+            direction=signal["direction"],
+            source=signal.get("source"),
+            entry=signal.get("entry"),
+            score=signal.get("score"),
+        )
 
     if (
         not selected_trade
@@ -6663,17 +6645,11 @@ def main():
                 count_open_signal_risk()
             )
 
-            send_telegram(
-                f"📡 {BOT_NAME} çalıştı.\n\n"
-                f"Taranan coin: {len(scan_coins)}\n"
-                f"Uygun MTF sinyali yok.\n"
-                f"Riskli açık sinyal: "
-                f"{risky_open}/{MAX_OPEN_SIGNALS}\n"
-                f"TP1 görmüş takipte sinyal: "
-                f"{reduced_open}\n"
-                f"Risk Modu: "
-                f"{'AKTİF' if risk_mode else 'Kapalı'}\n"
-                f"Sistem durmadı, taramaya devam ediyor."
+            print(
+                BOT_NAME,
+                "uygun MTF sinyali yok; durum Telegram'a gönderilmedi.",
+                f"riskli açık={risky_open}/{MAX_OPEN_SIGNALS}",
+                f"tp1 takip={reduced_open}",
             )
 
             mark_status_sent()
