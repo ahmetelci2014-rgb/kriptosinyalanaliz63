@@ -1627,6 +1627,20 @@ def update_pump_trade_outcome(
             ),
         )
 
+        # Aynı TP/SL/BE/EXPIRED olayı performans ledger'ında
+        # daha önce kaydedildiyse ikinci Telegram sonucunu engelle.
+        if any(
+            str(item.get("outcome", "")).upper() == outcome
+            for item in record.setdefault("milestones", [])
+        ):
+            print(
+                symbol,
+                direction,
+                outcome,
+                "duplicate sonuç ledger tarafından engellendi.",
+            )
+            return False
+
         current = safe_float(
             current_price
         )
@@ -3885,22 +3899,20 @@ def notify_tp1(
     entry,
     tp1,
 ):
-    send_telegram(
-        f"✅ {signal_type} TP1 GELDİ\n\n"
-        f"Coin: {symbol}\n"
-        f"Yön: {direction}\n"
-        f"Giriş: {format_price(entry)}\n"
-        f"TP1: {format_price(tp1)}\n"
-        f"Öneri: %50 kâr al, SL girişe çek."
-    )
-
-    increment_stat(state, "tp1")
-
-    update_pump_trade_outcome(
+    if not update_pump_trade_outcome(
         symbol,
         direction,
         "TP1",
         current_price=tp1,
+    ):
+        return
+
+    increment_stat(state, "tp1")
+    send_telegram(
+        f"✅ {signal_type} TP1 GELDİ\n\n"
+        f"Coin: {symbol} | Yön: {direction}\n"
+        f"TP1: {format_price(tp1)}\n"
+        f"%50 kâr al, SL girişe çek."
     )
 
 
@@ -3911,20 +3923,19 @@ def notify_tp2(
     direction,
     tp2,
 ):
-    send_telegram(
-        f"✅ {signal_type} TP2 GELDİ\n\n"
-        f"Coin: {symbol}\n"
-        f"Yön: {direction}\n"
-        f"TP2: {format_price(tp2)}"
-    )
-
-    increment_stat(state, "tp2")
-
-    update_pump_trade_outcome(
+    if not update_pump_trade_outcome(
         symbol,
         direction,
         "TP2",
         current_price=tp2,
+    ):
+        return
+
+    increment_stat(state, "tp2")
+    send_telegram(
+        f"✅ {signal_type} TP2 GELDİ\n\n"
+        f"Coin: {symbol} | Yön: {direction}\n"
+        f"TP2: {format_price(tp2)}"
     )
 
 
@@ -3935,21 +3946,19 @@ def notify_tp3(
     direction,
     tp3,
 ):
-    send_telegram(
-        f"🏁 {signal_type} TP3 GELDİ\n\n"
-        f"Coin: {symbol}\n"
-        f"Yön: {direction}\n"
-        f"TP3: {format_price(tp3)}\n"
-        f"Sinyal maksimum hedefe ulaştı."
-    )
-
-    increment_stat(state, "tp3")
-
-    update_pump_trade_outcome(
+    if not update_pump_trade_outcome(
         symbol,
         direction,
         "TP3",
         current_price=tp3,
+    ):
+        return
+
+    increment_stat(state, "tp3")
+    send_telegram(
+        f"🏁 {signal_type} TP3 GELDİ\n\n"
+        f"Coin: {symbol} | Yön: {direction}\n"
+        f"TP3: {format_price(tp3)}"
     )
 
 
@@ -3962,22 +3971,19 @@ def notify_stop(
     sl,
     close,
 ):
-    send_telegram(
-        f"❌ {signal_type} STOP OLDU\n\n"
-        f"Coin: {symbol}\n"
-        f"Yön: {direction}\n"
-        f"Giriş: {format_price(entry)}\n"
-        f"SL: {format_price(sl)}\n"
-        f"Güncel: {format_price(close)}"
-    )
-
-    increment_stat(state, "stop")
-
-    update_pump_trade_outcome(
+    if not update_pump_trade_outcome(
         symbol,
         direction,
         "STOP",
         current_price=close,
+    ):
+        return
+
+    increment_stat(state, "stop")
+    send_telegram(
+        f"❌ {signal_type} STOP OLDU\n\n"
+        f"Coin: {symbol} | Yön: {direction}\n"
+        f"SL: {format_price(sl)}"
     )
 
 
@@ -3988,22 +3994,19 @@ def notify_breakeven(
     direction,
     entry,
 ):
-    send_telegram(
-        f"🟡 {signal_type} KALAN "
-        f"GİRİŞTEN KAPANDI\n\n"
-        f"Coin: {symbol}\n"
-        f"Yön: {direction}\n"
-        f"Giriş: {format_price(entry)}"
-    )
-
-    increment_stat(state, "breakeven")
-
-    update_pump_trade_outcome(
+    if not update_pump_trade_outcome(
         symbol,
         direction,
         "BREAKEVEN",
         current_price=entry,
         result_r=0.0,
+    ):
+        return
+
+    increment_stat(state, "breakeven")
+    send_telegram(
+        f"🟡 {signal_type} KALAN GİRİŞTEN KAPANDI\n\n"
+        f"Coin: {symbol} | Yön: {direction}"
     )
 
 
@@ -4104,35 +4107,23 @@ def check_open_signals(exchange, state):
                     else "ölçülemedi"
                 )
 
-                send_telegram(
-                    f"⏳ PUMP/DUMP SİNYAL "
-                    f"SÜRESİ DOLDU\n\n"
-                    f"Coin: {symbol}\n"
-                    f"Yön: {direction}\n"
-                    f"Giriş: {format_price(entry)}\n"
-                    f"Süre Sonu Fiyatı: "
-                    f"{format_price(expiry_price)}\n"
-                    f"Yaklaşık Sonuç: "
-                    f"{expiry_r_text}\n\n"
-                    f"{MAX_OPEN_SIGNAL_MINUTES} dakika "
-                    f"içinde TP1 gelmediği için "
-                    f"takipten çıkarıldı."
-                )
-
-                increment_stat(
-                    state,
-                    "expired",
-                )
-
-                sync_pump_open_metrics(signal)
-
-                update_pump_trade_outcome(
+                if update_pump_trade_outcome(
                     symbol,
                     direction,
                     "EXPIRED",
                     current_price=expiry_price,
                     result_r=expiry_r,
-                )
+                ):
+                    increment_stat(
+                        state,
+                        "expired",
+                    )
+                    print(
+                        symbol,
+                        direction,
+                        "PUMP/DUMP EXPIRED sessiz kaydedildi:",
+                        expiry_r_text,
+                    )
 
                 continue
 
@@ -4931,14 +4922,10 @@ def main():
     )
 
     if selected:
-        send_telegram(
-            f"🚨 {BOT_NAME} çalıştı.\n"
-            f"Taranan coin: {scanned}\n"
-            f"Kaliteli aday: {len(all_signals)}\n"
-            f"Açık pump/dump: "
-            f"{open_count}/{MAX_OPEN_SIGNALS}\n"
-            f"Gönderilecek sinyal: "
-            f"{len(selected)}"
+        print(
+            BOT_NAME,
+            "gerçek sinyal adayı bulundu:",
+            len(selected),
         )
 
     for signal in selected:
@@ -4962,9 +4949,19 @@ def main():
                 f"\n{portfolio_note}"
             )
 
-        if send_telegram(
-            signal["message"] + extra
-        ):
+        compact_message = (
+            f"🚀 PUMP/DUMP SİNYALİ\n\n"
+            f"{'🟢' if signal['direction'] == 'LONG' else '🔴'} "
+            f"{signal['direction']} | {signal['symbol']}\n"
+            f"💰 Giriş: {format_price(signal['entry'])}\n"
+            f"🎯 TP1: {format_price(signal['tp1'])}\n"
+            f"🎯 TP2: {format_price(signal['tp2'])}\n"
+            f"🎯 TP3: {format_price(signal['tp3'])}\n"
+            f"🛑 SL: {format_price(signal['sl'])}\n"
+            f"⭐ Skor: {signal['score']}/100"
+        )
+
+        if send_telegram(compact_message):
             record_id = record_pump_performance(
                 signal
             )
@@ -4994,20 +4991,10 @@ def main():
         )
 
         if should_send_no_signal_report(state):
-            send_telegram(
-                build_no_signal_report(
-                    scanned,
-                    len(all_signals),
-                    pump_counter,
-                    dump_counter,
-                    top_candidates,
-                )
-            )
-
+            print("Pump/Dump no-signal raporu Telegram yerine sessiz tutuldu.")
             state["last_no_signal_report"] = (
                 now_ts()
             )
-
             save_state(state)
 
     print(BOT_NAME, "tamamlandı.")
