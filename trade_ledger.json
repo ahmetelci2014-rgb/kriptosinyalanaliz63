@@ -49423,17 +49423,22 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "SL",
+      "r_result": -1.0,
+      "exit_price": 0.1103,
+      "closed_at": 1786185949,
+      "closed_day": "2026-08-08",
       "events": [
         {
           "time": 1786148560,
           "event": "OPENED",
           "price": 0.1094
+        },
+        {
+          "time": 1786185949,
+          "event": "SL",
+          "price": 0.1103
         }
       ],
       "bot_version": "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27",
@@ -49471,14 +49476,51 @@
       "market_guard_short_allowed": true,
       "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %-0.01 | ETHUSDT: 15M EMA20 altı, 5M %0.05 | SOLUSDT: 15M EMA20 altı, 5M %0.0",
       "best_favorable_percent": 0.1828,
-      "worst_adverse_percent": 0.457,
+      "worst_adverse_percent": 1.0055,
       "best_favorable_r": 0.3205,
-      "worst_adverse_r": 0.8013,
+      "worst_adverse_r": 1.7629,
       "best_favorable_price": 0.1092,
-      "worst_adverse_price": 0.1099,
-      "last_market_price": 0.1099,
+      "worst_adverse_price": 0.1105,
+      "last_market_price": 0.1103,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786185420
+      "last_tracking_at": 1786185660,
+      "duration_minutes": 623,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "KURULUM DEVAM ETMEDI",
+        "confidence": "ORTA",
+        "factors": [
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Ust zaman dilimi trend gucu sinirdaydi."
+        ],
+        "duration_minutes": 623,
+        "best_favorable_r": 0.3205,
+        "worst_adverse_r": 1.7629,
+        "provisional": true,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "stop_root_cause": {
+        "version": "STOP_ROOT_CAUSE_V1",
+        "primary": "TAKIP_SURUYOR",
+        "label": "Takip sürüyor",
+        "preliminary": "ZAYIF_TREND_HACIM",
+        "preliminary_label": "Zayıf trend/hacim",
+        "secondary": [],
+        "confidence": "DUSUK",
+        "provisional": true,
+        "factors": [
+          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Üst zaman dilimi trend gücü sınırdaydı."
+        ],
+        "metrics": {
+          "duration_minutes": 623,
+          "mfe_r": 0.3205,
+          "mae_r": 1.7629,
+          "risk_percent": 0.57,
+          "return_minutes": null
+        },
+        "updated_at": 1786185949
+      }
     },
     "JELLYJELLYUSDT_LONG_15M_ENTRY_1786151128": {
       "trade_id": "JELLYJELLYUSDT_LONG_15M_ENTRY_1786151128",
@@ -50137,9 +50179,9 @@
       "worst_adverse_r": 0.0,
       "best_favorable_price": 0.004229,
       "worst_adverse_price": 0.004155,
-      "last_market_price": 0.004184,
+      "last_market_price": 0.004186,
       "tp1_hit_at": 1786174440,
-      "last_tracking_at": 1786185420
+      "last_tracking_at": 1786185900
     },
     "AVNTUSDT_LONG_5M_RADAR_1786174468": {
       "trade_id": "AVNTUSDT_LONG_5M_RADAR_1786174468",
@@ -50293,5 +50335,5 @@
       }
     }
   },
-  "last_update": 1786185433
+  "last_update": 1786185950
 }
