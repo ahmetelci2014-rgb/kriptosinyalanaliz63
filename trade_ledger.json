@@ -51461,35 +51461,43 @@
         "confidence": "ORTA",
         "factors": [
           "Stop oncesinde islem en az 0.35R lehe hareket etti.",
-          "Ust zaman dilimi trend gucu sinirdaydi."
+          "Ust zaman dilimi trend gucu sinirdaydi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 491,
         "best_favorable_r": 0.4375,
         "worst_adverse_r": 1.125,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ZAYIF_TREND_HACIM",
-        "preliminary_label": "Zayıf trend/hacim",
+        "primary": "ONCE_LEHE_SONRA_TERS",
+        "label": "Önce lehe, sonra ters",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
-          "Üst zaman dilimi trend gücü sınırdaydı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "Üst zaman dilimi trend gücü sınırdaydı.",
+          "İşlem stop öncesinde anlamlı lehe hareket üretmişti."
         ],
         "metrics": {
           "duration_minutes": 491,
           "mfe_r": 0.4375,
           "mae_r": 1.125,
           "risk_percent": 1.112,
-          "return_minutes": null
+          "return_minutes": 240.0
         },
-        "updated_at": 1786230948
+        "updated_at": 1786245350
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 240,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1786245350
       }
     },
     "ICXUSDT_LONG_15M_ENTRY_1786205880": {
@@ -52483,10 +52491,10 @@
       "worst_adverse_r": 0.2631,
       "best_favorable_price": 0.07782,
       "worst_adverse_price": 0.07837,
-      "last_market_price": 0.07806,
+      "last_market_price": 0.07795,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786244460
+      "last_tracking_at": 1786245300
     }
   },
-  "last_update": 1786244466
+  "last_update": 1786245350
 }
