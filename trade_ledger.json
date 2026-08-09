@@ -53013,9 +53013,9 @@
       "worst_adverse_r": 0.7824,
       "best_favorable_price": 0.07809,
       "worst_adverse_price": 0.0767,
-      "last_market_price": 0.07743,
+      "last_market_price": 0.07757,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786305660
+      "last_tracking_at": 1786306500
     },
     "JELLYJELLYUSDT_LONG_5M_RADAR_1786261748": {
       "trade_id": "JELLYJELLYUSDT_LONG_5M_RADAR_1786261748",
@@ -54494,14 +54494,14 @@
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %0.02 | ETHUSDT: 15M EMA20 üstü, 5M %0.06 | SOLUSDT: 15M EMA20 üstü, 5M %-0.01",
       "best_favorable_percent": 0.1528,
-      "worst_adverse_percent": 0.2313,
+      "worst_adverse_percent": 0.3223,
       "best_favorable_r": 0.3274,
-      "worst_adverse_r": 0.4955,
+      "worst_adverse_r": 0.6904,
       "best_favorable_price": 1926.74,
-      "worst_adverse_price": 1919.35,
-      "last_market_price": 1921.01,
+      "worst_adverse_price": 1917.6,
+      "last_market_price": 1918.67,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786305660
+      "last_tracking_at": 1786306500
     },
     "UPUSDT_LONG_5M_RADAR_1786289709": {
       "trade_id": "UPUSDT_LONG_5M_RADAR_1786289709",
@@ -54914,11 +54914,11 @@
         "tp3_price": 0.0047278671,
         "timeframe": "1m",
         "checkpoints": {},
-        "max_favorable_percent": 0.0,
-        "max_adverse_percent": 0.0,
-        "best_price": 0.0047278671,
-        "worst_price": 0.0047278671,
-        "last_checked_at": 0,
+        "max_favorable_percent": 0.3835,
+        "max_adverse_percent": 0.4837,
+        "best_price": 0.004746,
+        "worst_price": 0.004705,
+        "last_checked_at": 1786306550,
         "completed_at": 0,
         "shadow_only": true
       }
@@ -54940,17 +54940,22 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "SL",
+      "r_result": -1.0,
+      "exit_price": 0.011936,
+      "closed_at": 1786306549,
+      "closed_day": "2026-08-09",
       "events": [
         {
           "time": 1786296803,
           "event": "OPENED",
           "price": 0.012126
+        },
+        {
+          "time": 1786306549,
+          "event": "SL",
+          "price": 0.011936
         }
       ],
       "bot_version": "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27",
@@ -54988,15 +54993,54 @@
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %0.0 | ETHUSDT: 15M EMA20 üstü, 5M %0.0 | SOLUSDT: 15M EMA20 üstü, 5M %-0.04",
       "best_favorable_percent": 0.2062,
-      "worst_adverse_percent": 1.5834,
+      "worst_adverse_percent": 1.6576,
       "best_favorable_r": 0.1244,
-      "worst_adverse_r": 0.9556,
+      "worst_adverse_r": 1.0004,
       "best_favorable_price": 0.012151,
-      "worst_adverse_price": 0.011934,
-      "last_market_price": 0.011955,
+      "worst_adverse_price": 0.011925,
+      "last_market_price": 0.011936,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786305660
+      "last_tracking_at": 1786306080,
+      "duration_minutes": 162,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "KURULUM DEVAM ETMEDI",
+        "confidence": "ORTA",
+        "factors": [
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Giris ideal bolgeden goreceli olarak uzakti."
+        ],
+        "duration_minutes": 162,
+        "best_favorable_r": 0.1244,
+        "worst_adverse_r": 1.0004,
+        "provisional": true,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "stop_root_cause": {
+        "version": "STOP_ROOT_CAUSE_V1",
+        "primary": "TAKIP_SURUYOR",
+        "label": "Takip sürüyor",
+        "preliminary": "GEC_UZAK_GIRIS",
+        "preliminary_label": "Geç/uzak giriş",
+        "secondary": [
+          "GEC_UZAK_GIRIS"
+        ],
+        "confidence": "DUSUK",
+        "provisional": true,
+        "factors": [
+          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Giriş ideal bölgeden veya gönderim fiyatından uzaktı."
+        ],
+        "metrics": {
+          "duration_minutes": 162,
+          "mfe_r": 0.1244,
+          "mae_r": 1.0004,
+          "risk_percent": 1.657,
+          "return_minutes": null
+        },
+        "updated_at": 1786306549
+      }
     }
   },
-  "last_update": 1786305668
+  "last_update": 1786306550
 }
