@@ -58,10 +58,24 @@ jobs:
           test -f new_listing_radar.py
           test -f coin_analyzer.py
           test -f test_main_core.py
+          test -f decision_engine.py
+          test -f test_decision_engine.py
 
       - name: Aktif Python dosyalarını derle
         run: |
-          python -m py_compile             main.py             strategy.py             config.py             portfolio_risk.py             scalp_radar.py             pump_radar.py             swing_radar.py             new_listing_radar.py             coin_analyzer.py             test_main_core.py
+          python -m py_compile \
+            main.py \
+            strategy.py \
+            config.py \
+            portfolio_risk.py \
+            scalp_radar.py \
+            pump_radar.py \
+            swing_radar.py \
+            new_listing_radar.py \
+            coin_analyzer.py \
+            test_main_core.py \
+            decision_engine.py \
+            test_decision_engine.py
 
       - name: Ana bot çekirdek testlerini çalıştır
         env:
@@ -69,6 +83,10 @@ jobs:
           CHAT_ID: ""
         run: |
           python test_main_core.py -v
+
+      - name: Karar motoru testlerini çalıştır
+        run: |
+          python test_decision_engine.py -v
 
       - name: Yeni Liste Radar self-testini çalıştır
         env:

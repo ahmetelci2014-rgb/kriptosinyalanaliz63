@@ -1,0 +1,76 @@
+name: Decision Engine Daily
+
+on:
+  workflow_dispatch:
+  schedule:
+    # 20:58 UTC = 23:58 Türkiye saati
+    - cron: "58 20 * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: decision-engine-daily
+  cancel-in-progress: false
+
+jobs:
+  decision-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Repo indir
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Karar motorunu doğrula
+        run: |
+          python -m py_compile decision_engine.py test_decision_engine.py
+          python test_decision_engine.py -v
+
+      - name: Karar raporunu üret
+        run: |
+          python decision_engine.py --output decision_report.json
+
+      - name: Karar raporunu kaydet
+        run: |
+          set -e
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          if [ ! -f "decision_report.json" ]; then
+            echo "decision_report.json oluşmadı."
+            exit 1
+          fi
+
+          git add decision_report.json
+
+          if git diff --cached --quiet; then
+            echo "Karar raporunda yeni değişiklik yok."
+            exit 0
+          fi
+
+          git commit -m "Update daily decision engine report"
+
+          for attempt in 1 2 3
+          do
+            echo "Push denemesi: $attempt"
+            git pull --rebase --autostash origin main
+
+            if git push origin HEAD:main; then
+              echo "Karar raporu kaydedildi."
+              exit 0
+            fi
+
+            sleep 10
+          done
+
+          echo "Karar raporu üç denemede de kaydedilemedi."
+          exit 1
