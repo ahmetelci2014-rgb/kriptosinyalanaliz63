@@ -29,6 +29,8 @@ import ccxt
 import pandas as pd
 import requests
 
+from telegram_delivery import send_telegram_once
+
 from portfolio_risk import (
     evaluate_portfolio_risk,
     format_portfolio_note,
@@ -231,22 +233,14 @@ ATTACK_BREAKOUT_LOOKBACK_5M = 12
 # TELEGRAM
 # =========================================================
 
-def send_telegram(message):
-    if not TOKEN or not CHAT_ID:
-        print("TOKEN veya CHAT_ID eksik.")
-        return False
-
-    try:
-        response = requests.post(
-            f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-            data={"chat_id": CHAT_ID, "text": message},
-            timeout=20,
-        )
-        print("Telegram cevap:", response.status_code)
-        return response.status_code == 200
-    except Exception as exc:
-        print("Telegram gönderim hatası:", exc)
-        return False
+def send_telegram(message, delivery_key=None):
+    return send_telegram_once(
+        message=message,
+        telegram_token=TOKEN,
+        chat_id=CHAT_ID,
+        bot_key="SCALP",
+        delivery_key=delivery_key,
+    )
 
 
 # =========================================================
@@ -3286,6 +3280,15 @@ def save_open_signal(state, signal):
     save_state(state)
 
 
+def scalp_result_delivery_key(signal, symbol, direction, outcome):
+    signal = signal if isinstance(signal, dict) else {}
+    identity = (
+        signal.get("performance_record_id")
+        or f"{normalize_bot_symbol(symbol)}_{str(direction).upper()}_{int(signal.get('opened_at') or 0)}"
+    )
+    return f"{identity}|{str(outcome).upper()}"
+
+
 def notify_tp1(
     state,
     symbol,
@@ -3303,7 +3306,8 @@ def notify_tp1(
         f"✅ SCALP TP1 GELDİ\n\n"
         f"Coin: {symbol} | Yön: {direction}\n"
         f"TP1: {format_price(tp1)}\n"
-        f"%50 kâr al, SL girişe çek."
+        f"%50 kâr al, SL girişe çek.",
+        delivery_key=scalp_result_delivery_key(signal, symbol, direction, "TP1")
     )
 
 
@@ -3322,7 +3326,8 @@ def notify_tp2(
     send_telegram(
         f"✅ SCALP TP2 GELDİ\n\n"
         f"Coin: {symbol} | Yön: {direction}\n"
-        f"TP2: {format_price(tp2)}"
+        f"TP2: {format_price(tp2)}",
+        delivery_key=scalp_result_delivery_key(signal, symbol, direction, "TP2")
     )
 
 
@@ -3341,7 +3346,8 @@ def notify_tp3(
     send_telegram(
         f"🏁 SCALP TP3 GELDİ\n\n"
         f"Coin: {symbol} | Yön: {direction}\n"
-        f"TP3: {format_price(tp3)}"
+        f"TP3: {format_price(tp3)}",
+        delivery_key=scalp_result_delivery_key(signal, symbol, direction, "TP3")
     )
 
 
@@ -3362,7 +3368,8 @@ def notify_stop(
     send_telegram(
         f"❌ SCALP STOP OLDU\n\n"
         f"Coin: {symbol} | Yön: {direction}\n"
-        f"SL: {format_price(sl)}"
+        f"SL: {format_price(sl)}",
+        delivery_key=scalp_result_delivery_key(signal, symbol, direction, "STOP")
     )
 
 
@@ -3380,7 +3387,8 @@ def notify_breakeven(
     increment_stat(state, "breakeven")
     send_telegram(
         f"🟡 SCALP KALAN GİRİŞTEN KAPANDI\n\n"
-        f"Coin: {symbol} | Yön: {direction}"
+        f"Coin: {symbol} | Yön: {direction}",
+        delivery_key=scalp_result_delivery_key(signal, symbol, direction, "BREAKEVEN")
     )
 
 

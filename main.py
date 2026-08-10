@@ -22,7 +22,6 @@
 # - Tüm ana JSON state/ledger kayıtları atomik ve doğrulamalı yazılır.
 # - Ortak portföy denetimi aynı coindeki bot çakışmalarını engeller.
 
-import hashlib
 import json
 import os
 import tempfile
@@ -32,6 +31,8 @@ from datetime import datetime, timedelta, timezone
 import ccxt
 import pandas as pd
 import requests
+
+from telegram_delivery import send_telegram_once
 
 from config import (
     BOT_NAME,
@@ -130,11 +131,8 @@ TP3_POST_FOLLOW_TIMEFRAME = "1m"
 TP3_POST_FOLLOW_LIMIT = 150
 TP3_POST_FOLLOW_CANDLE_SECONDS = 60
 
-# Aynı sonuç metninin aynı workflow içinde veya state senkron gecikmesinde
-# ikinci kez Telegram'a çıkmasına karşı ek katman.
-TELEGRAM_RESULT_GUARD_SECONDS = 24 * 60 * 60
-TELEGRAM_RESULT_GUARD_KEEP_DAYS = 7
-_TELEGRAM_RUNTIME_RESULT_GUARD = set()
+# TP/SL/BE Telegram tekilleştirmesi telegram_delivery.py üzerinden
+# işlem kimliği + sonuç kimliğiyle kalıcı olarak uygulanır.
 
 # Stop kök neden sınıflandırma eşikleri yalnız teşhis içindir.
 # Sinyal üretimi, TP/SL veya işlem filtrelerini değiştirmez.
@@ -198,154 +196,14 @@ def safe_float(value, default=None):
         return default
 
 
-def _telegram_result_fingerprint(message):
-    """
-    Yalnız işlem SONUÇ mesajlarını tekilleştirir.
-    Yeni işlem sinyalleri bu katmandan etkilenmez.
-    """
-    text = str(message or "").strip()
-    upper = text.upper()
-
-    result_markers = (
-        "TP1 GELDİ",
-        "TP2 GELDİ",
-        "TP3 GELDİ",
-        "STOP OLDU",
-        "GİRİŞTEN KAPANDI",
+def send_telegram(message, delivery_key=None):
+    return send_telegram_once(
+        message=message,
+        telegram_token=TOKEN,
+        chat_id=CHAT_ID,
+        bot_key="MAIN",
+        delivery_key=delivery_key,
     )
-
-    if not any(marker in upper for marker in result_markers):
-        return None
-
-    normalized = " ".join(text.split())
-    return hashlib.sha256(
-        normalized.encode("utf-8")
-    ).hexdigest()
-
-
-def _claim_telegram_result(message):
-    """
-    Sonuç mesajı için ikinci güvenlik katmanı.
-
-    Claim, Telegram çağrısından ÖNCE performance.json'a yazılır.
-    Aynı süreçte bellek kilidi de kullanılır. Kayıt yapılamazsa mesaj
-    gönderilmez; sonraki workflow tekrar deneyebilir.
-    """
-    fingerprint = _telegram_result_fingerprint(message)
-
-    if fingerprint is None:
-        return True, None
-
-    if fingerprint in _TELEGRAM_RUNTIME_RESULT_GUARD:
-        print("Telegram sonuç duplicate bellek kilidiyle engellendi.")
-        return False, fingerprint
-
-    performance = load_performance()
-    guard = performance.setdefault(
-        "telegram_result_guard",
-        {},
-    )
-
-    current = now_ts()
-    cutoff = current - (
-        TELEGRAM_RESULT_GUARD_KEEP_DAYS * 24 * 60 * 60
-    )
-
-    for old_key, old_ts in list(guard.items()):
-        try:
-            if int(old_ts or 0) < cutoff:
-                guard.pop(old_key, None)
-        except Exception:
-            guard.pop(old_key, None)
-
-    previous = int(guard.get(fingerprint) or 0)
-
-    if (
-        previous > 0
-        and current - previous < TELEGRAM_RESULT_GUARD_SECONDS
-    ):
-        _TELEGRAM_RUNTIME_RESULT_GUARD.add(fingerprint)
-        print("Telegram sonuç duplicate kalıcı kilitle engellendi.")
-        return False, fingerprint
-
-    guard[fingerprint] = current
-
-    if not save_performance(performance):
-        # Kritik TP/SL mesajını kaybetmemek için gönderime devam et.
-        # Bellek kilidi aynı workflow içindeki ikinci çağrıyı yine engeller.
-        print(
-            "Telegram sonuç claim kalıcı kaydedilemedi; "
-            "bellek kilidiyle gönderime devam ediliyor."
-        )
-
-    _TELEGRAM_RUNTIME_RESULT_GUARD.add(fingerprint)
-    return True, fingerprint
-
-
-def _release_telegram_result_claim(fingerprint):
-    if not fingerprint:
-        return
-
-    _TELEGRAM_RUNTIME_RESULT_GUARD.discard(fingerprint)
-
-    try:
-        performance = load_performance()
-        guard = performance.setdefault(
-            "telegram_result_guard",
-            {},
-        )
-        guard.pop(fingerprint, None)
-        save_performance(performance)
-    except Exception as exc:
-        print(
-            "Telegram sonuç claim geri alma hatası:",
-            exc,
-        )
-
-
-def send_telegram(message):
-    if not TOKEN or not CHAT_ID:
-        print("TOKEN veya CHAT_ID eksik.")
-        return False
-
-    claimed, fingerprint = _claim_telegram_result(
-        message
-    )
-
-    if not claimed:
-        # Duplicate ise çağıran taraf işlemi tekrar state'e sokmasın.
-        # Claim kayıt hatasında ise False dönerek bir sonraki turda retry edilir.
-        if fingerprint in _TELEGRAM_RUNTIME_RESULT_GUARD:
-            return True
-        return False
-
-    try:
-        response = requests.post(
-            f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-            data={
-                "chat_id": CHAT_ID,
-                "text": str(message),
-            },
-            timeout=20,
-        )
-
-        print("Telegram cevap:", response.status_code)
-
-        success = response.status_code == 200
-
-        if not success:
-            _release_telegram_result_claim(
-                fingerprint
-            )
-
-        return success
-
-    except Exception as exc:
-        print("Telegram gönderim hatası:", exc)
-        _release_telegram_result_claim(
-            fingerprint
-        )
-        return False
 
 
 def load_json_file(filename, default=None):
@@ -5939,7 +5797,8 @@ def check_open_signals(exchange):
                                         f"Giriş: {format_price(entry)}\n"
                                         f"TP1: {format_price(tp1)}\n"
                                         f"Öneri: %50 kâr al, "
-                                        f"SL girişe çek."
+                                        f"SL girişe çek.",
+                                        delivery_key=f"{build_trade_id(signal)}|TP1",
                                     )
                             else:
                                 if close_signal_result(
@@ -5954,7 +5813,8 @@ def check_open_signals(exchange):
                                         f"Yön: LONG 🟢\n"
                                         f"Giriş: {format_price(entry)}\n"
                                         f"SL: {format_price(sl)}\n"
-                                        f"Güncel: {format_price(close)}"
+                                        f"Güncel: {format_price(close)}",
+                                        delivery_key=f"{build_trade_id(signal)}|SL",
                                     )
 
                                 closed = True
@@ -5973,7 +5833,8 @@ def check_open_signals(exchange):
                                     f"Yön: LONG 🟢\n"
                                     f"Giriş: {format_price(entry)}\n"
                                     f"SL: {format_price(sl)}\n"
-                                    f"Güncel: {format_price(close)}"
+                                    f"Güncel: {format_price(close)}",
+                                    delivery_key=f"{build_trade_id(signal)}|SL",
                                 )
 
                             closed = True
@@ -5999,7 +5860,8 @@ def check_open_signals(exchange):
                                     f"Giriş: {format_price(entry)}\n"
                                     f"TP1: {format_price(tp1)}\n"
                                     f"Öneri: %50 kâr al, "
-                                    f"SL girişe çek."
+                                    f"SL girişe çek.",
+                                    delivery_key=f"{build_trade_id(signal)}|TP1",
                                 )
 
                     if (
@@ -6020,7 +5882,8 @@ def check_open_signals(exchange):
                                 f"✅ TP2 GELDİ\n\n"
                                 f"Coin: {symbol}\n"
                                 f"Yön: LONG 🟢\n"
-                                f"TP2: {format_price(tp2)}"
+                                f"TP2: {format_price(tp2)}",
+                                delivery_key=f"{build_trade_id(signal)}|TP2",
                             )
 
                     if (
@@ -6043,7 +5906,8 @@ def check_open_signals(exchange):
                                 f"Coin: {symbol}\n"
                                 f"Yön: LONG 🟢\n"
                                 f"TP3: {format_price(tp3)}\n"
-                                f"Sinyal maksimum hedefe ulaştı."
+                                f"Sinyal maksimum hedefe ulaştı.",
+                                delivery_key=f"{build_trade_id(signal)}|TP3",
                             )
 
                         closed = True
@@ -6067,7 +5931,8 @@ def check_open_signals(exchange):
                                 f"🟡 KALAN İŞLEM GİRİŞTEN KAPANDI\n\n"
                                 f"Coin: {symbol}\n"
                                 f"Yön: LONG 🟢\n"
-                                f"Giriş: {format_price(entry)}"
+                                f"Giriş: {format_price(entry)}",
+                                delivery_key=f"{build_trade_id(signal)}|BE",
                             )
 
                         closed = True
@@ -6096,7 +5961,8 @@ def check_open_signals(exchange):
                                         f"Giriş: {format_price(entry)}\n"
                                         f"TP1: {format_price(tp1)}\n"
                                         f"Öneri: %50 kâr al, "
-                                        f"SL girişe çek."
+                                        f"SL girişe çek.",
+                                        delivery_key=f"{build_trade_id(signal)}|TP1",
                                     )
                             else:
                                 if close_signal_result(
@@ -6111,7 +5977,8 @@ def check_open_signals(exchange):
                                         f"Yön: SHORT 🔴\n"
                                         f"Giriş: {format_price(entry)}\n"
                                         f"SL: {format_price(sl)}\n"
-                                        f"Güncel: {format_price(close)}"
+                                        f"Güncel: {format_price(close)}",
+                                        delivery_key=f"{build_trade_id(signal)}|SL",
                                     )
 
                                 closed = True
@@ -6130,7 +5997,8 @@ def check_open_signals(exchange):
                                     f"Yön: SHORT 🔴\n"
                                     f"Giriş: {format_price(entry)}\n"
                                     f"SL: {format_price(sl)}\n"
-                                    f"Güncel: {format_price(close)}"
+                                    f"Güncel: {format_price(close)}",
+                                    delivery_key=f"{build_trade_id(signal)}|SL",
                                 )
 
                             closed = True
@@ -6156,7 +6024,8 @@ def check_open_signals(exchange):
                                     f"Giriş: {format_price(entry)}\n"
                                     f"TP1: {format_price(tp1)}\n"
                                     f"Öneri: %50 kâr al, "
-                                    f"SL girişe çek."
+                                    f"SL girişe çek.",
+                                    delivery_key=f"{build_trade_id(signal)}|TP1",
                                 )
 
                     if (
@@ -6177,7 +6046,8 @@ def check_open_signals(exchange):
                                 f"✅ TP2 GELDİ\n\n"
                                 f"Coin: {symbol}\n"
                                 f"Yön: SHORT 🔴\n"
-                                f"TP2: {format_price(tp2)}"
+                                f"TP2: {format_price(tp2)}",
+                                delivery_key=f"{build_trade_id(signal)}|TP2",
                             )
 
                     if (
@@ -6200,7 +6070,8 @@ def check_open_signals(exchange):
                                 f"Coin: {symbol}\n"
                                 f"Yön: SHORT 🔴\n"
                                 f"TP3: {format_price(tp3)}\n"
-                                f"Sinyal maksimum hedefe ulaştı."
+                                f"Sinyal maksimum hedefe ulaştı.",
+                                delivery_key=f"{build_trade_id(signal)}|TP3",
                             )
 
                         closed = True
@@ -6224,7 +6095,8 @@ def check_open_signals(exchange):
                                 f"🟡 KALAN İŞLEM GİRİŞTEN KAPANDI\n\n"
                                 f"Coin: {symbol}\n"
                                 f"Yön: SHORT 🔴\n"
-                                f"Giriş: {format_price(entry)}"
+                                f"Giriş: {format_price(entry)}",
+                                delivery_key=f"{build_trade_id(signal)}|BE",
                             )
 
                         closed = True
