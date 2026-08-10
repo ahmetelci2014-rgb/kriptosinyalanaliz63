@@ -56681,17 +56681,22 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "SL",
+      "r_result": -1.0,
+      "exit_price": 0.06746,
+      "closed_at": 1786346156,
+      "closed_day": "2026-08-10",
       "events": [
         {
           "time": 1786340941,
           "event": "OPENED",
           "price": 0.06831
+        },
+        {
+          "time": 1786346156,
+          "event": "SL",
+          "price": 0.06746
         }
       ],
       "bot_version": "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27",
@@ -56729,14 +56734,53 @@
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %0.01 | ETHUSDT: 15M EMA20 üstü, 5M %0.01 | SOLUSDT: 15M EMA20 üstü, 5M %-0.01",
       "best_favorable_percent": 0.0293,
-      "worst_adverse_percent": 1.054,
+      "worst_adverse_percent": 1.2443,
       "best_favorable_r": 0.0238,
-      "worst_adverse_r": 0.8581,
+      "worst_adverse_r": 1.013,
       "best_favorable_price": 0.06833,
-      "worst_adverse_price": 0.06759,
-      "last_market_price": 0.06781,
+      "worst_adverse_price": 0.06746,
+      "last_market_price": 0.06746,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786345020
+      "last_tracking_at": 1786345260,
+      "duration_minutes": 86,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "KURULUM DEVAM ETMEDI",
+        "confidence": "ORTA",
+        "factors": [
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Giris ideal bolgeden goreceli olarak uzakti."
+        ],
+        "duration_minutes": 86,
+        "best_favorable_r": 0.0238,
+        "worst_adverse_r": 1.013,
+        "provisional": true,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "stop_root_cause": {
+        "version": "STOP_ROOT_CAUSE_V1",
+        "primary": "TAKIP_SURUYOR",
+        "label": "Takip sürüyor",
+        "preliminary": "GEC_UZAK_GIRIS",
+        "preliminary_label": "Geç/uzak giriş",
+        "secondary": [
+          "GEC_UZAK_GIRIS"
+        ],
+        "confidence": "DUSUK",
+        "provisional": true,
+        "factors": [
+          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Giriş ideal bölgeden veya gönderim fiyatından uzaktı."
+        ],
+        "metrics": {
+          "duration_minutes": 86,
+          "mfe_r": 0.0238,
+          "mae_r": 1.013,
+          "risk_percent": 1.228,
+          "return_minutes": null
+        },
+        "updated_at": 1786346156
+      }
     },
     "XAGUSDT_LONG_15M_ENTRY_1786341878": {
       "trade_id": "XAGUSDT_LONG_15M_ENTRY_1786341878",
@@ -56808,9 +56852,9 @@
       "worst_adverse_r": 0.0243,
       "best_favorable_price": 64.38,
       "worst_adverse_price": 64.15,
-      "last_market_price": 64.34,
+      "last_market_price": 64.23,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786345020
+      "last_tracking_at": 1786346100
     },
     "ENSOUSDT_LONG_15M_ENTRY_1786341879": {
       "trade_id": "ENSOUSDT_LONG_15M_ENTRY_1786341879",
@@ -56882,9 +56926,9 @@
       "worst_adverse_r": 0.243,
       "best_favorable_price": 0.9997,
       "worst_adverse_price": 0.9882,
-      "last_market_price": 0.994,
+      "last_market_price": 0.99,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786345020
+      "last_tracking_at": 1786346100
     },
     "ZROUSDT_LONG_15M_ENTRY_1786343675": {
       "trade_id": "ZROUSDT_LONG_15M_ENTRY_1786343675",
@@ -56951,15 +56995,15 @@
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %-0.05 | ETHUSDT: 15M EMA20 üstü, 5M %-0.1 | SOLUSDT: 15M EMA20 üstü, 5M %-0.04",
       "best_favorable_percent": 0.6023,
-      "worst_adverse_percent": 0.3823,
+      "worst_adverse_percent": 0.4402,
       "best_favorable_r": 0.5433,
-      "worst_adverse_r": 0.3448,
+      "worst_adverse_r": 0.397,
       "best_favorable_price": 0.8685,
-      "worst_adverse_price": 0.86,
-      "last_market_price": 0.8617,
+      "worst_adverse_price": 0.8595,
+      "last_market_price": 0.8636,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786345020
+      "last_tracking_at": 1786346100
     }
   },
-  "last_update": 1786345078
+  "last_update": 1786346158
 }
