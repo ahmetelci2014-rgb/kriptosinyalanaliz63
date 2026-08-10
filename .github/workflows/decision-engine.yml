@@ -16,7 +16,7 @@ concurrency:
 jobs:
   decision-report:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Repo indir
@@ -29,35 +29,46 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Karar motorunu doğrula
+      - name: Karar ve reçete motorlarını doğrula
         run: |
-          python -m py_compile decision_engine.py test_decision_engine.py
+          python -m py_compile \
+            decision_engine.py \
+            test_decision_engine.py \
+            prescription_engine.py \
+            test_prescription_engine.py
           python test_decision_engine.py -v
+          python test_prescription_engine.py -v
 
       - name: Karar raporunu üret
         run: |
           python decision_engine.py --output decision_report.json
 
-      - name: Karar raporunu kaydet
+      - name: Reçete raporunu üret
+        run: |
+          python prescription_engine.py --output prescription_report.json
+
+      - name: Karar ve reçete raporlarını kaydet
         run: |
           set -e
 
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          if [ ! -f "decision_report.json" ]; then
-            echo "decision_report.json oluşmadı."
-            exit 1
-          fi
-
-          git add decision_report.json
+          for file in decision_report.json prescription_report.json
+          do
+            if [ ! -f "$file" ]; then
+              echo "$file oluşmadı."
+              exit 1
+            fi
+            git add "$file"
+          done
 
           if git diff --cached --quiet; then
-            echo "Karar raporunda yeni değişiklik yok."
+            echo "Karar/reçete raporunda yeni değişiklik yok."
             exit 0
           fi
 
-          git commit -m "Update daily decision engine report"
+          git commit -m "Update daily decision and prescription reports"
 
           for attempt in 1 2 3
           do
@@ -65,12 +76,12 @@ jobs:
             git pull --rebase --autostash origin main
 
             if git push origin HEAD:main; then
-              echo "Karar raporu kaydedildi."
+              echo "Karar ve reçete raporları kaydedildi."
               exit 0
             fi
 
             sleep 10
           done
 
-          echo "Karar raporu üç denemede de kaydedilemedi."
+          echo "Raporlar üç denemede de kaydedilemedi."
           exit 1

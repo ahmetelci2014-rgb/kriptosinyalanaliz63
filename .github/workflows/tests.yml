@@ -60,6 +60,8 @@ jobs:
           test -f test_main_core.py
           test -f decision_engine.py
           test -f test_decision_engine.py
+          test -f prescription_engine.py
+          test -f test_prescription_engine.py
 
       - name: Aktif Python dosyalarını derle
         run: |
@@ -75,7 +77,9 @@ jobs:
             coin_analyzer.py \
             test_main_core.py \
             decision_engine.py \
-            test_decision_engine.py
+            test_decision_engine.py \
+            prescription_engine.py \
+            test_prescription_engine.py
 
       - name: Ana bot çekirdek testlerini çalıştır
         env:
@@ -87,6 +91,10 @@ jobs:
       - name: Karar motoru testlerini çalıştır
         run: |
           python test_decision_engine.py -v
+
+      - name: Reçete motoru testlerini çalıştır
+        run: |
+          python test_prescription_engine.py -v
 
       - name: Yeni Liste Radar self-testini çalıştır
         env:
