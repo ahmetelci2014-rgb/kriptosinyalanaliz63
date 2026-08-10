@@ -58350,7 +58350,7 @@
         "max_adverse_percent": 0.0,
         "best_price": 66.18,
         "worst_price": 65.4848283015,
-        "last_checked_at": 1786392953,
+        "last_checked_at": 1786393861,
         "completed_at": 0,
         "shadow_only": true
       },
@@ -58401,9 +58401,9 @@
         "max_adverse_r": 0.0,
         "best_price": 66.18,
         "worst_price": 65.4848283015,
-        "last_checked_at": 1786393231,
+        "last_checked_at": 1786394124,
         "completed_at": 0,
-        "last_price": 65.88
+        "last_price": 65.95
       }
     },
     "ENSOUSDT_LONG_15M_ENTRY_1786341879": {
@@ -58843,34 +58843,42 @@
         "primary": "KURULUM DEVAM ETMEDI",
         "confidence": "ORTA",
         "factors": [
-          "Islem yeterli lehe ivme olusturmadan stop oldu."
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 497,
         "best_favorable_r": 0.0634,
         "worst_adverse_r": 1.1052,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "KURULUM_DEVAM_ETMEDI",
-        "preliminary_label": "Kurulum devam etmedi",
+        "primary": "KURULUM_DEVAM_ETMEDI",
+        "label": "Kurulum devam etmedi",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "İşlem yeterli lehe ivme üretmeden stop oldu."
         ],
         "metrics": {
           "duration_minutes": 497,
           "mfe_r": 0.0634,
           "mae_r": 1.1052,
           "risk_percent": 1.716,
-          "return_minutes": null
+          "return_minutes": 247.0
         },
-        "updated_at": 1786378988
+        "updated_at": 1786393861
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 247,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1786393861
       }
     },
     "2ZUSDT_SHORT_15M_ENTRY_1786355433": {
@@ -59773,9 +59781,9 @@
         "max_adverse_r": 0.0,
         "best_price": 0.1978,
         "worst_price": 0.1998,
-        "last_checked_at": 1786393231,
+        "last_checked_at": 1786394124,
         "completed_at": 0,
-        "last_price": 0.1986
+        "last_price": 0.1985
       }
     },
     "BASEDUSDT_SHORT_15M_ENTRY_1786374300": {
@@ -59878,7 +59886,7 @@
       "post_result_shadow": {
         "version": "POST_RESULT_SHADOW_V1_2026_08_10",
         "shadow_only": true,
-        "status": "TRACKING",
+        "status": "COMPLETED",
         "final_result": "TP1_SONRASI_BE",
         "started_at": 1786378992,
         "measurement_start_at": 1786379040,
@@ -59921,6 +59929,15 @@
             "max_favorable_percent": 0.0,
             "max_adverse_percent": 4.3107,
             "directional_r_from_reference": -2.423
+          },
+          "240": {
+            "target_at": 1786393392,
+            "candle_time": 1786393320,
+            "close_price": 0.07911,
+            "directional_return_percent": -7.2387,
+            "max_favorable_percent": 0.0,
+            "max_adverse_percent": 8.2554,
+            "directional_r_from_reference": -5.1549
           }
         },
         "watched_levels": {
@@ -59935,9 +59952,9 @@
         "max_adverse_r": 5.879,
         "best_price": 0.07377,
         "worst_price": 0.07986,
-        "last_checked_at": 1786393231,
-        "completed_at": 0,
-        "last_price": 0.07926
+        "last_checked_at": 1786394124,
+        "completed_at": 1786394124,
+        "last_price": 0.07911
       }
     },
     "WALUSDT_SHORT_15M_ENTRY_1786375244": {
@@ -60010,9 +60027,9 @@
       "worst_adverse_r": 0.5352,
       "best_favorable_price": 0.02479,
       "worst_adverse_price": 0.02511,
-      "last_market_price": 0.0249,
+      "last_market_price": 0.02491,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786392900
+      "last_tracking_at": 1786393800
     },
     "XRPUSDT_SHORT_15M_ENTRY_1786379282": {
       "trade_id": "XRPUSDT_SHORT_15M_ENTRY_1786379282",
@@ -60084,10 +60101,10 @@
       "worst_adverse_r": 0.2214,
       "best_favorable_price": 1.0151,
       "worst_adverse_price": 1.0231,
-      "last_market_price": 1.0193,
+      "last_market_price": 1.0201,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786392900
+      "last_tracking_at": 1786393800
     }
   },
-  "last_update": 1786393233
+  "last_update": 1786394126
 }
