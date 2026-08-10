@@ -42,6 +42,10 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: python main.py
 
+      - name: TP/BE sonrası sessiz gölge takibi çalıştır
+        if: always()
+        run: python post_result_shadow.py
+
       - name: Durum dosyalarını kaydet
         if: always()
         run: |
