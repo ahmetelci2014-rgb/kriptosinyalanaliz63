@@ -17,6 +17,47 @@ class TimestampTests(unittest.TestCase):
         now = int(time.time())
         self.assertEqual(scc.extract_latest_timestamp({"entry_timestamp": (now - 10) * 1000}), now - 10)
 
+class FutureTimestampTests(unittest.TestCase):
+    def test_funding_next_timestamp_is_not_activity(self):
+        now = int(time.time())
+        data = {
+            "last_run": now - 120,
+            "funding_next_timestamp": (now + 6 * 3600) * 1000,
+        }
+        self.assertEqual(
+            scc.extract_latest_timestamp(data),
+            now - 120,
+        )
+
+    def test_generic_far_future_timestamp_is_rejected(self):
+        now = int(time.time())
+        data = {
+            "last_update": now - 60,
+            "some_timestamp": now + 2 * 3600,
+        }
+        self.assertEqual(
+            scc.extract_latest_timestamp(data),
+            now - 60,
+        )
+
+    def test_health_age_never_negative_for_small_clock_skew(self):
+        now = int(time.time())
+        future = now + 60
+        files = [{
+            "path": "x.json",
+            "exists": True,
+            "valid_json": True,
+            "latest_timestamp": future,
+        }]
+        status, _, age = scc.health_status(
+            files,
+            future,
+            6.0,
+            None,
+        )
+        self.assertEqual(status, "GREEN")
+        self.assertEqual(age, 0.0)
+
 class HealthTests(unittest.TestCase):
     def test_green(self):
         now = int(time.time())

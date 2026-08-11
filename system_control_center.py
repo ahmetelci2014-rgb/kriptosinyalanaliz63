@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-VERSION = "SYSTEM_CONTROL_CENTER_V1_2026_08_11"
+VERSION = "SYSTEM_CONTROL_CENTER_V1_1_2026_08_11"
 MODE = "READ_ONLY_MONITOR_NO_TELEGRAM_NO_ORDERS_NO_SIGNAL_CHANGE_NO_AUTO_APPLY"
 
 REPORT_JSON = "system_control_center_report.json"
@@ -18,6 +18,18 @@ REPORT_MD = "system_control_center_report.md"
 FAST_STALE_HOURS = 6.0
 HOURLY_STALE_HOURS = 8.0
 DAILY_STALE_HOURS = 36.0
+
+# Sağlık/güncellik ölçümünde gelecekte planlanmış zamanlar
+# (ör. bir sonraki funding saati) aktivite zamanı değildir.
+# Küçük sistem saati farkları için yalnız 5 dakikalık tolerans bırakılır.
+MAX_FUTURE_SKEW_SECONDS = 5 * 60
+
+NON_ACTIVITY_TIMESTAMP_KEYS = {
+    "funding_next_timestamp",
+    "next_funding_timestamp",
+    "funding_next_time",
+    "next_funding_time",
+}
 
 COMPONENTS = {
     "PREMIUM": {
@@ -201,14 +213,14 @@ def _possible_timestamp(value):
         number = int(value)
         if number > 10_000_000_000:
             number //= 1000
-        return number if 1_600_000_000 <= number <= now_ts() + 86400 else 0
+        return number if 1_600_000_000 <= number <= now_ts() + MAX_FUTURE_SKEW_SECONDS else 0
     if isinstance(value, str):
         text = value.strip()
         try:
             number = int(float(text))
             if number > 10_000_000_000:
                 number //= 1000
-            if 1_600_000_000 <= number <= now_ts() + 86400:
+            if 1_600_000_000 <= number <= now_ts() + MAX_FUTURE_SKEW_SECONDS:
                 return number
         except Exception:
             pass
@@ -218,7 +230,7 @@ def _possible_timestamp(value):
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=timezone.utc)
             number = int(dt.timestamp())
-            if 1_600_000_000 <= number <= now_ts() + 86400:
+            if 1_600_000_000 <= number <= now_ts() + MAX_FUTURE_SKEW_SECONDS:
                 return number
         except Exception:
             pass
@@ -236,7 +248,12 @@ def extract_latest_timestamp(data, depth=0, max_depth=12):
     if isinstance(data, dict):
         for key, value in data.items():
             k = str(key).lower()
-            if k in TIMESTAMP_KEYS or k.endswith("_at") or k.endswith("_timestamp") or k.endswith("_time"):
+
+            if k in NON_ACTIVITY_TIMESTAMP_KEYS:
+                # Örn. funding_next_timestamp gelecekteki planlı saattir;
+                # sistemin son çalışma/güncelleme zamanı değildir.
+                pass
+            elif k in TIMESTAMP_KEYS or k.endswith("_at") or k.endswith("_timestamp") or k.endswith("_time"):
                 best = max(best, _possible_timestamp(value))
             if isinstance(value, (dict, list)):
                 best = max(best, extract_latest_timestamp(value, depth + 1, max_depth))
@@ -423,7 +440,8 @@ def health_status(files, latest_ts, stale_hours, workflow_path):
         return "RED", reasons, None
     age_hours = None
     if latest_ts:
-        age_hours = round((now_ts() - latest_ts) / 3600, 2)
+        # Küçük saat farkları olsa bile raporda negatif veri yaşı gösterme.
+        age_hours = round(max(0.0, (now_ts() - latest_ts) / 3600), 2)
         if age_hours > stale_hours:
             reasons.append(f"Veri eski: {age_hours:.2f}s > {stale_hours:.2f}s")
             return "YELLOW", reasons, age_hours
