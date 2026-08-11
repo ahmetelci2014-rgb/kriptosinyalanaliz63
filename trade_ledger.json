@@ -63446,9 +63446,9 @@
       "worst_adverse_r": 0.4881,
       "best_favorable_price": 71.86,
       "worst_adverse_price": 70.64,
-      "last_market_price": 71.16,
+      "last_market_price": 71.23,
       "tp1_hit_at": 1786478400,
-      "last_tracking_at": 1786490160
+      "last_tracking_at": 1786490940
     },
     "BNBUSDT_LONG_15M_ENTRY_1786478684": {
       "trade_id": "BNBUSDT_LONG_15M_ENTRY_1786478684",
@@ -63465,7 +63465,7 @@
       "opened_at": 1786478684,
       "opened_day": "2026-08-11",
       "tp1_hit": true,
-      "tp2_hit": false,
+      "tp2_hit": true,
       "tp3_hit": false,
       "status": "OPEN",
       "final_result": null,
@@ -63483,6 +63483,11 @@
           "time": 1786482961,
           "event": "TP1",
           "price": 613.3581275584
+        },
+        {
+          "time": 1786490974,
+          "event": "TP2",
+          "price": 615.2291526114
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -63519,15 +63524,15 @@
       "market_guard_long_allowed": true,
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 2/3 | SHORT uygun: 1/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %0.08 | ETHUSDT: 15M EMA20 üstü, 5M %0.07 | SOLUSDT: 15M EMA20 üstü, 5M %0.0",
-      "best_favorable_percent": 0.5562,
+      "best_favorable_percent": 0.8997,
       "worst_adverse_percent": 0.0,
-      "best_favorable_r": 0.9086,
+      "best_favorable_r": 1.4698,
       "worst_adverse_r": 0.0,
-      "best_favorable_price": 614.7,
+      "best_favorable_price": 616.8,
       "worst_adverse_price": 611.3,
-      "last_market_price": 613.6,
+      "last_market_price": 615.7,
       "tp1_hit_at": 1786482660,
-      "last_tracking_at": 1786490160
+      "last_tracking_at": 1786490940
     },
     "MORPHOUSDT_LONG_15M_ENTRY_1786482289": {
       "trade_id": "MORPHOUSDT_LONG_15M_ENTRY_1786482289",
@@ -63546,17 +63551,22 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "SL",
+      "r_result": -1.0,
+      "exit_price": 1.9568,
+      "closed_at": 1786490976,
+      "closed_day": "2026-08-12",
       "events": [
         {
           "time": 1786482289,
           "event": "OPENED",
           "price": 1.9799
+        },
+        {
+          "time": 1786490976,
+          "event": "SL",
+          "price": 1.9568
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -63594,14 +63604,53 @@
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %0.03 | ETHUSDT: 15M EMA20 üstü, 5M %0.07 | SOLUSDT: 15M EMA20 üstü, 5M %0.11",
       "best_favorable_percent": 0.0303,
-      "worst_adverse_percent": 0.9192,
+      "worst_adverse_percent": 1.2021,
       "best_favorable_r": 0.0264,
-      "worst_adverse_r": 0.7998,
+      "worst_adverse_r": 1.0458,
       "best_favorable_price": 1.9805,
-      "worst_adverse_price": 1.9617,
-      "last_market_price": 1.9631,
+      "worst_adverse_price": 1.9561,
+      "last_market_price": 1.9568,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786490160
+      "last_tracking_at": 1786490400,
+      "duration_minutes": 144,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "KURULUM DEVAM ETMEDI",
+        "confidence": "ORTA",
+        "factors": [
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "15M hacim kendi ortalamasinin altinda veya sinirdaydi.",
+          "Ust zaman dilimi trend gucu sinirdaydi."
+        ],
+        "duration_minutes": 144,
+        "best_favorable_r": 0.0264,
+        "worst_adverse_r": 1.0458,
+        "provisional": true,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "stop_root_cause": {
+        "version": "STOP_ROOT_CAUSE_V1",
+        "primary": "TAKIP_SURUYOR",
+        "label": "Takip sürüyor",
+        "preliminary": "ZAYIF_TREND_HACIM",
+        "preliminary_label": "Zayıf trend/hacim",
+        "secondary": [],
+        "confidence": "DUSUK",
+        "provisional": true,
+        "factors": [
+          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "15M hacim oranı sınırın altındaydı.",
+          "Üst zaman dilimi trend gücü sınırdaydı."
+        ],
+        "metrics": {
+          "duration_minutes": 144,
+          "mfe_r": 0.0264,
+          "mae_r": 1.0458,
+          "risk_percent": 1.149,
+          "return_minutes": null
+        },
+        "updated_at": 1786490976
+      }
     },
     "WETUSDT_LONG_15M_ENTRY_1786484100": {
       "trade_id": "WETUSDT_LONG_15M_ENTRY_1786484100",
@@ -63741,7 +63790,7 @@
         "max_adverse_percent": 2.415,
         "best_price": 0.0722139645,
         "worst_price": 0.07047,
-        "last_checked_at": 1786490168,
+        "last_checked_at": 1786490979,
         "completed_at": 0,
         "shadow_only": true
       },
@@ -63792,9 +63841,9 @@
         "max_adverse_r": 2.0609,
         "best_price": 0.0722139645,
         "worst_price": 0.07047,
-        "last_checked_at": 1786490378,
+        "last_checked_at": 1786491261,
         "completed_at": 0,
-        "last_price": 0.07058
+        "last_price": 0.07073
       }
     },
     "ATOMUSDT_LONG_15M_ENTRY_1786487752": {
@@ -63867,10 +63916,10 @@
       "worst_adverse_r": 0.4485,
       "best_favorable_price": 1.442,
       "worst_adverse_price": 1.435,
-      "last_market_price": 1.437,
+      "last_market_price": 1.441,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786490160
+      "last_tracking_at": 1786490940
     }
   },
-  "last_update": 1786490379
+  "last_update": 1786491263
 }
