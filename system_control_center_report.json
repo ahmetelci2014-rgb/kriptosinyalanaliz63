@@ -1,0 +1,559 @@
+{
+  "version": "SYSTEM_CONTROL_CENTER_V1_2026_08_11",
+  "mode": "READ_ONLY_MONITOR_NO_TELEGRAM_NO_ORDERS_NO_SIGNAL_CHANGE_NO_AUTO_APPLY",
+  "auto_apply": false,
+  "generated_at": 1786473712,
+  "generated_at_utc": "2026-08-11T18:41:52+00:00",
+  "executive": {
+    "component_count": 13,
+    "health_counts": {
+      "GREEN": 13,
+      "YELLOW": 0,
+      "RED": 0
+    },
+    "critical_components": [],
+    "attention_components": [],
+    "overall_health": "GREEN",
+    "note": "Sağlık teknik çalışma/veri güncelliğidir; performans kararı ayrı alandadır."
+  },
+  "components": {
+    "PREMIUM": {
+      "label": "Premium MTF",
+      "kind": "LIVE_SIGNAL",
+      "health": "GREEN",
+      "health_reasons": [
+        "Dosyalar geçerli ve veri güncel"
+      ],
+      "latest_timestamp": 1786473477,
+      "latest_utc": "2026-08-11T18:37:57+00:00",
+      "age_hours": 0.07,
+      "workflow": ".github/workflows/main.yml",
+      "workflow_file_exists": true,
+      "files": [
+        {
+          "path": "open_signals.json",
+          "exists": true,
+          "bytes": 2967,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786473190
+        },
+        {
+          "path": "trade_ledger.json",
+          "exists": true,
+          "bytes": 2243935,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786473477
+        },
+        {
+          "path": "performance.json",
+          "exists": true,
+          "bytes": 553947,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786468563
+        }
+      ],
+      "metrics": {
+        "open_count": 1
+      },
+      "performance": {
+        "source": "decision_report.json",
+        "decision_code": "KORU",
+        "decision_tr": "🟢 KORU",
+        "confidence": "YUKSEK",
+        "sample_size": 442,
+        "next_action": "Ana giriş mantığını değiştirme."
+      },
+      "integrated_note": null
+    },
+    "SCALP": {
+      "label": "Scalp Radar",
+      "kind": "LIVE_SIGNAL",
+      "health": "GREEN",
+      "health_reasons": [
+        "Dosyalar geçerli ve veri güncel"
+      ],
+      "latest_timestamp": 1786472853,
+      "latest_utc": "2026-08-11T18:27:33+00:00",
+      "age_hours": 0.24,
+      "workflow": ".github/workflows/scalp-radar.yml",
+      "workflow_file_exists": true,
+      "files": [
+        {
+          "path": "scalp_radar_state.json",
+          "exists": true,
+          "bytes": 5916,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786472852
+        },
+        {
+          "path": "scalp_performance_ledger.json",
+          "exists": true,
+          "bytes": 1602019,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786472853
+        }
+      ],
+      "metrics": {
+        "open_count": 1,
+        "event_stats": {
+          "signals": 46,
+          "tp1": 24,
+          "tp2": 15,
+          "tp3": 8,
+          "stop": 18,
+          "breakeven": 16,
+          "expired": 6
+        }
+      },
+      "performance": {
+        "source": "decision_report.json",
+        "decision_code": "SETUPLARI_AYIR_GOLGE_TEST",
+        "decision_tr": "🟠 SETUPLARI AYIR / GÖLGE TEST",
+        "confidence": "ORTA",
+        "sample_size": 26,
+        "next_action": "ATAK_SCALP / TEPKİ_SCALP ve diğer source/setup gruplarını ayrı performansla karşılaştır; zayıf grubu önce gölgede filtrele."
+      },
+      "integrated_note": null
+    },
+    "PUMP_DUMP": {
+      "label": "Pump/Dump Radar",
+      "kind": "LIVE_SIGNAL",
+      "health": "GREEN",
+      "health_reasons": [
+        "Dosyalar geçerli ve veri güncel"
+      ],
+      "latest_timestamp": 1786472045,
+      "latest_utc": "2026-08-11T18:14:05+00:00",
+      "age_hours": 0.46,
+      "workflow": ".github/workflows/pump-radar.yml",
+      "workflow_file_exists": true,
+      "files": [
+        {
+          "path": "pump_radar_state.json",
+          "exists": true,
+          "bytes": 331736,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786472045
+        },
+        {
+          "path": "pump_performance_ledger.json",
+          "exists": true,
+          "bytes": 43442,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786471852
+        }
+      ],
+      "metrics": {
+        "open_count": 0,
+        "event_stats": {
+          "signals": 16,
+          "tp1": 12,
+          "tp2": 5,
+          "tp3": 5,
+          "stop": 3,
+          "breakeven": 7,
+          "expired": 3
+        }
+      },
+      "performance": {
+        "source": "decision_report.json",
+        "decision_code": "KORU_IZLE",
+        "decision_tr": "🟢 KORU / İZLE",
+        "confidence": "ORTA",
+        "sample_size": 11,
+        "next_action": "Ayarları değiştirme; örnek sayısını büyüt."
+      },
+      "integrated_note": null
+    },
+    "SWING": {
+      "label": "Swing Radar",
+      "kind": "SHADOW_OR_RESTRICTED",
+      "health": "GREEN",
+      "health_reasons": [
+        "Dosyalar geçerli ve veri güncel"
+      ],
+      "latest_timestamp": 1786473447,
+      "latest_utc": "2026-08-11T18:37:27+00:00",
+      "age_hours": 0.07,
+      "workflow": ".github/workflows/swing-radar.yml",
+      "workflow_file_exists": true,
+      "files": [
+        {
+          "path": "swing_radar_state.json",
+          "exists": true,
+          "bytes": 10480,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786473447
+        },
+        {
+          "path": "swing_performance_ledger.json",
+          "exists": true,
+          "bytes": 177089,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786473447
+        }
+      ],
+      "metrics": {
+        "open_count": 3
+      },
+      "performance": {
+        "source": "decision_report.json",
+        "decision_code": "CANLI_DURDUR",
+        "decision_tr": "🔴 CANLI İŞLEM KAYNAĞINI DURDUR",
+        "confidence": "YUKSEK",
+        "sample_size": 41,
+        "next_action": "Swing veri toplamaya devam etsin fakat gerçek para kaynağı olmasın; 1D/4H rejim ve 1H giriş zamanlaması yeniden tasarlansın."
+      },
+      "integrated_note": null
+    },
+    "POSITION_TREND": {
+      "label": "Ana Trend Pozisyon Radarı",
+      "kind": "SHADOW",
+      "health": "GREEN",
+      "health_reasons": [
+        "Dosyalar geçerli ve veri güncel"
+      ],
+      "latest_timestamp": 1786492800,
+      "latest_utc": "2026-08-12T00:00:00+00:00",
+      "age_hours": -5.3,
+      "workflow": ".github/workflows/position-trend-shadow.yml",
+      "workflow_file_exists": true,
+      "files": [
+        {
+          "path": "position_trend_shadow_state.json",
+          "exists": true,
+          "bytes": 4089,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786492800
+        },
+        {
+          "path": "position_trend_shadow_ledger.json",
+          "exists": true,
+          "bytes": 643,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786471888
+        }
+      ],
+      "metrics": {
+        "open_count": 2,
+        "open": 2,
+        "open_names": [
+          "LABUSDT SHORT",
+          "LITUSDT LONG"
+        ],
+        "closed": 0,
+        "net_r_after_costs": 0,
+        "avg_r_after_costs": 0.0,
+        "profit_factor": null,
+        "max_drawdown_r": 0.0
+      },
+      "performance": {
+        "source": "position_trend_shadow_ledger.json",
+        "decision_code": "VERI_TOPLA",
+        "decision_tr": "⚪ VERİ TOPLA",
+        "confidence": "DUSUK",
+        "sample_size": 0,
+        "next_action": "Yeterli kapalı sanal işlem oluşmadan canlı karar verme."
+      },
+      "integrated_note": null
+    },
+    "ALL_MARKET": {
+      "label": "Tüm Piyasa Keşif Radarı",
+      "kind": "SHADOW",
+      "health": "GREEN",
+      "health_reasons": [
+        "Dosyalar geçerli ve veri güncel"
+      ],
+      "latest_timestamp": 1786471582,
+      "latest_utc": "2026-08-11T18:06:22+00:00",
+      "age_hours": 0.59,
+      "workflow": ".github/workflows/all-market-shadow.yml",
+      "workflow_file_exists": true,
+      "files": [
+        {
+          "path": "all_market_shadow_state.json",
+          "exists": true,
+          "bytes": 99880,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786471582
+        },
+        {
+          "path": "all_market_shadow_ledger.json",
+          "exists": true,
+          "bytes": 7704,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786471582
+        }
+      ],
+      "metrics": {
+        "total": 2,
+        "open": 0,
+        "closed": 2,
+        "net_r": -2.0,
+        "avg_r": -1.0,
+        "tp3_rate_percent": 0.0
+      },
+      "performance": {
+        "source": "all_market_shadow_ledger.json",
+        "decision_code": "VERI_TOPLA",
+        "decision_tr": "⚪ VERİ TOPLA",
+        "confidence": "DUSUK",
+        "sample_size": 2,
+        "next_action": "Shadow performans örneğini büyüt."
+      },
+      "integrated_note": null
+    },
+    "MOMENTUM_SHADOW": {
+      "label": "Momentum Shadow",
+      "kind": "SHADOW",
+      "health": "GREEN",
+      "health_reasons": [
+        "Dosyalar geçerli ve veri güncel"
+      ],
+      "latest_timestamp": 1786473075,
+      "latest_utc": "2026-08-11T18:31:15+00:00",
+      "age_hours": 0.18,
+      "workflow": null,
+      "workflow_file_exists": null,
+      "files": [
+        {
+          "path": "momentum_shadow.json",
+          "exists": true,
+          "bytes": 35944,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786473075
+        }
+      ],
+      "metrics": {},
+      "performance": {
+        "source": "decision_report.json",
+        "decision_code": "GOLGEDE_TUT_CANLIYA_ALMA",
+        "decision_tr": "🟠 GÖLGEDE TUT / CANLIYA ALMA",
+        "confidence": "ORTA",
+        "sample_size": 13,
+        "next_action": "Filtreyi canlı sinyal engeline dönüştürme; gölge veri toplamaya devam et."
+      },
+      "integrated_note": null
+    },
+    "RANGE_SHADOW": {
+      "label": "Range Cycle Shadow",
+      "kind": "SHADOW",
+      "health": "GREEN",
+      "health_reasons": [
+        "Dosyalar geçerli ve veri güncel"
+      ],
+      "latest_timestamp": 1786472082,
+      "latest_utc": "2026-08-11T18:14:42+00:00",
+      "age_hours": 0.45,
+      "workflow": null,
+      "workflow_file_exists": null,
+      "files": [
+        {
+          "path": "range_shadow.json",
+          "exists": true,
+          "bytes": 750779,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786472082
+        }
+      ],
+      "metrics": {},
+      "performance": {
+        "source": "decision_report.json",
+        "decision_code": "CANLIYA_ALMA_YENIDEN_TASARLA",
+        "decision_tr": "🔴 CANLIYA ALMA / YENİDEN TASARLA",
+        "confidence": "YUKSEK",
+        "sample_size": 285,
+        "next_action": "Mevcut Range V3'ü canlı aday olarak bırak; yeni mimari ancak ayrı gölge sürüm olarak denensin."
+      },
+      "integrated_note": null
+    },
+    "PORTFOLIO_RISK": {
+      "label": "Portfolio Risk",
+      "kind": "GUARD",
+      "health": "GREEN",
+      "health_reasons": [
+        "Dosyalar geçerli ve veri güncel"
+      ],
+      "latest_timestamp": 1786473574,
+      "latest_utc": "2026-08-11T18:39:34+00:00",
+      "age_hours": 0.04,
+      "workflow": null,
+      "workflow_file_exists": null,
+      "files": [
+        {
+          "path": "portfolio_risk_shadow.json",
+          "exists": true,
+          "bytes": 300630,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786473475
+        },
+        {
+          "path": "portfolio_risk_outcomes.json",
+          "exists": true,
+          "bytes": 1564930,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786473574
+        }
+      ],
+      "metrics": {},
+      "performance": {
+        "source": "decision_report.json",
+        "decision_code": "IZLE",
+        "decision_tr": "🟡 PORTFÖY RİSKİNİ İZLE",
+        "confidence": "YUKSEK",
+        "sample_size": 434,
+        "next_action": "Canlı limit değiştirmeden BLOCK/ALLOW ve block_code sonuçlarını toplamaya devam et."
+      },
+      "integrated_note": null
+    },
+    "DECISION_ENGINE": {
+      "label": "Decision Engine",
+      "kind": "ANALYSIS",
+      "health": "GREEN",
+      "health_reasons": [
+        "Dosyalar geçerli ve veri güncel"
+      ],
+      "latest_timestamp": 1786397630,
+      "latest_utc": "2026-08-10T21:33:50+00:00",
+      "age_hours": 21.13,
+      "workflow": ".github/workflows/decision-engine.yml",
+      "workflow_file_exists": true,
+      "files": [
+        {
+          "path": "decision_report.json",
+          "exists": true,
+          "bytes": 21711,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786397630
+        }
+      ],
+      "metrics": {},
+      "performance": {
+        "source": null,
+        "decision_code": "NO_DECISION",
+        "decision_tr": "⚪ KARAR YOK",
+        "confidence": null,
+        "sample_size": null,
+        "next_action": null
+      },
+      "integrated_note": null
+    },
+    "PRESCRIPTION_ENGINE": {
+      "label": "Prescription Engine",
+      "kind": "ANALYSIS",
+      "health": "GREEN",
+      "health_reasons": [
+        "Dosyalar geçerli ve veri güncel"
+      ],
+      "latest_timestamp": 1786397630,
+      "latest_utc": "2026-08-10T21:33:50+00:00",
+      "age_hours": 21.13,
+      "workflow": null,
+      "workflow_file_exists": null,
+      "files": [
+        {
+          "path": "prescription_report.json",
+          "exists": true,
+          "bytes": 91185,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786397630
+        }
+      ],
+      "metrics": {},
+      "performance": {
+        "source": null,
+        "decision_code": "NO_DECISION",
+        "decision_tr": "⚪ KARAR YOK",
+        "confidence": null,
+        "sample_size": null,
+        "next_action": null
+      },
+      "integrated_note": null
+    },
+    "NEW_LISTING": {
+      "label": "New Listing Radar",
+      "kind": "RADAR",
+      "health": "GREEN",
+      "health_reasons": [
+        "Dosyalar geçerli ve veri güncel"
+      ],
+      "latest_timestamp": 1786471970,
+      "latest_utc": "2026-08-11T18:12:50+00:00",
+      "age_hours": 0.48,
+      "workflow": ".github/workflows/new-listing-radar.yml",
+      "workflow_file_exists": true,
+      "files": [
+        {
+          "path": "new_listing_performance_ledger.json",
+          "exists": true,
+          "bytes": 2696,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786471970
+        }
+      ],
+      "metrics": {},
+      "performance": {
+        "source": null,
+        "decision_code": "NO_DECISION",
+        "decision_tr": "⚪ KARAR YOK",
+        "confidence": null,
+        "sample_size": null,
+        "next_action": null
+      },
+      "integrated_note": null
+    },
+    "POST_RESULT": {
+      "label": "TP Sonrası / Post Result Shadow",
+      "kind": "INTEGRATED_ANALYSIS",
+      "health": "GREEN",
+      "health_reasons": [
+        "Dosyalar geçerli ve veri güncel"
+      ],
+      "latest_timestamp": 1786473477,
+      "latest_utc": "2026-08-11T18:37:57+00:00",
+      "age_hours": 0.07,
+      "workflow": null,
+      "workflow_file_exists": null,
+      "files": [
+        {
+          "path": "trade_ledger.json",
+          "exists": true,
+          "bytes": 2243935,
+          "valid_json": true,
+          "error": null,
+          "latest_timestamp": 1786473477
+        }
+      ],
+      "metrics": {},
+      "performance": {
+        "source": "decision_report.json",
+        "decision_code": "YONETIM_ALTERNATIFI_GOLGE_TEST",
+        "decision_tr": "🟠 İŞLEM YÖNETİMİ ALTERNATİFİNİ GÖLGE TEST ET",
+        "confidence": "ORTA",
+        "sample_size": 24,
+        "next_action": "Mevcut BE/TP kuralını değiştirme; yalnız alternatif runner/BE yönetimini paralel sanal sonuçla ölç."
+      },
+      "integrated_note": "Premium trade_ledger.json içine entegre takip"
+    }
+  }
+}
