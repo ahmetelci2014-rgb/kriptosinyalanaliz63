@@ -17,11 +17,18 @@ def market(symbol, base, active=True, swap=True):
     }
 
 
-def ticker(volume, last=1.0, percentage=0.0):
+def ticker(volume, last=1.0, percentage=0.0, raw_base_volume=None):
+    if raw_base_volume is None:
+        raw_base_volume = volume
     return {
         "quoteVolume": volume,
+        "baseVolume": raw_base_volume,
         "last": last,
         "percentage": percentage,
+        "info": {
+            "volCcy24h": str(raw_base_volume),
+            "last": str(last),
+        },
     }
 
 
@@ -57,8 +64,50 @@ class AllMarketShadowTests(unittest.TestCase):
         )
         self.assertEqual(result["premium_symbols"], ["AAAUSDT", "BBBUSDT"])
         outside = {r["symbol"]: r for r in result["outside"]}
-        self.assertEqual(outside["CCCUSDT"]["outside_reason"], "OUTSIDE_PREMIUM_TOP300")
-        self.assertEqual(outside["DDDUSDT"]["outside_reason"], "BELOW_PREMIUM_MIN_VOLUME")
+        self.assertEqual(outside["CCCUSDT"]["outside_reason"], "OUTSIDE_PREMIUM_TOP300_LEGACY")
+        self.assertEqual(outside["DDDUSDT"]["outside_reason"], "BELOW_PREMIUM_MIN_VOLUME_LEGACY")
+
+
+    def test_corrected_notional_uses_okx_base_volume_times_last(self):
+        item = ticker(
+            volume=62_000,
+            last=100_000,
+            raw_base_volume=62_000,
+        )
+        self.assertEqual(am.legacy_premium_volume(item), 62_000)
+        self.assertEqual(
+            am.corrected_quote_notional_24h(item),
+            6_200_000_000,
+        )
+
+    def test_audit_flags_live_outside_but_corrected_top300(self):
+        markets = {
+            "BTC": market("BTC/USDT:USDT", "BTC"),
+            "ALT": market("ALT/USDT:USDT", "ALT"),
+        }
+        tickers = {
+            # Legacy 62k < 500k, fakat yaklaşık notional 6.2 milyar USDT.
+            "BTC/USDT:USDT": ticker(
+                62_000, last=100_000, raw_base_volume=62_000
+            ),
+            # Legacy ve corrected ikisi de yüksek.
+            "ALT/USDT:USDT": ticker(
+                900_000, last=1.0, raw_base_volume=900_000
+            ),
+        }
+        result = am.build_universe(
+            markets, tickers,
+            priority_coins=[],
+            min_quote_volume=500_000,
+            max_scan_coins=1,
+        )
+        outside = {r["symbol"]: r for r in result["outside"]}
+        self.assertIn("BTCUSDT", outside)
+        self.assertEqual(
+            outside["BTCUSDT"]["volume_audit_class"],
+            "LIVE_OUTSIDE_BUT_CORRECTED_TOP300",
+        )
+        self.assertTrue(outside["BTCUSDT"]["corrected_in_top300"])
 
     def test_rotation_never_exceeds_limit(self):
         rows = [
@@ -237,7 +286,7 @@ class AllMarketShadowTests(unittest.TestCase):
                 "a": {
                     "status": "CLOSED", "final_result": "SL", "r_result": -1.0,
                     "symbol": "A", "direction": "LONG", "source": "15M_ENTRY",
-                    "outside_reason": "BELOW_PREMIUM_MIN_VOLUME",
+                    "outside_reason": "BELOW_PREMIUM_MIN_VOLUME_LEGACY",
                     "quote_volume_24h_at_open": 100_000,
                     "volume_rank_all_eligible_at_open": 401,
                     "opened_day": "2026-08-11",
@@ -246,7 +295,7 @@ class AllMarketShadowTests(unittest.TestCase):
                 "b": {
                     "status": "CLOSED", "final_result": "TP3", "r_result": 1.075,
                     "symbol": "B", "direction": "SHORT", "source": "15M_ENTRY",
-                    "outside_reason": "OUTSIDE_PREMIUM_TOP300",
+                    "outside_reason": "OUTSIDE_PREMIUM_TOP300_LEGACY",
                     "quote_volume_24h_at_open": 800_000,
                     "volume_rank_all_eligible_at_open": 330,
                     "opened_day": "2026-08-11",

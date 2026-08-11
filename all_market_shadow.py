@@ -40,7 +40,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 
-VERSION = "ALL_MARKET_SHADOW_V1_2026_08_11"
+VERSION = "ALL_MARKET_SHADOW_V1_1_2026_08_11"
 MODE = "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_LIVE_FILTER_CHANGE"
 
 STATE_FILE = Path("all_market_shadow_state.json")
@@ -179,7 +179,12 @@ def okx_symbol(symbol: str) -> str:
     return f"{base}/USDT:USDT"
 
 
-def safe_quote_volume(ticker: Dict[str, Any]) -> float:
+def legacy_premium_volume(ticker: Dict[str, Any]) -> float:
+    """
+    Mevcut canlı Premium main.py davranışını AYNEN referanslamak içindir.
+    Bu değer canlı tarama evrenini taklit eder; doğru USDT notional olduğu
+    varsayılmaz.
+    """
     value = safe_float(ticker.get("quoteVolume"), None)
     if value is not None:
         return max(0.0, value)
@@ -189,6 +194,39 @@ def safe_quote_volume(ticker: Dict[str, Any]) -> float:
         value = safe_float(info.get(key), None)
         if value is not None:
             return max(0.0, value)
+    return 0.0
+
+
+def corrected_quote_notional_24h(ticker: Dict[str, Any]) -> float:
+    """
+    OKX USDT SWAP için yaklaşık 24s USDT notional.
+
+    OKX dokümanında derivatives volCcy24h = base currency miktarıdır.
+    Bu yüzden USDT-margined linear swap için:
+        yaklaşık USDT notional = volCcy24h * last
+
+    Bu yalnız EVREN/AUDIT ölçümüdür; gerçek PnL hesabında kullanılmaz.
+    """
+    info = ticker.get("info") if isinstance(ticker.get("info"), dict) else {}
+
+    last = safe_float(ticker.get("last"), None)
+    if last is None:
+        last = safe_float(info.get("last"), None)
+
+    base_amount = safe_float(info.get("volCcy24h"), None)
+    if base_amount is not None and last is not None and last > 0:
+        return max(0.0, base_amount * last)
+
+    # Raw OKX alanı yoksa unified baseVolume ile yaklaşıkla.
+    base_volume = safe_float(ticker.get("baseVolume"), None)
+    if base_volume is not None and last is not None and last > 0:
+        return max(0.0, base_volume * last)
+
+    # Son çare: gerçekten quoteVolume sağlayan bir adapter varsa kullan.
+    quote_volume = safe_float(ticker.get("quoteVolume"), None)
+    if quote_volume is not None:
+        return max(0.0, quote_volume)
+
     return 0.0
 
 
@@ -252,89 +290,190 @@ def build_universe(
     min_quote_volume: float,
     max_scan_coins: int,
 ) -> Dict[str, Any]:
+    """
+    İki paralel evren kurar:
+
+    1) live_reference_symbols:
+       Mevcut Premium main.py'nin legacy hacim davranışını aynen taklit eder.
+       OUTSIDE300 sanal işlemler bu canlı referansa göre seçilir.
+
+    2) corrected_symbols:
+       OKX derivatives volCcy24h * last ile yaklaşık USDT notional kullanır.
+       Bu evren canlıya uygulanmaz; yalnız yanlış dışlama auditidir.
+    """
     eligible = eligible_markets(markets)
 
     enriched = []
     for row in eligible:
         ticker = tickers.get(row["okx_symbol"], {})
-        volume = safe_quote_volume(ticker if isinstance(ticker, dict) else {})
-        change = ticker_change_percent(ticker if isinstance(ticker, dict) else {})
-        last = safe_float(
-            ticker.get("last") if isinstance(ticker, dict) else None,
-            None,
-        )
+        ticker = ticker if isinstance(ticker, dict) else {}
+
+        legacy_volume = legacy_premium_volume(ticker)
+        corrected_notional = corrected_quote_notional_24h(ticker)
+        change = ticker_change_percent(ticker)
+        last = safe_float(ticker.get("last"), None)
+
         enriched.append({
             **row,
-            "quote_volume_24h": round(volume, 4),
+            # Geriye dönük alan adı canlı/legacy hacmi göstermeye devam eder.
+            "quote_volume_24h": round(legacy_volume, 4),
+            "legacy_premium_volume_24h": round(legacy_volume, 4),
+            "corrected_quote_notional_24h": round(corrected_notional, 4),
             "change_24h_percent": round(change, 4),
             "last": last,
         })
 
-    volume_rows = [
+    # -------- Mevcut canlı Premium referansı --------
+    legacy_rows = [
         row for row in enriched
-        if row["quote_volume_24h"] >= float(min_quote_volume)
+        if row["legacy_premium_volume_24h"] >= float(min_quote_volume)
     ]
-    volume_rows.sort(
-        key=lambda row: row["quote_volume_24h"],
+    legacy_rows.sort(
+        key=lambda row: row["legacy_premium_volume_24h"],
         reverse=True,
     )
 
-    volume_symbols = [row["symbol"] for row in volume_rows]
+    legacy_symbols = [row["symbol"] for row in legacy_rows]
     priority = [
         str(symbol).upper()
         for symbol in priority_coins
-        if str(symbol).upper() in volume_symbols
+        if str(symbol).upper() in legacy_symbols
     ]
-    others = [
-        symbol for symbol in volume_symbols
+    legacy_others = [
+        symbol for symbol in legacy_symbols
         if symbol not in priority
     ]
-    premium_symbols = (priority + others)[: int(max_scan_coins)]
-    premium_set = set(premium_symbols)
+    live_reference_symbols = (priority + legacy_others)[: int(max_scan_coins)]
+    live_reference_set = set(live_reference_symbols)
 
-    # Saf hacim rank'i ayrıca kaydedilir; Premium order priority coinleri öne taşıyabilir.
-    volume_rank = {
+    legacy_rank = {
         row["symbol"]: index + 1
         for index, row in enumerate(
-            sorted(enriched, key=lambda x: x["quote_volume_24h"], reverse=True)
+            sorted(
+                enriched,
+                key=lambda x: x["legacy_premium_volume_24h"],
+                reverse=True,
+            )
         )
     }
 
+    # -------- Düzeltilmiş yaklaşık USDT notional evren --------
+    corrected_rows = [
+        row for row in enriched
+        if row["corrected_quote_notional_24h"] >= float(min_quote_volume)
+    ]
+    corrected_rows.sort(
+        key=lambda row: row["corrected_quote_notional_24h"],
+        reverse=True,
+    )
+
+    corrected_symbols_all = [row["symbol"] for row in corrected_rows]
+    corrected_priority = [
+        str(symbol).upper()
+        for symbol in priority_coins
+        if str(symbol).upper() in corrected_symbols_all
+    ]
+    corrected_others = [
+        symbol for symbol in corrected_symbols_all
+        if symbol not in corrected_priority
+    ]
+    corrected_symbols = (
+        corrected_priority + corrected_others
+    )[: int(max_scan_coins)]
+    corrected_set = set(corrected_symbols)
+
+    corrected_rank = {
+        row["symbol"]: index + 1
+        for index, row in enumerate(
+            sorted(
+                enriched,
+                key=lambda x: x["corrected_quote_notional_24h"],
+                reverse=True,
+            )
+        )
+    }
+
+    # -------- Canlı Premium dışında kalan gerçek araştırma evreni --------
     outside = []
     for row in enriched:
-        if row["symbol"] in premium_set:
+        symbol = row["symbol"]
+        if symbol in live_reference_set:
             continue
 
-        if row["quote_volume_24h"] < float(min_quote_volume):
-            reason = "BELOW_PREMIUM_MIN_VOLUME"
+        legacy_above_min = (
+            row["legacy_premium_volume_24h"] >= float(min_quote_volume)
+        )
+        corrected_above_min = (
+            row["corrected_quote_notional_24h"] >= float(min_quote_volume)
+        )
+        corrected_in_top = symbol in corrected_set
+
+        if not legacy_above_min:
+            live_outside_reason = "BELOW_PREMIUM_MIN_VOLUME_LEGACY"
         else:
-            reason = "OUTSIDE_PREMIUM_TOP300"
+            live_outside_reason = "OUTSIDE_PREMIUM_TOP300_LEGACY"
+
+        if corrected_in_top:
+            audit_class = "LIVE_OUTSIDE_BUT_CORRECTED_TOP300"
+        elif corrected_above_min:
+            audit_class = "LIVE_OUTSIDE_CORRECTED_ABOVE_MIN_NOT_TOP300"
+        else:
+            audit_class = "BELOW_CORRECTED_MIN_VOLUME"
 
         outside.append({
             **row,
-            "volume_rank_all_eligible": volume_rank.get(row["symbol"]),
-            "outside_reason": reason,
+            "volume_rank_all_eligible": legacy_rank.get(symbol),
+            "legacy_volume_rank_all_eligible": legacy_rank.get(symbol),
+            "corrected_volume_rank_all_eligible": corrected_rank.get(symbol),
+            "outside_reason": live_outside_reason,
+            "volume_audit_class": audit_class,
+            "corrected_above_min_volume": corrected_above_min,
+            "corrected_in_top300": corrected_in_top,
         })
 
+    # Önce canlı dışında olup düzeltilmiş evrende TOP300'e girecek coinler.
+    audit_priority = {
+        "LIVE_OUTSIDE_BUT_CORRECTED_TOP300": 0,
+        "LIVE_OUTSIDE_CORRECTED_ABOVE_MIN_NOT_TOP300": 1,
+        "BELOW_CORRECTED_MIN_VOLUME": 2,
+    }
     outside.sort(
         key=lambda row: (
-            -row["quote_volume_24h"],
+            audit_priority.get(row["volume_audit_class"], 9),
+            -row["corrected_quote_notional_24h"],
+            -row["legacy_premium_volume_24h"],
             row["symbol"],
         )
     )
 
     return {
         "eligible": enriched,
-        "premium_symbols": premium_symbols,
+        "premium_symbols": live_reference_symbols,  # geriye uyum
+        "live_reference_symbols": live_reference_symbols,
+        "corrected_symbols": corrected_symbols,
         "outside": outside,
-        "volume_eligible_count": len(volume_rows),
+        "volume_eligible_count": len(legacy_rows),  # geriye uyum
+        "legacy_volume_eligible_count": len(legacy_rows),
+        "corrected_volume_eligible_count": len(corrected_rows),
     }
 
 
 def hot_score(row: Dict[str, Any]) -> float:
-    volume = max(0.0, safe_float(row.get("quote_volume_24h"), 0.0) or 0.0)
+    # Audit mismatch coinleri önce derin tara; sonra düzeltilmiş notional + hareket.
+    audit_bonus = (
+        100.0
+        if row.get("volume_audit_class") == "LIVE_OUTSIDE_BUT_CORRECTED_TOP300"
+        else 20.0
+        if row.get("volume_audit_class")
+        == "LIVE_OUTSIDE_CORRECTED_ABOVE_MIN_NOT_TOP300"
+        else 0.0
+    )
+    volume = max(
+        0.0,
+        safe_float(row.get("corrected_quote_notional_24h"), 0.0) or 0.0,
+    )
     move = abs(safe_float(row.get("change_24h_percent"), 0.0) or 0.0)
-    return math.log10(volume + 1.0) + min(move, 50.0) * 0.20
+    return audit_bonus + math.log10(volume + 1.0) + min(move, 50.0) * 0.20
 
 
 def select_deep_scan(
@@ -762,8 +901,12 @@ def open_shadow_trade(
         "stage": "VIRTUAL_OUTSIDE300",
         "universe": "OUTSIDE300",
         "outside_reason": universe_row.get("outside_reason"),
+        "volume_audit_class": universe_row.get("volume_audit_class"),
         "quote_volume_24h_at_open": universe_row.get("quote_volume_24h"),
+        "legacy_premium_volume_24h_at_open": universe_row.get("legacy_premium_volume_24h"),
+        "corrected_quote_notional_24h_at_open": universe_row.get("corrected_quote_notional_24h"),
         "volume_rank_all_eligible_at_open": universe_row.get("volume_rank_all_eligible"),
+        "corrected_volume_rank_all_eligible_at_open": universe_row.get("corrected_volume_rank_all_eligible"),
         "change_24h_percent_at_open": universe_row.get("change_24h_percent"),
         "market_guard": {
             "long_allowed": market_status.get("LONG"),
@@ -1417,8 +1560,12 @@ def run_once() -> Dict[str, Any]:
         item["last_deep_scan_at"] = ts
         item["last_deep_scan_at_tr"] = tr_text(ts)
         item["outside_reason"] = row.get("outside_reason")
+        item["volume_audit_class"] = row.get("volume_audit_class")
         item["quote_volume_24h"] = row.get("quote_volume_24h")
+        item["legacy_premium_volume_24h"] = row.get("legacy_premium_volume_24h")
+        item["corrected_quote_notional_24h"] = row.get("corrected_quote_notional_24h")
         item["volume_rank_all_eligible"] = row.get("volume_rank_all_eligible")
+        item["corrected_volume_rank_all_eligible"] = row.get("corrected_volume_rank_all_eligible")
 
         signal, reason = analyze_one(
             exchange, runtime, row, market_status,
@@ -1447,12 +1594,25 @@ def run_once() -> Dict[str, Any]:
 
     outside_below = sum(
         1 for row in outside
-        if row.get("outside_reason") == "BELOW_PREMIUM_MIN_VOLUME"
+        if row.get("outside_reason") == "BELOW_PREMIUM_MIN_VOLUME_LEGACY"
     )
     outside_rank = sum(
         1 for row in outside
-        if row.get("outside_reason") == "OUTSIDE_PREMIUM_TOP300"
+        if row.get("outside_reason") == "OUTSIDE_PREMIUM_TOP300_LEGACY"
     )
+    audit_mismatch = [
+        row for row in outside
+        if row.get("volume_audit_class") == "LIVE_OUTSIDE_BUT_CORRECTED_TOP300"
+    ]
+    corrected_overflow = [
+        row for row in outside
+        if row.get("volume_audit_class")
+        == "LIVE_OUTSIDE_CORRECTED_ABOVE_MIN_NOT_TOP300"
+    ]
+    true_low_volume = [
+        row for row in outside
+        if row.get("volume_audit_class") == "BELOW_CORRECTED_MIN_VOLUME"
+    ]
 
     covered_outside = sum(
         1 for row in outside
@@ -1467,10 +1627,20 @@ def run_once() -> Dict[str, Any]:
         "captured_at_tr": tr_text(ts),
         "eligible_usdt_swap_total": len(universe["eligible"]),
         "premium_top300_count": len(universe["premium_symbols"]),
+        "live_reference_count": len(universe["live_reference_symbols"]),
+        "corrected_top300_count": len(universe["corrected_symbols"]),
         "volume_above_premium_min_count": universe["volume_eligible_count"],
+        "legacy_volume_above_min_count": universe["legacy_volume_eligible_count"],
+        "corrected_notional_above_min_count": universe["corrected_volume_eligible_count"],
         "outside300_total": len(outside),
         "outside_below_premium_min_volume": outside_below,
         "outside_top300_rank_overflow": outside_rank,
+        "volume_audit_mismatch_count": len(audit_mismatch),
+        "corrected_above_min_but_not_top300_count": len(corrected_overflow),
+        "true_below_corrected_min_volume_count": len(true_low_volume),
+        "volume_audit_mismatch_symbols": [
+            row["symbol"] for row in audit_mismatch[:100]
+        ],
         "deep_scanned_this_run": len(chosen),
         "covered_outside_symbols_lifetime": covered_outside,
         "coverage_percent_current_outside": pct(covered_outside, len(outside)),
@@ -1499,8 +1669,10 @@ def run_once() -> Dict[str, Any]:
 
     overall = ledger["summary"]["overall"]
     print("Uygun USDT swap:", len(universe["eligible"]))
-    print("Premium TOP300:", len(universe["premium_symbols"]))
-    print("OUTSIDE300:", len(outside))
+    print("Premium canlı referans:", len(universe["premium_symbols"]))
+    print("Düzeltilmiş notional TOP300:", len(universe["corrected_symbols"]))
+    print("Canlı OUTSIDE:", len(outside))
+    print("Hacim audit mismatch:", len(audit_mismatch))
     print("Bu tur derin tarama:", len(chosen))
     print("Yeni sanal işlem:", virtual_opened)
     print("Bu tur kapanan:", closed_now)
@@ -1516,7 +1688,9 @@ def run_once() -> Dict[str, Any]:
     return {
         "eligible_total": len(universe["eligible"]),
         "premium_count": len(universe["premium_symbols"]),
+        "corrected_top300_count": len(universe["corrected_symbols"]),
         "outside_total": len(outside),
+        "volume_audit_mismatch_count": len(audit_mismatch),
         "deep_scanned": len(chosen),
         "virtual_opened": virtual_opened,
         "closed_now": closed_now,
