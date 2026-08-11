@@ -1,0 +1,87 @@
+name: Ana Trend Pozisyon Shadow
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: position-trend-shadow
+  cancel-in-progress: false
+
+jobs:
+  position-trend-shadow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Repo indir
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Paketleri kur
+        env:
+          PIP_DISABLE_PIP_VERSION_CHECK: "1"
+        run: |
+          python -m pip install --prefer-binary -r requirements.txt
+
+      - name: Saf testleri çalıştır
+        run: |
+          python -m unittest -v test_position_trend_shadow.py
+
+      - name: Ana Trend Pozisyon Shadow çalıştır
+        run: |
+          python position_trend_shadow.py
+
+      - name: State ve ledger kaydet
+        if: always()
+        run: |
+          set -e
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          for file in \
+            position_trend_shadow_state.json \
+            position_trend_shadow_ledger.json
+          do
+            if [ -f "$file" ]; then
+              git add "$file"
+            fi
+          done
+
+          if git diff --cached --quiet; then
+            echo "Kaydedilecek Ana Trend değişikliği yok."
+            exit 0
+          fi
+
+          git commit -m "Update position trend shadow state and ledger"
+
+          for attempt in 1 2 3
+          do
+            echo "Push denemesi: $attempt"
+
+            git pull --rebase --autostash origin main
+
+            if git push origin HEAD:main
+            then
+              echo "Ana Trend state ve ledger kaydedildi."
+              exit 0
+            fi
+
+            sleep 10
+          done
+
+          echo "Ana Trend kayıtları üç denemede de gönderilemedi."
+          exit 1
