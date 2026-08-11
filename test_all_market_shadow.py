@@ -109,6 +109,54 @@ class AllMarketShadowTests(unittest.TestCase):
         )
         self.assertTrue(outside["BTCUSDT"]["corrected_in_top300"])
 
+
+    def test_live_reference_forces_active_priority_below_legacy_volume(self):
+        markets = {
+            "BTC": market("BTC/USDT:USDT", "BTC"),
+            "ALT": market("ALT/USDT:USDT", "ALT"),
+            "LOW": market("LOW/USDT:USDT", "LOW"),
+        }
+        tickers = {
+            "BTC/USDT:USDT": ticker(
+                62_000,
+                last=100_000,
+                raw_base_volume=62_000,
+            ),
+            "ALT/USDT:USDT": ticker(
+                2_000_000,
+                last=1.0,
+                raw_base_volume=2_000_000,
+            ),
+            "LOW/USDT:USDT": ticker(
+                10_000,
+                last=1.0,
+                raw_base_volume=10_000,
+            ),
+        }
+
+        result = am.build_universe(
+            markets,
+            tickers,
+            priority_coins=["BTCUSDT"],
+            min_quote_volume=500_000,
+            max_scan_coins=2,
+        )
+
+        self.assertEqual(
+            result["live_reference_symbols"],
+            ["BTCUSDT", "ALTUSDT"],
+        )
+        self.assertIn(
+            "BTCUSDT",
+            result["forced_priority_symbols"],
+        )
+        outside_symbols = {
+            row["symbol"]
+            for row in result["outside"]
+        }
+        self.assertNotIn("BTCUSDT", outside_symbols)
+        self.assertIn("LOWUSDT", outside_symbols)
+
     def test_rotation_never_exceeds_limit(self):
         rows = [
             {

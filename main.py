@@ -99,7 +99,7 @@ TRADE_LEDGER_FILE = "trade_ledger.json"
 
 # Bu sürüm bilgileri yalnız performans kayıtlarını ayrıştırmak içindir.
 # Sinyal üretimi, TP/SL ve filtre davranışını değiştirmez.
-BOT_BUILD_VERSION = "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27"
+BOT_BUILD_VERSION = "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11"
 STRATEGY_VERSION = "PREMIUM_MTF_TP_ODAKLI_V2"
 CONFIG_VERSION = "CONFIG_2026_07_27"
 
@@ -3297,12 +3297,26 @@ def safe_quote_volume(ticker):
 
 
 def get_scan_coins(exchange):
+    """
+    Canlı Premium tarama evrenini oluşturur.
+
+    Güvenli düzeltme:
+    - PRIORITY_COINS içindeki aktif/uygun USDT perpetual coinler,
+      24s hacim alanındaki adapter/OKX birim farkı nedeniyle artık
+      minimum hacim filtresinden düşmez.
+    - Öncelikli olmayan coinlerde mevcut minimum hacim filtresi aynen korunur.
+    - Toplam tarama MAX_SCAN_COINS ile sınırlı kalır.
+
+    Böylece BTC/ETH/SOL/BNB/AAVE gibi öncelikli coinler aktif market oldukları
+    sürece analiz edilir; geri kalan piyasa davranışı değiştirilmez.
+    """
     if not AUTO_TOP_VOLUME_SCAN:
         return PRIORITY_COINS
 
     try:
         markets = exchange.load_markets()
-        okx_symbols = []
+        eligible_okx_symbols = []
+        eligible_bot_symbols = set()
 
         stable_bases = {
             "USDT",
@@ -3342,15 +3356,52 @@ def get_scan_coins(exchange):
             if not base or base in stable_bases:
                 continue
 
-            okx_symbols.append(okx_symbol)
+            bot_symbol = (
+                okx_symbol_to_bot_symbol(
+                    okx_symbol
+                )
+            )
+
+            if bot_symbol in eligible_bot_symbols:
+                continue
+
+            eligible_okx_symbols.append(
+                okx_symbol
+            )
+            eligible_bot_symbols.add(
+                bot_symbol
+            )
+
+        if not eligible_okx_symbols:
+            return PRIORITY_COINS
 
         tickers = exchange.fetch_tickers(
-            okx_symbols
+            eligible_okx_symbols
         )
+
+        # Öncelikli coinler hacim filtresinden bağımsız olarak,
+        # yalnız gerçekten aktif/uygun market olmaları şartıyla canlı evrene alınır.
+        priority = [
+            coin
+            for coin in PRIORITY_COINS
+            if coin in eligible_bot_symbols
+        ]
+        priority_set = set(priority)
 
         rows = []
 
-        for okx_symbol in okx_symbols:
+        for okx_symbol in eligible_okx_symbols:
+            bot_symbol = (
+                okx_symbol_to_bot_symbol(
+                    okx_symbol
+                )
+            )
+
+            # Priority coin zaten güvenli olarak eklenecek.
+            # Hacim sıralamasına tekrar sokup duplicate üretme.
+            if bot_symbol in priority_set:
+                continue
+
             ticker = tickers.get(
                 okx_symbol,
                 {},
@@ -3364,44 +3415,58 @@ def get_scan_coins(exchange):
                 continue
 
             rows.append((
-                okx_symbol_to_bot_symbol(
-                    okx_symbol
-                ),
+                bot_symbol,
                 volume,
             ))
-
-        if not rows:
-            return PRIORITY_COINS
 
         rows.sort(
             key=lambda item: item[1],
             reverse=True,
         )
 
-        volume_coins = [
-            coin
-            for coin, _ in rows
-        ]
-
-        priority = [
-            coin
-            for coin in PRIORITY_COINS
-            if coin in volume_coins
-        ]
-
         others = [
             coin
-            for coin in volume_coins
-            if coin not in priority
+            for coin, _ in rows
         ]
 
         scan_coins = (
             priority + others
         )[:MAX_SCAN_COINS]
 
-        print("Hacimli coin sayısı:", len(rows))
-        print("Taranacak coin:", len(scan_coins))
-        print("İlk 10:", scan_coins[:10])
+        forced_priority_count = sum(
+            1
+            for coin in priority
+            if (
+                safe_quote_volume(
+                    tickers.get(
+                        to_okx_symbol(coin),
+                        {},
+                    )
+                )
+                < MIN_24H_QUOTE_VOLUME
+            )
+        )
+
+        print(
+            "Aktif öncelikli coin:",
+            len(priority),
+        )
+        print(
+            "Hacim filtresini geçen diğer coin:",
+            len(rows),
+        )
+        print(
+            "Hacim filtresinden bağımsız korunan öncelikli coin:",
+            forced_priority_count,
+        )
+        print(
+            "Taranacak coin:",
+            len(scan_coins),
+        )
+        print(
+            "İlk 10:",
+            scan_coins[:10],
+        )
 
         return scan_coins
 

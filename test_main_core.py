@@ -121,6 +121,205 @@ class JsonSafetyTests(unittest.TestCase):
             self.assertEqual(remaining_temp_files, [])
 
 
+class ScanUniverseTests(unittest.TestCase):
+    class FakeExchange:
+        def __init__(self, markets, tickers):
+            self._markets = markets
+            self._tickers = tickers
+
+        def load_markets(self):
+            return self._markets
+
+        def fetch_tickers(self, symbols):
+            return {
+                symbol: self._tickers.get(symbol, {})
+                for symbol in symbols
+            }
+
+    @staticmethod
+    def swap_market(symbol, base, active=True):
+        return {
+            "symbol": symbol,
+            "base": base,
+            "quote": "USDT",
+            "settle": "USDT",
+            "active": active,
+            "swap": True,
+        }
+
+    def test_priority_coin_bypasses_legacy_volume_threshold(self):
+        exchange = self.FakeExchange(
+            markets={
+                "BTC": self.swap_market(
+                    "BTC/USDT:USDT",
+                    "BTC",
+                ),
+                "ETH": self.swap_market(
+                    "ETH/USDT:USDT",
+                    "ETH",
+                ),
+                "ALT": self.swap_market(
+                    "ALT/USDT:USDT",
+                    "ALT",
+                ),
+                "LOW": self.swap_market(
+                    "LOW/USDT:USDT",
+                    "LOW",
+                ),
+            },
+            tickers={
+                # Önceki legacy hacim hesabında 500k altında görünüyorlar.
+                "BTC/USDT:USDT": {"quoteVolume": 62000},
+                "ETH/USDT:USDT": {"quoteVolume": 180000},
+                "ALT/USDT:USDT": {"quoteVolume": 2000000},
+                "LOW/USDT:USDT": {"quoteVolume": 10000},
+            },
+        )
+
+        with (
+            patch.object(
+                main,
+                "PRIORITY_COINS",
+                ["BTCUSDT", "ETHUSDT"],
+            ),
+            patch.object(
+                main,
+                "MIN_24H_QUOTE_VOLUME",
+                500000,
+            ),
+            patch.object(
+                main,
+                "MAX_SCAN_COINS",
+                3,
+            ),
+            patch.object(
+                main,
+                "AUTO_TOP_VOLUME_SCAN",
+                True,
+            ),
+        ):
+            result = main.get_scan_coins(exchange)
+
+        self.assertEqual(
+            result,
+            ["BTCUSDT", "ETHUSDT", "ALTUSDT"],
+        )
+        self.assertNotIn("LOWUSDT", result)
+
+    def test_inactive_priority_coin_is_not_forced_into_scan(self):
+        exchange = self.FakeExchange(
+            markets={
+                "BTC": self.swap_market(
+                    "BTC/USDT:USDT",
+                    "BTC",
+                    active=True,
+                ),
+                "BNB": self.swap_market(
+                    "BNB/USDT:USDT",
+                    "BNB",
+                    active=False,
+                ),
+                "ALT": self.swap_market(
+                    "ALT/USDT:USDT",
+                    "ALT",
+                    active=True,
+                ),
+            },
+            tickers={
+                "BTC/USDT:USDT": {"quoteVolume": 50000},
+                "ALT/USDT:USDT": {"quoteVolume": 1500000},
+            },
+        )
+
+        with (
+            patch.object(
+                main,
+                "PRIORITY_COINS",
+                ["BTCUSDT", "BNBUSDT"],
+            ),
+            patch.object(
+                main,
+                "MIN_24H_QUOTE_VOLUME",
+                500000,
+            ),
+            patch.object(
+                main,
+                "MAX_SCAN_COINS",
+                3,
+            ),
+            patch.object(
+                main,
+                "AUTO_TOP_VOLUME_SCAN",
+                True,
+            ),
+        ):
+            result = main.get_scan_coins(exchange)
+
+        self.assertEqual(
+            result,
+            ["BTCUSDT", "ALTUSDT"],
+        )
+        self.assertNotIn("BNBUSDT", result)
+
+    def test_priority_plus_others_still_respects_max_scan_limit(self):
+        exchange = self.FakeExchange(
+            markets={
+                "BTC": self.swap_market(
+                    "BTC/USDT:USDT",
+                    "BTC",
+                ),
+                "ETH": self.swap_market(
+                    "ETH/USDT:USDT",
+                    "ETH",
+                ),
+                "A": self.swap_market(
+                    "AAA/USDT:USDT",
+                    "AAA",
+                ),
+                "B": self.swap_market(
+                    "BBB/USDT:USDT",
+                    "BBB",
+                ),
+            },
+            tickers={
+                "BTC/USDT:USDT": {"quoteVolume": 10000},
+                "ETH/USDT:USDT": {"quoteVolume": 20000},
+                "AAA/USDT:USDT": {"quoteVolume": 3000000},
+                "BBB/USDT:USDT": {"quoteVolume": 2000000},
+            },
+        )
+
+        with (
+            patch.object(
+                main,
+                "PRIORITY_COINS",
+                ["BTCUSDT", "ETHUSDT"],
+            ),
+            patch.object(
+                main,
+                "MIN_24H_QUOTE_VOLUME",
+                500000,
+            ),
+            patch.object(
+                main,
+                "MAX_SCAN_COINS",
+                3,
+            ),
+            patch.object(
+                main,
+                "AUTO_TOP_VOLUME_SCAN",
+                True,
+            ),
+        ):
+            result = main.get_scan_coins(exchange)
+
+        self.assertEqual(len(result), 3)
+        self.assertEqual(
+            result,
+            ["BTCUSDT", "ETHUSDT", "AAAUSDT"],
+        )
+
+
 class NetRTests(unittest.TestCase):
     def test_long_exit_r_without_tp1(self):
         signal = {

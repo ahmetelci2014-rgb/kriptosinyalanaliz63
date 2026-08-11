@@ -40,7 +40,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 
-VERSION = "ALL_MARKET_SHADOW_V1_1_2026_08_11"
+VERSION = "ALL_MARKET_SHADOW_V1_2_2026_08_11"
 MODE = "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_LIVE_FILTER_CHANGE"
 
 STATE_FILE = Path("all_market_shadow_state.json")
@@ -294,7 +294,7 @@ def build_universe(
     İki paralel evren kurar:
 
     1) live_reference_symbols:
-       Mevcut Premium main.py'nin legacy hacim davranışını aynen taklit eder.
+       Canlı Premium V7 davranışını taklit eder: priority coinler aktifse hacim filtresinden düşmez.
        OUTSIDE300 sanal işlemler bu canlı referansa göre seçilir.
 
     2) corrected_symbols:
@@ -334,16 +334,37 @@ def build_universe(
     )
 
     legacy_symbols = [row["symbol"] for row in legacy_rows]
+
+    # Canlı Premium V7 ile aynı davranış:
+    # aktif/uygun PRIORITY_COINS minimum hacim filtresinden bağımsız korunur.
+    eligible_symbol_set = {
+        row["symbol"]
+        for row in enriched
+    }
     priority = [
         str(symbol).upper()
         for symbol in priority_coins
-        if str(symbol).upper() in legacy_symbols
+        if str(symbol).upper() in eligible_symbol_set
     ]
+    priority_set = set(priority)
+
+    forced_priority_symbols = [
+        row["symbol"]
+        for row in enriched
+        if (
+            row["symbol"] in priority_set
+            and row["legacy_premium_volume_24h"]
+            < float(min_quote_volume)
+        )
+    ]
+
     legacy_others = [
         symbol for symbol in legacy_symbols
-        if symbol not in priority
+        if symbol not in priority_set
     ]
-    live_reference_symbols = (priority + legacy_others)[: int(max_scan_coins)]
+    live_reference_symbols = (
+        priority + legacy_others
+    )[: int(max_scan_coins)]
     live_reference_set = set(live_reference_symbols)
 
     legacy_rank = {
@@ -455,6 +476,7 @@ def build_universe(
         "volume_eligible_count": len(legacy_rows),  # geriye uyum
         "legacy_volume_eligible_count": len(legacy_rows),
         "corrected_volume_eligible_count": len(corrected_rows),
+        "forced_priority_symbols": forced_priority_symbols,
     }
 
 
@@ -1632,6 +1654,13 @@ def run_once() -> Dict[str, Any]:
         "volume_above_premium_min_count": universe["volume_eligible_count"],
         "legacy_volume_above_min_count": universe["legacy_volume_eligible_count"],
         "corrected_notional_above_min_count": universe["corrected_volume_eligible_count"],
+        "priority_forced_live_count": len(
+            universe.get("forced_priority_symbols", [])
+        ),
+        "priority_forced_live_symbols": universe.get(
+            "forced_priority_symbols",
+            [],
+        ),
         "outside300_total": len(outside),
         "outside_below_premium_min_volume": outside_below,
         "outside_top300_rank_overflow": outside_rank,
