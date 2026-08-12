@@ -63210,27 +63210,28 @@
         "confidence": "ORTA",
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
-          "Giris ideal bolgeden goreceli olarak uzakti."
+          "Giris ideal bolgeden goreceli olarak uzakti.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 400,
         "best_favorable_r": 0.0,
         "worst_adverse_r": 1.0388,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "GEC_UZAK_GIRIS",
-        "preliminary_label": "Geç/uzak giriş",
+        "primary": "GEC_UZAK_GIRIS",
+        "label": "Geç/uzak giriş",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [
           "GEC_UZAK_GIRIS"
         ],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
           "Giriş ideal bölgeden veya gönderim fiyatından uzaktı."
         ],
         "metrics": {
@@ -63238,9 +63239,15 @@
           "mfe_r": 0.0,
           "mae_r": 1.0388,
           "risk_percent": 1.618,
-          "return_minutes": null
+          "return_minutes": 240.0
         },
-        "updated_at": 1786489269
+        "updated_at": 1786503675
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 240,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1786503675
       }
     },
     "STABLEUSDT_SHORT_15M_ENTRY_1786465242": {
@@ -63527,9 +63534,9 @@
         "max_adverse_r": 0.0,
         "best_price": 71.5,
         "worst_price": 70.95,
-        "last_checked_at": 1786502729,
+        "last_checked_at": 1786503950,
         "completed_at": 0,
-        "last_price": 71.27
+        "last_price": 71.16
       }
     },
     "BNBUSDT_LONG_15M_ENTRY_1786478684": {
@@ -63738,9 +63745,9 @@
         "max_adverse_r": 0.7716,
         "best_price": 620.3,
         "worst_price": 614.4,
-        "last_checked_at": 1786502729,
+        "last_checked_at": 1786503950,
         "completed_at": 0,
-        "last_price": 616.4
+        "last_price": 615.3
       }
     },
     "MORPHOUSDT_LONG_15M_ENTRY_1786482289": {
@@ -64145,15 +64152,15 @@
       "market_guard_long_allowed": true,
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %0.0 | ETHUSDT: 15M EMA20 üstü, 5M %0.01 | SOLUSDT: 15M EMA20 üstü, 5M %0.01",
-      "best_favorable_percent": 0.208,
+      "best_favorable_percent": 0.2774,
       "worst_adverse_percent": 0.9709,
-      "best_favorable_r": 0.1922,
+      "best_favorable_r": 0.2563,
       "worst_adverse_r": 0.8971,
-      "best_favorable_price": 1.445,
+      "best_favorable_price": 1.446,
       "worst_adverse_price": 1.428,
-      "last_market_price": 1.443,
+      "last_market_price": 1.44,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786502460
+      "last_tracking_at": 1786503660
     },
     "COAIUSDT_LONG_15M_ENTRY_1786493964": {
       "trade_id": "COAIUSDT_LONG_15M_ENTRY_1786493964",
@@ -64259,7 +64266,7 @@
       },
       "tp3_post_follow": {
         "version": "TP3_POST_FOLLOW_V1_2026_08_08",
-        "status": "TRACKING",
+        "status": "COMPLETED",
         "started_at": 1786495561,
         "tp3_price": 0.3923416116,
         "timeframe": "1m",
@@ -64287,14 +64294,22 @@
             "directional_return_percent": 0.0659,
             "max_favorable_percent": 1.6206,
             "max_adverse_percent": 0.3929
+          },
+          "120": {
+            "target_at": 1786502761,
+            "candle_time": 1786502700,
+            "close_price": 0.3923,
+            "directional_return_percent": -0.0106,
+            "max_favorable_percent": 1.6206,
+            "max_adverse_percent": 1.0301
           }
         },
         "max_favorable_percent": 1.6206,
         "max_adverse_percent": 1.0301,
         "best_price": 0.3987,
         "worst_price": 0.3883,
-        "last_checked_at": 1786502467,
-        "completed_at": 0,
+        "last_checked_at": 1786503676,
+        "completed_at": 1786503676,
         "shadow_only": true
       },
       "post_result_shadow": {
@@ -64334,19 +64349,28 @@
             "max_favorable_percent": 1.6206,
             "max_adverse_percent": 0.3929,
             "directional_r_from_reference": 0.0652
+          },
+          "120": {
+            "target_at": 1786502761,
+            "candle_time": 1786502700,
+            "close_price": 0.3923,
+            "directional_return_percent": -0.0106,
+            "max_favorable_percent": 1.6206,
+            "max_adverse_percent": 1.0301,
+            "directional_r_from_reference": -0.0105
           }
         },
         "watched_levels": {},
         "reached_levels": {},
         "max_favorable_percent": 1.6206,
-        "max_adverse_percent": 1.0301,
+        "max_adverse_percent": 2.2281,
         "max_favorable_r": 1.6042,
-        "max_adverse_r": 1.0197,
+        "max_adverse_r": 2.2055,
         "best_price": 0.3987,
-        "worst_price": 0.3883,
-        "last_checked_at": 1786502729,
+        "worst_price": 0.3836,
+        "last_checked_at": 1786503950,
         "completed_at": 0,
-        "last_price": 0.3923
+        "last_price": 0.3837
       }
     },
     "LQTYUSDT_LONG_15M_ENTRY_1786494978": {
@@ -64506,15 +64530,15 @@
             "level_price": 0.2139734327
           }
         },
-        "max_favorable_percent": 5.5662,
+        "max_favorable_percent": 6.5739,
         "max_adverse_percent": 0.0,
-        "max_favorable_r": 3.3301,
+        "max_favorable_r": 3.9329,
         "max_adverse_r": 0.0,
-        "best_price": 0.22,
+        "best_price": 0.2221,
         "worst_price": 0.2084,
-        "last_checked_at": 1786502729,
+        "last_checked_at": 1786503950,
         "completed_at": 0,
-        "last_price": 0.2198
+        "last_price": 0.2205
       }
     },
     "DOGEUSDT_LONG_15M_ENTRY_1786497588": {
@@ -64582,14 +64606,14 @@
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %0.09 | ETHUSDT: 15M EMA20 üstü, 5M %0.13 | SOLUSDT: 15M EMA20 üstü, 5M %0.14",
       "best_favorable_percent": 0.1659,
-      "worst_adverse_percent": 0.5254,
+      "worst_adverse_percent": 0.6913,
       "best_favorable_r": 0.214,
-      "worst_adverse_r": 0.6776,
+      "worst_adverse_r": 0.8915,
       "best_favorable_price": 0.07245,
-      "worst_adverse_price": 0.07195,
-      "last_market_price": 0.07206,
+      "worst_adverse_price": 0.07183,
+      "last_market_price": 0.07193,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786502460
+      "last_tracking_at": 1786503660
     },
     "CRVUSDT_LONG_5M_RADAR_1786500362": {
       "trade_id": "CRVUSDT_LONG_5M_RADAR_1786500362",
@@ -64699,12 +64723,29 @@
         "started_at": 1786501857,
         "tp3_price": 0.2796181149,
         "timeframe": "1m",
-        "checkpoints": {},
+        "checkpoints": {
+          "15": {
+            "target_at": 1786502757,
+            "candle_time": 1786502640,
+            "close_price": 0.2785,
+            "directional_return_percent": -0.3999,
+            "max_favorable_percent": 0.3512,
+            "max_adverse_percent": 0.686
+          },
+          "30": {
+            "target_at": 1786503657,
+            "candle_time": 1786503540,
+            "close_price": 0.2762,
+            "directional_return_percent": -1.2224,
+            "max_favorable_percent": 0.3512,
+            "max_adverse_percent": 1.4012
+          }
+        },
         "max_favorable_percent": 0.3512,
-        "max_adverse_percent": 0.3283,
+        "max_adverse_percent": 1.4012,
         "best_price": 0.2806,
-        "worst_price": 0.2787,
-        "last_checked_at": 1786502467,
+        "worst_price": 0.2757,
+        "last_checked_at": 1786503676,
         "completed_at": 0,
         "shadow_only": true
       },
@@ -64718,18 +64759,37 @@
         "reference_label": "TP3",
         "reference_price": 0.2796181149,
         "timeframe": "1m",
-        "checkpoints": {},
+        "checkpoints": {
+          "15": {
+            "target_at": 1786502757,
+            "candle_time": 1786502640,
+            "close_price": 0.2785,
+            "directional_return_percent": -0.3999,
+            "max_favorable_percent": 0.3512,
+            "max_adverse_percent": 0.686,
+            "directional_r_from_reference": -0.4686
+          },
+          "30": {
+            "target_at": 1786503657,
+            "candle_time": 1786503540,
+            "close_price": 0.2762,
+            "directional_return_percent": -1.2224,
+            "max_favorable_percent": 0.3512,
+            "max_adverse_percent": 1.4012,
+            "directional_r_from_reference": -1.4324
+          }
+        },
         "watched_levels": {},
         "reached_levels": {},
         "max_favorable_percent": 0.3512,
-        "max_adverse_percent": 0.686,
+        "max_adverse_percent": 1.5085,
         "max_favorable_r": 0.4115,
-        "max_adverse_r": 0.8038,
+        "max_adverse_r": 1.7676,
         "best_price": 0.2806,
-        "worst_price": 0.2777,
-        "last_checked_at": 1786502729,
+        "worst_price": 0.2754,
+        "last_checked_at": 1786503950,
         "completed_at": 0,
-        "last_price": 0.2785
+        "last_price": 0.2763
       }
     },
     "WETUSDT_LONG_15M_ENTRY_1786500363": {
@@ -64802,9 +64862,9 @@
       "worst_adverse_r": 0.4737,
       "best_favorable_price": 0.07093,
       "worst_adverse_price": 0.07031,
-      "last_market_price": 0.07045,
+      "last_market_price": 0.07043,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786502460
+      "last_tracking_at": 1786503660
     },
     "XAGUSDT_LONG_15M_ENTRY_1786502071": {
       "trade_id": "XAGUSDT_LONG_15M_ENTRY_1786502071",
@@ -64821,7 +64881,7 @@
       "opened_at": 1786502071,
       "opened_day": "2026-08-12",
       "tp1_hit": true,
-      "tp2_hit": false,
+      "tp2_hit": true,
       "tp3_hit": false,
       "status": "OPEN",
       "final_result": null,
@@ -64839,6 +64899,11 @@
           "time": 1786502464,
           "event": "TP1",
           "price": 65.3821020773
+        },
+        {
+          "time": 1786503673,
+          "event": "TP2",
+          "price": 65.5749221476
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -64875,16 +64940,16 @@
       "market_guard_long_allowed": true,
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %0.14 | ETHUSDT: 15M EMA20 üstü, 5M %0.13 | SOLUSDT: 15M EMA20 üstü, 5M %0.16",
-      "best_favorable_percent": 0.5371,
+      "best_favorable_percent": 0.7212,
       "worst_adverse_percent": 0.0614,
-      "best_favorable_r": 0.9076,
+      "best_favorable_r": 1.2188,
       "worst_adverse_r": 0.1037,
-      "best_favorable_price": 65.52,
+      "best_favorable_price": 65.64,
       "worst_adverse_price": 65.13,
-      "last_market_price": 65.47,
+      "last_market_price": 65.56,
       "tp1_hit_at": 1786502400,
-      "last_tracking_at": 1786502460
+      "last_tracking_at": 1786503660
     }
   },
-  "last_update": 1786502731
+  "last_update": 1786503952
 }
