@@ -1630,20 +1630,27 @@
       ],
       "diagnosis": {
         "version": "PUMP_DIAGNOSIS_V1",
-        "code": "NO_CONTINUATION",
-        "primary": "KIRILIM DEVAM ETMEDİ",
-        "confidence": "ORTA",
+        "code": "EARLY_OR_WICK_STOP",
+        "primary": "YÖN DOĞRUYDU, STOP ERKEN / FİTİL STOP",
+        "confidence": "YÜKSEK",
         "factors": [
           "Kırılım sonrasında yeterli lehe ivme oluşmadan stop geldi.",
-          "5M hacim hareketin devamını yeterince desteklememiş olabilir."
+          "5M hacim hareketin devamını yeterince desteklememiş olabilir.",
+          "Stop sonrası fiyat TP1 seviyesine döndü."
         ],
         "duration_minutes": 90,
         "best_favorable_r": 0.2141,
         "worst_adverse_r": 1.1966,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teşhis kesin piyasa sebebi değildir; kayıtlı kırılım, hacim, momentum ve fiyat hareketine dayalı teknik değerlendirmedir."
       },
-      "post_stop_follow": null,
+      "post_stop_follow": {
+        "status": "RETURNED_TO_TARGET",
+        "returned_level": "TP1",
+        "age_minutes": 68,
+        "updated_at": 1786547500,
+        "updated_at_tr": "2026-08-12 18:11:40"
+      },
       "last_updated_at": 1786543411,
       "last_updated_at_tr": "2026-08-12 17:03:31",
       "direction_finalized_at": 1786543411,
@@ -1677,10 +1684,10 @@
     "diagnosis_open": 0,
     "diagnosis_success": 5,
     "diagnosis_false_breakout": 0,
-    "diagnosis_early_stop": 0,
+    "diagnosis_early_stop": 1,
     "diagnosis_momentum_faded": 10,
-    "diagnosis_no_continuation": 2
+    "diagnosis_no_continuation": 1
   },
-  "updated_at": 1786543411,
-  "updated_at_tr": "2026-08-12 17:03:31"
+  "updated_at": 1786547500,
+  "updated_at_tr": "2026-08-12 18:11:40"
 }
