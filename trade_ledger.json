@@ -66656,7 +66656,7 @@
       "post_result_shadow": {
         "version": "POST_RESULT_SHADOW_V1_2026_08_10",
         "shadow_only": true,
-        "status": "TRACKING",
+        "status": "COMPLETED",
         "final_result": "TP1_SONRASI_BE",
         "started_at": 1786539681,
         "measurement_start_at": 1786539720,
@@ -66699,6 +66699,15 @@
             "max_favorable_percent": 3.9289,
             "max_adverse_percent": 0.0,
             "directional_r_from_reference": 2.06
+          },
+          "240": {
+            "target_at": 1786554081,
+            "candle_time": 1786554000,
+            "close_price": 0.09669,
+            "directional_return_percent": 1.0345,
+            "max_favorable_percent": 3.9289,
+            "max_adverse_percent": 3.7409,
+            "directional_r_from_reference": 0.7814
           }
         },
         "watched_levels": {
@@ -66729,9 +66738,9 @@
         "max_adverse_r": 2.8256,
         "best_price": 0.09946,
         "worst_price": 0.09212,
-        "last_checked_at": 1786553421,
-        "completed_at": 0,
-        "last_price": 0.09647
+        "last_checked_at": 1786554382,
+        "completed_at": 1786554382,
+        "last_price": 0.09669
       }
     },
     "NGUSDT_LONG_15M_ENTRY_1786536367": {
@@ -66901,9 +66910,9 @@
         "max_adverse_r": 0.2014,
         "best_price": 2.866,
         "worst_price": 2.84,
-        "last_checked_at": 1786553421,
+        "last_checked_at": 1786554382,
         "completed_at": 0,
-        "last_price": 2.842
+        "last_price": 2.845
       }
     },
     "NOTUSDT_LONG_15M_ENTRY_1786539905": {
@@ -67112,9 +67121,9 @@
         "max_adverse_r": 2.5561,
         "best_price": 0.0003742,
         "worst_price": 0.0003601,
-        "last_checked_at": 1786553421,
+        "last_checked_at": 1786554382,
         "completed_at": 0,
-        "last_price": 0.0003602
+        "last_price": 0.0003605
       }
     },
     "MONUSDT_LONG_15M_ENTRY_1786539906": {
@@ -67414,7 +67423,7 @@
         "max_adverse_r": 0.0,
         "best_price": 0.001191,
         "worst_price": 0.001209,
-        "last_checked_at": 1786553421,
+        "last_checked_at": 1786554382,
         "completed_at": 0,
         "last_price": 0.001196
       }
@@ -67550,12 +67559,12 @@
       "tp1_hit": true,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "TP1_SONRASI_BE",
+      "r_result": 0.275,
+      "exit_price": 0.07851,
+      "closed_at": 1786554086,
+      "closed_day": "2026-08-12",
       "events": [
         {
           "time": 1786552481,
@@ -67566,6 +67575,11 @@
           "time": 1786553153,
           "event": "TP1",
           "price": 0.0782386043
+        },
+        {
+          "time": 1786554086,
+          "event": "BE",
+          "price": 0.07851
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -67602,16 +67616,130 @@
       "market_guard_long_allowed": false,
       "market_guard_short_allowed": true,
       "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %0.06 | ETHUSDT: 15M EMA20 altı, 5M %0.02 | SOLUSDT: 15M EMA20 altı, 5M %0.01",
-      "best_favorable_percent": 0.3566,
+      "best_favorable_percent": 0.535,
       "worst_adverse_percent": 0.0382,
-      "best_favorable_r": 0.5674,
+      "best_favorable_r": 0.8512,
       "worst_adverse_r": 0.0608,
-      "best_favorable_price": 0.07823,
+      "best_favorable_price": 0.07809,
       "worst_adverse_price": 0.07854,
-      "last_market_price": 0.07825,
+      "last_market_price": 0.07851,
       "tp1_hit_at": 1786553100,
-      "last_tracking_at": 1786553100
+      "last_tracking_at": 1786553940,
+      "duration_minutes": 26,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "YON DOGRU, DEVAM GUCU ZAYIFLADI",
+        "confidence": "YUKSEK",
+        "factors": [
+          "Islem hedef gordukten sonra kalan kisim giristen kapandi."
+        ],
+        "duration_minutes": 26,
+        "best_favorable_r": 0.8512,
+        "worst_adverse_r": 0.0608,
+        "provisional": false,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "post_result_shadow": {
+        "version": "POST_RESULT_SHADOW_V1_2026_08_10",
+        "shadow_only": true,
+        "status": "TRACKING",
+        "final_result": "TP1_SONRASI_BE",
+        "started_at": 1786554086,
+        "measurement_start_at": 1786554120,
+        "reference_label": "BE_ENTRY",
+        "reference_price": 0.07851,
+        "timeframe": "1m",
+        "checkpoints": {},
+        "watched_levels": {
+          "TP1": 0.0782386043,
+          "TP2": 0.0779918809,
+          "TP3": 0.0777204851
+        },
+        "reached_levels": {},
+        "max_favorable_percent": 0.1783,
+        "max_adverse_percent": 0.0,
+        "max_favorable_r": 0.2837,
+        "max_adverse_r": 0.0,
+        "best_price": 0.07837,
+        "worst_price": 0.07851,
+        "last_checked_at": 1786554382,
+        "completed_at": 0,
+        "last_price": 0.07847
+      }
+    },
+    "SPKUSDT_SHORT_15M_ENTRY_1786554381": {
+      "trade_id": "SPKUSDT_SHORT_15M_ENTRY_1786554381",
+      "symbol": "SPKUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.01401,
+      "tp1": 0.0139189542,
+      "tp2": 0.0138361852,
+      "tp3": 0.0137451394,
+      "sl": 0.0141755379,
+      "score": 95,
+      "risk_percent": 1.182,
+      "opened_at": 1786554381,
+      "opened_day": "2026-08-12",
+      "tp1_hit": false,
+      "tp2_hit": false,
+      "tp3_hit": false,
+      "status": "OPEN",
+      "final_result": null,
+      "r_result": null,
+      "exit_price": null,
+      "closed_at": null,
+      "closed_day": null,
+      "events": [
+        {
+          "time": 1786554381,
+          "event": "OPENED",
+          "price": 0.01401
+        }
+      ],
+      "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
+      "strategy_version": "PREMIUM_MTF_TP_ODAKLI_V2",
+      "config_version": "CONFIG_2026_07_27",
+      "git_sha": "bc8ead25af5ea3ae48a3439c37a542c29ee3a1e7",
+      "git_sha_short": "bc8ead25af5e",
+      "github_run_id": "31620470101",
+      "github_run_number": "4168",
+      "github_workflow": "Premium MTF Futures Bot",
+      "github_ref_name": "main",
+      "version_backfilled": false,
+      "quality": "A DİKKATLİ",
+      "quality_note": "Güçlü sinyal ama tam A+ değil. Dikkat: SHORT RSI düşük. Giriş zamanlama kontrolü geçti; ideal bölgeden uzaklık %0.143.",
+      "trend_reason": "4H ana trend aşağı",
+      "confirm_reason": "1H satış onayı",
+      "entry_reason": "15M EMA pullback sonrası kırmızı dönüş; geç giriş koruması aktif",
+      "radar_reason": "5M erken giriş kaçtıysa 15M yalnızca ideal bölgeye yakınken kabul edilir",
+      "rsi_15m": 33.51,
+      "adx_15m": 20.88,
+      "adx_4h": 35.2,
+      "adx_1h": 24.56,
+      "volume_ratio": 1.48,
+      "ideal_entry": 0.01403,
+      "zone_name": "15M mum açılışı",
+      "zone_distance_percent": 0.143,
+      "rr_tp1": 0.55,
+      "rr_tp2": 1.05,
+      "rr_tp3": 1.6,
+      "leverage": "2x",
+      "sent_price": 0.01401,
+      "entry_distance_at_send_percent": 0.0,
+      "tp1_progress_at_send_percent": 0.0,
+      "market_guard_long_allowed": false,
+      "market_guard_short_allowed": true,
+      "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %0.0 | ETHUSDT: 15M EMA20 altı, 5M %-0.03 | SOLUSDT: 15M EMA20 altı, 5M %0.05",
+      "best_favorable_percent": 0.0,
+      "worst_adverse_percent": 0.0,
+      "best_favorable_r": 0.0,
+      "worst_adverse_r": 0.0,
+      "best_favorable_price": 0.01401,
+      "worst_adverse_price": 0.01401,
+      "last_market_price": 0.01401,
+      "tp1_hit_at": 0
     }
   },
-  "last_update": 1786553423
+  "last_update": 1786554385
 }
