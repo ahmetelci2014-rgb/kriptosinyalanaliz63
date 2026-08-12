@@ -2,26 +2,26 @@
 
 - Sürüm: `SYSTEM_CONTROL_CENTER_V1_1_2026_08_11`
 - Mod: `READ_ONLY_MONITOR_NO_TELEGRAM_NO_ORDERS_NO_SIGNAL_CHANGE_NO_AUTO_APPLY`
-- Üretim: 2026-08-12T21:03:27+00:00
+- Üretim: 2026-08-12T22:03:02+00:00
 - Genel sağlık: 🟢 **GREEN**
 
 ## Sistemler
 
 | Sistem | Sağlık | Açık | Performans kararı | Veri yaşı |
 |---|---:|---:|---|---:|
-| Premium MTF | 🟢 GREEN | 1 | 🟢 KORU | 0.21s |
-| Scalp Radar | 🟢 GREEN | 0 | 🟠 SETUPLARI AYIR / GÖLGE TEST | 0.65s |
-| Pump/Dump Radar | 🟢 GREEN | 0 | 🟢 KORU / İZLE | 0.67s |
-| Swing Radar | 🟢 GREEN | 3 | 🔴 CANLI İŞLEM KAYNAĞINI DURDUR | 1.25s |
-| Ana Trend Pozisyon Radarı | 🟢 GREEN | 3 | ⚪ VERİ TOPLA | 1.55s |
-| Tüm Piyasa Keşif Radarı | 🟢 GREEN | 0 | ⚪ VERİ TOPLA | 0.65s |
-| Momentum Shadow | 🟢 GREEN | - | 🟠 GÖLGEDE TUT / CANLIYA ALMA | 0.04s |
-| Range Cycle Shadow | 🟢 GREEN | - | 🔴 CANLIYA ALMA / YENİDEN TASARLA | 0.72s |
-| Portfolio Risk | 🟢 GREEN | - | 🟡 PORTFÖY RİSKİNİ İZLE | 0.96s |
-| Decision Engine | 🟢 GREEN | - | ⚪ KARAR YOK | 23.42s |
-| Prescription Engine | 🟢 GREEN | - | ⚪ KARAR YOK | 23.42s |
-| New Listing Radar | 🟢 GREEN | - | ⚪ KARAR YOK | 0.82s |
-| TP Sonrası / Post Result Shadow | 🟢 GREEN | - | 🟠 İŞLEM YÖNETİMİ ALTERNATİFİNİ GÖLGE TEST ET | 0.21s |
+| Premium MTF | 🟢 GREEN | 2 | 🟢 KORU | 0.23s |
+| Scalp Radar | 🟢 GREEN | 0 | 🟠 SETUPLARI AYIR / GÖLGE TEST | 0.85s |
+| Pump/Dump Radar | 🟢 GREEN | 0 | 🟢 KORU / İZLE | 0.84s |
+| Swing Radar | 🟢 GREEN | 3 | 🔴 CANLI İŞLEM KAYNAĞINI DURDUR | 1.02s |
+| Ana Trend Pozisyon Radarı | 🟢 GREEN | 3 | ⚪ VERİ TOPLA | 0.94s |
+| Tüm Piyasa Keşif Radarı | 🟢 GREEN | 0 | ⚪ VERİ TOPLA | 0.02s |
+| Momentum Shadow | 🟢 GREEN | - | 🟠 GÖLGEDE TUT / CANLIYA ALMA | 0.21s |
+| Range Cycle Shadow | 🟢 GREEN | - | 🔴 CANLIYA ALMA / YENİDEN TASARLA | 0.07s |
+| Portfolio Risk | 🟢 GREEN | - | 🟡 PORTFÖY RİSKİNİ İZLE | 0.23s |
+| Decision Engine | 🟢 GREEN | - | ⚪ KARAR YOK | 0.43s |
+| Prescription Engine | 🟢 GREEN | - | ⚪ KARAR YOK | 0.43s |
+| New Listing Radar | 🟢 GREEN | - | ⚪ KARAR YOK | 0.92s |
+| TP Sonrası / Post Result Shadow | 🟢 GREEN | - | 🟠 İŞLEM YÖNETİMİ ALTERNATİFİNİ GÖLGE TEST ET | 0.23s |
 
 ## Güvenlik
 
