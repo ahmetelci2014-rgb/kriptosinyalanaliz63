@@ -64726,25 +64726,26 @@
         "confidence": "ORTA",
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
-          "15M hacim kendi ortalamasinin altinda veya sinirdaydi."
+          "15M hacim kendi ortalamasinin altinda veya sinirdaydi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 296,
         "best_favorable_r": 0.214,
         "worst_adverse_r": 1.1411,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ZAYIF_TREND_HACIM",
-        "preliminary_label": "Zayıf trend/hacim",
+        "primary": "ZAYIF_TREND_HACIM",
+        "label": "Zayıf trend/hacim",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
           "15M hacim oranı sınırın altındaydı."
         ],
         "metrics": {
@@ -64752,9 +64753,15 @@
           "mfe_r": 0.214,
           "mae_r": 1.1411,
           "risk_percent": 0.775,
-          "return_minutes": null
+          "return_minutes": 240.0
         },
-        "updated_at": 1786515352
+        "updated_at": 1786529752
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 240,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1786529752
       }
     },
     "CRVUSDT_LONG_5M_RADAR_1786500362": {
@@ -65145,9 +65152,9 @@
         "max_adverse_r": 0.2448,
         "best_price": 0.07237,
         "worst_price": 0.0706,
-        "last_checked_at": 1786529159,
+        "last_checked_at": 1786529965,
         "completed_at": 0,
-        "last_price": 0.07168
+        "last_price": 0.07216
       }
     },
     "XAGUSDT_LONG_15M_ENTRY_1786502071": {
@@ -65542,9 +65549,9 @@
         "max_adverse_r": 10.5131,
         "best_price": 0.01317,
         "worst_price": 0.01151,
-        "last_checked_at": 1786529159,
+        "last_checked_at": 1786529965,
         "completed_at": 0,
-        "last_price": 0.01197
+        "last_price": 0.01185
       }
     },
     "YBUSDT_LONG_15M_ENTRY_1786512952": {
@@ -65656,11 +65663,11 @@
         "tp3_price": 0.0798301692,
         "timeframe": "1m",
         "checkpoints": {},
-        "max_favorable_percent": 0.0,
+        "max_favorable_percent": 0.6386,
         "max_adverse_percent": 0.0,
-        "best_price": 0.0798301692,
+        "best_price": 0.08034,
         "worst_price": 0.0798301692,
-        "last_checked_at": 0,
+        "last_checked_at": 1786529752,
         "completed_at": 0,
         "shadow_only": true
       },
@@ -65674,18 +65681,28 @@
         "reference_label": "TP3",
         "reference_price": 0.0798301692,
         "timeframe": "1m",
-        "checkpoints": {},
+        "checkpoints": {
+          "15": {
+            "target_at": 1786529781,
+            "candle_time": 1786529700,
+            "close_price": 0.08029,
+            "directional_return_percent": 0.576,
+            "max_favorable_percent": 0.7389,
+            "max_adverse_percent": 0.0,
+            "directional_r_from_reference": 0.4277
+          }
+        },
         "watched_levels": {},
         "reached_levels": {},
-        "max_favorable_percent": 0.5009,
+        "max_favorable_percent": 0.7389,
         "max_adverse_percent": 0.0,
-        "max_favorable_r": 0.3719,
+        "max_favorable_r": 0.5486,
         "max_adverse_r": 0.0,
-        "best_price": 0.08023,
+        "best_price": 0.08042,
         "worst_price": 0.0798301692,
-        "last_checked_at": 1786529159,
+        "last_checked_at": 1786529965,
         "completed_at": 0,
-        "last_price": 0.08013
+        "last_price": 0.08008
       }
     },
     "RIVERUSDT_SHORT_5M_RADAR_1786515650": {
@@ -65849,7 +65866,7 @@
         "max_adverse_r": 1.7087,
         "best_price": 2.633,
         "worst_price": 2.677,
-        "last_checked_at": 1786529159,
+        "last_checked_at": 1786529965,
         "completed_at": 0,
         "last_price": 2.648
       }
@@ -65929,9 +65946,9 @@
       "worst_adverse_r": 0.5093,
       "best_favorable_price": 0.1994,
       "worst_adverse_price": 0.2018,
-      "last_market_price": 0.2007,
+      "last_market_price": 0.2008,
       "tp1_hit_at": 1786521600,
-      "last_tracking_at": 1786528860
+      "last_tracking_at": 1786529700
     },
     "SOLUSDT_LONG_15M_ENTRY_1786522761": {
       "trade_id": "SOLUSDT_LONG_15M_ENTRY_1786522761",
@@ -66013,9 +66030,9 @@
       "worst_adverse_r": 0.5301,
       "best_favorable_price": 76.86,
       "worst_adverse_price": 76.08,
-      "last_market_price": 76.66,
+      "last_market_price": 76.76,
       "tp1_hit_at": 1786526640,
-      "last_tracking_at": 1786528860
+      "last_tracking_at": 1786529700
     },
     "TRXUSDT_LONG_15M_ENTRY_1786526453": {
       "trade_id": "TRXUSDT_LONG_15M_ENTRY_1786526453",
@@ -66081,16 +66098,16 @@
       "market_guard_long_allowed": true,
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %0.02 | ETHUSDT: 15M EMA20 üstü, 5M %-0.0 | SOLUSDT: 15M EMA20 üstü, 5M %0.01",
-      "best_favorable_percent": 0.003,
+      "best_favorable_percent": 0.098,
       "worst_adverse_percent": 0.1694,
-      "best_favorable_r": 0.0062,
+      "best_favorable_r": 0.2052,
       "worst_adverse_r": 0.3544,
-      "best_favorable_price": 0.33658,
+      "best_favorable_price": 0.3369,
       "worst_adverse_price": 0.336,
-      "last_market_price": 0.33613,
+      "last_market_price": 0.33686,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786528860
+      "last_tracking_at": 1786529700
     }
   },
-  "last_update": 1786529161
+  "last_update": 1786529967
 }
