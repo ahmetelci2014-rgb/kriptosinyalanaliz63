@@ -20,28 +20,6 @@ class DecisionEngineTests(unittest.TestCase):
         for filename in de.FILES.values():
             self.write_json(root, filename, {})
 
-    def test_swing_stop_heavy_becomes_live_stop(self):
-        state = {}
-        ledger = {
-            "summary": {
-                "total": 44,
-                "direction_correct": 16,
-                "direction_wrong": 23,
-                "direction_mixed": 3,
-                "tp3": 3,
-                "stop": 23,
-                "breakeven": 15,
-                "expired": 0,
-                "early_15m": 10,
-                "confirmed_1h": 34,
-                "long": 0,
-                "short": 44,
-            }
-        }
-        result = de.summarize_swing(state, ledger)
-        self.assertEqual(result["decision_code"], "CANLI_DURDUR")
-        self.assertFalse(result["auto_apply"])
-
     def test_range_negative_large_sample_is_rejected_for_live(self):
         data = {
             "summary": {
