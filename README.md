@@ -20,6 +20,19 @@ Eski **Swing Radar V3** tamamen kaldırılmıştır. Yeni işlem açmaz, eski i�
 
 Yerine yalnız gölge modunda çalışan **Swing Shadow V4** bulunmaktadır.
 
+## Kripto Kontrol Paneli
+
+**Kripto Kontrol Paneli**, sistemin gerçek JSON state ve ledger kayıtlarını tek bir çevrimdışı HTML ekranda birleştirir.
+
+- Premium, Scalp, Pump/Dump ve Yeni Liste açık işlemleri
+- Giriş, TP1/TP2/TP3, SL ve hedef ilerlemesi
+- Kapanmış TP/SL/BE sonuçları ve kesin kaydı bulunan Net R
+- System Control genel sağlığı ve bileşen bazında teknik durum
+- Mobil uyumlu, koyu ve özgün arayüz
+- API anahtarı, Telegram, sinyal üretimi ve otomatik emir yok
+
+Panel herkese açık yayınlanmaz. **Actions → Kripto Kontrol Paneli → Run workflow** çalıştırıldıktan sonra run sayfasındaki özel `kripto-kontrol-paneli` artifact'ı indirilir; ZIP içindeki `index.html` tarayıcıda açılır. Saatlik workflow güncel bir artifact üretir ve 14 gün saklar.
+
 ## 1. Premium MTF Futures Bot
 
 Ana işlem sinyali sistemidir.
@@ -182,6 +195,7 @@ Yeterli örnek ve ileri dönem doğrulaması olmadan canlı TP/BE kuralı deği�
 | Swing Shadow V4 | `.github/workflows/swing-shadow-v4.yml` | Saatte bir |
 | Decision Engine | `.github/workflows/decision-engine.yml` | Zamanlanmış veya manuel |
 | System Control Center | `.github/workflows/system-control-center.yml` | Zamanlanmış veya manuel |
+| Kripto Kontrol Paneli | `.github/workflows/crypto-dashboard.yml` | Saatlik veya manuel; özel HTML artifact |
 | Çekirdek testler | `.github/workflows/tests.yml` | Kod değişikliği, PR veya manuel |
 
 ## Telegram Politikası
@@ -221,6 +235,7 @@ python pump_radar.py
 python swing_shadow_v4.py
 python decision_engine.py
 python system_control_center.py
+python dashboard_builder.py --root . --output dashboard_output/index.html
 ```
 
 ## GitHub Secrets
