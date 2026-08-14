@@ -1,7 +1,7 @@
 # Şifreli Canlı Kripto Kontrol Paneli
 
 Panel, private GitHub reposundaki gerçek JSON state ve ledger dosyalarını
-sunucu tarafında okur. Tarayıcı açıkken her 30 saniyede bir yenilenir. V1.2.1;
+sunucu tarafında okur. Tarayıcı açıkken her 30 saniyede bir yenilenir. V1.3;
 sistem bazlı performans analitiği, veri kaynağı güncellik kontrolü ve canlı
 coin/işlem grafiği içerir.
 
@@ -39,6 +39,10 @@ coin/işlem grafiği içerir.
 - 7, 30, 90 gün veya tüm kayıtlar için ayrı performans görünümü
 - Coin, sistem, sonuç ve dönem bazlı işlem geçmişi filtreleri
 - Uzun işlem geçmişinde 20/50 kayıt seçenekli önceki/sonraki sayfalama
+- Açık işlemlerde LONG/SHORT dengesi, ortalama/en geniş stop mesafesi ve
+  ortalama TP1/TP3 hedef-risk oranı
+- Sistem bazlı açık işlem dağılımı ve eksik/geniş stop bilgi notu
+- Seçili coin, sistem, sonuç ve dönem filtrelerini koruyan CSV dışa aktarma
 - System Control teknik sağlık durumu
 
 State dosyalarının uzun süre değişmemesi tek başına workflow arızası sayılmaz;
@@ -52,6 +56,10 @@ kısa süre önbelleğe alır. Önce OKX perpetual swap, yoksa spot USDT parites
 denenir. Arayüzde herhangi bir coin sembolü yazılabilir; açık veya kapanmış
 işlem satırındaki coin adına tıklanınca ilgili grafik otomatik açılır. Kapanmış
 işlemlerde OKX `history-candles` verisi işlem zamanının çevresinden okunur.
+
+CSV raporu yalnız tarayıcıda, o anda uygulanan filtrelerden üretilir. Sunucuya
+yeni veri yazmaz ve indirilen dosyada Excel formül enjeksiyonuna karşı hücre
+başlangıçları güvenli hale getirilir.
 
 ## Yerel deneme
 
