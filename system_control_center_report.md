@@ -1,6 +1,6 @@
 # Sistem Kontrol Merkezi
 
-- Sürüm: `SYSTEM_CONTROL_CENTER_V1_1_2026_08_11`
+- Sürüm: `SYSTEM_CONTROL_CENTER_V1_2_LEGACY_SWING_REMOVED_2026_08_14`
 - Mod: `READ_ONLY_MONITOR_NO_TELEGRAM_NO_ORDERS_NO_SIGNAL_CHANGE_NO_AUTO_APPLY`
 - Üretim: 2026-08-14T08:52:54+00:00
 - Genel sağlık: 🟢 **GREEN**
@@ -12,7 +12,6 @@
 | Premium MTF | 🟢 GREEN | 4 | 🟢 KORU | 0.11s |
 | Scalp Radar | 🟢 GREEN | 0 | 🟢 KORU | 0.77s |
 | Pump/Dump Radar | 🟢 GREEN | 0 | 🟢 KORU / İZLE | 0.76s |
-| Swing Radar | 🟢 GREEN | 1 | 🟡 İZLE | 0.83s |
 | Swing Shadow V4 | 🟢 GREEN | 0 | ⚪ SWING V4 GÖLGE VERİ TOPLA | 0.12s |
 | Ana Trend Pozisyon Radarı | 🟢 GREEN | 4 | ⚪ VERİ TOPLA | 0.22s |
 | Tüm Piyasa Keşif Radarı | 🟢 GREEN | 2 | ⚪ VERİ TOPLA | 1.05s |
