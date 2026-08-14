@@ -20,19 +20,24 @@ Eski **Swing Radar V3** tamamen kaldırılmıştır. Yeni işlem açmaz, eski i�
 
 Yerine yalnız gölge modunda çalışan **Swing Shadow V4** bulunmaktadır.
 
-## Kripto Kontrol Paneli
+## Şifreli Canlı Kripto Kontrol Paneli
 
-**Kripto Kontrol Paneli**, sistemin gerçek JSON state ve ledger kayıtlarını tek bir çevrimdışı HTML ekranda birleştirir.
+**Kripto Kontrol Paneli**, özel repodaki gerçek state ve ledger kayıtlarını şifreli bir web ekranında birleştirir.
 
 - Premium, Scalp, Pump/Dump ve Yeni Liste açık işlemleri
 - Giriş, TP1/TP2/TP3, SL ve hedef ilerlemesi
 - Kapanmış TP/SL/BE sonuçları ve kesin kaydı bulunan Net R
 - System Control genel sağlığı ve bileşen bazında teknik durum
+- Tarayıcı açıkken 30 saniyede bir canlı veri yenileme
+- Şifreli oturum, giriş denemesi sınırı ve güvenlik başlıkları
+- Özel GitHub verisini yalnız sunucunun okuması; erişim anahtarının tarayıcıya gönderilmemesi
 - Mobil uyumlu, koyu ve özgün arayüz
-- API anahtarı, Telegram, sinyal üretimi ve otomatik emir yok
 
-Panel herkese açık yayınlanmaz. **Actions → Kripto Kontrol Paneli → Run workflow** çalıştırıldıktan sonra run sayfasındaki özel `kripto-kontrol-paneli` artifact'ı indirilir; ZIP içindeki `index.html` tarayıcıda açılır. Saatlik workflow güncel bir artifact üretir ve 14 gün saklar.
+Panel botlardan ayrı ve **salt okunur** çalışır. Telegram akışını, sinyal üretimini, TP/SL takibini veya strateji kurallarını değiştirmez. Otomatik emir açmaz; kullanıcı parası tutmaz; borsa hesabı yönetmez ve kazanç garantisi vermez.
 
+Canlı servis `dashboard_live_app.py` ile çalışır. Dağıtım ayarları `Dockerfile.dashboard` ve `render.yaml` dosyalarındadır. Ayrıntılı kurulum için `dashboard/README.md` okunmalıdır. Actions artifact'ı yalnız acil durum için üretilen statik yedektir; canlı panel değildir.
+
+İlk hedef paneli 30–60 gün yalnız kendi kullanımımızda doğrulamaktır. Performans kayıtları güvenilir ve sistem kararlı görülmeden ücretli beta açılmaz. Ücretli sunumdan önce ücretli sinyal ve yatırım danışmanlığı yönünden hukukçu görüşü alınır.
 ## 1. Premium MTF Futures Bot
 
 Ana işlem sinyali sistemidir.
@@ -195,7 +200,7 @@ Yeterli örnek ve ileri dönem doğrulaması olmadan canlı TP/BE kuralı deği�
 | Swing Shadow V4 | `.github/workflows/swing-shadow-v4.yml` | Saatte bir |
 | Decision Engine | `.github/workflows/decision-engine.yml` | Zamanlanmış veya manuel |
 | System Control Center | `.github/workflows/system-control-center.yml` | Zamanlanmış veya manuel |
-| Kripto Kontrol Paneli | `.github/workflows/crypto-dashboard.yml` | Saatlik veya manuel; özel HTML artifact |
+| Kripto Panel Kontrolü | `.github/workflows/crypto-dashboard.yml` | Kod değişikliği, PR veya manuel; canlı katman testi |
 | Çekirdek testler | `.github/workflows/tests.yml` | Kod değişikliği, PR veya manuel |
 
 ## Telegram Politikası
@@ -235,6 +240,8 @@ python pump_radar.py
 python swing_shadow_v4.py
 python decision_engine.py
 python system_control_center.py
+python dashboard_live_app.py --root .
+# Acil durum statik yedeği:
 python dashboard_builder.py --root . --output dashboard_output/index.html
 ```
 
@@ -244,6 +251,13 @@ Canlı Telegram bileşenleri için:
 
 - `TOKEN`
 - `CHAT_ID`
+
+Canlı panel sunucusu için:
+
+- `GITHUB_PANEL_TOKEN` — özel repoya yalnız okuma yetkili erişim anahtarı
+- `PANEL_PASSWORD_HASH` — PBKDF2 ile üretilmiş panel parola özeti
+
+Panel sırları barındırma hizmetinin gizli ortam değişkenlerinde tutulur; GitHub'a commit edilmez ve sohbet içinde paylaşılmaz.
 
 Token ve kimlik bilgileri Python, JSON, YAML, README veya Actions loglarına düz metin yazılmamalıdır. Sistem OKX emir API anahtarı kullanmaz.
 
