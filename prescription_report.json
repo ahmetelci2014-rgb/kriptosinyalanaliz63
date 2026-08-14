@@ -1,8 +1,8 @@
 {
   "version": "PRESCRIPTION_ENGINE_V2_2026_08_10",
   "mode": "ANALYSIS_AND_BACKTEST_ONLY_NO_AUTO_APPLY_NO_ORDERS_NO_TELEGRAM",
-  "generated_at": 1786693544,
-  "generated_at_utc": "2026-08-14T07:45:44+00:00",
+  "generated_at": 1786697529,
+  "generated_at_utc": "2026-08-14T08:52:09+00:00",
   "auto_apply": false,
   "source_decision_version": "DECISION_ENGINE_V2_2026_08_14",
   "data_errors": {},
@@ -540,64 +540,64 @@
     },
     "SWING": {
       "component": "SWING",
-      "v1_decision_code": "CANLI_DURDUR",
-      "records": 49,
-      "train_records": 34,
+      "v1_decision_code": "IZLE",
+      "records": 50,
+      "train_records": 35,
       "holdout_records": 15,
       "overall": {
-        "records": 49,
-        "r_records": 49,
-        "exact_r_records": 49,
+        "records": 50,
+        "r_records": 50,
+        "exact_r_records": 50,
         "proxy_r_records": 0,
         "exact_r_coverage_percent": 100.0,
-        "net_r": -6.7196,
-        "avg_r": -0.1371,
-        "winners": 25,
+        "net_r": -4.2196,
+        "avg_r": -0.0844,
+        "winners": 26,
         "losers": 24,
         "neutral": 0,
-        "stop_rate_percent": 48.98,
+        "stop_rate_percent": 48.0,
         "outcomes": {
           "BE": 18,
           "SL": 24,
-          "TP3": 7
+          "TP3": 8
         }
       },
       "auto_apply": false,
       "candidate_count_tested": 214,
       "prescriptions": [
         {
-          "candidate_key": "NUM_GT|dist_4h_ema20|2.0381002116",
+          "candidate_key": "NUM_GT|dist_4h_ema20|2.0165751347",
           "status": "GOLGE_TEST",
-          "prescription": "dist_4h_ema20 > 2.0381 ise filtre adayı olarak blokla",
+          "prescription": "dist_4h_ema20 > 2.01658 ise filtre adayı olarak blokla",
           "candidate": {
             "kind": "NUM_GT",
             "field": "dist_4h_ema20",
-            "value": 2.0381002116
+            "value": 2.0165751347
           },
           "reasons": [
-            "Toplamda 13 işlemi engellerdi: 8 SL, 5 pozitif kapanış.",
-            "Kazanan kayıp oranı: %20.0.",
-            "Geçmiş toplam R etkisi: +5.452R.",
+            "Toplamda 14 işlemi engellerdi: 9 SL, 5 pozitif kapanış.",
+            "Kazanan kayıp oranı: %19.2.",
+            "Geçmiş toplam R etkisi: +6.513R.",
             "Son dönem holdout R etkisi: +2.069R.",
             "İki dönemde de olumlu; ancak doğrudan canlı için yeterince güçlü değil."
           ],
           "train": {
-            "records": 34,
+            "records": 35,
             "blocked": {
-              "records": 10,
-              "r_records": 10,
-              "exact_r_records": 10,
+              "records": 11,
+              "r_records": 11,
+              "exact_r_records": 11,
               "proxy_r_records": 0,
               "exact_r_coverage_percent": 100.0,
-              "net_r": -3.3834,
-              "avg_r": -0.3383,
+              "net_r": -4.4437,
+              "avg_r": -0.404,
               "winners": 4,
-              "losers": 6,
+              "losers": 7,
               "neutral": 0,
-              "stop_rate_percent": 60.0,
+              "stop_rate_percent": 63.64,
               "outcomes": {
                 "BE": 3,
-                "SL": 6,
+                "SL": 7,
                 "TP3": 1
               }
             },
@@ -607,20 +607,20 @@
               "exact_r_records": 24,
               "proxy_r_records": 0,
               "exact_r_coverage_percent": 100.0,
-              "net_r": -7.2535,
-              "avg_r": -0.3022,
-              "winners": 12,
-              "losers": 12,
+              "net_r": -6.1932,
+              "avg_r": -0.2581,
+              "winners": 13,
+              "losers": 11,
               "neutral": 0,
-              "stop_rate_percent": 50.0,
+              "stop_rate_percent": 45.83,
               "outcomes": {
-                "SL": 12,
+                "SL": 11,
                 "TP3": 2,
-                "BE": 10
+                "BE": 11
               }
             },
-            "delta_r_if_blocked": 3.3834,
-            "blocked_percent": 29.41
+            "delta_r_if_blocked": 4.4437,
+            "blocked_percent": 31.43
           },
           "holdout": {
             "records": 15,
@@ -647,38 +647,38 @@
               "exact_r_records": 12,
               "proxy_r_records": 0,
               "exact_r_coverage_percent": 100.0,
-              "net_r": 5.9864,
-              "avg_r": 0.4989,
+              "net_r": 8.4864,
+              "avg_r": 0.7072,
               "winners": 8,
               "losers": 4,
               "neutral": 0,
               "stop_rate_percent": 33.33,
               "outcomes": {
-                "BE": 4,
                 "SL": 4,
-                "TP3": 4
+                "TP3": 5,
+                "BE": 3
               }
             },
             "delta_r_if_blocked": 2.0691,
             "blocked_percent": 20.0
           },
           "total": {
-            "records": 49,
+            "records": 50,
             "blocked": {
-              "records": 13,
-              "r_records": 13,
-              "exact_r_records": 13,
+              "records": 14,
+              "r_records": 14,
+              "exact_r_records": 14,
               "proxy_r_records": 0,
               "exact_r_coverage_percent": 100.0,
-              "net_r": -5.4525,
-              "avg_r": -0.4194,
+              "net_r": -6.5128,
+              "avg_r": -0.4652,
               "winners": 5,
-              "losers": 8,
+              "losers": 9,
               "neutral": 0,
-              "stop_rate_percent": 61.54,
+              "stop_rate_percent": 64.29,
               "outcomes": {
                 "BE": 4,
-                "SL": 8,
+                "SL": 9,
                 "TP3": 1
               }
             },
@@ -688,20 +688,20 @@
               "exact_r_records": 36,
               "proxy_r_records": 0,
               "exact_r_coverage_percent": 100.0,
-              "net_r": -1.2671,
-              "avg_r": -0.0352,
-              "winners": 20,
-              "losers": 16,
+              "net_r": 2.2932,
+              "avg_r": 0.0637,
+              "winners": 21,
+              "losers": 15,
               "neutral": 0,
-              "stop_rate_percent": 44.44,
+              "stop_rate_percent": 41.67,
               "outcomes": {
-                "SL": 16,
-                "TP3": 6,
+                "SL": 15,
+                "TP3": 7,
                 "BE": 14
               }
             },
-            "delta_r_if_blocked": 5.4525,
-            "blocked_percent": 26.53
+            "delta_r_if_blocked": 6.5128,
+            "blocked_percent": 28.0
           },
           "auto_apply": false
         }
@@ -1016,9 +1016,9 @@
     },
     "POST_RESULT_MANAGEMENT": {
       "component": "POST_RESULT_MANAGEMENT",
-      "completed_total": 79,
+      "completed_total": 80,
       "group_counts": {
-        "TP1_SONRASI_BE": 42,
+        "TP1_SONRASI_BE": 43,
         "TP3": 25,
         "TP2_SONRASI_BE": 12
       },
@@ -1028,10 +1028,10 @@
           "status": "GOLGE_TEST",
           "prescription": "TP1 sonrası BE ile kapanan kalan bölüm için küçük bir runner alternatifini SANAL olarak karşılaştır.",
           "evidence": {
-            "completed": 42,
-            "later_tp2_rate_percent": 42.86,
-            "later_tp3_rate_percent": 23.81,
-            "avg_post_close_max_favorable_r": 1.295
+            "completed": 43,
+            "later_tp2_rate_percent": 41.86,
+            "later_tp3_rate_percent": 23.26,
+            "avg_post_close_max_favorable_r": 1.2751
           },
           "implementation_note": "Mevcut BE kuralını değiştirme. Aynı kapanıştan sonra örneğin kalan pozisyonun %10-%25 runner senaryolarını yalnız sanal PnL olarak hesapla.",
           "auto_apply": false
@@ -1059,8 +1059,31 @@
     },
     "PORTFOLIO_RISK": {
       "component": "PORTFOLIO_RISK",
-      "status": "IZLE",
-      "prescriptions": [],
+      "status": "GOLGE_TEST",
+      "prescriptions": [
+        {
+          "status": "GOLGE_TEST",
+          "prescription": "ALLOW kuralı için mevcut limite göre DAHA GEVŞEK paralel gölge senaryo oluştur.",
+          "evidence": {
+            "records": 304,
+            "favorable_first_rate_percent": 55.15,
+            "adverse_first_rate_percent": 44.85
+          },
+          "implementation_note": "Canlı portföy limiti değişmesin; yalnız karşı-olgusal ALLOW sonucu kaydedilsin.",
+          "auto_apply": false
+        },
+        {
+          "status": "GOLGE_TEST",
+          "prescription": "DIRECTION_RISK_LIMIT kuralı için mevcut limite göre DAHA GEVŞEK paralel gölge senaryo oluştur.",
+          "evidence": {
+            "records": 413,
+            "favorable_first_rate_percent": 55.0,
+            "adverse_first_rate_percent": 45.0
+          },
+          "implementation_note": "Canlı portföy limiti değişmesin; yalnız karşı-olgusal ALLOW sonucu kaydedilsin.",
+          "auto_apply": false
+        }
+      ],
       "auto_apply": false
     },
     "RANGE_SHADOW": {
@@ -1071,19 +1094,19 @@
           "status": "REDDET_MEVCUT_SURUM",
           "prescription": "Range V3'ün mevcut giriş/stop mimarisini canlıya taşımayı bırak; yeni sürümü ayrı gölge motor olarak tasarla.",
           "evidence": {
-            "total_opened": 459,
-            "total_closed": 454,
+            "total_opened": 465,
+            "total_closed": 459,
             "wins": 75,
-            "sl": 366,
-            "win_rate_percent": 18.94,
-            "gross_r": -23.6361,
-            "net_r": -277.1449,
-            "gross_to_net_cost_r": 253.5088,
-            "average_cost_r_per_closed": 0.5584,
+            "sl": 371,
+            "win_rate_percent": 18.74,
+            "gross_r": -28.6361,
+            "net_r": -285.7958,
+            "gross_to_net_cost_r": 257.1597,
+            "average_cost_r_per_closed": 0.5603,
             "close_reason_counts": {
-              "TIGHT_STOP_COST_DOMINATED": 121,
-              "LOW_VOLUME_NO_CONTINUATION": 28,
-              "WEAK_SINGLE_CONFIRMATION": 75,
+              "TIGHT_STOP_COST_DOMINATED": 124,
+              "LOW_VOLUME_NO_CONTINUATION": 29,
+              "WEAK_SINGLE_CONFIRMATION": 76,
               "RANGE_BROKEN_BY_TREND_PRESSURE": 90,
               "COMPLETED_RANGE_LEG": 75,
               "DIRECTION_OR_ENTRY_TIMING_FAILURE": 52,
@@ -1093,12 +1116,12 @@
             },
             "risk_band_stats": {
               "LT_0_20": {
-                "closed": 142,
+                "closed": 145,
                 "wins": 21,
-                "sl": 121,
-                "gross_r": 4.7131,
-                "net_r": -137.6295,
-                "win_rate_percent": 14.79
+                "sl": 124,
+                "gross_r": 1.7131,
+                "net_r": -143.36,
+                "win_rate_percent": 14.48
               },
               "0_35_TO_0_60": {
                 "closed": 98,
@@ -1109,12 +1132,12 @@
                 "win_rate_percent": 25.51
               },
               "0_20_TO_0_35": {
-                "closed": 165,
+                "closed": 167,
                 "wins": 30,
-                "sl": 134,
-                "gross_r": -23.1826,
-                "net_r": -99.3743,
-                "win_rate_percent": 18.18
+                "sl": 136,
+                "gross_r": -25.1826,
+                "net_r": -102.2947,
+                "win_rate_percent": 17.96
               },
               "GTE_0_60": {
                 "closed": 49,
@@ -1127,20 +1150,20 @@
             },
             "direction_stats": {
               "LONG": {
-                "closed": 254,
+                "closed": 256,
                 "wins": 48,
-                "sl": 206,
-                "gross_r": -14.0249,
-                "net_r": -155.4277,
-                "win_rate_percent": 18.9
+                "sl": 208,
+                "gross_r": -16.0249,
+                "net_r": -159.4634,
+                "win_rate_percent": 18.75
               },
               "SHORT": {
-                "closed": 200,
+                "closed": 203,
                 "wins": 38,
-                "sl": 160,
-                "gross_r": -9.6112,
-                "net_r": -121.7172,
-                "win_rate_percent": 19.0
+                "sl": 163,
+                "gross_r": -12.6112,
+                "net_r": -126.3324,
+                "win_rate_percent": 18.72
               }
             }
           },
@@ -1175,14 +1198,36 @@
   },
   "top_prescriptions": [
     {
+      "component": "PORTFOLIO_RISK",
+      "status": "GOLGE_TEST",
+      "prescription": "ALLOW kuralı için mevcut limite göre DAHA GEVŞEK paralel gölge senaryo oluştur.",
+      "evidence": {
+        "records": 304,
+        "favorable_first_rate_percent": 55.15,
+        "adverse_first_rate_percent": 44.85
+      },
+      "auto_apply": false
+    },
+    {
+      "component": "PORTFOLIO_RISK",
+      "status": "GOLGE_TEST",
+      "prescription": "DIRECTION_RISK_LIMIT kuralı için mevcut limite göre DAHA GEVŞEK paralel gölge senaryo oluştur.",
+      "evidence": {
+        "records": 413,
+        "favorable_first_rate_percent": 55.0,
+        "adverse_first_rate_percent": 45.0
+      },
+      "auto_apply": false
+    },
+    {
       "component": "POST_RESULT_MANAGEMENT",
       "status": "GOLGE_TEST",
       "prescription": "TP1 sonrası BE ile kapanan kalan bölüm için küçük bir runner alternatifini SANAL olarak karşılaştır.",
       "evidence": {
-        "completed": 42,
-        "later_tp2_rate_percent": 42.86,
-        "later_tp3_rate_percent": 23.81,
-        "avg_post_close_max_favorable_r": 1.295
+        "completed": 43,
+        "later_tp2_rate_percent": 41.86,
+        "later_tp3_rate_percent": 23.26,
+        "avg_post_close_max_favorable_r": 1.2751
       },
       "auto_apply": false
     },
@@ -1306,25 +1351,25 @@
     {
       "component": "SWING",
       "status": "GOLGE_TEST",
-      "prescription": "dist_4h_ema20 > 2.0381 ise filtre adayı olarak blokla",
+      "prescription": "dist_4h_ema20 > 2.01658 ise filtre adayı olarak blokla",
       "evidence": {
         "total": {
-          "records": 49,
+          "records": 50,
           "blocked": {
-            "records": 13,
-            "r_records": 13,
-            "exact_r_records": 13,
+            "records": 14,
+            "r_records": 14,
+            "exact_r_records": 14,
             "proxy_r_records": 0,
             "exact_r_coverage_percent": 100.0,
-            "net_r": -5.4525,
-            "avg_r": -0.4194,
+            "net_r": -6.5128,
+            "avg_r": -0.4652,
             "winners": 5,
-            "losers": 8,
+            "losers": 9,
             "neutral": 0,
-            "stop_rate_percent": 61.54,
+            "stop_rate_percent": 64.29,
             "outcomes": {
               "BE": 4,
-              "SL": 8,
+              "SL": 9,
               "TP3": 1
             }
           },
@@ -1334,20 +1379,20 @@
             "exact_r_records": 36,
             "proxy_r_records": 0,
             "exact_r_coverage_percent": 100.0,
-            "net_r": -1.2671,
-            "avg_r": -0.0352,
-            "winners": 20,
-            "losers": 16,
+            "net_r": 2.2932,
+            "avg_r": 0.0637,
+            "winners": 21,
+            "losers": 15,
             "neutral": 0,
-            "stop_rate_percent": 44.44,
+            "stop_rate_percent": 41.67,
             "outcomes": {
-              "SL": 16,
-              "TP3": 6,
+              "SL": 15,
+              "TP3": 7,
               "BE": 14
             }
           },
-          "delta_r_if_blocked": 5.4525,
-          "blocked_percent": 26.53
+          "delta_r_if_blocked": 6.5128,
+          "blocked_percent": 28.0
         },
         "holdout": {
           "records": 15,
@@ -1374,16 +1419,16 @@
             "exact_r_records": 12,
             "proxy_r_records": 0,
             "exact_r_coverage_percent": 100.0,
-            "net_r": 5.9864,
-            "avg_r": 0.4989,
+            "net_r": 8.4864,
+            "avg_r": 0.7072,
             "winners": 8,
             "losers": 4,
             "neutral": 0,
             "stop_rate_percent": 33.33,
             "outcomes": {
-              "BE": 4,
               "SL": 4,
-              "TP3": 4
+              "TP3": 5,
+              "BE": 3
             }
           },
           "delta_r_if_blocked": 2.0691,
@@ -1414,19 +1459,19 @@
       "status": "REDDET_MEVCUT_SURUM",
       "prescription": "Range V3'ün mevcut giriş/stop mimarisini canlıya taşımayı bırak; yeni sürümü ayrı gölge motor olarak tasarla.",
       "evidence": {
-        "total_opened": 459,
-        "total_closed": 454,
+        "total_opened": 465,
+        "total_closed": 459,
         "wins": 75,
-        "sl": 366,
-        "win_rate_percent": 18.94,
-        "gross_r": -23.6361,
-        "net_r": -277.1449,
-        "gross_to_net_cost_r": 253.5088,
-        "average_cost_r_per_closed": 0.5584,
+        "sl": 371,
+        "win_rate_percent": 18.74,
+        "gross_r": -28.6361,
+        "net_r": -285.7958,
+        "gross_to_net_cost_r": 257.1597,
+        "average_cost_r_per_closed": 0.5603,
         "close_reason_counts": {
-          "TIGHT_STOP_COST_DOMINATED": 121,
-          "LOW_VOLUME_NO_CONTINUATION": 28,
-          "WEAK_SINGLE_CONFIRMATION": 75,
+          "TIGHT_STOP_COST_DOMINATED": 124,
+          "LOW_VOLUME_NO_CONTINUATION": 29,
+          "WEAK_SINGLE_CONFIRMATION": 76,
           "RANGE_BROKEN_BY_TREND_PRESSURE": 90,
           "COMPLETED_RANGE_LEG": 75,
           "DIRECTION_OR_ENTRY_TIMING_FAILURE": 52,
@@ -1436,12 +1481,12 @@
         },
         "risk_band_stats": {
           "LT_0_20": {
-            "closed": 142,
+            "closed": 145,
             "wins": 21,
-            "sl": 121,
-            "gross_r": 4.7131,
-            "net_r": -137.6295,
-            "win_rate_percent": 14.79
+            "sl": 124,
+            "gross_r": 1.7131,
+            "net_r": -143.36,
+            "win_rate_percent": 14.48
           },
           "0_35_TO_0_60": {
             "closed": 98,
@@ -1452,12 +1497,12 @@
             "win_rate_percent": 25.51
           },
           "0_20_TO_0_35": {
-            "closed": 165,
+            "closed": 167,
             "wins": 30,
-            "sl": 134,
-            "gross_r": -23.1826,
-            "net_r": -99.3743,
-            "win_rate_percent": 18.18
+            "sl": 136,
+            "gross_r": -25.1826,
+            "net_r": -102.2947,
+            "win_rate_percent": 17.96
           },
           "GTE_0_60": {
             "closed": 49,
@@ -1470,20 +1515,20 @@
         },
         "direction_stats": {
           "LONG": {
-            "closed": 254,
+            "closed": 256,
             "wins": 48,
-            "sl": 206,
-            "gross_r": -14.0249,
-            "net_r": -155.4277,
-            "win_rate_percent": 18.9
+            "sl": 208,
+            "gross_r": -16.0249,
+            "net_r": -159.4634,
+            "win_rate_percent": 18.75
           },
           "SHORT": {
-            "closed": 200,
+            "closed": 203,
             "wins": 38,
-            "sl": 160,
-            "gross_r": -9.6112,
-            "net_r": -121.7172,
-            "win_rate_percent": 19.0
+            "sl": 163,
+            "gross_r": -12.6112,
+            "net_r": -126.3324,
+            "win_rate_percent": 18.72
           }
         }
       },
