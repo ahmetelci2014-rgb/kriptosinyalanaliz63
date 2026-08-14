@@ -3,8 +3,7 @@ name: Kripto Panel Kontrolü
 on:
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - "dashboard_builder.py"
       - "dashboard_live_app.py"
@@ -22,6 +21,7 @@ on:
       - "dashboard_score_app.py"
       - "dashboard_filter_app.py"
       - "dashboard_route_app.py"
+      - "dashboard_memory_app.py"
       - "test_dashboard_builder.py"
       - "test_dashboard_live_app.py"
       - "test_dashboard_accounts_app.py"
@@ -37,13 +37,13 @@ on:
       - "test_dashboard_score_app.py"
       - "test_dashboard_filter_app.py"
       - "test_dashboard_route_app.py"
+      - "test_dashboard_memory_app.py"
       - "Dockerfile.dashboard"
       - ".dockerignore"
       - "render.yaml"
       - ".github/workflows/crypto-dashboard.yml"
   pull_request:
-    branches:
-      - main
+    branches: [main]
     paths:
       - "dashboard_builder.py"
       - "dashboard_live_app.py"
@@ -61,6 +61,7 @@ on:
       - "dashboard_score_app.py"
       - "dashboard_filter_app.py"
       - "dashboard_route_app.py"
+      - "dashboard_memory_app.py"
       - "test_dashboard_builder.py"
       - "test_dashboard_live_app.py"
       - "test_dashboard_accounts_app.py"
@@ -76,6 +77,7 @@ on:
       - "test_dashboard_score_app.py"
       - "test_dashboard_filter_app.py"
       - "test_dashboard_route_app.py"
+      - "test_dashboard_memory_app.py"
       - "Dockerfile.dashboard"
       - ".dockerignore"
       - "render.yaml"
@@ -92,76 +94,35 @@ jobs:
   test-dashboard:
     runs-on: ubuntu-latest
     timeout-minutes: 7
-
     steps:
       - name: Repo indir
         uses: actions/checkout@v4
-
       - name: Python kur
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - name: Panel Python dosyalarını derle
         run: |
           python -m py_compile \
-            dashboard_builder.py \
-            dashboard_live_app.py \
-            dashboard_accounts_app.py \
-            dashboard_product_app.py \
-            dashboard_market_app.py \
-            dashboard_compact_app.py \
-            dashboard_focus_app.py \
-            dashboard_focus_market_app.py \
-            dashboard_home_app.py \
-            dashboard_notify_app.py \
-            dashboard_alert_app.py \
-            dashboard_watchlist_app.py \
-            dashboard_opportunity_app.py \
-            dashboard_score_app.py \
-            dashboard_filter_app.py \
-            dashboard_route_app.py \
-            test_dashboard_builder.py \
-            test_dashboard_live_app.py \
-            test_dashboard_accounts_app.py \
-            test_dashboard_product_app.py \
-            test_dashboard_market_app.py \
-            test_dashboard_compact_app.py \
-            test_dashboard_focus_app.py \
-            test_dashboard_home_app.py \
-            test_dashboard_notify_app.py \
-            test_dashboard_alert_app.py \
-            test_dashboard_watchlist_app.py \
-            test_dashboard_opportunity_app.py \
-            test_dashboard_score_app.py \
-            test_dashboard_filter_app.py \
-            test_dashboard_route_app.py
-
+            dashboard_builder.py dashboard_live_app.py dashboard_accounts_app.py dashboard_product_app.py \
+            dashboard_market_app.py dashboard_compact_app.py dashboard_focus_app.py dashboard_focus_market_app.py \
+            dashboard_home_app.py dashboard_notify_app.py dashboard_alert_app.py dashboard_watchlist_app.py \
+            dashboard_opportunity_app.py dashboard_score_app.py dashboard_filter_app.py dashboard_route_app.py dashboard_memory_app.py \
+            test_dashboard_builder.py test_dashboard_live_app.py test_dashboard_accounts_app.py test_dashboard_product_app.py \
+            test_dashboard_market_app.py test_dashboard_compact_app.py test_dashboard_focus_app.py test_dashboard_home_app.py \
+            test_dashboard_notify_app.py test_dashboard_alert_app.py test_dashboard_watchlist_app.py test_dashboard_opportunity_app.py \
+            test_dashboard_score_app.py test_dashboard_filter_app.py test_dashboard_route_app.py test_dashboard_memory_app.py
       - name: Statik ve canlı panel testlerini çalıştır
         run: |
           python -m unittest -v \
-            test_dashboard_builder.py \
-            test_dashboard_live_app.py \
-            test_dashboard_accounts_app.py \
-            test_dashboard_product_app.py \
-            test_dashboard_market_app.py \
-            test_dashboard_compact_app.py \
-            test_dashboard_focus_app.py \
-            test_dashboard_home_app.py \
-            test_dashboard_notify_app.py \
-            test_dashboard_alert_app.py \
-            test_dashboard_watchlist_app.py \
-            test_dashboard_opportunity_app.py \
-            test_dashboard_score_app.py \
-            test_dashboard_filter_app.py \
-            test_dashboard_route_app.py
-
+            test_dashboard_builder.py test_dashboard_live_app.py test_dashboard_accounts_app.py test_dashboard_product_app.py \
+            test_dashboard_market_app.py test_dashboard_compact_app.py test_dashboard_focus_app.py test_dashboard_home_app.py \
+            test_dashboard_notify_app.py test_dashboard_alert_app.py test_dashboard_watchlist_app.py test_dashboard_opportunity_app.py \
+            test_dashboard_score_app.py test_dashboard_filter_app.py test_dashboard_route_app.py test_dashboard_memory_app.py
       - name: Render Docker imajını doğrula
         run: docker build -f Dockerfile.dashboard -t kripto-panel-ci .
-
       - name: Gerçek verilerden panel üret
         run: python dashboard_builder.py --root . --output dashboard_output/index.html
-
       - name: Acil durum statik yedeğini yükle
         uses: actions/upload-artifact@v4
         with:
@@ -169,27 +130,20 @@ jobs:
           path: dashboard_output/index.html
           if-no-files-found: error
           retention-days: 3
-
       - name: Kullanım özetini yaz
         run: |
           {
             echo "## Kripto Kontrol Paneli doğrulandı"
             echo ""
-            echo "V2.9 Sayfa Konumu Koruma, V2.8 Akıllı Fırsat Filtreleri, V2.7 İnceleme Skoru, V2.6 Piyasa Fırsat Merkezi, V2.5 İzleme Listesi, sesli/renkli canlı uyarı, Bildirim Merkezi, akıllı ana sayfa, hızlı coin analiz çekmecesi, üyelik/yönetim, canlı piyasa merkezi ve Docker build testleri başarılı."
+            echo "V2.10 Fırsat Favorileri ve Filtre Hafızası dahil canlı panel ve Docker build testleri başarılı."
             echo "Artifact yalnız acil durum anlık görüntüsüdür; canlı panel değildir."
             echo ""
+            echo "- Fırsat kartından mevcut İzleme Listesi favorilerine ekleme/çıkarma yalnız tarayıcı localStorage kullanır"
+            echo "- Fırsat arama, filtre ve sıralama tercihleri cihaz bazında hatırlanır"
             echo "- Yenileme sonrası aktif panel sekmesi URL hash üzerinden korunur"
             echo "- Sinyal/strateji davranışı değişmez"
             echo "- Telegram gönderim mantığı değişmez"
-            echo "- V2.8 filtreleri yalnız tarayıcı tarafında mevcut fırsat ve skor verisini süzer/sıralar"
-            echo "- 80+ skor, teknik yön ve hacim filtreleri yeni işlem sinyali değildir"
-            echo "- İnceleme Skoru 15m + 1H EMA trend, RSI, 15m hacim oranı ve 24s momentumdan hesaplanır"
             echo "- İnceleme Skoru başarı ihtimali veya yeni işlem sinyali değildir"
-            echo "- Skor verisi OKX public veriden gelir ve sunucuda kısa süre önbelleklenir"
-            echo "- Piyasa Fırsat Merkezi yalnız OKX public piyasa verisini sınıflandırır"
-            echo "- İzleme Listesi favorileri yalnız tarayıcı localStorage alanındadır"
-            echo "- Sesli uyarı kullanıcı tarafından açılır ve yalnız tarayıcı Web Audio kullanır"
-            echo "- Renkli toast uyarıları yalnız mevcut panel verilerinden üretilir"
             echo "- Eski ayrıntılı panel /advanced altında korunur"
             echo "- Private GitHub anahtarları yalnız sunucu tarafında"
             echo "- Kullanıcı şifreleri yalnız PBKDF2 özet olarak saklanır"
