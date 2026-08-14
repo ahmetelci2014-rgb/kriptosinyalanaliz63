@@ -2,26 +2,26 @@
 
 - Sürüm: `SYSTEM_CONTROL_CENTER_V1_4_GLOBAL_JSON_GUARD_2026_08_14`
 - Mod: `READ_ONLY_MONITOR_CRITICAL_RED_ALERT_ONLY_NO_ORDERS_NO_SIGNAL_CHANGE_NO_AUTO_APPLY`
-- Üretim: 2026-08-14T13:43:45+00:00
+- Üretim: 2026-08-14T15:07:29+00:00
 - Genel sağlık: 🟢 **GREEN**
 
 ## Sistemler
 
 | Sistem | Sağlık | Açık | Performans kararı | Veri yaşı |
 |---|---:|---:|---|---:|
-| Premium MTF | 🟢 GREEN | 4 | 🟢 KORU | 0.13s |
-| Scalp Radar | 🟢 GREEN | 0 | 🟢 KORU | 0.91s |
-| Pump/Dump Radar | 🟢 GREEN | 0 | 🟢 KORU / İZLE | 1.56s |
-| Swing Shadow V4 | 🟢 GREEN | 3 | ⚪ SWING V4 GÖLGE VERİ TOPLA | 1.64s |
-| Ana Trend Pozisyon Radarı | 🟢 GREEN | 4 | ⚪ VERİ TOPLA | 1.73s |
-| Tüm Piyasa Keşif Radarı | 🟢 GREEN | 2 | ⚪ VERİ TOPLA | 0.83s |
-| Momentum Shadow | 🟢 GREEN | - | 🟠 GÖLGEDE TUT / CANLIYA ALMA | 0.30s |
-| Range Cycle Shadow | 🟢 GREEN | - | 🔴 CANLIYA ALMA / YENİDEN TASARLA | 1.03s |
-| Portfolio Risk | 🟢 GREEN | - | 🟡 PORTFÖY RİSKİNİ İZLE | 1.23s |
-| Decision Engine | 🟢 GREEN | - | ⚪ KARAR YOK | 3.88s |
-| Prescription Engine | 🟢 GREEN | - | ⚪ KARAR YOK | 3.88s |
-| New Listing Radar | 🟢 GREEN | - | ⚪ KARAR YOK | 1.56s |
-| TP Sonrası / Post Result Shadow | 🟢 GREEN | - | 🟠 İŞLEM YÖNETİMİ ALTERNATİFİNİ GÖLGE TEST ET | 0.13s |
+| Premium MTF | 🟢 GREEN | 4 | 🟢 KORU | 0.02s |
+| Scalp Radar | 🟢 GREEN | 0 | 🟢 KORU | 0.05s |
+| Pump/Dump Radar | 🟢 GREEN | 0 | 🟢 KORU / İZLE | 0.39s |
+| Swing Shadow V4 | 🟢 GREEN | 3 | ⚪ SWING V4 GÖLGE VERİ TOPLA | 1.27s |
+| Ana Trend Pozisyon Radarı | 🟢 GREEN | 4 | ⚪ VERİ TOPLA | 1.34s |
+| Tüm Piyasa Keşif Radarı | 🟢 GREEN | 0 | ⚪ VERİ TOPLA | 0.90s |
+| Momentum Shadow | 🟢 GREEN | - | 🟠 GÖLGEDE TUT / CANLIYA ALMA | 0.64s |
+| Range Cycle Shadow | 🟢 GREEN | - | 🔴 CANLIYA ALMA / YENİDEN TASARLA | 0.10s |
+| Portfolio Risk | 🟢 GREEN | - | 🟡 PORTFÖY RİSKİNİ İZLE | 1.06s |
+| Decision Engine | 🟢 GREEN | - | ⚪ KARAR YOK | 5.28s |
+| Prescription Engine | 🟢 GREEN | - | ⚪ KARAR YOK | 5.28s |
+| New Listing Radar | 🟢 GREEN | - | ⚪ KARAR YOK | 0.40s |
+| TP Sonrası / Post Result Shadow | 🟢 GREEN | - | 🟠 İŞLEM YÖNETİMİ ALTERNATİFİNİ GÖLGE TEST ET | 0.02s |
 | JSON Depolama Koruması | 🟢 GREEN | - | ⚪ TEKNİK KORUMA | - |
 
 ## Güvenlik
