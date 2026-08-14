@@ -92,6 +92,8 @@ class DashboardBuilderTests(unittest.TestCase):
         self.assertIn("İşlem İnceleme Merkezi", html)
         self.assertIn("performanceWindow", html)
         self.assertIn("resultOutcome", html)
+        self.assertIn("resultPagination", html)
+        self.assertIn("20 / sayfa", html)
         self.assertIn('nonce="test-nonce"', html)
 
     def test_source_freshness_accepts_iso_and_millisecond_timestamps(self):
@@ -103,13 +105,22 @@ class DashboardBuilderTests(unittest.TestCase):
             premium = json.loads((root / "open_signals.json").read_text(encoding="utf-8"))
             premium["BTC_SHORT"]["last_checked_at"] = "2026-08-14T11:45:00Z"
             self.write_json(root, "open_signals.json", premium)
+            scalp = json.loads((root / "scalp_radar_state.json").read_text(encoding="utf-8"))
+            scalp["last_sent"] = {"BTCUSDT_LONG": current_ts - 300}
+            scalp["early_last_sent"] = {"ETHUSDT_SHORT": current_ts - 120}
+            self.write_json(root, "scalp_radar_state.json", scalp)
             report = json.loads((root / "system_control_center_report.json").read_text(encoding="utf-8"))
             report["generated_at"] = current_ts * 1000
             self.write_json(root, "system_control_center_report.json", report)
             data = build_dashboard_data(root, now=current)
             statuses = {row["filename"]: row for row in data["sources"]}
             self.assertEqual(statuses["open_signals.json"]["status"], "FRESH")
+            self.assertEqual(statuses["scalp_radar_state.json"]["status"], "FRESH")
             self.assertEqual(statuses["system_control_center_report.json"]["status"], "FRESH")
+            self.assertFalse(any(
+                "scalp_radar_state.json: kritik" in warning
+                for warning in data["data_quality"]["warnings"]
+            ))
 
     def test_missing_or_invalid_files_do_not_crash(self):
         with tempfile.TemporaryDirectory() as directory:
