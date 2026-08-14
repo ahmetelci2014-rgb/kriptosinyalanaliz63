@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-VERSION = "SYSTEM_CONTROL_CENTER_V1_3_SIZE_GUARD_CRITICAL_ALERT_2026_08_14"
+VERSION = "SYSTEM_CONTROL_CENTER_V1_4_GLOBAL_JSON_GUARD_2026_08_14"
 MODE = "READ_ONLY_MONITOR_CRITICAL_RED_ALERT_ONLY_NO_ORDERS_NO_SIGNAL_CHANGE_NO_AUTO_APPLY"
 
 REPORT_JSON = "system_control_center_report.json"
@@ -297,6 +297,84 @@ def file_info(path):
         info["error"] = f"{type(exc).__name__}: {exc}"
     return info
 
+def json_storage_component():
+    """Repo kökündeki mevcut tüm JSON dosyalarını boyut ve geçerlilik açısından izler."""
+    files = [file_info(str(path)) for path in sorted(Path(".").glob("*.json"))]
+    invalid = [item for item in files if not item.get("valid_json")]
+    critical = [
+        item for item in files
+        if int(item.get("bytes") or 0) >= FILE_SIZE_RED_BYTES
+    ]
+    warning = [
+        item for item in files
+        if FILE_SIZE_YELLOW_BYTES
+        <= int(item.get("bytes") or 0)
+        < FILE_SIZE_RED_BYTES
+    ]
+
+    reasons = []
+    if invalid:
+        reasons.append("Bozuk JSON: " + ", ".join(item["path"] for item in invalid))
+    if critical:
+        reasons.append(
+            "Kritik dosya büyüklüğü: "
+            + ", ".join(
+                f"{item['path']}={int(item.get('bytes') or 0) / (1024 * 1024):.2f}MB"
+                for item in critical
+            )
+        )
+    if warning:
+        reasons.append(
+            "Dosya büyüme uyarısı: "
+            + ", ".join(
+                f"{item['path']}={int(item.get('bytes') or 0) / (1024 * 1024):.2f}MB"
+                for item in warning
+            )
+        )
+
+    health = "RED" if invalid or critical else "YELLOW" if warning else "GREEN"
+    if health == "GREEN":
+        reasons.append("Tüm JSON dosyaları geçerli ve boyut sınırlarının altında")
+
+    largest = sorted(
+        files,
+        key=lambda item: int(item.get("bytes") or 0),
+        reverse=True,
+    )[:5]
+    return {
+        "label": "JSON Depolama Koruması",
+        "kind": "GUARD",
+        "health": health,
+        "health_reasons": reasons,
+        "latest_timestamp": None,
+        "latest_utc": None,
+        "age_hours": None,
+        "workflow": ".github/workflows/system-control-center.yml",
+        "workflow_file_exists": Path(".github/workflows/system-control-center.yml").exists(),
+        "files": files,
+        "metrics": {
+            "file_count": len(files),
+            "total_mb": round(sum(int(item.get("bytes") or 0) for item in files) / (1024 * 1024), 2),
+            "largest_files": [
+                {
+                    "path": item["path"],
+                    "mb": round(int(item.get("bytes") or 0) / (1024 * 1024), 2),
+                }
+                for item in largest
+            ],
+        },
+        "performance": {
+            "source": None,
+            "decision_code": "TECHNICAL_GUARD",
+            "decision_tr": "⚪ TEKNİK KORUMA",
+            "confidence": None,
+            "sample_size": len(files),
+            "next_action": None,
+        },
+        "integrated_note": "Tüm mevcut kök JSON dosyaları",
+    }
+
+
 def get_path_dict(data, key):
     if key is None:
         return data if isinstance(data, dict) else {}
@@ -532,6 +610,10 @@ def build_report(root="."):
                 "performance": performance_advisory(key, decisions, cache),
                 "integrated_note": cfg.get("integrated_note"),
             }
+
+        storage = json_storage_component()
+        components["JSON_STORAGE"] = storage
+        counts[storage["health"]] += 1
 
         critical = [k for k, v in components.items() if v["health"] == "RED"]
         attention = [k for k, v in components.items() if v["health"] == "YELLOW"]
