@@ -16,13 +16,13 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
-VERSION = "KRIPTO_KONTROL_PANELI_V1_2_2026_08_14"
+VERSION = "KRIPTO_KONTROL_PANELI_V1_2_1_2026_08_14"
 TR_TIMEZONE = timezone(timedelta(hours=3))
 
 SOURCE_SPECS = (
-    ("open_signals.json", "Premium açık işlemler", 1.0, True),
-    ("scalp_radar_state.json", "Scalp radar durumu", 1.0, True),
-    ("pump_radar_state.json", "Pump/Dump radar durumu", 1.0, True),
+    ("open_signals.json", "Premium açık işlemler", 1.0, False),
+    ("scalp_radar_state.json", "Scalp radar durumu", 1.0, False),
+    ("pump_radar_state.json", "Pump/Dump radar durumu", 1.0, False),
     ("new_listing_performance_ledger.json", "Yeni liste kayıtları", 72.0, False),
     ("trade_ledger.json", "Premium performans", 24.0, False),
     ("scalp_performance_ledger.json", "Scalp performans", 24.0, False),
@@ -38,6 +38,7 @@ TIMESTAMP_KEYS = {
     "last_checked_at",
     "last_tracking_at",
     "last_run",
+    "last_no_signal_report",
     "checked_at",
     "closed_at",
     "trade_closed_at",
@@ -45,6 +46,14 @@ TIMESTAMP_KEYS = {
     "recorded_at",
     "sent_at",
     "opened_at",
+}
+
+TIMESTAMP_VALUE_CONTAINERS = {
+    "last_scalp_signals",
+    "last_sent",
+    "early_last_sent",
+    "prewatch_last_sent",
+    "shadow_last_seen",
 }
 
 SYSTEM_LABELS = {
@@ -151,8 +160,13 @@ def latest_document_timestamp(value: Any) -> int:
     latest = 0
     if isinstance(value, dict):
         for key, child in value.items():
-            if str(key) in TIMESTAMP_KEYS:
+            key_text = str(key)
+            if key_text in TIMESTAMP_KEYS:
                 latest = max(latest, parse_timestamp(child))
+            if key_text in TIMESTAMP_VALUE_CONTAINERS and isinstance(child, dict):
+                for timestamp_value in child.values():
+                    if not isinstance(timestamp_value, (dict, list)):
+                        latest = max(latest, parse_timestamp(timestamp_value))
             if isinstance(child, (dict, list)):
                 latest = max(latest, latest_document_timestamp(child))
     elif isinstance(value, list):
@@ -726,7 +740,7 @@ def render_dashboard(
     .source-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}} .source-card{{border:1px solid var(--line);border-radius:14px;background:rgba(10,24,32,.78);padding:14px;min-height:120px}} .source-card-top{{display:flex;justify-content:space-between;gap:8px;align-items:start}} .source-card h3{{font-size:12px;margin:0}} .source-file{{color:var(--muted);font-size:10px;margin-top:4px;word-break:break-all}} .source-age{{font-size:18px;font-weight:850;margin-top:14px}} .source-card.FRESH{{border-color:rgba(66,226,140,.28)}} .source-card.STALE{{border-color:rgba(255,189,89,.35)}} .source-card.ERROR{{border-color:rgba(255,98,125,.4)}} .source-status{{font-size:9px;font-weight:900;border-radius:999px;padding:4px 7px}} .source-status.FRESH{{background:rgba(66,226,140,.12);color:var(--green)}} .source-status.STALE{{background:rgba(255,189,89,.12);color:var(--amber)}} .source-status.ERROR{{background:rgba(255,98,125,.12);color:var(--red)}} .source-status.UNKNOWN{{background:rgba(130,162,159,.12);color:var(--muted)}}
     .chart-panel{{padding:16px}} .market-controls{{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin-bottom:14px}} .market-controls label{{display:grid;gap:5px;color:var(--muted);font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.08em}} .market-controls input,.market-controls select{{border:1px solid var(--line);border-radius:10px;background:#061219;color:var(--text);padding:10px 11px;outline:none;min-width:160px}} .market-controls select{{min-width:100px}} .market-controls input:focus,.market-controls select:focus{{border-color:var(--teal)}} .market-button{{border:0;border-radius:10px;background:var(--teal);color:#03110e;font-weight:900;padding:11px 15px;cursor:pointer}} .market-canvas{{height:440px;border:1px solid rgba(25,52,63,.72);border-radius:12px;background:#07151c;overflow:hidden}} .chart-legend{{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-top:10px}} .symbol-button{{border:0;padding:0;background:none;color:var(--teal);font-weight:850;letter-spacing:.02em;cursor:pointer;text-align:left}} .symbol-button:hover{{text-decoration:underline}}
     .panel{{border:1px solid var(--line);border-radius:var(--radius);background:rgba(9,23,31,.9);overflow:hidden}} .toolbar{{padding:12px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}} .result-toolbar{{justify-content:flex-start;flex-wrap:wrap}} .result-toolbar .search{{margin-right:auto}} .search{{width:min(300px,100%);border:1px solid var(--line);border-radius:10px;background:#061219;color:var(--text);padding:9px 11px;outline:none}} .search:focus{{border-color:var(--teal)}} .table-wrap{{overflow:auto}} table{{border-collapse:collapse;width:100%;min-width:960px}} th{{text-align:left;color:#789894;font-size:10px;text-transform:uppercase;letter-spacing:.1em;background:#08171e}} th,td{{padding:13px 14px;border-bottom:1px solid rgba(25,52,63,.72)}} tbody tr:hover{{background:rgba(44,230,191,.035)}} tbody tr:last-child td{{border-bottom:0}} .symbol{{font-weight:850;letter-spacing:.02em}} .sub{{display:block;color:var(--muted);font-size:11px;margin-top:2px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}} .direction,.result-pill,.health-pill{{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:850;letter-spacing:.05em}} .direction.LONG{{background:rgba(66,226,140,.12);color:var(--green)}} .direction.SHORT{{background:rgba(255,98,125,.12);color:#ff8ca0}} .result-pill.TP{{background:rgba(66,226,140,.12);color:var(--green)}} .result-pill.SL{{background:rgba(255,98,125,.12);color:var(--red)}} .result-pill.BE,.result-pill.EXPIRED{{background:rgba(255,189,89,.12);color:var(--amber)}} .progress{{display:flex;gap:5px;min-width:170px}} .step{{height:6px;flex:1;border-radius:9px;background:#173039}} .step.hit{{background:var(--teal);box-shadow:0 0 10px rgba(44,230,191,.3)}} .price-stack{{font-variant-numeric:tabular-nums}} .price-stack small{{display:block;color:var(--muted)}}
-    .result-layout{{display:grid;grid-template-columns:.72fr 1.28fr;gap:14px}} .distribution{{padding:20px}} .distribution h3{{margin:0 0 18px}} .bar-row{{margin:14px 0}} .bar-label{{display:flex;justify-content:space-between;color:#b8cecb;font-size:12px;margin-bottom:7px}} .bar{{height:8px;background:#173039;border-radius:99px;overflow:hidden}} .bar i{{display:block;height:100%;width:0;border-radius:99px;background:var(--color,var(--teal))}} .distribution-note{{color:var(--muted);font-size:11px;margin-top:18px}}
+    .result-layout{{display:grid;grid-template-columns:.72fr 1.28fr;gap:14px}} .distribution{{padding:20px}} .distribution h3{{margin:0 0 18px}} .bar-row{{margin:14px 0}} .bar-label{{display:flex;justify-content:space-between;color:#b8cecb;font-size:12px;margin-bottom:7px}} .bar{{height:8px;background:#173039;border-radius:99px;overflow:hidden}} .bar i{{display:block;height:100%;width:0;border-radius:99px;background:var(--color,var(--teal))}} .distribution-note{{color:var(--muted);font-size:11px;margin-top:18px}} .pagination{{display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;border-top:1px solid var(--line)}} .page-button{{border:1px solid var(--line);border-radius:9px;background:#091820;color:#c4d8d5;padding:7px 11px;cursor:pointer;font-weight:800}} .page-button:hover:not(:disabled){{border-color:var(--teal);color:var(--teal)}} .page-button:disabled{{opacity:.35;cursor:not-allowed}} .page-info{{color:var(--muted);font-size:11px;min-width:110px;text-align:center}}
     .health-grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}} .health-card{{border:1px solid var(--line);border-radius:15px;background:rgba(10,24,32,.82);padding:15px;min-height:150px}} .health-card-top{{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}} .health-card h3{{font-size:14px;margin:0}} .kind{{color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.07em;margin-top:3px}} .health-pill.GREEN{{color:var(--green);background:rgba(66,226,140,.12)}} .health-pill.YELLOW{{color:var(--amber);background:rgba(255,189,89,.12)}} .health-pill.RED{{color:var(--red);background:rgba(255,98,125,.12)}} .health-pill.UNKNOWN{{color:var(--muted);background:rgba(130,162,159,.12)}} .health-reason{{color:#9db6b3;font-size:12px;margin:14px 0}} .health-foot{{border-top:1px solid var(--line);padding-top:10px;color:var(--muted);font-size:11px}} .health-foot b{{color:#cce0dd;font-weight:750}} .empty{{padding:48px 20px;text-align:center;color:var(--muted)}}
     footer{{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;color:var(--muted);font-size:11px}}
     @media(max-width:1050px){{.hero{{grid-template-columns:1fr}}.kpis{{grid-template-columns:repeat(3,1fr)}}.system-grid{{grid-template-columns:repeat(2,1fr)}}.source-grid{{grid-template-columns:repeat(2,1fr)}}.health-grid{{grid-template-columns:repeat(2,1fr)}}.result-layout,.analytics-grid{{grid-template-columns:1fr}}}}
@@ -750,7 +764,7 @@ def render_dashboard(
 
     <section class="section" id="open"><div class="section-head"><div><h2>Açık İşlemler</h2><p>State dosyalarındaki halen açık gerçek kayıtlar</p></div><div id="openFilters" class="filters"></div></div><div class="panel"><div class="toolbar"><input id="searchInput" class="search" type="search" placeholder="Coin ara…" aria-label="Coin ara"><span class="badge" id="openCountBadge">0 kayıt</span></div><div class="table-wrap"><table><thead><tr><th>Sistem / Coin</th><th>Yön</th><th>Giriş / Son</th><th>TP1 / TP2 / TP3</th><th>Stop</th><th>İlerleme</th><th>Açılış</th></tr></thead><tbody id="openRows"></tbody></table><div id="openEmpty" class="empty" hidden>Açık işlem bulunmuyor.</div></div></div></section>
 
-    <section class="section" id="results"><div class="section-head"><div><h2>İşlem İnceleme Merkezi</h2><p>TP/SL geçmişini filtrele; canlı panelde coin adına tıklayarak işlemi gerçekleştiği mumlarda aç</p></div></div><div class="result-layout"><div class="panel distribution"><h3>Filtreli sonuç dağılımı</h3><div id="distribution"></div><p class="distribution-note">Net R yalnız kesin R değeri bulunan kayıtların toplamıdır. Farklı sistemlerin örnekleri ayrı ledger kaynaklarından gelir.</p></div><div class="panel"><div class="toolbar result-toolbar"><input id="resultSearch" class="search" type="search" placeholder="Geçmişte coin ara…" aria-label="Geçmişte coin ara"><select id="resultSystem" class="select-filter" aria-label="Sonuç sistemi"><option value="ALL">Tüm sistemler</option><option value="PREMIUM">Premium</option><option value="SCALP">Scalp</option><option value="PUMP_DUMP">Pump/Dump</option><option value="NEW_LISTING">Yeni Liste</option></select><select id="resultOutcome" class="select-filter" aria-label="İşlem sonucu"><option value="ALL">Tüm sonuçlar</option><option value="TP">TP</option><option value="SL">Stop / SL</option><option value="BE">Break-even</option><option value="EXPIRED">Süresi dolan</option></select><select id="resultWindow" class="select-filter" aria-label="Geçmiş dönemi"><option value="7D">7 gün</option><option value="30D">30 gün</option><option value="90D">90 gün</option><option value="ALL" selected>Tümü</option></select><span id="resultCountBadge" class="badge">0 kayıt</span></div><div class="table-wrap"><table><thead><tr><th>Sistem / Coin</th><th>Yön</th><th>Sonuç</th><th>Net R</th><th>Giriş / Çıkış</th><th>Kapanış</th></tr></thead><tbody id="resultRows"></tbody></table><div id="resultEmpty" class="empty" hidden>Bu filtrelerde kapanmış işlem bulunmuyor.</div></div></div></div></section>
+    <section class="section" id="results"><div class="section-head"><div><h2>İşlem İnceleme Merkezi</h2><p>TP/SL geçmişini filtrele; canlı panelde coin adına tıklayarak işlemi gerçekleştiği mumlarda aç</p></div></div><div class="result-layout"><div class="panel distribution"><h3>Filtreli sonuç dağılımı</h3><div id="distribution"></div><p class="distribution-note">Net R yalnız kesin R değeri bulunan kayıtların toplamıdır. Farklı sistemlerin örnekleri ayrı ledger kaynaklarından gelir.</p></div><div class="panel"><div class="toolbar result-toolbar"><input id="resultSearch" class="search" type="search" placeholder="Geçmişte coin ara…" aria-label="Geçmişte coin ara"><select id="resultSystem" class="select-filter" aria-label="Sonuç sistemi"><option value="ALL">Tüm sistemler</option><option value="PREMIUM">Premium</option><option value="SCALP">Scalp</option><option value="PUMP_DUMP">Pump/Dump</option><option value="NEW_LISTING">Yeni Liste</option></select><select id="resultOutcome" class="select-filter" aria-label="İşlem sonucu"><option value="ALL">Tüm sonuçlar</option><option value="TP">TP</option><option value="SL">Stop / SL</option><option value="BE">Break-even</option><option value="EXPIRED">Süresi dolan</option></select><select id="resultWindow" class="select-filter" aria-label="Geçmiş dönemi"><option value="7D">7 gün</option><option value="30D">30 gün</option><option value="90D">90 gün</option><option value="ALL" selected>Tümü</option></select><select id="resultPageSize" class="select-filter" aria-label="Sayfadaki işlem sayısı"><option value="20" selected>20 / sayfa</option><option value="50">50 / sayfa</option></select><span id="resultCountBadge" class="badge">0 kayıt</span></div><div class="table-wrap"><table><thead><tr><th>Sistem / Coin</th><th>Yön</th><th>Sonuç</th><th>Net R</th><th>Giriş / Çıkış</th><th>Kapanış</th></tr></thead><tbody id="resultRows"></tbody></table><div id="resultEmpty" class="empty" hidden>Bu filtrelerde kapanmış işlem bulunmuyor.</div></div><div id="resultPagination" class="pagination"><button id="resultPrev" class="page-button" type="button">← Önceki</button><span id="resultPageInfo" class="page-info">1 / 1</span><button id="resultNext" class="page-button" type="button">Sonraki →</button></div></div></div></section>
 
     <section class="section" id="health"><div class="section-head"><div><h2>System Control Sağlığı</h2><p>Teknik çalışma durumu performans kararından ayrı gösterilir</p></div><div id="healthFilters" class="filters"></div></div><div id="healthGrid" class="health-grid"></div></section>
 
@@ -759,7 +773,7 @@ def render_dashboard(
   <script{nonce_attr}>
     {data_declaration}
     const SYSTEMS = ["ALL","PREMIUM","SCALP","PUMP_DUMP","NEW_LISTING"];
-    const state = {{ openSystem:"ALL", healthKind:"ALL", query:"", performanceWindow:"ALL", resultSystem:"ALL", resultOutcome:"ALL", resultWindow:"ALL", resultQuery:"" }};
+    const state = {{ openSystem:"ALL", healthKind:"ALL", query:"", performanceWindow:"ALL", resultSystem:"ALL", resultOutcome:"ALL", resultWindow:"ALL", resultQuery:"", resultPage:1, resultPageSize:20 }};
     const labels = {{ALL:"Tümü",PREMIUM:"Premium",SCALP:"Scalp",PUMP_DUMP:"Pump/Dump",NEW_LISTING:"Yeni Liste",LIVE_SIGNAL:"Canlı",RADAR:"Radar",SHADOW:"Gölge",ANALYSIS:"Analiz",INTEGRATED_ANALYSIS:"Entegre",GUARD:"Koruma"}};
     const e = value => String(value ?? "—").replace(/[&<>"']/g, ch => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[ch]));
     const fmtPrice = value => {{ const n=Number(value); if(!Number.isFinite(n)) return "—"; const a=Math.abs(n); const digits=a>=100?2:a>=1?4:a>=.01?6:10; return n.toLocaleString("tr-TR",{{maximumFractionDigits:digits}}); }};
@@ -853,11 +867,16 @@ def render_dashboard(
     function renderResults() {{
       const query=state.resultQuery.trim().toUpperCase(),days={{"7D":7,"30D":30,"90D":90}}[state.resultWindow]||0,cutoff=days?Number(DASHBOARD_DATA.generated_at)-days*86400:0;
       const outcomeMatches=(outcome,group)=>group==="ALL"||(group==="TP"&&String(outcome).startsWith("TP")&&!String(outcome).includes("BE"))||(group==="BE"&&(outcome==="BE"||String(outcome).includes("SONRASI_BE")))||outcome===group;
-      const rows=DASHBOARD_DATA.recent_results.filter(r=>(state.resultSystem==="ALL"||r.system===state.resultSystem)&&outcomeMatches(r.outcome,state.resultOutcome)&&(!cutoff||Number(r.closed_at)>=cutoff)&&(!query||String(r.symbol).includes(query)));
-      document.getElementById("resultCountBadge").textContent=`${{rows.length}} kayıt`;
-      document.getElementById("resultEmpty").hidden=rows.length>0;
+      const filteredRows=DASHBOARD_DATA.recent_results.filter(r=>(state.resultSystem==="ALL"||r.system===state.resultSystem)&&outcomeMatches(r.outcome,state.resultOutcome)&&(!cutoff||Number(r.closed_at)>=cutoff)&&(!query||String(r.symbol).includes(query)));
+      const totalPages=Math.max(1,Math.ceil(filteredRows.length/state.resultPageSize));state.resultPage=Math.min(Math.max(1,state.resultPage),totalPages);const start=(state.resultPage-1)*state.resultPageSize,rows=filteredRows.slice(start,start+state.resultPageSize);
+      document.getElementById("resultCountBadge").textContent=filteredRows.length?`${{start+1}}–${{start+rows.length}} / ${{filteredRows.length}} kayıt`:"0 kayıt";
+      document.getElementById("resultEmpty").hidden=filteredRows.length>0;
+      document.getElementById("resultPageInfo").textContent=`Sayfa ${{state.resultPage}} / ${{totalPages}}`;
+      document.getElementById("resultPrev").disabled=state.resultPage<=1;
+      document.getElementById("resultNext").disabled=state.resultPage>=totalPages;
+      document.getElementById("resultPagination").hidden=filteredRows.length===0;
       document.getElementById("resultRows").innerHTML=rows.map(r=>`<tr><td>${{MARKET_ENDPOINT&&r.closed_at?`<button type="button" class="symbol-button" data-market-kind="closed" data-market-trade-id="${{e(r.id)}}" data-market-symbol="${{e(r.symbol)}}">${{e(r.symbol)}}</button>`:`<span class="symbol">${{e(r.symbol)}}</span>`}}<span class="sub">${{e(r.system_label)}} · ${{e(r.source)}}</span></td><td><span class="direction ${{e(r.direction)}}">${{e(r.direction)}}</span></td><td><span class="result-pill ${{outcomeClass(r.outcome)}}">${{e(r.outcome)}}</span></td><td>${{fmtR(r.r_result)}}</td><td class="price-stack">${{fmtPrice(r.entry)}}<small>Çıkış: ${{fmtPrice(r.exit_price)}}</small></td><td>${{fmtDate(r.closed_at)}}</td></tr>`).join("");
-      const counts=rows.reduce((acc,row)=>{{acc[row.outcome]=(acc[row.outcome]||0)+1;return acc;}},{{}}), total=rows.length||1;
+      const counts=filteredRows.reduce((acc,row)=>{{acc[row.outcome]=(acc[row.outcome]||0)+1;return acc;}},{{}}), total=filteredRows.length||1;
       const groups=[
         ["TP",Object.entries(counts).filter(([k])=>k.startsWith("TP")&&!k.includes("BE")).reduce((a,[,v])=>a+v,0),"#42e28c"],
         ["Break-even",Object.entries(counts).filter(([k])=>k==="BE"||k.includes("SONRASI_BE")).reduce((a,[,v])=>a+v,0),"#ffbd59"],
@@ -876,10 +895,13 @@ def render_dashboard(
 
     document.getElementById("searchInput").addEventListener("input",event=>{{state.query=event.target.value;renderOpen();}});
     document.getElementById("performanceWindow").addEventListener("change",event=>{{state.performanceWindow=event.target.value;renderPerformance();}});
-    document.getElementById("resultSearch").addEventListener("input",event=>{{state.resultQuery=event.target.value;renderResults();}});
-    document.getElementById("resultSystem").addEventListener("change",event=>{{state.resultSystem=event.target.value;renderResults();}});
-    document.getElementById("resultOutcome").addEventListener("change",event=>{{state.resultOutcome=event.target.value;renderResults();}});
-    document.getElementById("resultWindow").addEventListener("change",event=>{{state.resultWindow=event.target.value;renderResults();}});
+    document.getElementById("resultSearch").addEventListener("input",event=>{{state.resultQuery=event.target.value;state.resultPage=1;renderResults();}});
+    document.getElementById("resultSystem").addEventListener("change",event=>{{state.resultSystem=event.target.value;state.resultPage=1;renderResults();}});
+    document.getElementById("resultOutcome").addEventListener("change",event=>{{state.resultOutcome=event.target.value;state.resultPage=1;renderResults();}});
+    document.getElementById("resultWindow").addEventListener("change",event=>{{state.resultWindow=event.target.value;state.resultPage=1;renderResults();}});
+    document.getElementById("resultPageSize").addEventListener("change",event=>{{state.resultPageSize=Number(event.target.value)||20;state.resultPage=1;renderResults();}});
+    document.getElementById("resultPrev").addEventListener("click",()=>{{state.resultPage=Math.max(1,state.resultPage-1);renderResults();document.getElementById("results").scrollIntoView({{behavior:"smooth",block:"start"}});}});
+    document.getElementById("resultNext").addEventListener("click",()=>{{state.resultPage+=1;renderResults();document.getElementById("results").scrollIntoView({{behavior:"smooth",block:"start"}});}});
 {market_script}
 {bootstrap_script}
     let resizeTimer=null;
