@@ -1,7 +1,7 @@
 # Şifreli Canlı Kripto Kontrol Paneli
 
 Panel, private GitHub reposundaki gerçek JSON state ve ledger dosyalarını
-sunucu tarafında okur. Tarayıcı açıkken her 30 saniyede bir yenilenir. V1.2;
+sunucu tarafında okur. Tarayıcı açıkken her 30 saniyede bir yenilenir. V1.2.1;
 sistem bazlı performans analitiği, veri kaynağı güncellik kontrolü ve canlı
 coin/işlem grafiği içerir.
 
@@ -38,7 +38,13 @@ coin/işlem grafiği içerir.
 - Kapanmış işlem grafiğinde Giriş, TP1–TP3, SL ve Çıkış seviyeleri
 - 7, 30, 90 gün veya tüm kayıtlar için ayrı performans görünümü
 - Coin, sistem, sonuç ve dönem bazlı işlem geçmişi filtreleri
+- Uzun işlem geçmişinde 20/50 kayıt seçenekli önceki/sonraki sayfalama
 - System Control teknik sağlık durumu
+
+State dosyalarının uzun süre değişmemesi tek başına workflow arızası sayılmaz;
+teknik kritik sağlık kararı System Control raporundan gelir. Scalp state içindeki
+`last_sent`, `early_last_sent` ve `prewatch_last_sent` zamanları veri güncelliği
+hesabına katılır.
 
 Canlı mumlar sunucu tarafındaki `/api/market/candles` adresinden gelir. Bu
 adres de panel oturumu gerektirir, sembol ve periyot doğrular ve aynı isteği
