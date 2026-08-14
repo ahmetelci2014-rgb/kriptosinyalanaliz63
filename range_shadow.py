@@ -1185,7 +1185,7 @@ def archive_closed_positions(ledger: Dict[str, Any]) -> int:
     ledger["closed_positions"] = closed[move_count:]
 
     meta = ledger.setdefault("archive_meta", {})
-    meta["archived_total"] = safe_int(meta.get("archived_total")) + move_count
+    meta["archived_total"] = int(safe_float(meta.get("archived_total"), 0)) + move_count
     meta["stored_compact_records"] = len(ledger["archived_positions"])
     meta["last_archived_at"] = now_ts()
     return move_count
