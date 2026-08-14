@@ -1,4 +1,4 @@
-name: Portfolio Risk Outcome Shadow v1.1
+name: Portfolio Risk Outcome Shadow v1.2
 
 on:
   schedule:
@@ -42,7 +42,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add portfolio_risk_outcomes.json
+          git add portfolio_risk_shadow.json portfolio_risk_outcomes.json
           if git diff --cached --quiet; then
             echo "Portfolio risk outcome değişikliği yok."
             exit 0
