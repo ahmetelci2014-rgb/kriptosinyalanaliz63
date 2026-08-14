@@ -17,6 +17,7 @@ on:
       - "dashboard_home_app.py"
       - "dashboard_notify_app.py"
       - "dashboard_alert_app.py"
+      - "dashboard_watchlist_app.py"
       - "test_dashboard_builder.py"
       - "test_dashboard_live_app.py"
       - "test_dashboard_accounts_app.py"
@@ -27,6 +28,7 @@ on:
       - "test_dashboard_home_app.py"
       - "test_dashboard_notify_app.py"
       - "test_dashboard_alert_app.py"
+      - "test_dashboard_watchlist_app.py"
       - "Dockerfile.dashboard"
       - ".dockerignore"
       - "render.yaml"
@@ -46,6 +48,7 @@ on:
       - "dashboard_home_app.py"
       - "dashboard_notify_app.py"
       - "dashboard_alert_app.py"
+      - "dashboard_watchlist_app.py"
       - "test_dashboard_builder.py"
       - "test_dashboard_live_app.py"
       - "test_dashboard_accounts_app.py"
@@ -56,6 +59,7 @@ on:
       - "test_dashboard_home_app.py"
       - "test_dashboard_notify_app.py"
       - "test_dashboard_alert_app.py"
+      - "test_dashboard_watchlist_app.py"
       - "Dockerfile.dashboard"
       - ".dockerignore"
       - "render.yaml"
@@ -96,6 +100,7 @@ jobs:
             dashboard_home_app.py \
             dashboard_notify_app.py \
             dashboard_alert_app.py \
+            dashboard_watchlist_app.py \
             test_dashboard_builder.py \
             test_dashboard_live_app.py \
             test_dashboard_accounts_app.py \
@@ -105,7 +110,8 @@ jobs:
             test_dashboard_focus_app.py \
             test_dashboard_home_app.py \
             test_dashboard_notify_app.py \
-            test_dashboard_alert_app.py
+            test_dashboard_alert_app.py \
+            test_dashboard_watchlist_app.py
 
       - name: Statik ve canlı panel testlerini çalıştır
         run: |
@@ -119,7 +125,8 @@ jobs:
             test_dashboard_focus_app.py \
             test_dashboard_home_app.py \
             test_dashboard_notify_app.py \
-            test_dashboard_alert_app.py
+            test_dashboard_alert_app.py \
+            test_dashboard_watchlist_app.py
 
       - name: Render Docker imajını doğrula
         run: docker build -f Dockerfile.dashboard -t kripto-panel-ci .
@@ -140,15 +147,16 @@ jobs:
           {
             echo "## Kripto Kontrol Paneli doğrulandı"
             echo ""
-            echo "V2.4 sesli/renkli canlı uyarı, V2.3 Bildirim Merkezi, V2.2 akıllı ana sayfa, hızlı coin analiz çekmecesi, üyelik/yönetim, canlı piyasa merkezi ve Docker build testleri başarılı."
+            echo "V2.5 İzleme Listesi, V2.4 sesli/renkli canlı uyarı, V2.3 Bildirim Merkezi, akıllı ana sayfa, hızlı coin analiz çekmecesi, üyelik/yönetim, canlı piyasa merkezi ve Docker build testleri başarılı."
             echo "Artifact yalnız acil durum anlık görüntüsüdür; canlı panel değildir."
             echo ""
             echo "- Sinyal/strateji davranışı değişmez"
             echo "- Telegram gönderim mantığı değişmez"
+            echo "- İzleme Listesi favorileri yalnız tarayıcı localStorage alanındadır"
+            echo "- İzleme fiyatları OKX public market overview verisinden gelir"
+            echo "- RSI/EMA/hacim özeti yalnız OKX public 15m mumlarından panel içinde hesaplanır"
             echo "- Sesli uyarı kullanıcı tarafından açılır ve yalnız tarayıcı Web Audio kullanır"
             echo "- Renkli toast uyarıları yalnız mevcut panel verilerinden üretilir"
-            echo "- Okunmuş/okunmamış, ses tercihi ve favoriler yalnız tarayıcı localStorage alanındadır"
-            echo "- Coin analiz göstergeleri yalnız OKX public mumlarından panel içinde hesaplanır"
             echo "- Eski ayrıntılı panel /advanced altında korunur"
             echo "- Private GitHub anahtarları yalnız sunucu tarafında"
             echo "- Kullanıcı şifreleri yalnız PBKDF2 özet olarak saklanır"
