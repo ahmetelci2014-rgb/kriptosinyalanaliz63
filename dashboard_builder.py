@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
-VERSION = "KRIPTO_KONTROL_PANELI_V1_2_1_2026_08_14"
+VERSION = "KRIPTO_KONTROL_PANELI_V1_3_2026_08_14"
 TR_TIMEZONE = timezone(timedelta(hours=3))
 
 SOURCE_SPECS = (
@@ -294,6 +294,28 @@ def normalize_open_trade(system: str, record: dict[str, Any], fallback_id: str) 
     else:
         progress = "AÇIK"
 
+    entry = safe_float(first_value(record, ("entry", "analysis_entry", "alert_price")))
+    tp1 = safe_float(record.get("tp1"))
+    tp2 = safe_float(record.get("tp2"))
+    tp3 = safe_float(record.get("tp3"))
+    sl = safe_float(record.get("sl"))
+    risk_distance = abs(entry - sl) if entry not in (None, 0) and sl is not None else None
+    stop_percent = (
+        round(risk_distance / abs(entry) * 100, 4)
+        if risk_distance is not None and entry
+        else None
+    )
+    tp1_rr = (
+        round(abs(tp1 - entry) / risk_distance, 4)
+        if tp1 is not None and entry is not None and risk_distance
+        else None
+    )
+    tp3_rr = (
+        round(abs(tp3 - entry) / risk_distance, 4)
+        if tp3 is not None and entry is not None and risk_distance
+        else None
+    )
+
     return {
         "id": str(first_value(record, ("trade_id", "performance_record_id", "id", "record_id"), fallback_id)),
         "system": system,
@@ -301,11 +323,14 @@ def normalize_open_trade(system: str, record: dict[str, Any], fallback_id: str) 
         "symbol": display_symbol(record),
         "direction": str(record.get("direction") or "—").upper(),
         "source": str(first_value(record, ("setup", "setup_name", "source", "alert_type"), "—")),
-        "entry": safe_float(first_value(record, ("entry", "analysis_entry", "alert_price"))),
-        "tp1": safe_float(record.get("tp1")),
-        "tp2": safe_float(record.get("tp2")),
-        "tp3": safe_float(record.get("tp3")),
-        "sl": safe_float(record.get("sl")),
+        "entry": entry,
+        "tp1": tp1,
+        "tp2": tp2,
+        "tp3": tp3,
+        "sl": sl,
+        "stop_percent": stop_percent,
+        "tp1_rr": tp1_rr,
+        "tp3_rr": tp3_rr,
         "last_price": safe_float(first_value(record, ("last_market_price", "latest_price", "price"))),
         "score": safe_float(record.get("score")),
         "opened_at": record_timestamp(record, "opened_at", "sent_at", "recorded_at", "first_seen_at"),
@@ -313,6 +338,49 @@ def normalize_open_trade(system: str, record: dict[str, Any], fallback_id: str) 
         "tp2_hit": tp2_hit,
         "tp3_hit": tp3_hit,
         "progress": progress,
+    }
+
+
+def build_open_risk_summary(open_trades: list[dict[str, Any]]) -> dict[str, Any]:
+    directions = Counter(row.get("direction") for row in open_trades)
+    systems = Counter(row.get("system") for row in open_trades)
+    stop_rows = [
+        row for row in open_trades
+        if row.get("stop_percent") is not None
+    ]
+    stop_values = [float(row["stop_percent"]) for row in stop_rows]
+    tp1_values = [
+        float(row["tp1_rr"])
+        for row in open_trades
+        if row.get("tp1_rr") is not None
+    ]
+    tp3_values = [
+        float(row["tp3_rr"])
+        for row in open_trades
+        if row.get("tp3_rr") is not None
+    ]
+    widest = max(stop_rows, key=lambda row: float(row["stop_percent"])) if stop_rows else None
+    return {
+        "total": len(open_trades),
+        "long": int(directions.get("LONG", 0)),
+        "short": int(directions.get("SHORT", 0)),
+        "unknown_direction": len(open_trades) - int(directions.get("LONG", 0)) - int(directions.get("SHORT", 0)),
+        "with_stop": len(stop_rows),
+        "missing_stop": len(open_trades) - len(stop_rows),
+        "average_stop_percent": round(sum(stop_values) / len(stop_values), 4) if stop_values else None,
+        "max_stop_percent": round(max(stop_values), 4) if stop_values else None,
+        "widest_stop_symbol": widest.get("symbol") if widest else None,
+        "wide_stop_count": sum(1 for value in stop_values if value > 2.0),
+        "average_tp1_rr": round(sum(tp1_values) / len(tp1_values), 4) if tp1_values else None,
+        "average_tp3_rr": round(sum(tp3_values) / len(tp3_values), 4) if tp3_values else None,
+        "systems": [
+            {
+                "system": system,
+                "label": SYSTEM_LABELS[system],
+                "count": int(systems.get(system, 0)),
+            }
+            for system in SYSTEM_LABELS
+        ],
     }
 
 
@@ -465,6 +533,7 @@ def build_dashboard_data(root: Path | str, now: datetime | None = None) -> dict[
     open_trades = collect_open_trades(root, warnings)
     closed_results = collect_closed_results(root, warnings)
     health = collect_health(root, warnings)
+    open_risk = build_open_risk_summary(open_trades)
 
     open_counts = Counter(row["system"] for row in open_trades)
     outcome_counts = Counter(row["outcome"] for row in closed_results)
@@ -529,6 +598,7 @@ def build_dashboard_data(root: Path | str, now: datetime | None = None) -> dict[
             "exact_r_sample": len(exact_r),
         },
         "live_systems": live_systems,
+        "open_risk": open_risk,
         "open_trades": open_trades[:120],
         "recent_results": closed_results[:500],
         "outcome_counts": dict(sorted(outcome_counts.items())),
@@ -591,7 +661,7 @@ def render_dashboard(
       const warningBox=document.getElementById("qualityWarning");
       warningBox.classList.remove("show");
       warningBox.textContent="";
-      initHeader(); renderKpis(); renderSystems(); renderPerformance(); renderSources(); renderOpen(); renderResults(); renderHealth();
+      initHeader(); renderKpis(); renderSystems(); renderRisk(); renderPerformance(); renderSources(); renderOpen(); renderResults(); renderHealth();
     }
 
     function setConnection(status, text) {
@@ -632,7 +702,7 @@ def render_dashboard(
         eyebrow = "Birleşik operasyon görünümü"
         bootstrap_script = (
             "    initHeader(); renderKpis(); renderSystems(); "
-            "renderPerformance(); renderSources(); renderOpen(); renderResults(); renderHealth();"
+            "renderRisk(); renderPerformance(); renderSources(); renderOpen(); renderResults(); renderHealth();"
         )
 
     market_section = ""
@@ -736,15 +806,16 @@ def render_dashboard(
     .kpis{{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:32px}} .kpi{{border:1px solid var(--line);border-radius:var(--radius);background:rgba(10,24,32,.9);padding:18px;min-height:112px;position:relative;overflow:hidden}} .kpi:after{{content:"";position:absolute;right:-20px;bottom:-35px;width:90px;height:90px;border-radius:50%;background:var(--accent,var(--teal));filter:blur(40px);opacity:.12}} .kpi label{{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em;font-weight:800}} .kpi strong{{font-size:30px;line-height:1.2;display:block;margin-top:10px}} .kpi small{{color:#8eaaa7}} .kpi.open{{--accent:var(--blue)}} .kpi.tp{{--accent:var(--green)}} .kpi.sl{{--accent:var(--red)}} .kpi.be{{--accent:var(--amber)}}
     .section{{margin-top:32px}} .section-head{{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:14px}} .section-head h2{{margin:0;font-size:22px;letter-spacing:-.025em}} .section-head p{{color:var(--muted);margin:4px 0 0;font-size:13px}} .filters{{display:flex;gap:7px;flex-wrap:wrap}} .filter{{border:1px solid var(--line);color:#91aaa7;background:#091820;border-radius:999px;padding:7px 11px;cursor:pointer;font-weight:750;font-size:12px}} .filter:hover,.filter.active{{color:#04110e;background:var(--teal);border-color:var(--teal)}} .select-filter{{border:1px solid var(--line);color:#c4d8d5;background:#091820;border-radius:10px;padding:8px 10px;outline:none;font-weight:750;font-size:12px}} .select-filter:focus{{border-color:var(--teal)}}
     .system-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}} .system-card{{border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(150deg,rgba(13,32,41,.92),rgba(8,21,28,.88));padding:18px}} .system-top{{display:flex;align-items:center;justify-content:space-between}} .system-card h3{{margin:13px 0 5px;font-size:17px}} .system-card .open-number{{font-size:25px;font-weight:850}} .system-card .caption{{color:var(--muted);font-size:12px}} .decision{{margin-top:15px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:#b9cecb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+    .risk-panel{{padding:16px}} .risk-grid{{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}} .risk-card{{border:1px solid var(--line);border-radius:14px;background:rgba(10,24,32,.82);padding:14px;min-height:105px}} .risk-card label{{display:block;color:var(--muted);font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.08em}} .risk-card strong{{display:block;font-size:23px;margin-top:9px}} .risk-card small{{color:var(--muted)}} .risk-systems{{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}} .risk-system{{border:1px solid rgba(25,52,63,.72);border-radius:11px;padding:9px 11px;display:flex;justify-content:space-between;color:var(--muted);font-size:11px}} .risk-system b{{color:var(--text)}} .risk-note{{margin-top:12px;color:var(--muted);font-size:11px}} .risk-note.attention{{color:var(--amber)}}
     .analytics-grid{{display:grid;grid-template-columns:.92fr 1.58fr;gap:14px}} .perf-grid{{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}} .perf-card{{border:1px solid var(--line);border-radius:14px;background:rgba(10,24,32,.82);padding:14px}} .perf-card h3{{margin:0;font-size:13px}} .perf-number{{font-size:23px;font-weight:850;margin:8px 0 2px}} .perf-meta{{display:flex;gap:9px;flex-wrap:wrap;color:var(--muted);font-size:11px}} .canvas-panel{{padding:16px;min-height:300px}} .canvas-head{{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:10px}} .canvas-head h3{{margin:0}} .canvas-head p{{margin:3px 0 0;color:var(--muted);font-size:11px}} .canvas-wrap{{position:relative;width:100%;min-height:240px}} .canvas-wrap canvas{{display:block;width:100%;height:100%}}
     .source-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}} .source-card{{border:1px solid var(--line);border-radius:14px;background:rgba(10,24,32,.78);padding:14px;min-height:120px}} .source-card-top{{display:flex;justify-content:space-between;gap:8px;align-items:start}} .source-card h3{{font-size:12px;margin:0}} .source-file{{color:var(--muted);font-size:10px;margin-top:4px;word-break:break-all}} .source-age{{font-size:18px;font-weight:850;margin-top:14px}} .source-card.FRESH{{border-color:rgba(66,226,140,.28)}} .source-card.STALE{{border-color:rgba(255,189,89,.35)}} .source-card.ERROR{{border-color:rgba(255,98,125,.4)}} .source-status{{font-size:9px;font-weight:900;border-radius:999px;padding:4px 7px}} .source-status.FRESH{{background:rgba(66,226,140,.12);color:var(--green)}} .source-status.STALE{{background:rgba(255,189,89,.12);color:var(--amber)}} .source-status.ERROR{{background:rgba(255,98,125,.12);color:var(--red)}} .source-status.UNKNOWN{{background:rgba(130,162,159,.12);color:var(--muted)}}
     .chart-panel{{padding:16px}} .market-controls{{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin-bottom:14px}} .market-controls label{{display:grid;gap:5px;color:var(--muted);font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.08em}} .market-controls input,.market-controls select{{border:1px solid var(--line);border-radius:10px;background:#061219;color:var(--text);padding:10px 11px;outline:none;min-width:160px}} .market-controls select{{min-width:100px}} .market-controls input:focus,.market-controls select:focus{{border-color:var(--teal)}} .market-button{{border:0;border-radius:10px;background:var(--teal);color:#03110e;font-weight:900;padding:11px 15px;cursor:pointer}} .market-canvas{{height:440px;border:1px solid rgba(25,52,63,.72);border-radius:12px;background:#07151c;overflow:hidden}} .chart-legend{{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-top:10px}} .symbol-button{{border:0;padding:0;background:none;color:var(--teal);font-weight:850;letter-spacing:.02em;cursor:pointer;text-align:left}} .symbol-button:hover{{text-decoration:underline}}
-    .panel{{border:1px solid var(--line);border-radius:var(--radius);background:rgba(9,23,31,.9);overflow:hidden}} .toolbar{{padding:12px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}} .result-toolbar{{justify-content:flex-start;flex-wrap:wrap}} .result-toolbar .search{{margin-right:auto}} .search{{width:min(300px,100%);border:1px solid var(--line);border-radius:10px;background:#061219;color:var(--text);padding:9px 11px;outline:none}} .search:focus{{border-color:var(--teal)}} .table-wrap{{overflow:auto}} table{{border-collapse:collapse;width:100%;min-width:960px}} th{{text-align:left;color:#789894;font-size:10px;text-transform:uppercase;letter-spacing:.1em;background:#08171e}} th,td{{padding:13px 14px;border-bottom:1px solid rgba(25,52,63,.72)}} tbody tr:hover{{background:rgba(44,230,191,.035)}} tbody tr:last-child td{{border-bottom:0}} .symbol{{font-weight:850;letter-spacing:.02em}} .sub{{display:block;color:var(--muted);font-size:11px;margin-top:2px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}} .direction,.result-pill,.health-pill{{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:850;letter-spacing:.05em}} .direction.LONG{{background:rgba(66,226,140,.12);color:var(--green)}} .direction.SHORT{{background:rgba(255,98,125,.12);color:#ff8ca0}} .result-pill.TP{{background:rgba(66,226,140,.12);color:var(--green)}} .result-pill.SL{{background:rgba(255,98,125,.12);color:var(--red)}} .result-pill.BE,.result-pill.EXPIRED{{background:rgba(255,189,89,.12);color:var(--amber)}} .progress{{display:flex;gap:5px;min-width:170px}} .step{{height:6px;flex:1;border-radius:9px;background:#173039}} .step.hit{{background:var(--teal);box-shadow:0 0 10px rgba(44,230,191,.3)}} .price-stack{{font-variant-numeric:tabular-nums}} .price-stack small{{display:block;color:var(--muted)}}
+    .panel{{border:1px solid var(--line);border-radius:var(--radius);background:rgba(9,23,31,.9);overflow:hidden}} .toolbar{{padding:12px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}} .result-toolbar{{justify-content:flex-start;flex-wrap:wrap}} .result-toolbar .search{{margin-right:auto}} .export-button{{border:1px solid rgba(44,230,191,.38);border-radius:10px;background:rgba(44,230,191,.08);color:var(--teal);padding:8px 11px;cursor:pointer;font-weight:850;font-size:12px}} .export-button:hover{{background:var(--teal);color:#03110e}} .search{{width:min(300px,100%);border:1px solid var(--line);border-radius:10px;background:#061219;color:var(--text);padding:9px 11px;outline:none}} .search:focus{{border-color:var(--teal)}} .table-wrap{{overflow:auto}} table{{border-collapse:collapse;width:100%;min-width:960px}} th{{text-align:left;color:#789894;font-size:10px;text-transform:uppercase;letter-spacing:.1em;background:#08171e}} th,td{{padding:13px 14px;border-bottom:1px solid rgba(25,52,63,.72)}} tbody tr:hover{{background:rgba(44,230,191,.035)}} tbody tr:last-child td{{border-bottom:0}} .symbol{{font-weight:850;letter-spacing:.02em}} .sub{{display:block;color:var(--muted);font-size:11px;margin-top:2px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}} .direction,.result-pill,.health-pill{{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:850;letter-spacing:.05em}} .direction.LONG{{background:rgba(66,226,140,.12);color:var(--green)}} .direction.SHORT{{background:rgba(255,98,125,.12);color:#ff8ca0}} .result-pill.TP{{background:rgba(66,226,140,.12);color:var(--green)}} .result-pill.SL{{background:rgba(255,98,125,.12);color:var(--red)}} .result-pill.BE,.result-pill.EXPIRED{{background:rgba(255,189,89,.12);color:var(--amber)}} .progress{{display:flex;gap:5px;min-width:170px}} .step{{height:6px;flex:1;border-radius:9px;background:#173039}} .step.hit{{background:var(--teal);box-shadow:0 0 10px rgba(44,230,191,.3)}} .price-stack{{font-variant-numeric:tabular-nums}} .price-stack small{{display:block;color:var(--muted)}}
     .result-layout{{display:grid;grid-template-columns:.72fr 1.28fr;gap:14px}} .distribution{{padding:20px}} .distribution h3{{margin:0 0 18px}} .bar-row{{margin:14px 0}} .bar-label{{display:flex;justify-content:space-between;color:#b8cecb;font-size:12px;margin-bottom:7px}} .bar{{height:8px;background:#173039;border-radius:99px;overflow:hidden}} .bar i{{display:block;height:100%;width:0;border-radius:99px;background:var(--color,var(--teal))}} .distribution-note{{color:var(--muted);font-size:11px;margin-top:18px}} .pagination{{display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;border-top:1px solid var(--line)}} .page-button{{border:1px solid var(--line);border-radius:9px;background:#091820;color:#c4d8d5;padding:7px 11px;cursor:pointer;font-weight:800}} .page-button:hover:not(:disabled){{border-color:var(--teal);color:var(--teal)}} .page-button:disabled{{opacity:.35;cursor:not-allowed}} .page-info{{color:var(--muted);font-size:11px;min-width:110px;text-align:center}}
     .health-grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}} .health-card{{border:1px solid var(--line);border-radius:15px;background:rgba(10,24,32,.82);padding:15px;min-height:150px}} .health-card-top{{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}} .health-card h3{{font-size:14px;margin:0}} .kind{{color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.07em;margin-top:3px}} .health-pill.GREEN{{color:var(--green);background:rgba(66,226,140,.12)}} .health-pill.YELLOW{{color:var(--amber);background:rgba(255,189,89,.12)}} .health-pill.RED{{color:var(--red);background:rgba(255,98,125,.12)}} .health-pill.UNKNOWN{{color:var(--muted);background:rgba(130,162,159,.12)}} .health-reason{{color:#9db6b3;font-size:12px;margin:14px 0}} .health-foot{{border-top:1px solid var(--line);padding-top:10px;color:var(--muted);font-size:11px}} .health-foot b{{color:#cce0dd;font-weight:750}} .empty{{padding:48px 20px;text-align:center;color:var(--muted)}}
     footer{{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;color:var(--muted);font-size:11px}}
-    @media(max-width:1050px){{.hero{{grid-template-columns:1fr}}.kpis{{grid-template-columns:repeat(3,1fr)}}.system-grid{{grid-template-columns:repeat(2,1fr)}}.source-grid{{grid-template-columns:repeat(2,1fr)}}.health-grid{{grid-template-columns:repeat(2,1fr)}}.result-layout,.analytics-grid{{grid-template-columns:1fr}}}}
-    @media(max-width:680px){{.shell{{width:min(100% - 20px,1480px)}}.topbar{{height:auto;min-height:70px;padding:10px 0}}.brand small,.top-actions .badge:nth-child(2){{display:none}}main{{padding-top:24px}}.hero-copy{{padding:24px}}.health-hero{{justify-content:flex-start}}.kpis{{grid-template-columns:repeat(2,1fr)}}.kpi:last-child{{grid-column:1/-1}}.system-grid,.health-grid,.source-grid,.perf-grid{{grid-template-columns:1fr}}.section-head{{align-items:flex-start;flex-direction:column}}.toolbar{{align-items:stretch;flex-direction:column}}.search{{width:100%}}.market-controls>*{{width:100%}}.market-controls input,.market-controls select{{width:100%}}.market-canvas{{height:360px}}footer{{flex-direction:column}}}}
+    @media(max-width:1050px){{.hero{{grid-template-columns:1fr}}.kpis{{grid-template-columns:repeat(3,1fr)}}.system-grid{{grid-template-columns:repeat(2,1fr)}}.risk-grid{{grid-template-columns:repeat(3,1fr)}}.risk-systems{{grid-template-columns:repeat(2,1fr)}}.source-grid{{grid-template-columns:repeat(2,1fr)}}.health-grid{{grid-template-columns:repeat(2,1fr)}}.result-layout,.analytics-grid{{grid-template-columns:1fr}}}}
+    @media(max-width:680px){{.shell{{width:min(100% - 20px,1480px)}}.topbar{{height:auto;min-height:70px;padding:10px 0}}.brand small,.top-actions .badge:nth-child(2){{display:none}}main{{padding-top:24px}}.hero-copy{{padding:24px}}.health-hero{{justify-content:flex-start}}.kpis{{grid-template-columns:repeat(2,1fr)}}.kpi:last-child{{grid-column:1/-1}}.system-grid,.health-grid,.source-grid,.perf-grid,.risk-grid,.risk-systems{{grid-template-columns:1fr}}.section-head{{align-items:flex-start;flex-direction:column}}.toolbar{{align-items:stretch;flex-direction:column}}.search{{width:100%}}.market-controls>*{{width:100%}}.market-controls input,.market-controls select{{width:100%}}.market-canvas{{height:360px}}footer{{flex-direction:column}}}}
   </style>
 </head>
 <body>
@@ -756,6 +827,8 @@ def render_dashboard(
 
     <section class="section"><div class="section-head"><div><h2>Canlı Sistemler</h2><p>Gerçek işlem sinyali üreten veya gerçek sinyal takibi yapan katmanlar</p></div></div><div id="systemGrid" class="system-grid"></div></section>
 
+    <section class="section" id="risk"><div class="section-head"><div><h2>Açık Risk Özeti</h2><p>Açık kayıtların yön, stop mesafesi ve hedef/risk görünümü; bilgi amaçlıdır, emir üretmez</p></div></div><div class="panel risk-panel"><div id="riskGrid" class="risk-grid"></div><div id="riskSystems" class="risk-systems"></div><div id="riskNote" class="risk-note"></div></div></section>
+
     <section class="section" id="performance"><div class="section-head"><div><h2>Performans Analitiği</h2><p>Premium, Scalp, Pump/Dump ve Yeni Liste sonuçları ayrı örneklerle; yalnız kesin R kayıtları özsermaye eğrisine girer</p></div><select id="performanceWindow" class="select-filter" aria-label="Performans dönemi"><option value="7D">Son 7 gün</option><option value="30D">Son 30 gün</option><option value="90D">Son 90 gün</option><option value="ALL" selected>Tüm kayıtlar</option></select></div><div class="analytics-grid"><div id="performanceGrid" class="perf-grid"></div><div class="panel canvas-panel"><div class="canvas-head"><div><h3>Kümülatif Net R</h3><p id="equityCaption">Kapanış sırasına göre gerçek ledger sonuçları</p></div><span id="drawdownBadge" class="badge">Maks. DD: —</span></div><div class="canvas-wrap"><canvas id="equityCanvas" aria-label="Kümülatif Net R grafiği"></canvas></div></div></div></section>
 
     <section class="section" id="sources"><div class="section-head"><div><h2>Veri Güncelliği</h2><p>Her veri kaynağı ayrı kontrol edilir; eski veya zamanı belirsiz kritik kayıtlar uyarı üretir</p></div></div><div id="sourceGrid" class="source-grid"></div></section>
@@ -764,7 +837,7 @@ def render_dashboard(
 
     <section class="section" id="open"><div class="section-head"><div><h2>Açık İşlemler</h2><p>State dosyalarındaki halen açık gerçek kayıtlar</p></div><div id="openFilters" class="filters"></div></div><div class="panel"><div class="toolbar"><input id="searchInput" class="search" type="search" placeholder="Coin ara…" aria-label="Coin ara"><span class="badge" id="openCountBadge">0 kayıt</span></div><div class="table-wrap"><table><thead><tr><th>Sistem / Coin</th><th>Yön</th><th>Giriş / Son</th><th>TP1 / TP2 / TP3</th><th>Stop</th><th>İlerleme</th><th>Açılış</th></tr></thead><tbody id="openRows"></tbody></table><div id="openEmpty" class="empty" hidden>Açık işlem bulunmuyor.</div></div></div></section>
 
-    <section class="section" id="results"><div class="section-head"><div><h2>İşlem İnceleme Merkezi</h2><p>TP/SL geçmişini filtrele; canlı panelde coin adına tıklayarak işlemi gerçekleştiği mumlarda aç</p></div></div><div class="result-layout"><div class="panel distribution"><h3>Filtreli sonuç dağılımı</h3><div id="distribution"></div><p class="distribution-note">Net R yalnız kesin R değeri bulunan kayıtların toplamıdır. Farklı sistemlerin örnekleri ayrı ledger kaynaklarından gelir.</p></div><div class="panel"><div class="toolbar result-toolbar"><input id="resultSearch" class="search" type="search" placeholder="Geçmişte coin ara…" aria-label="Geçmişte coin ara"><select id="resultSystem" class="select-filter" aria-label="Sonuç sistemi"><option value="ALL">Tüm sistemler</option><option value="PREMIUM">Premium</option><option value="SCALP">Scalp</option><option value="PUMP_DUMP">Pump/Dump</option><option value="NEW_LISTING">Yeni Liste</option></select><select id="resultOutcome" class="select-filter" aria-label="İşlem sonucu"><option value="ALL">Tüm sonuçlar</option><option value="TP">TP</option><option value="SL">Stop / SL</option><option value="BE">Break-even</option><option value="EXPIRED">Süresi dolan</option></select><select id="resultWindow" class="select-filter" aria-label="Geçmiş dönemi"><option value="7D">7 gün</option><option value="30D">30 gün</option><option value="90D">90 gün</option><option value="ALL" selected>Tümü</option></select><select id="resultPageSize" class="select-filter" aria-label="Sayfadaki işlem sayısı"><option value="20" selected>20 / sayfa</option><option value="50">50 / sayfa</option></select><span id="resultCountBadge" class="badge">0 kayıt</span></div><div class="table-wrap"><table><thead><tr><th>Sistem / Coin</th><th>Yön</th><th>Sonuç</th><th>Net R</th><th>Giriş / Çıkış</th><th>Kapanış</th></tr></thead><tbody id="resultRows"></tbody></table><div id="resultEmpty" class="empty" hidden>Bu filtrelerde kapanmış işlem bulunmuyor.</div></div><div id="resultPagination" class="pagination"><button id="resultPrev" class="page-button" type="button">← Önceki</button><span id="resultPageInfo" class="page-info">1 / 1</span><button id="resultNext" class="page-button" type="button">Sonraki →</button></div></div></div></section>
+    <section class="section" id="results"><div class="section-head"><div><h2>İşlem İnceleme Merkezi</h2><p>TP/SL geçmişini filtrele; canlı panelde coin adına tıklayarak işlemi gerçekleştiği mumlarda aç</p></div></div><div class="result-layout"><div class="panel distribution"><h3>Filtreli sonuç dağılımı</h3><div id="distribution"></div><p class="distribution-note">Net R yalnız kesin R değeri bulunan kayıtların toplamıdır. Farklı sistemlerin örnekleri ayrı ledger kaynaklarından gelir.</p></div><div class="panel"><div class="toolbar result-toolbar"><input id="resultSearch" class="search" type="search" placeholder="Geçmişte coin ara…" aria-label="Geçmişte coin ara"><select id="resultSystem" class="select-filter" aria-label="Sonuç sistemi"><option value="ALL">Tüm sistemler</option><option value="PREMIUM">Premium</option><option value="SCALP">Scalp</option><option value="PUMP_DUMP">Pump/Dump</option><option value="NEW_LISTING">Yeni Liste</option></select><select id="resultOutcome" class="select-filter" aria-label="İşlem sonucu"><option value="ALL">Tüm sonuçlar</option><option value="TP">TP</option><option value="SL">Stop / SL</option><option value="BE">Break-even</option><option value="EXPIRED">Süresi dolan</option></select><select id="resultWindow" class="select-filter" aria-label="Geçmiş dönemi"><option value="7D">7 gün</option><option value="30D">30 gün</option><option value="90D">90 gün</option><option value="ALL" selected>Tümü</option></select><select id="resultPageSize" class="select-filter" aria-label="Sayfadaki işlem sayısı"><option value="20" selected>20 / sayfa</option><option value="50">50 / sayfa</option></select><button id="exportResults" class="export-button" type="button">CSV indir</button><span id="resultCountBadge" class="badge">0 kayıt</span></div><div class="table-wrap"><table><thead><tr><th>Sistem / Coin</th><th>Yön</th><th>Sonuç</th><th>Net R</th><th>Giriş / Çıkış</th><th>Kapanış</th></tr></thead><tbody id="resultRows"></tbody></table><div id="resultEmpty" class="empty" hidden>Bu filtrelerde kapanmış işlem bulunmuyor.</div></div><div id="resultPagination" class="pagination"><button id="resultPrev" class="page-button" type="button">← Önceki</button><span id="resultPageInfo" class="page-info">1 / 1</span><button id="resultNext" class="page-button" type="button">Sonraki →</button></div></div></div></section>
 
     <section class="section" id="health"><div class="section-head"><div><h2>System Control Sağlığı</h2><p>Teknik çalışma durumu performans kararından ayrı gösterilir</p></div><div id="healthFilters" class="filters"></div></div><div id="healthGrid" class="health-grid"></div></section>
 
@@ -778,6 +851,7 @@ def render_dashboard(
     const e = value => String(value ?? "—").replace(/[&<>"']/g, ch => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[ch]));
     const fmtPrice = value => {{ const n=Number(value); if(!Number.isFinite(n)) return "—"; const a=Math.abs(n); const digits=a>=100?2:a>=1?4:a>=.01?6:10; return n.toLocaleString("tr-TR",{{maximumFractionDigits:digits}}); }};
     const fmtR = value => {{ const n=Number(value); return Number.isFinite(n) ? `${{n>=0?"+":""}}${{n.toFixed(3)}}R` : "—"; }};
+    const fmtPercent = value => {{ const n=Number(value); return Number.isFinite(n)?`%${{n.toFixed(2)}}`:"—"; }};
     const fmtDate = ts => {{ const n=Number(ts); if(!n) return "—"; return new Intl.DateTimeFormat("tr-TR",{{timeZone:"Europe/Istanbul",day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}}).format(new Date(n*1000)); }};
     const ageText = ts => {{ const n=Number(ts); if(!n) return "veri zamanı yok"; const sec=Math.max(0,Date.now()/1000-n); if(sec<3600)return `${{Math.max(1,Math.round(sec/60))}} dk önce`; if(sec<86400)return `${{(sec/3600).toFixed(1)}} sa önce`; return `${{Math.round(sec/86400)}} gün önce`; }};
     const outcomeClass = outcome => outcome==="SL"?"SL":(outcome==="BE"||String(outcome).includes("BE"))?"BE":outcome==="EXPIRED"?"EXPIRED":String(outcome).startsWith("TP")?"TP":"BE";
@@ -811,6 +885,20 @@ def render_dashboard(
 
     function renderSystems() {{
       document.getElementById("systemGrid").innerHTML=DASHBOARD_DATA.live_systems.map(s=>`<article class="system-card"><div class="system-top"><span class="health-pill ${{e(s.health)}}">${{e(s.health)}}</span><span class="caption">Örnek: ${{s.sample_size??"—"}}</span></div><h3>${{e(s.label)}}</h3><div class="open-number">${{e(s.open_count)}}</div><div class="caption">açık gerçek işlem</div><div class="decision" title="${{e(s.decision)}}">${{e(s.decision)}}</div></article>`).join("");
+    }}
+
+    function renderRisk() {{
+      const risk=DASHBOARD_DATA.open_risk||{{total:0,long:0,short:0,systems:[]}};
+      const items=[
+        ["Yön dengesi",`${{risk.long||0}} LONG / ${{risk.short||0}} SHORT`,`${{risk.total||0}} açık kayıt`],
+        ["Ortalama stop",fmtPercent(risk.average_stop_percent),`${{risk.with_stop||0}} kayıtta stop`],
+        ["En geniş stop",fmtPercent(risk.max_stop_percent),risk.widest_stop_symbol||"kayıt yok"],
+        ["Ortalama TP1 R/R",risk.average_tp1_rr==null?"—":`${{Number(risk.average_tp1_rr).toFixed(2)}}R`,"ilk hedef / stop"],
+        ["Ortalama TP3 R/R",risk.average_tp3_rr==null?"—":`${{Number(risk.average_tp3_rr).toFixed(2)}}R`,"üçüncü hedef / stop"]
+      ];
+      document.getElementById("riskGrid").innerHTML=items.map(item=>`<article class="risk-card"><label>${{e(item[0])}}</label><strong>${{e(item[1])}}</strong><small>${{e(item[2])}}</small></article>`).join("");
+      document.getElementById("riskSystems").innerHTML=(risk.systems||[]).map(row=>`<div class="risk-system"><span>${{e(row.label)}}</span><b>${{row.count}} açık</b></div>`).join("");
+      const notes=[];if(risk.missing_stop)notes.push(`${{risk.missing_stop}} açık kayıtta geçerli giriş/stop mesafesi hesaplanamadı`);if(risk.wide_stop_count)notes.push(`${{risk.wide_stop_count}} açık kayıtta stop mesafesi %2 üzerinde`);const note=document.getElementById("riskNote");note.textContent=notes.length?notes.join(" · "):risk.total?"Tüm açık kayıtlarda giriş ve stop mesafesi hesaplanabildi.":"Açık işlem olmadığı için risk özeti boş.";note.className="risk-note "+(notes.length?"attention":"");
     }}
 
     const activePerformance=()=>DASHBOARD_DATA.performance_windows?.[state.performanceWindow]||DASHBOARD_DATA.performance||{{systems:[],equity_curve:[]}};
@@ -861,13 +949,17 @@ def render_dashboard(
       const rows=DASHBOARD_DATA.open_trades.filter(r=>(state.openSystem==="ALL"||r.system===state.openSystem)&&(!query||r.symbol.includes(query)));
       document.getElementById("openCountBadge").textContent=`${{rows.length}} kayıt`;
       const tbody=document.getElementById("openRows"), empty=document.getElementById("openEmpty"); empty.hidden=rows.length>0;
-      tbody.innerHTML=rows.map(r=>`<tr><td>${{MARKET_ENDPOINT?`<button type="button" class="symbol-button" data-market-kind="open" data-market-trade-id="${{e(r.id)}}" data-market-symbol="${{e(r.symbol)}}">${{e(r.symbol)}}</button>`:`<span class="symbol">${{e(r.symbol)}}</span>`}}<span class="sub">${{e(r.system_label)}} · ${{e(r.source)}}</span></td><td><span class="direction ${{e(r.direction)}}">${{e(r.direction)}}</span></td><td class="price-stack">${{fmtPrice(r.entry)}}<small>Son: ${{fmtPrice(r.last_price)}}</small></td><td class="price-stack">${{fmtPrice(r.tp1)}} / ${{fmtPrice(r.tp2)}}<small>TP3: ${{fmtPrice(r.tp3)}}</small></td><td>${{fmtPrice(r.sl)}}</td><td><div class="progress" title="${{e(r.progress)}}"><i class="step ${{r.tp1_hit?"hit":""}}"></i><i class="step ${{r.tp2_hit?"hit":""}}"></i><i class="step ${{r.tp3_hit?"hit":""}}"></i></div><span class="sub">${{e(r.progress)}}</span></td><td>${{fmtDate(r.opened_at)}}<span class="sub">${{ageText(r.opened_at)}}</span></td></tr>`).join("");
+      tbody.innerHTML=rows.map(r=>`<tr><td>${{MARKET_ENDPOINT?`<button type="button" class="symbol-button" data-market-kind="open" data-market-trade-id="${{e(r.id)}}" data-market-symbol="${{e(r.symbol)}}">${{e(r.symbol)}}</button>`:`<span class="symbol">${{e(r.symbol)}}</span>`}}<span class="sub">${{e(r.system_label)}} · ${{e(r.source)}}</span></td><td><span class="direction ${{e(r.direction)}}">${{e(r.direction)}}</span></td><td class="price-stack">${{fmtPrice(r.entry)}}<small>Son: ${{fmtPrice(r.last_price)}}</small></td><td class="price-stack">${{fmtPrice(r.tp1)}} / ${{fmtPrice(r.tp2)}}<small>TP3: ${{fmtPrice(r.tp3)}}</small></td><td class="price-stack">${{fmtPrice(r.sl)}}<small>Mesafe: ${{fmtPercent(r.stop_percent)}}</small></td><td><div class="progress" title="${{e(r.progress)}}"><i class="step ${{r.tp1_hit?"hit":""}}"></i><i class="step ${{r.tp2_hit?"hit":""}}"></i><i class="step ${{r.tp3_hit?"hit":""}}"></i></div><span class="sub">${{e(r.progress)}}</span></td><td>${{fmtDate(r.opened_at)}}<span class="sub">${{ageText(r.opened_at)}}</span></td></tr>`).join("");
+    }}
+
+    function filteredResultRows() {{
+      const query=state.resultQuery.trim().toUpperCase(),days={{"7D":7,"30D":30,"90D":90}}[state.resultWindow]||0,cutoff=days?Number(DASHBOARD_DATA.generated_at)-days*86400:0;
+      const outcomeMatches=(outcome,group)=>group==="ALL"||(group==="TP"&&String(outcome).startsWith("TP")&&!String(outcome).includes("BE"))||(group==="BE"&&(outcome==="BE"||String(outcome).includes("SONRASI_BE")))||outcome===group;
+      return DASHBOARD_DATA.recent_results.filter(r=>(state.resultSystem==="ALL"||r.system===state.resultSystem)&&outcomeMatches(r.outcome,state.resultOutcome)&&(!cutoff||Number(r.closed_at)>=cutoff)&&(!query||String(r.symbol).includes(query)));
     }}
 
     function renderResults() {{
-      const query=state.resultQuery.trim().toUpperCase(),days={{"7D":7,"30D":30,"90D":90}}[state.resultWindow]||0,cutoff=days?Number(DASHBOARD_DATA.generated_at)-days*86400:0;
-      const outcomeMatches=(outcome,group)=>group==="ALL"||(group==="TP"&&String(outcome).startsWith("TP")&&!String(outcome).includes("BE"))||(group==="BE"&&(outcome==="BE"||String(outcome).includes("SONRASI_BE")))||outcome===group;
-      const filteredRows=DASHBOARD_DATA.recent_results.filter(r=>(state.resultSystem==="ALL"||r.system===state.resultSystem)&&outcomeMatches(r.outcome,state.resultOutcome)&&(!cutoff||Number(r.closed_at)>=cutoff)&&(!query||String(r.symbol).includes(query)));
+      const filteredRows=filteredResultRows();
       const totalPages=Math.max(1,Math.ceil(filteredRows.length/state.resultPageSize));state.resultPage=Math.min(Math.max(1,state.resultPage),totalPages);const start=(state.resultPage-1)*state.resultPageSize,rows=filteredRows.slice(start,start+state.resultPageSize);
       document.getElementById("resultCountBadge").textContent=filteredRows.length?`${{start+1}}–${{start+rows.length}} / ${{filteredRows.length}} kayıt`:"0 kayıt";
       document.getElementById("resultEmpty").hidden=filteredRows.length>0;
@@ -886,6 +978,15 @@ def render_dashboard(
       document.getElementById("distribution").innerHTML=groups.map(g=>`<div class="bar-row"><div class="bar-label"><span>${{e(g[0])}}</span><b>${{g[1]}}</b></div><div class="bar"><i style="--color:${{g[2]}};width:${{Math.max(g[1]?2:0,g[1]/total*100)}}%"></i></div></div>`).join("");
     }}
 
+    function exportFilteredResults() {{
+      const rows=filteredResultRows();
+      if(!rows.length)return;
+      const csvCell=value=>{{let text=String(value??"");if(/^[-=+@]/.test(text))text="'"+text;return `"${{text.replace(/"/g,'""')}}"`;}};
+      const headers=["Sistem","Coin","Yön","Kaynak","Sonuç","Net R","Giriş","Çıkış","Açılış UTC","Kapanış UTC"];
+      const lines=[headers,...rows.map(row=>[row.system_label,row.symbol,row.direction,row.source,row.outcome,row.r_result,row.entry,row.exit_price,row.opened_at?new Date(row.opened_at*1000).toISOString():"",row.closed_at?new Date(row.closed_at*1000).toISOString():""])];
+      const csv="\ufeff"+lines.map(line=>line.map(csvCell).join(";")).join("\\r\\n"),blob=new Blob([csv],{{type:"text/csv;charset=utf-8"}}),url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download=`kripto-islem-gecmisi-${{new Date().toISOString().slice(0,10)}}.csv`;document.body.appendChild(link);link.click();link.remove();window.setTimeout(()=>URL.revokeObjectURL(url),1000);
+    }}
+
     function renderHealth() {{
       const kinds=["ALL",...new Set(DASHBOARD_DATA.health.components.map(c=>c.kind))];
       filterButtons("healthFilters",kinds,state.healthKind,value=>{{state.healthKind=value;renderHealth();}});
@@ -900,6 +1001,7 @@ def render_dashboard(
     document.getElementById("resultOutcome").addEventListener("change",event=>{{state.resultOutcome=event.target.value;state.resultPage=1;renderResults();}});
     document.getElementById("resultWindow").addEventListener("change",event=>{{state.resultWindow=event.target.value;state.resultPage=1;renderResults();}});
     document.getElementById("resultPageSize").addEventListener("change",event=>{{state.resultPageSize=Number(event.target.value)||20;state.resultPage=1;renderResults();}});
+    document.getElementById("exportResults").addEventListener("click",exportFilteredResults);
     document.getElementById("resultPrev").addEventListener("click",()=>{{state.resultPage=Math.max(1,state.resultPage-1);renderResults();document.getElementById("results").scrollIntoView({{behavior:"smooth",block:"start"}});}});
     document.getElementById("resultNext").addEventListener("click",()=>{{state.resultPage+=1;renderResults();document.getElementById("results").scrollIntoView({{behavior:"smooth",block:"start"}});}});
 {market_script}
