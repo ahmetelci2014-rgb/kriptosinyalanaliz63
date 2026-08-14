@@ -86,7 +86,8 @@ POST_STOP_KEEP_HOURS = 72
 MAX_SCAN_COINS = 220
 MIN_24H_QUOTE_VOLUME = 500_000
 
-MAX_NEW_SIGNALS_PER_RUN = 1
+# V3 yalnız mevcut açık kayıtları sonuçlandırır; yeni sinyal V4 gölgede ölçülür.
+MAX_NEW_SIGNALS_PER_RUN = 0
 MAX_OPEN_SWING_SIGNALS = 3
 
 DUPLICATE_SECONDS = 18 * 60 * 60
