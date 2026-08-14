@@ -47,7 +47,12 @@ from portfolio_risk import (
 # GENEL AYARLAR
 # =========================================================
 
-BOT_NAME = "Swing Radar v3 - 15M Erken Giris"
+BOT_NAME = "Swing Radar v3 - Gölge Takip"
+SWING_SHADOW_ONLY = True
+SWING_SHADOW_WARNING = (
+    "⚠️ GÖLGE SWING – İŞLEM AÇMA\n"
+    "Bu bildirim yalnız performans verisi toplamak içindir."
+)
 
 TOKEN = os.getenv("TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
@@ -142,6 +147,8 @@ M15_LIMIT = 260
 # =========================================================
 
 def send_telegram(message, delivery_key=None):
+    if SWING_SHADOW_ONLY and not str(message).startswith(SWING_SHADOW_WARNING):
+        message = f"{SWING_SHADOW_WARNING}\n\n{message}"
     return send_telegram_once(
         message=message,
         telegram_token=TOKEN,
