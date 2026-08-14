@@ -1,5 +1,5 @@
 {
-  "version": "DECISION_ENGINE_V2_2026_08_14",
+  "version": "DECISION_ENGINE_V3_LEGACY_SWING_REMOVED_2026_08_14",
   "mode": "ANALYSIS_ONLY_NO_SIGNAL_CHANGE_NO_TELEGRAM_NO_ORDERS",
   "generated_at": 1786697529,
   "generated_at_utc": "2026-08-14T08:52:09+00:00",
@@ -8,11 +8,6 @@
     "confidence": {
       "medium_sample": 10,
       "high_sample": 30
-    },
-    "swing": {
-      "live_stop_min_sample": 30,
-      "live_stop_min_stop_rate": 0.45,
-      "live_stop_max_tp3_rate": 0.15
     },
     "scalp": {
       "split_test_min_sample": 20,
@@ -44,8 +39,8 @@
   },
   "data_quality": {
     "warnings": [],
-    "source_count": 14,
-    "valid_source_count": 14,
+    "source_count": 12,
+    "valid_source_count": 12,
     "sources": {
       "premium_performance": {
         "path": "performance.json",
@@ -105,26 +100,6 @@
         "error": null,
         "last_update": 1786694666,
         "age_hours": 0.8,
-        "stale_over_48h": false
-      },
-      "swing_state": {
-        "path": "swing_radar_state.json",
-        "exists": true,
-        "bytes": 4123,
-        "valid_json": true,
-        "error": null,
-        "last_update": 0,
-        "age_hours": null,
-        "stale_over_48h": false
-      },
-      "swing_ledger": {
-        "path": "swing_performance_ledger.json",
-        "exists": true,
-        "bytes": 193850,
-        "valid_json": true,
-        "error": null,
-        "last_update": 1786694599,
-        "age_hours": 0.81,
         "stale_over_48h": false
       },
       "swing_v4_ledger": {
@@ -229,15 +204,6 @@
         "next_action": "Canlı limit değiştirmeden BLOCK/ALLOW ve block_code sonuçlarını toplamaya devam et."
       },
       {
-        "priority": 6,
-        "component": "SWING",
-        "decision_code": "IZLE",
-        "decision_tr": "🟡 İZLE",
-        "confidence": "YUKSEK",
-        "sample_size": 50,
-        "next_action": "Canlı değişiklik yapmadan izlemeyi sürdür."
-      },
-      {
         "priority": 7,
         "component": "PUMP_DUMP",
         "decision_code": "KORU_IZLE",
@@ -293,7 +259,7 @@
         "stop_rate_percent": 32.55,
         "positive_close_rate_percent": 67.45,
         "r_records": 386,
-        "r_coverage_percent": 100.0,
+        "r_coverage_percent": 100,
         "net_r": 11.4193,
         "avg_r": 0.0296,
         "data_basis": "trade_ledger_recent_14d",
@@ -337,10 +303,10 @@
             "be": 6,
             "sl": 3,
             "expired": 0,
-            "tp3_rate_percent": 25.0,
-            "be_rate_percent": 50.0,
-            "stop_rate_percent": 25.0,
-            "positive_close_rate_percent": 75.0
+            "tp3_rate_percent": 25,
+            "be_rate_percent": 50,
+            "stop_rate_percent": 25,
+            "positive_close_rate_percent": 75
           },
           "TEPKI_SCALP": {
             "sample_size": 10,
@@ -349,10 +315,10 @@
             "be": 4,
             "sl": 2,
             "expired": 0,
-            "tp3_rate_percent": 40.0,
-            "be_rate_percent": 40.0,
-            "stop_rate_percent": 20.0,
-            "positive_close_rate_percent": 80.0
+            "tp3_rate_percent": 40,
+            "be_rate_percent": 40,
+            "stop_rate_percent": 20,
+            "positive_close_rate_percent": 80
           }
         }
       }
@@ -382,41 +348,6 @@
         "data_basis": "pump_ledger"
       }
     },
-    "SWING": {
-      "decision_code": "IZLE",
-      "decision_tr": "🟡 İZLE",
-      "confidence": "YUKSEK",
-      "sample_size": 50,
-      "auto_apply": false,
-      "reasons": [
-        "Swing örneği 50; mevcut eşikler CANLI_DURDUR koşulunu tamamlamadı."
-      ],
-      "next_action": "Canlı değişiklik yapmadan izlemeyi sürdür.",
-      "metrics": {
-        "sample_size": 50,
-        "measurable_closed": 50,
-        "tp3": 8,
-        "be": 18,
-        "sl": 24,
-        "expired": 0,
-        "tp3_rate_percent": 16.0,
-        "be_rate_percent": 36.0,
-        "stop_rate_percent": 48.0,
-        "positive_close_rate_percent": 52.0,
-        "data_basis": "swing_ledger_records",
-        "direction_correct": 23,
-        "direction_wrong": 24,
-        "direction_mixed": 4,
-        "early_15m": 13,
-        "confirmed_1h": 38,
-        "long": 0,
-        "short": 51,
-        "diagnosis_success": 8,
-        "diagnosis_delayed_direction": 16,
-        "diagnosis_weak_trend": 1,
-        "diagnosis_setup_failed": 2
-      }
-    },
     "SWING_V4_SHADOW": {
       "decision_code": "VERI_TOPLA",
       "decision_tr": "⚪ SWING V4 GÖLGE VERİ TOPLA",
@@ -432,16 +363,16 @@
         "open": 0,
         "outcomes": {},
         "directions": {},
-        "stop_rate_percent": 0.0,
-        "tp3_rate_percent": 0.0,
-        "positive_close_rate_percent": 0.0,
-        "max_direction_share_percent": 0.0,
+        "stop_rate_percent": 0,
+        "tp3_rate_percent": 0,
+        "positive_close_rate_percent": 0,
+        "max_direction_share_percent": 0,
         "net_r_after_costs": 0,
         "targets": {
-          "stop_rate_max": 35.0,
-          "tp3_rate_min": 25.0,
-          "positive_close_rate_min": 65.0,
-          "direction_share_max": 70.0,
+          "stop_rate_max": 35,
+          "tp3_rate_min": 25,
+          "positive_close_rate_min": 65,
+          "direction_share_max": 70,
           "minimum_closed": 30
         },
         "gates": {
@@ -510,7 +441,7 @@
               "h1_rsi": 49.67,
               "m15_rsi": 30.42,
               "m15_volume_ratio": 0.999,
-              "m15_body_strength": 1.0
+              "m15_body_strength": 1
             }
           },
           {
@@ -723,7 +654,7 @@
           "first_0_5_none": 2,
           "favorable_first_rate_percent": 55.15,
           "adverse_first_rate_percent": 44.85,
-          "avg_return_60m_percent": 0.0,
+          "avg_return_60m_percent": 0,
           "avg_return_240m_percent": -0.0635,
           "avg_return_720m_percent": 0.0218,
           "avg_return_1440m_percent": 0.1644,
@@ -739,7 +670,7 @@
             "first_0_5_none": 2,
             "favorable_first_rate_percent": 55.15,
             "adverse_first_rate_percent": 44.85,
-            "avg_return_60m_percent": 0.0,
+            "avg_return_60m_percent": 0,
             "avg_return_240m_percent": -0.0635,
             "avg_return_720m_percent": 0.0218,
             "avg_return_1440m_percent": 0.1644,
@@ -753,8 +684,8 @@
             "first_0_5_adverse": 180,
             "first_0_5_ambiguous": 0,
             "first_0_5_none": 13,
-            "favorable_first_rate_percent": 55.0,
-            "adverse_first_rate_percent": 45.0,
+            "favorable_first_rate_percent": 55,
+            "adverse_first_rate_percent": 45,
             "avg_return_60m_percent": 0.0024,
             "avg_return_240m_percent": -0.124,
             "avg_return_720m_percent": -0.0702,
@@ -822,9 +753,9 @@
             "tp1_reached_after_close": 0,
             "tp2_reached_after_close": 0,
             "tp3_reached_after_close": 0,
-            "tp1_reach_rate_percent": 0.0,
-            "tp2_reach_rate_percent": 0.0,
-            "tp3_reach_rate_percent": 0.0,
+            "tp1_reach_rate_percent": 0,
+            "tp2_reach_rate_percent": 0,
+            "tp3_reach_rate_percent": 0,
             "avg_max_favorable_r": 1.4729,
             "median_max_favorable_r": 0.8459,
             "avg_max_adverse_r": 1.9386,
@@ -836,8 +767,8 @@
             "tp1_reached_after_close": 0,
             "tp2_reached_after_close": 6,
             "tp3_reached_after_close": 4,
-            "tp1_reach_rate_percent": 0.0,
-            "tp2_reach_rate_percent": 50.0,
+            "tp1_reach_rate_percent": 0,
+            "tp2_reach_rate_percent": 50,
             "tp3_reach_rate_percent": 33.33,
             "avg_max_favorable_r": 1.3063,
             "median_max_favorable_r": 1.0058,
@@ -862,13 +793,13 @@
             "evidence_gate": "ENOUGH_SAMPLE",
             "average_mfe_r": 1.3416,
             "average_mae_r": 1.6154,
-            "extension_0_5r_rate": 65.0,
+            "extension_0_5r_rate": 65,
             "extension_1r_rate": 42.5,
-            "adverse_0_5r_rate": 70.0,
+            "adverse_0_5r_rate": 70,
             "checkpoint_positive_rate": {
               "15": 48.75,
               "30": 51.25,
-              "60": 45.0,
+              "60": 45,
               "120": 38.75,
               "240": 46.25
             }
@@ -899,12 +830,12 @@
               "evidence_gate": "OBSERVE_ONLY",
               "average_mfe_r": 1.3063,
               "average_mae_r": 2.504,
-              "extension_0_5r_rate": 75.0,
-              "extension_1r_rate": 50.0,
+              "extension_0_5r_rate": 75,
+              "extension_1r_rate": 50,
               "adverse_0_5r_rate": 66.67,
               "checkpoint_positive_rate": {
                 "15": 66.67,
-                "30": 50.0,
+                "30": 50,
                 "60": 41.67,
                 "120": 41.67,
                 "240": 58.33
@@ -917,15 +848,15 @@
               "evidence_gate": "ENOUGH_SAMPLE",
               "average_mfe_r": 1.4729,
               "average_mae_r": 1.9386,
-              "extension_0_5r_rate": 60.0,
-              "extension_1r_rate": 40.0,
-              "adverse_0_5r_rate": 80.0,
+              "extension_0_5r_rate": 60,
+              "extension_1r_rate": 40,
+              "adverse_0_5r_rate": 80,
               "checkpoint_positive_rate": {
-                "15": 44.0,
-                "30": 40.0,
-                "60": 36.0,
-                "120": 32.0,
-                "240": 36.0
+                "15": 44,
+                "30": 40,
+                "60": 36,
+                "120": 32,
+                "240": 36
               }
             }
           },
@@ -1016,7 +947,7 @@
           "modeled_trades": 80,
           "baseline": {
             "name": "CURRENT_RULE",
-            "incremental_r_after_close": 0.0
+            "incremental_r_after_close": 0
           },
           "models": {
             "TP1_DELAY_BE_UNTIL_TP2": {
@@ -1034,7 +965,7 @@
               "average_incremental_r": 0.0863,
               "net_incremental_r": 3.709,
               "positive_rate": 23.26,
-              "zero_rate": 0.0,
+              "zero_rate": 0,
               "negative_rate": 76.74
             },
             "TP2_SOFT_BE_MINUS_0_25R": {
@@ -1043,7 +974,7 @@
               "average_incremental_r": 0.2451,
               "net_incremental_r": 2.9409,
               "positive_rate": 41.67,
-              "zero_rate": 0.0,
+              "zero_rate": 0,
               "negative_rate": 58.33
             },
             "TP3_RUNNER_TRAIL_0_5R": {
@@ -1051,18 +982,18 @@
               "evidence_gate": "ENOUGH_SAMPLE",
               "average_incremental_r": 0.0902,
               "net_incremental_r": 2.2553,
-              "positive_rate": 20.0,
-              "zero_rate": 80.0,
-              "negative_rate": 0.0
+              "positive_rate": 20,
+              "zero_rate": 80,
+              "negative_rate": 0
             },
             "TP3_RUNNER_TRAIL_1_0R": {
               "sample": 25,
               "evidence_gate": "ENOUGH_SAMPLE",
               "average_incremental_r": 0.0924,
               "net_incremental_r": 2.3094,
-              "positive_rate": 12.0,
-              "zero_rate": 88.0,
-              "negative_rate": 0.0
+              "positive_rate": 12,
+              "zero_rate": 88,
+              "negative_rate": 0
             }
           },
           "decision": {
