@@ -71211,9 +71211,9 @@
         "max_adverse_r": 0.0402,
         "best_price": 8.845,
         "worst_price": 8.81,
-        "last_checked_at": 1786679365,
+        "last_checked_at": 1786680331,
         "completed_at": 0,
-        "last_price": 8.821
+        "last_price": 8.828
       }
     },
     "OPGUSDT_SHORT_5M_RADAR_1786635279": {
@@ -71848,9 +71848,9 @@
       "worst_adverse_r": 0.6799,
       "best_favorable_price": 44.6,
       "worst_adverse_price": 44.92,
-      "last_market_price": 44.88,
+      "last_market_price": 44.76,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786679100
+      "last_tracking_at": 1786680060
     },
     "SOXLUSDT_LONG_5M_RADAR_1786648820": {
       "trade_id": "SOXLUSDT_LONG_5M_RADAR_1786648820",
@@ -72523,9 +72523,9 @@
         "max_adverse_r": 2.2735,
         "best_price": 0.012826,
         "worst_price": 0.012329,
-        "last_checked_at": 1786679365,
+        "last_checked_at": 1786680331,
         "completed_at": 0,
-        "last_price": 0.012579
+        "last_price": 0.012498
       }
     },
     "BNBUSDT_LONG_15M_ENTRY_1786659628": {
@@ -72545,12 +72545,12 @@
       "tp1_hit": true,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "TP1_SONRASI_BE",
+      "r_result": 0.275,
+      "exit_price": 611.1,
+      "closed_at": 1786680072,
+      "closed_day": "2026-08-14",
       "events": [
         {
           "time": 1786659628,
@@ -72561,6 +72561,11 @@
           "time": 1786678250,
           "event": "TP1",
           "price": 612.472699867
+        },
+        {
+          "time": 1786680072,
+          "event": "BE",
+          "price": 611.1
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -72603,9 +72608,50 @@
       "worst_adverse_r": 0.7212,
       "best_favorable_price": 612.5,
       "worst_adverse_price": 609.3,
-      "last_market_price": 611.4,
+      "last_market_price": 610.9,
       "tp1_hit_at": 1786677540,
-      "last_tracking_at": 1786679100
+      "last_tracking_at": 1786679220,
+      "duration_minutes": 340,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "YON DOGRU, DEVAM GUCU ZAYIFLADI",
+        "confidence": "YUKSEK",
+        "factors": [
+          "Islem hedef gordukten sonra kalan kisim giristen kapandi."
+        ],
+        "duration_minutes": 340,
+        "best_favorable_r": 0.5609,
+        "worst_adverse_r": 0.7212,
+        "provisional": false,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "post_result_shadow": {
+        "version": "POST_RESULT_SHADOW_V1_2026_08_10",
+        "shadow_only": true,
+        "status": "TRACKING",
+        "final_result": "TP1_SONRASI_BE",
+        "started_at": 1786680072,
+        "measurement_start_at": 1786680120,
+        "reference_label": "BE_ENTRY",
+        "reference_price": 611.1,
+        "timeframe": "1m",
+        "checkpoints": {},
+        "watched_levels": {
+          "TP1": 612.472699867,
+          "TP2": 613.7206088371,
+          "TP3": 615.0933087041
+        },
+        "reached_levels": {},
+        "max_favorable_percent": 0.1309,
+        "max_adverse_percent": 0.0,
+        "max_favorable_r": 0.3205,
+        "max_adverse_r": 0.0,
+        "best_price": 611.9,
+        "worst_price": 611.1,
+        "last_checked_at": 1786680331,
+        "completed_at": 0,
+        "last_price": 611.8
+      }
     },
     "YBUSDT_LONG_15M_ENTRY_1786663185": {
       "trade_id": "YBUSDT_LONG_15M_ENTRY_1786663185",
@@ -72812,39 +72858,47 @@
       "duration_minutes": 41,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "KURULUM DEVAM ETMEDI",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
-          "Ust zaman dilimi trend gucu sinirdaydi."
+          "Ust zaman dilimi trend gucu sinirdaydi.",
+          "Stop sonrasi fiyat TP1 seviyesine dondu."
         ],
         "duration_minutes": 41,
         "best_favorable_r": 0.0,
         "worst_adverse_r": 1.1383,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ZAYIF_TREND_HACIM",
-        "preliminary_label": "Zayıf trend/hacim",
+        "primary": "ERKEN_GIRIS_VEYA_DAR_STOP",
+        "label": "Erken giriş veya dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
-          "Üst zaman dilimi trend gücü sınırdaydı."
+          "Stop sonrası fiyat TP1 seviyesine 179 dakikada döndü.",
+          "Üst zaman dilimi trend gücü sınırdaydı.",
+          "Hızlı ve düşük MFE'li stop ile dar risk profili birlikte görüldü."
         ],
         "metrics": {
           "duration_minutes": 41,
           "mfe_r": 0.0,
           "mae_r": 1.1383,
           "risk_percent": 0.47,
-          "return_minutes": null
+          "return_minutes": 179.0
         },
-        "updated_at": 1786669285
+        "updated_at": 1786680074
+      },
+      "post_stop_follow": {
+        "returned_level": "TP1",
+        "age_minutes": 179,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1786680074
       }
     },
     "WCTUSDT_SHORT_15M_ENTRY_1786670376": {
@@ -72917,9 +72971,9 @@
       "worst_adverse_r": 0.6145,
       "best_favorable_price": 0.03382,
       "worst_adverse_price": 0.03409,
-      "last_market_price": 0.03384,
+      "last_market_price": 0.03389,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786679100
+      "last_tracking_at": 1786680060
     },
     "ATOMUSDT_LONG_15M_ENTRY_1786672211": {
       "trade_id": "ATOMUSDT_LONG_15M_ENTRY_1786672211",
@@ -73059,7 +73113,7 @@
         "max_adverse_percent": 1.8161,
         "best_price": 1.5572824243,
         "worst_price": 1.529,
-        "last_checked_at": 1786679160,
+        "last_checked_at": 1786680075,
         "completed_at": 0,
         "shadow_only": true
       },
@@ -73110,11 +73164,11 @@
         "max_adverse_r": 1.2472,
         "best_price": 1.5572824243,
         "worst_price": 1.529,
-        "last_checked_at": 1786679365,
+        "last_checked_at": 1786680331,
         "completed_at": 0,
-        "last_price": 1.541
+        "last_price": 1.539
       }
     }
   },
-  "last_update": 1786679367
+  "last_update": 1786680333
 }
