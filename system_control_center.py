@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-VERSION = "SYSTEM_CONTROL_CENTER_V1_1_2026_08_11"
+VERSION = "SYSTEM_CONTROL_CENTER_V1_2_LEGACY_SWING_REMOVED_2026_08_14"
 MODE = "READ_ONLY_MONITOR_NO_TELEGRAM_NO_ORDERS_NO_SIGNAL_CHANGE_NO_AUTO_APPLY"
 
 REPORT_JSON = "system_control_center_report.json"
@@ -58,14 +58,6 @@ COMPONENTS = {
             ("pump_radar_state.json", "open_signals"),
             ("pump_radar_state.json", "open_pump_signals"),
         ],
-    },
-    "SWING": {
-        "label": "Swing Radar",
-        "kind": "SHADOW_OR_RESTRICTED",
-        "files": ["swing_radar_state.json", "swing_performance_ledger.json"],
-        "workflow": ".github/workflows/swing-radar.yml",
-        "stale_hours": HOURLY_STALE_HOURS,
-        "open_paths": [("swing_radar_state.json", "open_swing_signals")],
     },
     "SWING_V4_SHADOW": {
         "label": "Swing Shadow V4",
@@ -165,7 +157,6 @@ DECISION_MAP = {
     "PREMIUM": "PREMIUM",
     "SCALP": "SCALP",
     "PUMP_DUMP": "PUMP_DUMP",
-    "SWING": "SWING",
     "SWING_V4_SHADOW": "SWING_V4_SHADOW",
     "MOMENTUM_SHADOW": "MOMENTUM_SHADOW",
     "RANGE_SHADOW": "RANGE_SHADOW",
