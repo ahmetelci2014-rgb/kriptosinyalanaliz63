@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
-VERSION = "KRIPTO_KONTROL_PANELI_V1_1_2026_08_14"
+VERSION = "KRIPTO_KONTROL_PANELI_V1_2_2026_08_14"
 TR_TIMEZONE = timezone(timedelta(hours=3))
 
 SOURCE_SPECS = (
@@ -122,7 +122,7 @@ def first_value(record: dict[str, Any], keys: Iterable[str], default: Any = None
 
 def record_timestamp(record: dict[str, Any], *keys: str) -> int:
     for key in keys:
-        value = safe_int(record.get(key))
+        value = parse_timestamp(record.get(key))
         if value > 0:
             return value
     return 0
@@ -362,10 +362,16 @@ def normalize_closed_result(system: str, record: dict[str, Any], fallback_id: st
         "system_label": SYSTEM_LABELS[system],
         "symbol": display_symbol(record),
         "direction": str(record.get("direction") or "—").upper(),
+        "source": str(first_value(record, ("setup", "setup_name", "source", "alert_type"), "—")),
         "outcome": outcome,
         "r_result": safe_float(first_value(record, ("r_result", "trade_result_r", "result_r"))),
         "entry": safe_float(first_value(record, ("entry", "analysis_entry", "alert_price"))),
         "exit_price": safe_float(first_value(record, ("exit_price", "trade_exit_price", "latest_price"))),
+        "tp1": safe_float(record.get("tp1")),
+        "tp2": safe_float(record.get("tp2")),
+        "tp3": safe_float(record.get("tp3")),
+        "sl": safe_float(record.get("sl")),
+        "opened_at": record_timestamp(record, "opened_at", "sent_at", "recorded_at", "first_seen_at"),
         "closed_at": record_timestamp(record, "closed_at", "trade_closed_at", "finalized_at", "last_updated_at"),
     }
 
@@ -460,6 +466,23 @@ def build_dashboard_data(root: Path | str, now: datetime | None = None) -> dict[
     if current.tzinfo is None:
         current = current.replace(tzinfo=timezone.utc)
     performance = build_performance_analytics(closed_results)
+    performance_windows: dict[str, dict[str, Any]] = {}
+    for key, days, label in (
+        ("7D", 7, "Son 7 gün"),
+        ("30D", 30, "Son 30 gün"),
+        ("90D", 90, "Son 90 gün"),
+        ("ALL", None, "Tüm kayıtlar"),
+    ):
+        cutoff = int(current.timestamp()) - days * 86400 if days else 0
+        rows = (
+            [row for row in closed_results if safe_int(row.get("closed_at")) >= cutoff]
+            if days
+            else closed_results
+        )
+        analytics = build_performance_analytics(rows)
+        analytics["label"] = label
+        analytics["days"] = days
+        performance_windows[key] = analytics
     sources = collect_source_freshness(root, current, warnings)
 
     live_systems = []
@@ -493,9 +516,10 @@ def build_dashboard_data(root: Path | str, now: datetime | None = None) -> dict[
         },
         "live_systems": live_systems,
         "open_trades": open_trades[:120],
-        "recent_results": closed_results[:120],
+        "recent_results": closed_results[:500],
         "outcome_counts": dict(sorted(outcome_counts.items())),
         "performance": performance,
+        "performance_windows": performance_windows,
         "sources": sources,
         "health": health,
         "data_quality": {
@@ -601,13 +625,14 @@ def render_dashboard(
     market_script = ""
     if market_mode:
         market_section = '''
-    <section class="section" id="market"><div class="section-head"><div><h2>Canlı Coin Grafiği</h2><p>Tüm USDT coinlerini incele; açık işlem varsa giriş, TP1–TP3 ve SL seviyelerini aynı grafikte gör</p></div><span class="badge">OKX herkese açık veri · API anahtarı yok</span></div><div class="panel chart-panel"><div class="market-controls"><label>Coin<input id="marketSymbol" list="marketSymbols" value="BTCUSDT" maxlength="24" autocomplete="off" spellcheck="false" aria-label="Coin sembolü"></label><datalist id="marketSymbols"></datalist><label>Periyot<select id="marketBar" aria-label="Mum periyodu"><option>1m</option><option>5m</option><option selected>15m</option><option>1H</option><option>4H</option><option>1D</option></select></label><button id="marketLoad" class="market-button" type="button">Grafiği getir</button><span id="marketStatus" class="badge">Hazır</span></div><div class="canvas-wrap market-canvas"><canvas id="marketCanvas" aria-label="Canlı mum grafiği"></canvas></div><div id="marketLegend" class="chart-legend"><span>Yeşil/kırmızı: fiyat mumu</span><span>Açık işlem seçilirse seviyeler otomatik çizilir</span></div></div></section>
+    <section class="section" id="market"><div class="section-head"><div><h2>Coin ve İşlem Grafiği</h2><p>Güncel coinleri veya kapanmış işlemleri gerçekleştiği tarih aralığındaki mumlarla incele</p></div><span class="badge">OKX herkese açık veri · API anahtarı yok</span></div><div class="panel chart-panel"><div class="market-controls"><label>Coin<input id="marketSymbol" list="marketSymbols" value="BTCUSDT" maxlength="24" autocomplete="off" spellcheck="false" aria-label="Coin sembolü"></label><datalist id="marketSymbols"></datalist><label>Periyot<select id="marketBar" aria-label="Mum periyodu"><option>1m</option><option>5m</option><option selected>15m</option><option>1H</option><option>4H</option><option>1D</option></select></label><button id="marketLoad" class="market-button" type="button">Güncel grafiği getir</button><span id="marketStatus" class="badge">Hazır</span></div><div class="canvas-wrap market-canvas"><canvas id="marketCanvas" aria-label="Canlı veya geçmiş mum grafiği"></canvas></div><div id="marketLegend" class="chart-legend"><span>Yeşil/kırmızı: fiyat mumu</span><span>İşlem satırındaki coine tıklarsan o işlemin seviyeleri çizilir</span></div></div></section>
 '''
         market_script = '''
-    let marketPayload=null;
+    let marketPayload=null,selectedMarketTrade=null;
     const normalizeMarketSymbol=value=>String(value||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
 
     function marketTrade(symbol) {
+      if(selectedMarketTrade&&normalizeMarketSymbol(selectedMarketTrade.symbol)===symbol)return selectedMarketTrade;
       return (DASHBOARD_DATA?.open_trades||[]).find(row=>normalizeMarketSymbol(row.symbol)===symbol)||null;
     }
 
@@ -619,21 +644,24 @@ def render_dashboard(
       badge.style.color=status==="ERROR"?"var(--red)":status==="GREEN"?"var(--green)":"";
     }
 
-    async function loadMarket(symbolValue=null) {
+    async function loadMarket(symbolValue=null,anchorValue=null) {
       const input=document.getElementById("marketSymbol"), bar=document.getElementById("marketBar");
       const symbol=normalizeMarketSymbol(symbolValue||input.value);
+      const anchor=Number(anchorValue??selectedMarketTrade?.closed_at)||0;
       input.value=symbol;
       if(!symbol){setMarketStatus("Coin yazın","ERROR");return;}
       setMarketStatus("Yükleniyor…");
       try {
-        const url=`${MARKET_ENDPOINT}?symbol=${encodeURIComponent(symbol)}&bar=${encodeURIComponent(bar.value)}`;
+        const anchorQuery=anchor?`&anchor=${encodeURIComponent(anchor)}`:"";
+        const url=`${MARKET_ENDPOINT}?symbol=${encodeURIComponent(symbol)}&bar=${encodeURIComponent(bar.value)}${anchorQuery}`;
         const response=await fetch(url,{credentials:"same-origin",cache:"no-store",headers:{Accept:"application/json"}});
         if(response.status===401){window.location.assign("/login");return;}
         const payload=await response.json();
         if(!response.ok)throw new Error(payload.message||payload.error||`HTTP ${response.status}`);
         marketPayload=payload;
         drawMarketChart();
-        setMarketStatus(`${payload.symbol} · ${fmtPrice(payload.last_price)} · ${new Date(payload.fetched_at*1000).toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}`,"GREEN");
+        const mode=payload.anchor?`Geçmiş · ${fmtDate(payload.anchor)}`:"Güncel";
+        setMarketStatus(`${mode} · ${payload.symbol} · ${fmtPrice(payload.last_price)}`,"GREEN");
       } catch(error) {
         setMarketStatus(`Grafik alınamadı: ${error.message}`,"ERROR");
       }
@@ -644,7 +672,7 @@ def render_dashboard(
       if(!canvas||!marketPayload)return;
       const candles=marketPayload.candles||[], trade=marketTrade(normalizeMarketSymbol(marketPayload.symbol));
       if(!candles.length)return;
-      const levels=trade?[["Giriş",trade.entry,"#60a5fa"],["TP1",trade.tp1,"#42e28c"],["TP2",trade.tp2,"#2ce6bf"],["TP3",trade.tp3,"#18bfa1"],["SL",trade.sl,"#ff627d"]].filter(x=>Number.isFinite(Number(x[1]))):[];
+      const levels=trade?[["Giriş",trade.entry,"#60a5fa"],["TP1",trade.tp1,"#42e28c"],["TP2",trade.tp2,"#2ce6bf"],["TP3",trade.tp3,"#18bfa1"],["SL",trade.sl,"#ff627d"],["Çıkış",trade.exit_price,"#ffbd59"]].filter(x=>Number.isFinite(Number(x[1]))):[];
       const values=candles.flatMap(c=>[Number(c.high),Number(c.low)]).concat(levels.map(x=>Number(x[1]))).filter(Number.isFinite);
       const low=Math.min(...values), high=Math.max(...values), pad=Math.max((high-low)*.08,Math.abs(high)*.001,1e-10), min=low-pad, max=high+pad;
       const box=canvas.parentElement.getBoundingClientRect(), dpr=Math.min(window.devicePixelRatio||1,2), width=Math.max(320,box.width), height=Math.max(320,box.height||420);
@@ -658,7 +686,7 @@ def render_dashboard(
       candles.forEach((c,index)=>{const x=margin.left+step*(index+.5), open=y(c.open), close=y(c.close), hi=y(c.high), lo=y(c.low), up=Number(c.close)>=Number(c.open);ctx.strokeStyle=up?"#42e28c":"#ff627d";ctx.fillStyle=ctx.strokeStyle;ctx.beginPath();ctx.moveTo(x,hi);ctx.lineTo(x,lo);ctx.stroke();ctx.fillRect(x-body/2,Math.min(open,close),body,Math.max(1,Math.abs(close-open)));});
       ctx.setLineDash([7,5]);levels.forEach(([label,value,color])=>{const yy=y(value);ctx.strokeStyle=color;ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(margin.left,yy);ctx.lineTo(width-margin.right,yy);ctx.stroke();ctx.fillText(`${label} ${fmtPrice(value)}`,width-margin.right+8,yy+4);});ctx.setLineDash([]);
       const first=candles[0], last=candles[candles.length-1];ctx.fillStyle="#789894";ctx.fillText(new Date(first.ts*1000).toLocaleString("tr-TR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}),margin.left,height-8);const end=new Date(last.ts*1000).toLocaleString("tr-TR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});ctx.fillText(end,Math.max(margin.left,width-margin.right-110),height-8);
-      const legend=document.getElementById("marketLegend");legend.innerHTML=trade?`<span><b>${e(trade.system_label)}</b> · ${e(trade.direction)} açık işlem seviyeleri çizildi</span><span>${candles.length} mum · ${e(marketPayload.bar)} · OKX public</span>`:`<span>Bu coinde sistemde açık işlem yok; yalnız canlı fiyat gösteriliyor</span><span>${candles.length} mum · ${e(marketPayload.bar)} · OKX public</span>`;
+      const legend=document.getElementById("marketLegend"),tradeMode=trade?.closed_at?`Kapanmış · ${e(trade.outcome)}`:"Açık işlem";legend.innerHTML=trade?`<span><b>${e(trade.system_label)}</b> · ${e(trade.direction)} · ${tradeMode}</span><span>${candles.length} mum · ${e(marketPayload.bar)} · OKX public</span>`:`<span>Bu coinde seçili işlem yok; yalnız güncel fiyat gösteriliyor</span><span>${candles.length} mum · ${e(marketPayload.bar)} · OKX public</span>`;
     }
 
     function initMarket() {
@@ -666,10 +694,10 @@ def render_dashboard(
       marketInitialized=true;
       const suggestions=[...new Set(["BTCUSDT","ETHUSDT","SOLUSDT",...(DASHBOARD_DATA?.open_trades||[]).map(row=>normalizeMarketSymbol(row.symbol))])];
       document.getElementById("marketSymbols").innerHTML=suggestions.map(symbol=>`<option value="${e(symbol)}"></option>`).join("");
-      document.getElementById("marketLoad").addEventListener("click",()=>loadMarket());
-      document.getElementById("marketSymbol").addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();loadMarket();}});
+      document.getElementById("marketLoad").addEventListener("click",()=>{selectedMarketTrade=null;loadMarket(null,0);});
+      document.getElementById("marketSymbol").addEventListener("keydown",event=>{if(event.key==="Enter"){event.preventDefault();selectedMarketTrade=null;loadMarket(null,0);}});
       document.getElementById("marketBar").addEventListener("change",()=>loadMarket());
-      document.addEventListener("click",event=>{const button=event.target.closest("[data-market-symbol]");if(button){document.getElementById("marketSymbol").value=button.dataset.marketSymbol;document.getElementById("market").scrollIntoView({behavior:"smooth"});loadMarket(button.dataset.marketSymbol);}});
+      document.addEventListener("click",event=>{const button=event.target.closest("[data-market-symbol]");if(!button)return;const rows=button.dataset.marketKind==="closed"?(DASHBOARD_DATA?.recent_results||[]):(DASHBOARD_DATA?.open_trades||[]);selectedMarketTrade=rows.find(row=>String(row.id)===button.dataset.marketTradeId)||null;document.getElementById("marketSymbol").value=button.dataset.marketSymbol;document.getElementById("market").scrollIntoView({behavior:"smooth"});loadMarket(button.dataset.marketSymbol,selectedMarketTrade?.closed_at||0);});
       loadMarket();
     }
 '''
@@ -692,12 +720,12 @@ def render_dashboard(
     .health-hero{{padding:26px;display:flex;align-items:center;justify-content:center;gap:24px}} .health-ring{{--score:100;width:132px;height:132px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--green) calc(var(--score)*1%),#17313a 0);position:relative;flex:0 0 auto;box-shadow:0 0 44px rgba(66,226,140,.14)}} .health-ring:before{{content:"";position:absolute;inset:9px;background:#091820;border-radius:50%}} .health-ring>div{{z-index:1;text-align:center}} .health-ring strong{{font-size:30px;display:block;line-height:1}} .health-ring span{{font-size:10px;color:var(--muted);font-weight:800;letter-spacing:.12em}} .health-meta strong{{display:block;font-size:18px}} .health-meta p{{color:var(--muted);margin:7px 0 0}}
     .quality-warning{{display:none;border:1px solid rgba(255,189,89,.42);background:rgba(255,189,89,.08);color:#ffe0aa;padding:13px 16px;border-radius:13px;margin-bottom:20px}} .quality-warning.show{{display:block}}
     .kpis{{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:32px}} .kpi{{border:1px solid var(--line);border-radius:var(--radius);background:rgba(10,24,32,.9);padding:18px;min-height:112px;position:relative;overflow:hidden}} .kpi:after{{content:"";position:absolute;right:-20px;bottom:-35px;width:90px;height:90px;border-radius:50%;background:var(--accent,var(--teal));filter:blur(40px);opacity:.12}} .kpi label{{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em;font-weight:800}} .kpi strong{{font-size:30px;line-height:1.2;display:block;margin-top:10px}} .kpi small{{color:#8eaaa7}} .kpi.open{{--accent:var(--blue)}} .kpi.tp{{--accent:var(--green)}} .kpi.sl{{--accent:var(--red)}} .kpi.be{{--accent:var(--amber)}}
-    .section{{margin-top:32px}} .section-head{{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:14px}} .section-head h2{{margin:0;font-size:22px;letter-spacing:-.025em}} .section-head p{{color:var(--muted);margin:4px 0 0;font-size:13px}} .filters{{display:flex;gap:7px;flex-wrap:wrap}} .filter{{border:1px solid var(--line);color:#91aaa7;background:#091820;border-radius:999px;padding:7px 11px;cursor:pointer;font-weight:750;font-size:12px}} .filter:hover,.filter.active{{color:#04110e;background:var(--teal);border-color:var(--teal)}}
+    .section{{margin-top:32px}} .section-head{{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:14px}} .section-head h2{{margin:0;font-size:22px;letter-spacing:-.025em}} .section-head p{{color:var(--muted);margin:4px 0 0;font-size:13px}} .filters{{display:flex;gap:7px;flex-wrap:wrap}} .filter{{border:1px solid var(--line);color:#91aaa7;background:#091820;border-radius:999px;padding:7px 11px;cursor:pointer;font-weight:750;font-size:12px}} .filter:hover,.filter.active{{color:#04110e;background:var(--teal);border-color:var(--teal)}} .select-filter{{border:1px solid var(--line);color:#c4d8d5;background:#091820;border-radius:10px;padding:8px 10px;outline:none;font-weight:750;font-size:12px}} .select-filter:focus{{border-color:var(--teal)}}
     .system-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}} .system-card{{border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(150deg,rgba(13,32,41,.92),rgba(8,21,28,.88));padding:18px}} .system-top{{display:flex;align-items:center;justify-content:space-between}} .system-card h3{{margin:13px 0 5px;font-size:17px}} .system-card .open-number{{font-size:25px;font-weight:850}} .system-card .caption{{color:var(--muted);font-size:12px}} .decision{{margin-top:15px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:#b9cecb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
     .analytics-grid{{display:grid;grid-template-columns:.92fr 1.58fr;gap:14px}} .perf-grid{{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}} .perf-card{{border:1px solid var(--line);border-radius:14px;background:rgba(10,24,32,.82);padding:14px}} .perf-card h3{{margin:0;font-size:13px}} .perf-number{{font-size:23px;font-weight:850;margin:8px 0 2px}} .perf-meta{{display:flex;gap:9px;flex-wrap:wrap;color:var(--muted);font-size:11px}} .canvas-panel{{padding:16px;min-height:300px}} .canvas-head{{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:10px}} .canvas-head h3{{margin:0}} .canvas-head p{{margin:3px 0 0;color:var(--muted);font-size:11px}} .canvas-wrap{{position:relative;width:100%;min-height:240px}} .canvas-wrap canvas{{display:block;width:100%;height:100%}}
     .source-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}} .source-card{{border:1px solid var(--line);border-radius:14px;background:rgba(10,24,32,.78);padding:14px;min-height:120px}} .source-card-top{{display:flex;justify-content:space-between;gap:8px;align-items:start}} .source-card h3{{font-size:12px;margin:0}} .source-file{{color:var(--muted);font-size:10px;margin-top:4px;word-break:break-all}} .source-age{{font-size:18px;font-weight:850;margin-top:14px}} .source-card.FRESH{{border-color:rgba(66,226,140,.28)}} .source-card.STALE{{border-color:rgba(255,189,89,.35)}} .source-card.ERROR{{border-color:rgba(255,98,125,.4)}} .source-status{{font-size:9px;font-weight:900;border-radius:999px;padding:4px 7px}} .source-status.FRESH{{background:rgba(66,226,140,.12);color:var(--green)}} .source-status.STALE{{background:rgba(255,189,89,.12);color:var(--amber)}} .source-status.ERROR{{background:rgba(255,98,125,.12);color:var(--red)}} .source-status.UNKNOWN{{background:rgba(130,162,159,.12);color:var(--muted)}}
     .chart-panel{{padding:16px}} .market-controls{{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin-bottom:14px}} .market-controls label{{display:grid;gap:5px;color:var(--muted);font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.08em}} .market-controls input,.market-controls select{{border:1px solid var(--line);border-radius:10px;background:#061219;color:var(--text);padding:10px 11px;outline:none;min-width:160px}} .market-controls select{{min-width:100px}} .market-controls input:focus,.market-controls select:focus{{border-color:var(--teal)}} .market-button{{border:0;border-radius:10px;background:var(--teal);color:#03110e;font-weight:900;padding:11px 15px;cursor:pointer}} .market-canvas{{height:440px;border:1px solid rgba(25,52,63,.72);border-radius:12px;background:#07151c;overflow:hidden}} .chart-legend{{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-top:10px}} .symbol-button{{border:0;padding:0;background:none;color:var(--teal);font-weight:850;letter-spacing:.02em;cursor:pointer;text-align:left}} .symbol-button:hover{{text-decoration:underline}}
-    .panel{{border:1px solid var(--line);border-radius:var(--radius);background:rgba(9,23,31,.9);overflow:hidden}} .toolbar{{padding:12px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}} .search{{width:min(300px,100%);border:1px solid var(--line);border-radius:10px;background:#061219;color:var(--text);padding:9px 11px;outline:none}} .search:focus{{border-color:var(--teal)}} .table-wrap{{overflow:auto}} table{{border-collapse:collapse;width:100%;min-width:960px}} th{{text-align:left;color:#789894;font-size:10px;text-transform:uppercase;letter-spacing:.1em;background:#08171e}} th,td{{padding:13px 14px;border-bottom:1px solid rgba(25,52,63,.72)}} tbody tr:hover{{background:rgba(44,230,191,.035)}} tbody tr:last-child td{{border-bottom:0}} .symbol{{font-weight:850;letter-spacing:.02em}} .sub{{display:block;color:var(--muted);font-size:11px;margin-top:2px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}} .direction,.result-pill,.health-pill{{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:850;letter-spacing:.05em}} .direction.LONG{{background:rgba(66,226,140,.12);color:var(--green)}} .direction.SHORT{{background:rgba(255,98,125,.12);color:#ff8ca0}} .result-pill.TP{{background:rgba(66,226,140,.12);color:var(--green)}} .result-pill.SL{{background:rgba(255,98,125,.12);color:var(--red)}} .result-pill.BE,.result-pill.EXPIRED{{background:rgba(255,189,89,.12);color:var(--amber)}} .progress{{display:flex;gap:5px;min-width:170px}} .step{{height:6px;flex:1;border-radius:9px;background:#173039}} .step.hit{{background:var(--teal);box-shadow:0 0 10px rgba(44,230,191,.3)}} .price-stack{{font-variant-numeric:tabular-nums}} .price-stack small{{display:block;color:var(--muted)}}
+    .panel{{border:1px solid var(--line);border-radius:var(--radius);background:rgba(9,23,31,.9);overflow:hidden}} .toolbar{{padding:12px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}} .result-toolbar{{justify-content:flex-start;flex-wrap:wrap}} .result-toolbar .search{{margin-right:auto}} .search{{width:min(300px,100%);border:1px solid var(--line);border-radius:10px;background:#061219;color:var(--text);padding:9px 11px;outline:none}} .search:focus{{border-color:var(--teal)}} .table-wrap{{overflow:auto}} table{{border-collapse:collapse;width:100%;min-width:960px}} th{{text-align:left;color:#789894;font-size:10px;text-transform:uppercase;letter-spacing:.1em;background:#08171e}} th,td{{padding:13px 14px;border-bottom:1px solid rgba(25,52,63,.72)}} tbody tr:hover{{background:rgba(44,230,191,.035)}} tbody tr:last-child td{{border-bottom:0}} .symbol{{font-weight:850;letter-spacing:.02em}} .sub{{display:block;color:var(--muted);font-size:11px;margin-top:2px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}} .direction,.result-pill,.health-pill{{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:850;letter-spacing:.05em}} .direction.LONG{{background:rgba(66,226,140,.12);color:var(--green)}} .direction.SHORT{{background:rgba(255,98,125,.12);color:#ff8ca0}} .result-pill.TP{{background:rgba(66,226,140,.12);color:var(--green)}} .result-pill.SL{{background:rgba(255,98,125,.12);color:var(--red)}} .result-pill.BE,.result-pill.EXPIRED{{background:rgba(255,189,89,.12);color:var(--amber)}} .progress{{display:flex;gap:5px;min-width:170px}} .step{{height:6px;flex:1;border-radius:9px;background:#173039}} .step.hit{{background:var(--teal);box-shadow:0 0 10px rgba(44,230,191,.3)}} .price-stack{{font-variant-numeric:tabular-nums}} .price-stack small{{display:block;color:var(--muted)}}
     .result-layout{{display:grid;grid-template-columns:.72fr 1.28fr;gap:14px}} .distribution{{padding:20px}} .distribution h3{{margin:0 0 18px}} .bar-row{{margin:14px 0}} .bar-label{{display:flex;justify-content:space-between;color:#b8cecb;font-size:12px;margin-bottom:7px}} .bar{{height:8px;background:#173039;border-radius:99px;overflow:hidden}} .bar i{{display:block;height:100%;width:0;border-radius:99px;background:var(--color,var(--teal))}} .distribution-note{{color:var(--muted);font-size:11px;margin-top:18px}}
     .health-grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}} .health-card{{border:1px solid var(--line);border-radius:15px;background:rgba(10,24,32,.82);padding:15px;min-height:150px}} .health-card-top{{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}} .health-card h3{{font-size:14px;margin:0}} .kind{{color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.07em;margin-top:3px}} .health-pill.GREEN{{color:var(--green);background:rgba(66,226,140,.12)}} .health-pill.YELLOW{{color:var(--amber);background:rgba(255,189,89,.12)}} .health-pill.RED{{color:var(--red);background:rgba(255,98,125,.12)}} .health-pill.UNKNOWN{{color:var(--muted);background:rgba(130,162,159,.12)}} .health-reason{{color:#9db6b3;font-size:12px;margin:14px 0}} .health-foot{{border-top:1px solid var(--line);padding-top:10px;color:var(--muted);font-size:11px}} .health-foot b{{color:#cce0dd;font-weight:750}} .empty{{padding:48px 20px;text-align:center;color:var(--muted)}}
     footer{{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;color:var(--muted);font-size:11px}}
@@ -714,7 +742,7 @@ def render_dashboard(
 
     <section class="section"><div class="section-head"><div><h2>Canlı Sistemler</h2><p>Gerçek işlem sinyali üreten veya gerçek sinyal takibi yapan katmanlar</p></div></div><div id="systemGrid" class="system-grid"></div></section>
 
-    <section class="section" id="performance"><div class="section-head"><div><h2>Performans Analitiği</h2><p>Premium, Scalp, Pump/Dump ve Yeni Liste sonuçları ayrı örneklerle; yalnız kesin R kayıtları özsermaye eğrisine girer</p></div></div><div class="analytics-grid"><div id="performanceGrid" class="perf-grid"></div><div class="panel canvas-panel"><div class="canvas-head"><div><h3>Kümülatif Net R</h3><p>Kapanış sırasına göre gerçek ledger sonuçları</p></div><span id="drawdownBadge" class="badge">Maks. DD: —</span></div><div class="canvas-wrap"><canvas id="equityCanvas" aria-label="Kümülatif Net R grafiği"></canvas></div></div></div></section>
+    <section class="section" id="performance"><div class="section-head"><div><h2>Performans Analitiği</h2><p>Premium, Scalp, Pump/Dump ve Yeni Liste sonuçları ayrı örneklerle; yalnız kesin R kayıtları özsermaye eğrisine girer</p></div><select id="performanceWindow" class="select-filter" aria-label="Performans dönemi"><option value="7D">Son 7 gün</option><option value="30D">Son 30 gün</option><option value="90D">Son 90 gün</option><option value="ALL" selected>Tüm kayıtlar</option></select></div><div class="analytics-grid"><div id="performanceGrid" class="perf-grid"></div><div class="panel canvas-panel"><div class="canvas-head"><div><h3>Kümülatif Net R</h3><p id="equityCaption">Kapanış sırasına göre gerçek ledger sonuçları</p></div><span id="drawdownBadge" class="badge">Maks. DD: —</span></div><div class="canvas-wrap"><canvas id="equityCanvas" aria-label="Kümülatif Net R grafiği"></canvas></div></div></div></section>
 
     <section class="section" id="sources"><div class="section-head"><div><h2>Veri Güncelliği</h2><p>Her veri kaynağı ayrı kontrol edilir; eski veya zamanı belirsiz kritik kayıtlar uyarı üretir</p></div></div><div id="sourceGrid" class="source-grid"></div></section>
 
@@ -722,7 +750,7 @@ def render_dashboard(
 
     <section class="section" id="open"><div class="section-head"><div><h2>Açık İşlemler</h2><p>State dosyalarındaki halen açık gerçek kayıtlar</p></div><div id="openFilters" class="filters"></div></div><div class="panel"><div class="toolbar"><input id="searchInput" class="search" type="search" placeholder="Coin ara…" aria-label="Coin ara"><span class="badge" id="openCountBadge">0 kayıt</span></div><div class="table-wrap"><table><thead><tr><th>Sistem / Coin</th><th>Yön</th><th>Giriş / Son</th><th>TP1 / TP2 / TP3</th><th>Stop</th><th>İlerleme</th><th>Açılış</th></tr></thead><tbody id="openRows"></tbody></table><div id="openEmpty" class="empty" hidden>Açık işlem bulunmuyor.</div></div></div></section>
 
-    <section class="section" id="results"><div class="section-head"><div><h2>TP / SL Sonuçları</h2><p>Ledger dosyalarındaki kapanmış gerçek sinyaller; uydurma sonuç yok</p></div></div><div class="result-layout"><div class="panel distribution"><h3>Sonuç dağılımı</h3><div id="distribution"></div><p class="distribution-note">Net R yalnız kesin R değeri bulunan kayıtların toplamıdır. Farklı sistemlerin örnekleri ayrı ledger kaynaklarından gelir.</p></div><div class="panel"><div class="table-wrap"><table><thead><tr><th>Sistem / Coin</th><th>Yön</th><th>Sonuç</th><th>Net R</th><th>Giriş / Çıkış</th><th>Kapanış</th></tr></thead><tbody id="resultRows"></tbody></table><div id="resultEmpty" class="empty" hidden>Henüz kapanmış sonuç yok.</div></div></div></div></section>
+    <section class="section" id="results"><div class="section-head"><div><h2>İşlem İnceleme Merkezi</h2><p>TP/SL geçmişini filtrele; canlı panelde coin adına tıklayarak işlemi gerçekleştiği mumlarda aç</p></div></div><div class="result-layout"><div class="panel distribution"><h3>Filtreli sonuç dağılımı</h3><div id="distribution"></div><p class="distribution-note">Net R yalnız kesin R değeri bulunan kayıtların toplamıdır. Farklı sistemlerin örnekleri ayrı ledger kaynaklarından gelir.</p></div><div class="panel"><div class="toolbar result-toolbar"><input id="resultSearch" class="search" type="search" placeholder="Geçmişte coin ara…" aria-label="Geçmişte coin ara"><select id="resultSystem" class="select-filter" aria-label="Sonuç sistemi"><option value="ALL">Tüm sistemler</option><option value="PREMIUM">Premium</option><option value="SCALP">Scalp</option><option value="PUMP_DUMP">Pump/Dump</option><option value="NEW_LISTING">Yeni Liste</option></select><select id="resultOutcome" class="select-filter" aria-label="İşlem sonucu"><option value="ALL">Tüm sonuçlar</option><option value="TP">TP</option><option value="SL">Stop / SL</option><option value="BE">Break-even</option><option value="EXPIRED">Süresi dolan</option></select><select id="resultWindow" class="select-filter" aria-label="Geçmiş dönemi"><option value="7D">7 gün</option><option value="30D">30 gün</option><option value="90D">90 gün</option><option value="ALL" selected>Tümü</option></select><span id="resultCountBadge" class="badge">0 kayıt</span></div><div class="table-wrap"><table><thead><tr><th>Sistem / Coin</th><th>Yön</th><th>Sonuç</th><th>Net R</th><th>Giriş / Çıkış</th><th>Kapanış</th></tr></thead><tbody id="resultRows"></tbody></table><div id="resultEmpty" class="empty" hidden>Bu filtrelerde kapanmış işlem bulunmuyor.</div></div></div></div></section>
 
     <section class="section" id="health"><div class="section-head"><div><h2>System Control Sağlığı</h2><p>Teknik çalışma durumu performans kararından ayrı gösterilir</p></div><div id="healthFilters" class="filters"></div></div><div id="healthGrid" class="health-grid"></div></section>
 
@@ -731,7 +759,7 @@ def render_dashboard(
   <script{nonce_attr}>
     {data_declaration}
     const SYSTEMS = ["ALL","PREMIUM","SCALP","PUMP_DUMP","NEW_LISTING"];
-    const state = {{ openSystem:"ALL", healthKind:"ALL", query:"" }};
+    const state = {{ openSystem:"ALL", healthKind:"ALL", query:"", performanceWindow:"ALL", resultSystem:"ALL", resultOutcome:"ALL", resultWindow:"ALL", resultQuery:"" }};
     const labels = {{ALL:"Tümü",PREMIUM:"Premium",SCALP:"Scalp",PUMP_DUMP:"Pump/Dump",NEW_LISTING:"Yeni Liste",LIVE_SIGNAL:"Canlı",RADAR:"Radar",SHADOW:"Gölge",ANALYSIS:"Analiz",INTEGRATED_ANALYSIS:"Entegre",GUARD:"Koruma"}};
     const e = value => String(value ?? "—").replace(/[&<>"']/g, ch => ({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}}[ch]));
     const fmtPrice = value => {{ const n=Number(value); if(!Number.isFinite(n)) return "—"; const a=Math.abs(n); const digits=a>=100?2:a>=1?4:a>=.01?6:10; return n.toLocaleString("tr-TR",{{maximumFractionDigits:digits}}); }};
@@ -771,10 +799,13 @@ def render_dashboard(
       document.getElementById("systemGrid").innerHTML=DASHBOARD_DATA.live_systems.map(s=>`<article class="system-card"><div class="system-top"><span class="health-pill ${{e(s.health)}}">${{e(s.health)}}</span><span class="caption">Örnek: ${{s.sample_size??"—"}}</span></div><h3>${{e(s.label)}}</h3><div class="open-number">${{e(s.open_count)}}</div><div class="caption">açık gerçek işlem</div><div class="decision" title="${{e(s.decision)}}">${{e(s.decision)}}</div></article>`).join("");
     }}
 
+    const activePerformance=()=>DASHBOARD_DATA.performance_windows?.[state.performanceWindow]||DASHBOARD_DATA.performance||{{systems:[],equity_curve:[]}};
+
     function renderPerformance() {{
-      const perf=DASHBOARD_DATA.performance||{{systems:[],equity_curve:[]}};
+      const perf=activePerformance();
       document.getElementById("performanceGrid").innerHTML=perf.systems.map(row=>`<article class="perf-card"><h3>${{e(row.label)}}</h3><div class="perf-number">${{fmtR(row.net_r)}}</div><div class="perf-meta"><span>${{row.sample}} kapanış</span><span>TP %${{row.tp_rate??"—"}}</span><span>SL %${{row.sl_rate??"—"}}</span><span>${{row.exact_r_sample}} kesin R</span></div></article>`).join("");
       document.getElementById("drawdownBadge").textContent=`Maks. DD: ${{fmtR(perf.max_drawdown_r==null?null:-Math.abs(perf.max_drawdown_r))}}`;
+      document.getElementById("equityCaption").textContent=`${{perf.label||"Tüm kayıtlar"}} · ${{perf.exact_r_sample||0}} kesin R kaydı`;
       drawEquityChart();
     }}
 
@@ -785,7 +816,7 @@ def render_dashboard(
     }}
 
     function drawEquityChart() {{
-      const canvas=document.getElementById("equityCanvas"),points=DASHBOARD_DATA.performance?.equity_curve||[];
+      const canvas=document.getElementById("equityCanvas"),points=activePerformance().equity_curve||[];
       if(!canvas)return;
       const {{ctx,width,height}}=setupCanvas(canvas,240);ctx.clearRect(0,0,width,height);
       const margin={{left:46,right:18,top:16,bottom:28}},chartW=width-margin.left-margin.right,chartH=height-margin.top-margin.bottom;
@@ -816,14 +847,17 @@ def render_dashboard(
       const rows=DASHBOARD_DATA.open_trades.filter(r=>(state.openSystem==="ALL"||r.system===state.openSystem)&&(!query||r.symbol.includes(query)));
       document.getElementById("openCountBadge").textContent=`${{rows.length}} kayıt`;
       const tbody=document.getElementById("openRows"), empty=document.getElementById("openEmpty"); empty.hidden=rows.length>0;
-      tbody.innerHTML=rows.map(r=>`<tr><td>${{MARKET_ENDPOINT?`<button type="button" class="symbol-button" data-market-symbol="${{e(r.symbol)}}">${{e(r.symbol)}}</button>`:`<span class="symbol">${{e(r.symbol)}}</span>`}}<span class="sub">${{e(r.system_label)}} · ${{e(r.source)}}</span></td><td><span class="direction ${{e(r.direction)}}">${{e(r.direction)}}</span></td><td class="price-stack">${{fmtPrice(r.entry)}}<small>Son: ${{fmtPrice(r.last_price)}}</small></td><td class="price-stack">${{fmtPrice(r.tp1)}} / ${{fmtPrice(r.tp2)}}<small>TP3: ${{fmtPrice(r.tp3)}}</small></td><td>${{fmtPrice(r.sl)}}</td><td><div class="progress" title="${{e(r.progress)}}"><i class="step ${{r.tp1_hit?"hit":""}}"></i><i class="step ${{r.tp2_hit?"hit":""}}"></i><i class="step ${{r.tp3_hit?"hit":""}}"></i></div><span class="sub">${{e(r.progress)}}</span></td><td>${{fmtDate(r.opened_at)}}<span class="sub">${{ageText(r.opened_at)}}</span></td></tr>`).join("");
+      tbody.innerHTML=rows.map(r=>`<tr><td>${{MARKET_ENDPOINT?`<button type="button" class="symbol-button" data-market-kind="open" data-market-trade-id="${{e(r.id)}}" data-market-symbol="${{e(r.symbol)}}">${{e(r.symbol)}}</button>`:`<span class="symbol">${{e(r.symbol)}}</span>`}}<span class="sub">${{e(r.system_label)}} · ${{e(r.source)}}</span></td><td><span class="direction ${{e(r.direction)}}">${{e(r.direction)}}</span></td><td class="price-stack">${{fmtPrice(r.entry)}}<small>Son: ${{fmtPrice(r.last_price)}}</small></td><td class="price-stack">${{fmtPrice(r.tp1)}} / ${{fmtPrice(r.tp2)}}<small>TP3: ${{fmtPrice(r.tp3)}}</small></td><td>${{fmtPrice(r.sl)}}</td><td><div class="progress" title="${{e(r.progress)}}"><i class="step ${{r.tp1_hit?"hit":""}}"></i><i class="step ${{r.tp2_hit?"hit":""}}"></i><i class="step ${{r.tp3_hit?"hit":""}}"></i></div><span class="sub">${{e(r.progress)}}</span></td><td>${{fmtDate(r.opened_at)}}<span class="sub">${{ageText(r.opened_at)}}</span></td></tr>`).join("");
     }}
 
     function renderResults() {{
-      const rows=DASHBOARD_DATA.recent_results;
+      const query=state.resultQuery.trim().toUpperCase(),days={{"7D":7,"30D":30,"90D":90}}[state.resultWindow]||0,cutoff=days?Number(DASHBOARD_DATA.generated_at)-days*86400:0;
+      const outcomeMatches=(outcome,group)=>group==="ALL"||(group==="TP"&&String(outcome).startsWith("TP")&&!String(outcome).includes("BE"))||(group==="BE"&&(outcome==="BE"||String(outcome).includes("SONRASI_BE")))||outcome===group;
+      const rows=DASHBOARD_DATA.recent_results.filter(r=>(state.resultSystem==="ALL"||r.system===state.resultSystem)&&outcomeMatches(r.outcome,state.resultOutcome)&&(!cutoff||Number(r.closed_at)>=cutoff)&&(!query||String(r.symbol).includes(query)));
+      document.getElementById("resultCountBadge").textContent=`${{rows.length}} kayıt`;
       document.getElementById("resultEmpty").hidden=rows.length>0;
-      document.getElementById("resultRows").innerHTML=rows.map(r=>`<tr><td><span class="symbol">${{e(r.symbol)}}</span><span class="sub">${{e(r.system_label)}}</span></td><td><span class="direction ${{e(r.direction)}}">${{e(r.direction)}}</span></td><td><span class="result-pill ${{outcomeClass(r.outcome)}}">${{e(r.outcome)}}</span></td><td>${{fmtR(r.r_result)}}</td><td class="price-stack">${{fmtPrice(r.entry)}}<small>Çıkış: ${{fmtPrice(r.exit_price)}}</small></td><td>${{fmtDate(r.closed_at)}}</td></tr>`).join("");
-      const counts=DASHBOARD_DATA.outcome_counts, total=Object.values(counts).reduce((a,b)=>a+b,0)||1;
+      document.getElementById("resultRows").innerHTML=rows.map(r=>`<tr><td>${{MARKET_ENDPOINT&&r.closed_at?`<button type="button" class="symbol-button" data-market-kind="closed" data-market-trade-id="${{e(r.id)}}" data-market-symbol="${{e(r.symbol)}}">${{e(r.symbol)}}</button>`:`<span class="symbol">${{e(r.symbol)}}</span>`}}<span class="sub">${{e(r.system_label)}} · ${{e(r.source)}}</span></td><td><span class="direction ${{e(r.direction)}}">${{e(r.direction)}}</span></td><td><span class="result-pill ${{outcomeClass(r.outcome)}}">${{e(r.outcome)}}</span></td><td>${{fmtR(r.r_result)}}</td><td class="price-stack">${{fmtPrice(r.entry)}}<small>Çıkış: ${{fmtPrice(r.exit_price)}}</small></td><td>${{fmtDate(r.closed_at)}}</td></tr>`).join("");
+      const counts=rows.reduce((acc,row)=>{{acc[row.outcome]=(acc[row.outcome]||0)+1;return acc;}},{{}}), total=rows.length||1;
       const groups=[
         ["TP",Object.entries(counts).filter(([k])=>k.startsWith("TP")&&!k.includes("BE")).reduce((a,[,v])=>a+v,0),"#42e28c"],
         ["Break-even",Object.entries(counts).filter(([k])=>k==="BE"||k.includes("SONRASI_BE")).reduce((a,[,v])=>a+v,0),"#ffbd59"],
@@ -841,6 +875,11 @@ def render_dashboard(
     }}
 
     document.getElementById("searchInput").addEventListener("input",event=>{{state.query=event.target.value;renderOpen();}});
+    document.getElementById("performanceWindow").addEventListener("change",event=>{{state.performanceWindow=event.target.value;renderPerformance();}});
+    document.getElementById("resultSearch").addEventListener("input",event=>{{state.resultQuery=event.target.value;renderResults();}});
+    document.getElementById("resultSystem").addEventListener("change",event=>{{state.resultSystem=event.target.value;renderResults();}});
+    document.getElementById("resultOutcome").addEventListener("change",event=>{{state.resultOutcome=event.target.value;renderResults();}});
+    document.getElementById("resultWindow").addEventListener("change",event=>{{state.resultWindow=event.target.value;renderResults();}});
 {market_script}
 {bootstrap_script}
     let resizeTimer=null;

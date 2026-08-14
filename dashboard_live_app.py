@@ -41,7 +41,7 @@ from typing import Any
 from dashboard_builder import build_dashboard_data, render_dashboard
 
 
-VERSION = "KRIPTO_KONTROL_PANELI_LIVE_V1_1_2026_08_14"
+VERSION = "KRIPTO_KONTROL_PANELI_LIVE_V1_2_2026_08_14"
 PASSWORD_ITERATIONS = 310_000
 SESSION_COOKIE = "panel_session"
 LOGIN_CSRF_COOKIE = "panel_login_csrf"
@@ -58,6 +58,14 @@ DATA_FILES = (
 )
 
 MARKET_BARS = {"1m", "5m", "15m", "1H", "4H", "1D"}
+MARKET_BAR_SECONDS = {
+    "1m": 60,
+    "5m": 300,
+    "15m": 900,
+    "1H": 3600,
+    "4H": 14_400,
+    "1D": 86_400,
+}
 MARKET_SYMBOL_PATTERN = re.compile(r"^[A-Z0-9]{2,15}USDT$")
 
 
@@ -352,7 +360,7 @@ class OKXMarketDataClient:
 
     def __init__(self, cache_seconds: int = 20):
         self.cache_seconds = max(5, min(int(cache_seconds), 60))
-        self._cache: dict[tuple[str, str], tuple[float, dict[str, Any]]] = {}
+        self._cache: dict[tuple[str, str, int], tuple[float, dict[str, Any]]] = {}
         self._lock = threading.Lock()
 
     @staticmethod
@@ -368,14 +376,33 @@ class OKXMarketDataClient:
             raise ValueError("Desteklenmeyen mum periyodu.")
         return value
 
-    def _request_candles(self, inst_id: str, bar: str) -> list[list[Any]]:
-        query = urllib.parse.urlencode({
+    @staticmethod
+    def normalize_anchor(value: Any) -> int:
+        if value in (None, "", 0, "0"):
+            return 0
+        try:
+            anchor = int(float(value))
+        except (TypeError, ValueError) as exc:
+            raise ValueError("Geçersiz işlem zamanı.") from exc
+        if anchor < 1_262_304_000 or anchor > int(time.time()) + 86_400:
+            raise ValueError("İşlem zamanı desteklenen aralığın dışında.")
+        return anchor
+
+    def _request_candles(self, inst_id: str, bar: str, anchor: int = 0) -> list[list[Any]]:
+        params = {
             "instId": inst_id,
             "bar": bar,
             "limit": "120",
-        })
+        }
+        endpoint = "candles"
+        if anchor:
+            endpoint = "history-candles"
+            params["after"] = str(
+                (anchor + MARKET_BAR_SECONDS[bar] * 40) * 1000
+            )
+        query = urllib.parse.urlencode(params)
         request = urllib.request.Request(
-            f"https://www.okx.com/api/v5/market/candles?{query}",
+            f"https://www.okx.com/api/v5/market/{endpoint}?{query}",
             headers={
                 "Accept": "application/json",
                 "User-Agent": "Kripto-Kontrol-Paneli-Market/1.1",
@@ -398,10 +425,16 @@ class OKXMarketDataClient:
             raise MarketDataError("Bu parite için mum verisi bulunamadı.")
         return [row for row in rows if isinstance(row, list) and len(row) >= 6]
 
-    def get_candles(self, symbol_value: str, bar_value: str) -> dict[str, Any]:
+    def get_candles(
+        self,
+        symbol_value: str,
+        bar_value: str,
+        anchor_value: Any = None,
+    ) -> dict[str, Any]:
         symbol = self.normalize_symbol(symbol_value)
         bar = self.validate_bar(bar_value)
-        cache_key = (symbol, bar)
+        anchor = self.normalize_anchor(anchor_value)
+        cache_key = (symbol, bar, anchor)
         now = time.monotonic()
         with self._lock:
             cached = self._cache.get(cache_key)
@@ -419,7 +452,7 @@ class OKXMarketDataClient:
         market_type = ""
         for candidate, candidate_type in attempts:
             try:
-                rows = self._request_candles(candidate, bar)
+                rows = self._request_candles(candidate, bar, anchor)
                 inst_id = candidate
                 market_type = candidate_type
                 break
@@ -456,6 +489,7 @@ class OKXMarketDataClient:
             "candles": candles,
             "last_price": candles[-1]["close"],
             "fetched_at": int(time.time()),
+            "anchor": anchor or None,
             "source": "OKX_PUBLIC_NO_API_KEY",
         }
         with self._lock:
@@ -753,8 +787,9 @@ def make_handler(
                 )
                 symbol = (query.get("symbol") or [""])[0]
                 bar = (query.get("bar") or ["15m"])[0]
+                anchor = (query.get("anchor") or [""])[0]
                 try:
-                    payload = market_client.get_candles(symbol, bar)
+                    payload = market_client.get_candles(symbol, bar, anchor)
                 except ValueError as exc:
                     self._json(
                         HTTPStatus.BAD_REQUEST,
