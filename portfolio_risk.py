@@ -8,7 +8,8 @@ V3 değişikliği:
 - TP1 görülmüş açık işlemler 0.5 risk ağırlığıyla sayılır.
 
 V3.1 gölge kayıt değişikliği:
-- Her portföy kararı portfolio_risk_shadow.json dosyasına kaydedilir.
+- Her bot portföy kararını kendi gölge ledger dosyasına kaydeder.
+- Saatlik sonuç izleyici bu dosyaları portfolio_risk_shadow.json altında birleştirir.
 - Sert engeller ve izin verilen adaylar birlikte tutulur.
 - Aynı karar kısa sürede tekrar oluşursa mükerrer kayıt eklenmez.
 - Canlı sinyal kararı, limitler ve Telegram davranışı değişmez.
@@ -49,6 +50,12 @@ DEFAULT_STATE_SOURCES = {
 DEFAULT_MAX_DIRECTION_RISK = 4.0
 DEFAULT_MAX_TOTAL_RISK = 8.0
 DEFAULT_SHADOW_LEDGER_FILE = "portfolio_risk_shadow.json"
+DEFAULT_SHADOW_LEDGER_FILES = {
+    "MAIN_MTF": "portfolio_risk_shadow_main_mtf.json",
+    "SCALP": "portfolio_risk_shadow_scalp.json",
+    "PUMP_DUMP": "portfolio_risk_shadow_pump_dump.json",
+    "NEW_LISTING": "portfolio_risk_shadow_new_listing.json",
+}
 DEFAULT_SHADOW_MAX_RECORDS = 5000
 DEFAULT_SHADOW_DEDUP_SECONDS = 15 * 60
 
@@ -230,6 +237,12 @@ def collect_open_portfolio(state_sources: Optional[Dict[str, Any]] = None) -> Li
     return records
 
 
+def shadow_ledger_file_for_bot(source_bot: Any) -> str:
+    """Her canlı bot için ayrı gölge ledger seçerek eşzamanlı yazma yarışını önler."""
+    normalized = str(source_bot or "UNKNOWN").upper().strip()
+    return DEFAULT_SHADOW_LEDGER_FILES.get(normalized, DEFAULT_SHADOW_LEDGER_FILE)
+
+
 def _shadow_identity(result: Dict[str, Any]) -> str:
     candidate = result.get("candidate") or {}
     return "|".join([
@@ -314,7 +327,7 @@ def evaluate_portfolio_risk(
     max_direction_risk: float = DEFAULT_MAX_DIRECTION_RISK,
     max_total_risk: float = DEFAULT_MAX_TOTAL_RISK,
     record_shadow: bool = True,
-    shadow_ledger_file: str = DEFAULT_SHADOW_LEDGER_FILE,
+    shadow_ledger_file: Optional[str] = None,
 ) -> Dict[str, Any]:
     normalized_symbol = normalize_symbol(symbol)
     normalized_direction = str(direction or "").upper()
@@ -407,7 +420,8 @@ def evaluate_portfolio_risk(
     }
 
     if record_shadow:
-        record_portfolio_shadow_decision(result, ledger_file=shadow_ledger_file)
+        target_ledger = shadow_ledger_file or shadow_ledger_file_for_bot(normalized_bot)
+        record_portfolio_shadow_decision(result, ledger_file=target_ledger)
 
     return result
 
