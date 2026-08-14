@@ -1,19 +1,19 @@
-name: Swing Radar
+name: Swing V3 - Eski Kayit Takibi (Sessiz)
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "12,42 * * * *"
+    - cron: "12 * * * *"
 
 permissions:
   contents: write
 
 concurrency:
-  group: swing-radar
+  group: swing-v3-eski-kayit-takibi
   cancel-in-progress: false
 
 jobs:
-  swing-radar:
+  eski-swing-kayitlarini-takip-et:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -23,7 +23,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Python kur ve pip önbelleğini hazırla
+      - name: Python kur ve pip onbellegini hazirla
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -33,19 +33,16 @@ jobs:
       - name: Paketleri kur
         env:
           PIP_DISABLE_PIP_VERSION_CHECK: "1"
-        run: |
-          python -m pip install --prefer-binary -r requirements.txt
+        run: python -m pip install --prefer-binary -r requirements.txt
 
-      - name: Swing radar çalıştır
+      - name: Eski Swing V3 kayitlarini sessiz takip et
         env:
-          TOKEN: ${{ secrets.TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
         run: python swing_radar.py
 
-      - name: Swing durum, teşhis ve performans kayıtlarını güvenli kaydet
+      - name: Eski Swing durum ve performans kayitlarini kaydet
         if: always()
         run: |
           set -e
@@ -61,30 +58,28 @@ jobs:
             if [ -f "$file" ]; then
               git add "$file"
             else
-              echo "$file henüz oluşmamış; atlandı."
+              echo "$file henuz olusmamis; atlandi."
             fi
           done
 
           if git diff --cached --quiet; then
-            echo "Swing dosyalarında kaydedilecek değişiklik yok."
+            echo "Eski Swing kayitlarinda kaydedilecek degisiklik yok."
             exit 0
           fi
 
-          git commit -m "Update swing state performance and portfolio risk shadow"
+          git commit -m "Update silent Swing V3 legacy tracking"
 
           for attempt in 1 2 3
           do
             echo "Push denemesi: $attempt"
-
             git pull --rebase --autostash origin main
             if git push origin HEAD:main
             then
-              echo "Swing durum ve performans dosyaları kaydedildi."
+              echo "Eski Swing kayitlari kaydedildi."
               exit 0
             fi
-
             sleep 10
           done
 
-          echo "Swing dosyaları üç denemede de kaydedilemedi."
+          echo "Eski Swing kayitlari uc denemede de kaydedilemedi."
           exit 1
