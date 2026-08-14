@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: kripto-kontrol-paneli
+    runtime: docker
+    dockerfilePath: ./Dockerfile.dashboard
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: GITHUB_REPOSITORY
+        value: ahmetelci2014-rgb/kriptosinyalanaliz63
+      - key: GITHUB_REF_NAME
+        value: main
+      - key: GITHUB_PANEL_TOKEN
+        sync: false
+      - key: PANEL_USERNAME
+        value: ahmet
+      - key: PANEL_PASSWORD_HASH
+        sync: false
+      - key: PANEL_REFRESH_SECONDS
+        value: "30"
+      - key: PANEL_SESSION_HOURS
+        value: "12"
+      - key: PANEL_COOKIE_SECURE
+        value: "1"
+      - key: PANEL_TRUST_PROXY
+        value: "1"

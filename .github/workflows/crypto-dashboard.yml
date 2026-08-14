@@ -1,19 +1,39 @@
-name: Kripto Kontrol Paneli
+name: Kripto Panel Kontrolü
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "23 * * * *"
+  push:
+    branches:
+      - main
+    paths:
+      - "dashboard_builder.py"
+      - "dashboard_live_app.py"
+      - "test_dashboard_builder.py"
+      - "test_dashboard_live_app.py"
+      - "Dockerfile.dashboard"
+      - "render.yaml"
+      - ".github/workflows/crypto-dashboard.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "dashboard_builder.py"
+      - "dashboard_live_app.py"
+      - "test_dashboard_builder.py"
+      - "test_dashboard_live_app.py"
+      - "Dockerfile.dashboard"
+      - "render.yaml"
+      - ".github/workflows/crypto-dashboard.yml"
 
 permissions:
   contents: read
 
 concurrency:
-  group: crypto-dashboard
+  group: crypto-dashboard-check
   cancel-in-progress: true
 
 jobs:
-  build-dashboard:
+  test-dashboard:
     runs-on: ubuntu-latest
     timeout-minutes: 7
 
@@ -26,30 +46,41 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Panel testlerini çalıştır
-        run: python -m unittest -v test_dashboard_builder.py
+      - name: Panel Python dosyalarını derle
+        run: |
+          python -m py_compile \
+            dashboard_builder.py \
+            dashboard_live_app.py \
+            test_dashboard_builder.py \
+            test_dashboard_live_app.py
+
+      - name: Statik ve canlı panel testlerini çalıştır
+        run: |
+          python -m unittest -v \
+            test_dashboard_builder.py \
+            test_dashboard_live_app.py
 
       - name: Gerçek verilerden panel üret
         run: python dashboard_builder.py --root . --output dashboard_output/index.html
 
-      - name: Özel panel artifact'ını yükle
+      - name: Acil durum statik yedeğini yükle
         uses: actions/upload-artifact@v4
         with:
-          name: kripto-kontrol-paneli
+          name: kripto-panel-statik-yedek
           path: dashboard_output/index.html
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 3
 
       - name: Kullanım özetini yaz
         run: |
           {
-            echo "## Kripto Kontrol Paneli hazır"
+            echo "## Kripto Kontrol Paneli doğrulandı"
             echo ""
-            echo "Bu çalışmanın **Artifacts** bölümünden \`kripto-kontrol-paneli\` dosyasını indir."
-            echo "ZIP içindeki \`index.html\` dosyasını tarayıcıda aç."
+            echo "Canlı web katmanı ve statik panel testleri başarılı."
+            echo "Artifact yalnız acil durum anlık görüntüsüdür; canlı panel değildir."
             echo ""
             echo "- Salt okunur"
-            echo "- API anahtarı yok"
+            echo "- Private GitHub anahtarı yalnız sunucu tarafında"
             echo "- Telegram yok"
             echo "- Emir açma yok"
           } >> "$GITHUB_STEP_SUMMARY"
