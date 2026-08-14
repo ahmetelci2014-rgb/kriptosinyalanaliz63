@@ -9,9 +9,11 @@ on:
       - "dashboard_builder.py"
       - "dashboard_live_app.py"
       - "dashboard_accounts_app.py"
+      - "dashboard_product_app.py"
       - "test_dashboard_builder.py"
       - "test_dashboard_live_app.py"
       - "test_dashboard_accounts_app.py"
+      - "test_dashboard_product_app.py"
       - "Dockerfile.dashboard"
       - ".dockerignore"
       - "render.yaml"
@@ -23,9 +25,11 @@ on:
       - "dashboard_builder.py"
       - "dashboard_live_app.py"
       - "dashboard_accounts_app.py"
+      - "dashboard_product_app.py"
       - "test_dashboard_builder.py"
       - "test_dashboard_live_app.py"
       - "test_dashboard_accounts_app.py"
+      - "test_dashboard_product_app.py"
       - "Dockerfile.dashboard"
       - ".dockerignore"
       - "render.yaml"
@@ -58,16 +62,19 @@ jobs:
             dashboard_builder.py \
             dashboard_live_app.py \
             dashboard_accounts_app.py \
+            dashboard_product_app.py \
             test_dashboard_builder.py \
             test_dashboard_live_app.py \
-            test_dashboard_accounts_app.py
+            test_dashboard_accounts_app.py \
+            test_dashboard_product_app.py
 
       - name: Statik ve canlı panel testlerini çalıştır
         run: |
           python -m unittest -v \
             test_dashboard_builder.py \
             test_dashboard_live_app.py \
-            test_dashboard_accounts_app.py
+            test_dashboard_accounts_app.py \
+            test_dashboard_product_app.py
 
       - name: Render Docker imajını doğrula
         run: docker build -f Dockerfile.dashboard -t kripto-panel-ci .
@@ -88,7 +95,7 @@ jobs:
           {
             echo "## Kripto Kontrol Paneli doğrulandı"
             echo ""
-            echo "Canlı web katmanı, çoklu kullanıcı yönetimi, Docker build ve statik panel testleri başarılı."
+            echo "Canlı web katmanı, çoklu kullanıcı yönetimi, üyelik merkezi, Docker build ve statik panel testleri başarılı."
             echo "Artifact yalnız acil durum anlık görüntüsüdür; canlı panel değildir."
             echo ""
             echo "- Sinyal/strateji davranışı değişmez"
