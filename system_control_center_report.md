@@ -2,25 +2,26 @@
 
 - Sürüm: `SYSTEM_CONTROL_CENTER_V1_1_2026_08_11`
 - Mod: `READ_ONLY_MONITOR_NO_TELEGRAM_NO_ORDERS_NO_SIGNAL_CHANGE_NO_AUTO_APPLY`
-- Üretim: 2026-08-14T07:46:41+00:00
+- Üretim: 2026-08-14T08:37:58+00:00
 - Genel sağlık: 🟢 **GREEN**
 
 ## Sistemler
 
 | Sistem | Sağlık | Açık | Performans kararı | Veri yaşı |
 |---|---:|---:|---|---:|
-| Premium MTF | 🟢 GREEN | 2 | 🟢 KORU | 0.04s |
-| Scalp Radar | 🟢 GREEN | 0 | 🟢 KORU | 0.92s |
-| Pump/Dump Radar | 🟢 GREEN | 0 | 🟢 KORU / İZLE | 0.98s |
-| Swing Radar | 🟢 GREEN | 2 | 🔴 CANLI İŞLEM KAYNAĞINI DURDUR | 1.08s |
-| Ana Trend Pozisyon Radarı | 🟢 GREEN | 4 | ⚪ VERİ TOPLA | 1.02s |
-| Tüm Piyasa Keşif Radarı | 🟢 GREEN | 1 | ⚪ VERİ TOPLA | 1.55s |
-| Momentum Shadow | 🟢 GREEN | - | 🟠 GÖLGEDE TUT / CANLIYA ALMA | 1.48s |
-| Range Cycle Shadow | 🟢 GREEN | - | 🔴 CANLIYA ALMA / YENİDEN TASARLA | 1.02s |
-| Portfolio Risk | 🟢 GREEN | - | 🟡 PORTFÖY RİSKİNİ İZLE | 0.50s |
-| Decision Engine | 🟢 GREEN | - | ⚪ KARAR YOK | 0.02s |
-| Prescription Engine | 🟢 GREEN | - | ⚪ KARAR YOK | 0.02s |
-| New Listing Radar | 🟢 GREEN | - | ⚪ KARAR YOK | 1.01s |
+| Premium MTF | 🟢 GREEN | 4 | 🟢 KORU | 0.11s |
+| Scalp Radar | 🟢 GREEN | 0 | 🟢 KORU | 0.52s |
+| Pump/Dump Radar | 🟢 GREEN | 0 | 🟢 KORU / İZLE | 0.51s |
+| Swing Radar | 🟢 GREEN | 1 | 🔴 CANLI İŞLEM KAYNAĞINI DURDUR | 0.58s |
+| Swing Shadow V4 | 🟢 GREEN | 0 | ⚪ KARAR YOK | 0.52s |
+| Ana Trend Pozisyon Radarı | 🟢 GREEN | 4 | ⚪ VERİ TOPLA | 1.87s |
+| Tüm Piyasa Keşif Radarı | 🟢 GREEN | 2 | ⚪ VERİ TOPLA | 0.80s |
+| Momentum Shadow | 🟢 GREEN | - | 🟠 GÖLGEDE TUT / CANLIYA ALMA | 0.74s |
+| Range Cycle Shadow | 🟢 GREEN | - | 🔴 CANLIYA ALMA / YENİDEN TASARLA | 0.58s |
+| Portfolio Risk | 🟢 GREEN | - | 🟡 PORTFÖY RİSKİNİ İZLE | 0.04s |
+| Decision Engine | 🟢 GREEN | - | ⚪ KARAR YOK | 0.87s |
+| Prescription Engine | 🟢 GREEN | - | ⚪ KARAR YOK | 0.87s |
+| New Listing Radar | 🟢 GREEN | - | ⚪ KARAR YOK | 0.52s |
 | TP Sonrası / Post Result Shadow | 🟢 GREEN | - | 🟠 İŞLEM YÖNETİMİ ALTERNATİFİNİ GÖLGE TEST ET | 0.04s |
 
 ## Güvenlik
