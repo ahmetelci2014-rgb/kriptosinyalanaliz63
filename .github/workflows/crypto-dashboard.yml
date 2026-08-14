@@ -26,6 +26,7 @@ on:
       - "dashboard_billing_app.py"
       - "dashboard_adminux_app.py"
       - "dashboard_freepreview_app.py"
+      - "dashboard_transparency_app.py"
       - "test_dashboard_builder.py"
       - "test_dashboard_live_app.py"
       - "test_dashboard_accounts_app.py"
@@ -46,6 +47,7 @@ on:
       - "test_dashboard_billing_app.py"
       - "test_dashboard_adminux_app.py"
       - "test_dashboard_freepreview_app.py"
+      - "test_dashboard_transparency_app.py"
       - "Dockerfile.dashboard"
       - ".dockerignore"
       - "render.yaml"
@@ -74,6 +76,7 @@ on:
       - "dashboard_billing_app.py"
       - "dashboard_adminux_app.py"
       - "dashboard_freepreview_app.py"
+      - "dashboard_transparency_app.py"
       - "test_dashboard_builder.py"
       - "test_dashboard_live_app.py"
       - "test_dashboard_accounts_app.py"
@@ -94,6 +97,7 @@ on:
       - "test_dashboard_billing_app.py"
       - "test_dashboard_adminux_app.py"
       - "test_dashboard_freepreview_app.py"
+      - "test_dashboard_transparency_app.py"
       - "Dockerfile.dashboard"
       - ".dockerignore"
       - "render.yaml"
@@ -123,18 +127,18 @@ jobs:
             dashboard_builder.py dashboard_live_app.py dashboard_accounts_app.py dashboard_product_app.py \
             dashboard_market_app.py dashboard_compact_app.py dashboard_focus_app.py dashboard_focus_market_app.py \
             dashboard_home_app.py dashboard_notify_app.py dashboard_alert_app.py dashboard_watchlist_app.py \
-            dashboard_opportunity_app.py dashboard_score_app.py dashboard_filter_app.py dashboard_route_app.py dashboard_memory_app.py dashboard_commercial_app.py dashboard_billing_app.py dashboard_adminux_app.py dashboard_freepreview_app.py \
+            dashboard_opportunity_app.py dashboard_score_app.py dashboard_filter_app.py dashboard_route_app.py dashboard_memory_app.py dashboard_commercial_app.py dashboard_billing_app.py dashboard_adminux_app.py dashboard_freepreview_app.py dashboard_transparency_app.py \
             test_dashboard_builder.py test_dashboard_live_app.py test_dashboard_accounts_app.py test_dashboard_product_app.py \
             test_dashboard_market_app.py test_dashboard_compact_app.py test_dashboard_focus_app.py test_dashboard_home_app.py \
             test_dashboard_notify_app.py test_dashboard_alert_app.py test_dashboard_watchlist_app.py test_dashboard_opportunity_app.py \
-            test_dashboard_score_app.py test_dashboard_filter_app.py test_dashboard_route_app.py test_dashboard_memory_app.py test_dashboard_commercial_app.py test_dashboard_billing_app.py test_dashboard_adminux_app.py test_dashboard_freepreview_app.py
+            test_dashboard_score_app.py test_dashboard_filter_app.py test_dashboard_route_app.py test_dashboard_memory_app.py test_dashboard_commercial_app.py test_dashboard_billing_app.py test_dashboard_adminux_app.py test_dashboard_freepreview_app.py test_dashboard_transparency_app.py
       - name: Statik ve canlı panel testlerini çalıştır
         run: |
           python -m unittest -v \
             test_dashboard_builder.py test_dashboard_live_app.py test_dashboard_accounts_app.py test_dashboard_product_app.py \
             test_dashboard_market_app.py test_dashboard_compact_app.py test_dashboard_focus_app.py test_dashboard_home_app.py \
             test_dashboard_notify_app.py test_dashboard_alert_app.py test_dashboard_watchlist_app.py test_dashboard_opportunity_app.py \
-            test_dashboard_score_app.py test_dashboard_filter_app.py test_dashboard_route_app.py test_dashboard_memory_app.py test_dashboard_commercial_app.py test_dashboard_billing_app.py test_dashboard_adminux_app.py test_dashboard_freepreview_app.py
+            test_dashboard_score_app.py test_dashboard_filter_app.py test_dashboard_route_app.py test_dashboard_memory_app.py test_dashboard_commercial_app.py test_dashboard_billing_app.py test_dashboard_adminux_app.py test_dashboard_freepreview_app.py test_dashboard_transparency_app.py
       - name: Render Docker imajını doğrula
         run: docker build -f Dockerfile.dashboard -t kripto-panel-ci .
       - name: Gerçek verilerden panel üret
@@ -151,17 +155,16 @@ jobs:
           {
             echo "## Kripto Kontrol Paneli doğrulandı"
             echo ""
-            echo "V3.3 FREE Gerçek Deneyim dahil canlı panel ve Docker build testleri başarılı."
+            echo "V3.4 Şeffaf Performans + FREE Takip dahil canlı panel ve Docker build testleri başarılı."
             echo "Artifact yalnız acil durum anlık görüntüsüdür; canlı panel değildir."
             echo ""
-            echo "- FREE kullanıcı aynı anda en yeni 1 gerçek açık sinyali görür"
-            echo "- FREE sinyalde coin, yön, Entry, TP1 ve SL görünür; TP2/TP3 Premium kalır"
-            echo "- FREE kullanıcı son 5 gerçek kapanış sonucunu görür"
-            echo "- FREE kullanıcı 6 temel coin için canlı piyasa görünümünü kullanır"
-            echo "- FREE sinyal seçimi sonuç bilgisine bakmaz; mevcut açık işlemler arasından en yeni uygun kayıt seçilir"
+            echo "- Girişsiz ana sayfa son 6 gerçek kapanış sonucunu coin/yön/sonuç olarak gösterir"
+            echo "- Public sonuç payload'ında Entry/TP/SL/skor seviyeleri bulunmaz"
+            echo "- FREE kullanıcı aynı anda 1 gerçek açık sinyali Entry + TP1 + SL ile görmeye devam eder"
+            echo "- FREE tarayıcı gördüğü sinyali hatırlar; kapanış sonucu son kayıtlarda görülürse TP/SL/BE kartı gösterilir"
+            echo "- Sonuç akışı kronolojiktir; yalnız kazanan seçimi yapılmaz"
             echo "- Premium API uçları FREE kullanıcıya sunucu tarafında kapalı kalır"
             echo "- Mobil ve masaüstü görünür Çıkış ile Yönetim Merkezi korunur"
-            echo "- Kripto ödeme UI seçeneği varsayılan kapalıdır"
             echo "- Sinyal/strateji davranışı değişmez"
             echo "- Telegram gönderim mantığı değişmez"
             echo "- Private GitHub anahtarları yalnız sunucu tarafında"
