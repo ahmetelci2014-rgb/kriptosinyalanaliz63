@@ -6,8 +6,10 @@ import unittest
 from portfolio_risk_outcome_tracker import (
     analyze_record_from_candles,
     analyze_window,
+    build_aggregate_shadow,
     directional_return_percent,
     first_threshold_event,
+    load_merged_source_records,
     make_record_key,
     normalize_symbol,
     summarize_records,
@@ -15,6 +17,31 @@ from portfolio_risk_outcome_tracker import (
 
 
 class PortfolioRiskOutcomeTests(unittest.TestCase):
+    def test_merges_isolated_source_ledgers_without_duplicates(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            first_path = os.path.join(temp_dir, "main.json")
+            second_path = os.path.join(temp_dir, "scalp.json")
+            first = {
+                "identity": "MAIN|BTCUSDT|LONG|ALLOW|0|0",
+                "recorded_at": 100,
+                "would_block": False,
+            }
+            second = {
+                "identity": "SCALP|ETHUSDT|SHORT|BLOCK|1|1",
+                "recorded_at": 200,
+                "would_block": True,
+            }
+            with open(first_path, "w", encoding="utf-8") as handle:
+                json.dump({"records": [first]}, handle)
+            with open(second_path, "w", encoding="utf-8") as handle:
+                json.dump({"records": [first, second]}, handle)
+
+            merged = load_merged_source_records([first_path, second_path])
+            self.assertEqual(len(merged), 2)
+            aggregate = build_aggregate_shadow(merged, current_ts=300)
+            self.assertEqual(aggregate["summary"]["total_records"], 2)
+            self.assertEqual(aggregate["summary"]["blocked_records"], 1)
+
     def test_normalize_symbol(self):
         self.assertEqual(normalize_symbol("BTC/USDT:USDT"), "BTCUSDT")
         self.assertEqual(normalize_symbol("btc-usdt"), "BTCUSDT")
