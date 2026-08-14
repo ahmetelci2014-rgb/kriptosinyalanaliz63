@@ -8,7 +8,7 @@ WORKDIR /app
 
 RUN useradd --create-home --uid 10001 panel
 
-COPY dashboard_builder.py dashboard_live_app.py dashboard_accounts_app.py ./
+COPY dashboard_builder.py dashboard_live_app.py dashboard_accounts_app.py dashboard_accounts_isolated.py ./
 
 USER panel
 
@@ -17,4 +17,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3).read()"
 
-CMD ["python", "dashboard_accounts_app.py", "--host", "0.0.0.0"]
+CMD ["python", "dashboard_accounts_isolated.py", "--host", "0.0.0.0"]
