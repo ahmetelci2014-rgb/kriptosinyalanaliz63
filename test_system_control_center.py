@@ -71,6 +71,32 @@ class HealthTests(unittest.TestCase):
         files = [{"path": "x.json", "exists": True, "valid_json": False, "latest_timestamp": 0}]
         self.assertEqual(scc.health_status(files, 0, 6.0, None)[0], "RED")
 
+    def test_yellow_large_file(self):
+        now = int(time.time())
+        files = [{
+            "path": "large.json",
+            "exists": True,
+            "valid_json": True,
+            "bytes": scc.FILE_SIZE_YELLOW_BYTES,
+            "latest_timestamp": now - 60,
+        }]
+        status, reasons, _ = scc.health_status(files, now - 60, 6.0, None)
+        self.assertEqual(status, "YELLOW")
+        self.assertTrue(any("büyüme" in reason for reason in reasons))
+
+    def test_red_critical_file_size(self):
+        now = int(time.time())
+        files = [{
+            "path": "critical.json",
+            "exists": True,
+            "valid_json": True,
+            "bytes": scc.FILE_SIZE_RED_BYTES,
+            "latest_timestamp": now - 60,
+        }]
+        status, reasons, _ = scc.health_status(files, now - 60, 6.0, None)
+        self.assertEqual(status, "RED")
+        self.assertTrue(any("Kritik dosya" in reason for reason in reasons))
+
     def test_yellow_stale(self):
         now = int(time.time())
         files = [{"path": "x.json", "exists": True, "valid_json": True, "latest_timestamp": now - 10 * 3600}]
@@ -123,6 +149,65 @@ class IntegrationTests(unittest.TestCase):
             self.assertEqual(report["components"]["POSITION_TREND"]["metrics"]["open"], 1)
             self.assertEqual(state.read_bytes(), before_state)
             self.assertEqual(ledger.read_bytes(), before_ledger)
+
+class CriticalAlertTests(unittest.TestCase):
+    def red_report(self):
+        return {
+            "generated_at_utc": "2026-08-14T00:00:00+00:00",
+            "executive": {
+                "overall_health": "RED",
+                "critical_components": ["PREMIUM"],
+            },
+            "components": {
+                "PREMIUM": {
+                    "label": "Premium MTF",
+                    "health": "RED",
+                    "health_reasons": ["Bozuk JSON: trade_ledger.json"],
+                }
+            },
+        }
+
+    def test_red_alert_is_sent_once_then_deduplicated(self):
+        calls = []
+
+        def sender(message, token, chat_id):
+            calls.append((message, token, chat_id))
+            return True
+
+        with tempfile.TemporaryDirectory() as td:
+            state_file = str(Path(td) / "alert.json")
+            first = scc.maybe_send_critical_alert(
+                self.red_report(),
+                state_file=state_file,
+                token="test-token",
+                chat_id="test-chat",
+                current_ts=1_800_000_000,
+                sender=sender,
+            )
+            second = scc.maybe_send_critical_alert(
+                self.red_report(),
+                state_file=state_file,
+                token="test-token",
+                chat_id="test-chat",
+                current_ts=1_800_000_100,
+                sender=sender,
+            )
+
+        self.assertTrue(first["sent"])
+        self.assertEqual(second["reason"], "COOLDOWN")
+        self.assertEqual(len(calls), 1)
+
+    def test_non_red_report_never_sends(self):
+        report = self.red_report()
+        report["executive"]["overall_health"] = "YELLOW"
+        sent = scc.maybe_send_critical_alert(
+            report,
+            token="test-token",
+            chat_id="test-chat",
+            sender=lambda *_: self.fail("sender çağrılmamalı"),
+        )
+        self.assertEqual(sent["reason"], "NOT_RED")
+
 
 class SafetyTests(unittest.TestCase):
     def test_mode(self):
