@@ -147,6 +147,36 @@ class DecisionEngineTests(unittest.TestCase):
         self.assertEqual(result["decision_code"], "IZLE")
         self.assertFalse(result["auto_apply"])
 
+    def test_post_result_reads_v3_model_report_without_auto_apply(self):
+        trades = {}
+        for i in range(20):
+            trades[f"T{i}"] = {
+                "final_result": "TP3",
+                "post_result_shadow": {
+                    "final_result": "TP3",
+                    "status": "COMPLETED",
+                    "reached_levels": {},
+                    "max_favorable_r": 1.0,
+                    "max_adverse_r": 0.5,
+                    "checkpoints": {},
+                },
+            }
+        v3 = {
+            "models": {
+                "TP3_RUNNER_TRAIL_0_5R": {
+                    "sample": 20,
+                    "average_incremental_r": 0.25,
+                }
+            }
+        }
+        result = de.summarize_post_result({"trades": trades}, {}, v3)
+        self.assertEqual(result["decision_code"], "YONETIM_ALTERNATIFI_GOLGE_TEST")
+        self.assertEqual(
+            result["metrics"]["v3_report"]["models"]["TP3_RUNNER_TRAIL_0_5R"]["sample"],
+            20,
+        )
+        self.assertFalse(result["auto_apply"])
+
     def test_build_report_never_auto_applies(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
