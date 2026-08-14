@@ -5,7 +5,7 @@ Kripto Sinyal Sistemi - Karar Motoru v1
 
 Amaç:
 - Mevcut JSON ledger/state dosyalarını salt-okunur biçimde analiz eder.
-- Premium, Scalp, Pump/Dump, Swing, Range, Momentum, Portföy Risk ve
+- Premium, Scalp, Pump/Dump, Swing V4 Shadow, Range, Momentum, Portföy Risk ve
   Premium TP/BE sonrası takip verilerini tek raporda toplar.
 - KORU / İZLE / GÖLGE TEST / CANLI DURDUR / CANLIYA ALMA kararları üretir.
 - decision_report.json dosyasına kanıt, örnek sayısı ve güven seviyesi yazar.
@@ -34,7 +34,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 
-VERSION = "DECISION_ENGINE_V2_2026_08_14"
+VERSION = "DECISION_ENGINE_V3_LEGACY_SWING_REMOVED_2026_08_14"
 MODE = "ANALYSIS_ONLY_NO_SIGNAL_CHANGE_NO_TELEGRAM_NO_ORDERS"
 DEFAULT_OUTPUT = "decision_report.json"
 
@@ -45,8 +45,6 @@ FILES = {
     "scalp_ledger": "scalp_performance_ledger.json",
     "pump_state": "pump_radar_state.json",
     "pump_ledger": "pump_performance_ledger.json",
-    "swing_state": "swing_radar_state.json",
-    "swing_ledger": "swing_performance_ledger.json",
     "swing_v4_ledger": "swing_shadow_v4_ledger.json",
     "momentum_shadow": "momentum_shadow.json",
     "range_shadow": "range_shadow.json",
@@ -59,11 +57,6 @@ THRESHOLDS = {
     "confidence": {
         "medium_sample": 10,
         "high_sample": 30,
-    },
-    "swing": {
-        "live_stop_min_sample": 30,
-        "live_stop_min_stop_rate": 0.45,
-        "live_stop_max_tp3_rate": 0.15,
     },
     "scalp": {
         "split_test_min_sample": 20,
@@ -677,78 +670,6 @@ def summarize_pump(state: Dict[str, Any], ledger: Dict[str, Any]) -> Dict[str, A
     )
 
 
-def summarize_swing(state: Dict[str, Any], ledger: Dict[str, Any]) -> Dict[str, Any]:
-    records = closed_only(iter_records(ledger))
-    summary = ledger.get("summary") if isinstance(ledger.get("summary"), dict) else {}
-
-    if records:
-        n = len(records)
-        metrics = metrics_from_counts(outcome_counts(records), total=n)
-        metrics["data_basis"] = "swing_ledger_records"
-    elif safe_int(summary.get("total"), 0) > 0:
-        n = safe_int(summary.get("total"), 0)
-        metrics = metrics_from_counts(summary_to_counts(summary), total=n)
-        metrics["data_basis"] = "swing_ledger_summary"
-    else:
-        stats = state.get("stats") if isinstance(state.get("stats"), dict) else {}
-        n = safe_int(stats.get("signals"), 0)
-        metrics = metrics_from_counts({
-            "TP3": safe_int(stats.get("tp3"), 0),
-            "BE": safe_int(stats.get("breakeven"), 0),
-            "SL": safe_int(stats.get("stop"), 0),
-            "EXPIRED": safe_int(stats.get("expired"), 0),
-        }, total=n)
-        metrics["data_basis"] = "swing_state_stats_fallback"
-
-    for key in (
-        "direction_correct", "direction_wrong", "direction_mixed",
-        "early_15m", "confirmed_1h", "long", "short",
-        "diagnosis_success", "diagnosis_delayed_direction",
-        "diagnosis_weak_trend", "diagnosis_setup_failed",
-    ):
-        if key in summary:
-            metrics[key] = safe_int(summary.get(key), 0)
-
-    stop_rate = (safe_float(metrics.get("stop_rate_percent"), 0.0) or 0.0) / 100.0
-    tp3_rate = (safe_float(metrics.get("tp3_rate_percent"), 0.0) or 0.0) / 100.0
-    direction_wrong = safe_int(metrics.get("direction_wrong"), 0)
-    direction_correct = safe_int(metrics.get("direction_correct"), 0)
-    short_count = safe_int(metrics.get("short"), 0)
-    long_count = safe_int(metrics.get("long"), 0)
-
-    if (
-        n >= THRESHOLDS["swing"]["live_stop_min_sample"]
-        and stop_rate >= THRESHOLDS["swing"]["live_stop_min_stop_rate"]
-        and tp3_rate <= THRESHOLDS["swing"]["live_stop_max_tp3_rate"]
-    ):
-        reasons = [
-            f"Swing örneği {n}; stop oranı %{stop_rate*100:.1f}.",
-            f"TP3 oranı yalnız %{tp3_rate*100:.1f}.",
-        ]
-        if direction_wrong or direction_correct:
-            reasons.append(f"Yön doğru/yanlış: {direction_correct}/{direction_wrong}.")
-        if short_count and long_count == 0:
-            reasons.append(f"Yön dağılımı tek taraflı: {short_count} SHORT / 0 LONG.")
-        return decision_entry(
-            "CANLI_DURDUR",
-            "🔴 CANLI İŞLEM KAYNAĞINI DURDUR",
-            n,
-            reasons,
-            "Swing veri toplamaya devam etsin fakat gerçek para kaynağı olmasın; 1D/4H rejim ve 1H giriş zamanlaması yeniden tasarlansın.",
-            metrics,
-            confidence_override="YUKSEK",
-        )
-
-    return decision_entry(
-        "IZLE",
-        "🟡 İZLE",
-        n,
-        [f"Swing örneği {n}; mevcut eşikler CANLI_DURDUR koşulunu tamamlamadı."],
-        "Canlı değişiklik yapmadan izlemeyi sürdür.",
-        metrics,
-    )
-
-
 def summarize_swing_v4(ledger: Dict[str, Any]) -> Dict[str, Any]:
     summary = ledger.get("summary") if isinstance(ledger.get("summary"), dict) else {}
     closed = safe_int(summary.get("closed"), 0)
@@ -1224,10 +1145,6 @@ def build_report(base_dir: str = ".", current_ts: Optional[int] = None) -> Dict[
         "PUMP_DUMP": summarize_pump(
             loaded["pump_state"],
             loaded["pump_ledger"],
-        ),
-        "SWING": summarize_swing(
-            loaded["swing_state"],
-            loaded["swing_ledger"],
         ),
         "SWING_V4_SHADOW": summarize_swing_v4(
             loaded["swing_v4_ledger"],
