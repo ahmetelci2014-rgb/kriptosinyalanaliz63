@@ -49,6 +49,10 @@ jobs:
         if: always()
         run: python post_result_shadow.py
 
+      - name: Post-Result Shadow V2 karar raporunu üret
+        if: always()
+        run: python post_result_shadow_v2.py
+
       - name: Durum dosyalarını kaydet
         if: always()
         run: |
@@ -62,7 +66,8 @@ jobs:
             performance.json \
             last_signals.json \
             trade_ledger.json \
-            portfolio_risk_shadow.json
+            portfolio_risk_shadow.json \
+            post_result_shadow_v2_report.json
           do
             if [ -f "$file" ]; then
               git add "$file"
