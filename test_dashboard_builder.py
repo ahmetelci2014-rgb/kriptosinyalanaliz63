@@ -20,7 +20,7 @@ class DashboardBuilderTests(unittest.TestCase):
         })
         self.write_json(root, "pump_radar_state.json", {"open_pump_signals": {}, "open_signals": {}})
         self.write_json(root, "new_listing_performance_ledger.json", {"records": {}})
-        self.write_json(root, "trade_ledger.json", {"trades": {"p-closed": {"trade_id": "p-closed", "symbol": "SOLUSDT", "direction": "LONG", "final_result": "TP3", "r_result": 1.6, "entry": 10, "exit_price": 12, "closed_at": 5000}}})
+        self.write_json(root, "trade_ledger.json", {"trades": {"p-closed": {"trade_id": "p-closed", "symbol": "SOLUSDT", "direction": "LONG", "setup": "MTF", "final_result": "TP3", "r_result": 1.6, "entry": 10, "tp1": 10.5, "tp2": 11, "tp3": 12, "sl": 9, "exit_price": 12, "opened_at": 4500, "closed_at": 5000}}})
         self.write_json(root, "scalp_performance_ledger.json", {"records": [{"id": "s-closed", "stage": "REAL_SIGNAL", "symbol": "XRPUSDT", "direction": "SHORT", "trade_outcome": "STOP", "trade_result_r": -1, "trade_closed_at": 4000}]})
         self.write_json(root, "pump_performance_ledger.json", {"records": [{"id": "d-closed", "stage": "REAL_SIGNAL", "symbol": "DOGEUSDT", "direction": "LONG", "trade_outcome": "BREAKEVEN", "trade_result_r": 0, "trade_closed_at": 3000}]})
         self.write_json(root, "system_control_center_report.json", {
@@ -55,6 +55,12 @@ class DashboardBuilderTests(unittest.TestCase):
             )
             self.assertEqual(premium["tp_rate"], 100.0)
             self.assertEqual(len(data["sources"]), 8)
+            self.assertEqual(data["performance_windows"]["ALL"]["exact_r_sample"], 3)
+            self.assertEqual(data["performance_windows"]["7D"]["exact_r_sample"], 0)
+            closed = next(row for row in data["recent_results"] if row["id"] == "p-closed")
+            self.assertEqual(closed["tp3"], 12.0)
+            self.assertEqual(closed["sl"], 9.0)
+            self.assertEqual(closed["source"], "MTF")
 
     def test_html_is_self_contained_read_only_and_escapes_payload(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -79,10 +85,13 @@ class DashboardBuilderTests(unittest.TestCase):
             market_endpoint="/api/market/candles",
             script_nonce="test-nonce",
         )
-        self.assertIn("Canlı Coin Grafiği", html)
+        self.assertIn("Coin ve İşlem Grafiği", html)
         self.assertIn("/api/market/candles", html)
         self.assertIn("OKX herkese açık veri", html)
         self.assertIn("data-market-symbol", html)
+        self.assertIn("İşlem İnceleme Merkezi", html)
+        self.assertIn("performanceWindow", html)
+        self.assertIn("resultOutcome", html)
         self.assertIn('nonce="test-nonce"', html)
 
     def test_source_freshness_accepts_iso_and_millisecond_timestamps(self):
