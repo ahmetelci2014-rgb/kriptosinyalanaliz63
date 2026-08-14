@@ -33,8 +33,18 @@ class DashboardQualityV35Tests(unittest.TestCase):
         self.assertEqual(payload["premium"]["package_name"], "Premium 30 Gün")
         self.assertEqual(payload["premium"]["price_label"], "499 TL")
         self.assertEqual(payload["premium"]["days"], 30)
+        self.assertEqual(
+            set(payload),
+            {"version", "system", "free", "premium", "disclaimer"},
+        )
+        self.assertEqual(
+            set(payload["system"]),
+            {"health", "open_count", "free_visible_open", "premium_locked_open", "recent_result_count", "tp_rate_percent", "updated_at"},
+        )
+        self.assertNotIn("open_trades", payload)
+        self.assertNotIn("recent_results", payload)
         text = repr(payload).lower()
-        for forbidden in ("entry", "tp1", "tp2", "tp3", "sl", "score", "iban", "secret_code", "instructions", "username", "password"):
+        for forbidden in ("secret iban", "secret_code", "instructions", "username", "password_hash", "payment_requests"):
             self.assertNotIn(forbidden, text)
 
     def test_public_product_zero_open_is_not_fake_free_signal(self):
@@ -64,7 +74,7 @@ class DashboardQualityV35Tests(unittest.TestCase):
         base = transparency.enhance_free_page(base, "nonce123")
         body = app.enhance_free_quality(base, "nonce123")
         self.assertIn("FREE ile gerçek sistemi ölç", body)
-        self.assertIn("1 gerçek sinyal", body)
+        self.assertIn("✓ Gerçek sinyal", body)
         self.assertIn("Son 5 kayıt", body)
         self.assertIn("6 canlı coin", body)
         self.assertIn("Premium özellikleri aç", body)
