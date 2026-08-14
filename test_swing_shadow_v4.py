@@ -16,6 +16,17 @@ def candidate(direction="LONG"):
 
 
 class SwingShadowV4Tests(unittest.TestCase):
+    def test_empty_ledger_has_near_miss_diagnostics(self):
+        self.assertEqual(v4.empty_ledger()["latest_near_misses"], [])
+
+    def test_near_misses_rank_most_complete_first(self):
+        ranked = v4.rank_near_misses([
+            {"symbol": "A", "passed_checks": 4, "total_checks": 9, "score": 95},
+            {"symbol": "B", "passed_checks": 8, "total_checks": 9, "score": 82},
+            {"symbol": "C", "passed_checks": 7, "total_checks": 9, "score": 99},
+        ])
+        self.assertEqual([item["symbol"] for item in ranked], ["B", "C", "A"])
+
     def test_quote_volume_falls_back_to_okx_info(self):
         self.assertEqual(
             v4.safe_quote_volume({"quoteVolume": None, "info": {"volCcy24h": "2500000"}}),
