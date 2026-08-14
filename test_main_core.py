@@ -487,13 +487,11 @@ class PortfolioRiskTests(unittest.TestCase):
         main_signals=None,
         scalp_signals=None,
         pump_signals=None,
-        swing_signals=None,
     ):
         paths = {
             "main": os.path.join(temp_dir, "open_signals.json"),
             "scalp": os.path.join(temp_dir, "scalp_radar_state.json"),
             "pump": os.path.join(temp_dir, "pump_radar_state.json"),
-            "swing": os.path.join(temp_dir, "swing_radar_state.json"),
         }
 
         with open(paths["main"], "w", encoding="utf-8") as handle:
@@ -508,12 +506,6 @@ class PortfolioRiskTests(unittest.TestCase):
         with open(paths["pump"], "w", encoding="utf-8") as handle:
             json.dump({"open_signals": pump_signals or {}}, handle)
 
-        with open(paths["swing"], "w", encoding="utf-8") as handle:
-            json.dump(
-                {"open_swing_signals": swing_signals or {}},
-                handle,
-            )
-
         return {
             "MAIN_MTF": {
                 "filename": paths["main"],
@@ -526,10 +518,6 @@ class PortfolioRiskTests(unittest.TestCase):
             "PUMP_DUMP": {
                 "filename": paths["pump"],
                 "containers": ["open_signals"],
-            },
-            "SWING": {
-                "filename": paths["swing"],
-                "containers": ["open_swing_signals"],
             },
         }
 
@@ -575,7 +563,7 @@ class PortfolioRiskTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             sources = self.build_sources(
                 temp_dir,
-                swing_signals={
+                pump_signals={
                     "ENA_SHORT": {
                         "symbol": "ENA/USDT:USDT",
                         "direction": "SHORT",
