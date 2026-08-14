@@ -1,19 +1,28 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import os
 import tempfile
 import time
+import urllib.parse
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-VERSION = "SYSTEM_CONTROL_CENTER_V1_2_LEGACY_SWING_REMOVED_2026_08_14"
-MODE = "READ_ONLY_MONITOR_NO_TELEGRAM_NO_ORDERS_NO_SIGNAL_CHANGE_NO_AUTO_APPLY"
+VERSION = "SYSTEM_CONTROL_CENTER_V1_3_SIZE_GUARD_CRITICAL_ALERT_2026_08_14"
+MODE = "READ_ONLY_MONITOR_CRITICAL_RED_ALERT_ONLY_NO_ORDERS_NO_SIGNAL_CHANGE_NO_AUTO_APPLY"
 
 REPORT_JSON = "system_control_center_report.json"
 REPORT_MD = "system_control_center_report.md"
+ALERT_STATE_FILE = "system_control_alert_state.json"
+
+FILE_SIZE_YELLOW_BYTES = 4 * 1024 * 1024
+FILE_SIZE_RED_BYTES = 8 * 1024 * 1024
+CRITICAL_ALERT_COOLDOWN_SECONDS = 12 * 60 * 60
+TELEGRAM_TIMEOUT_SECONDS = 10
 
 FAST_STALE_HOURS = 6.0
 HOURLY_STALE_HOURS = 8.0
@@ -432,16 +441,43 @@ def health_status(files, latest_ts, stale_hours, workflow_path):
     reasons = []
     missing = [f["path"] for f in files if not f["exists"]]
     invalid = [f["path"] for f in files if f["exists"] and not f["valid_json"]]
+    critical_size = [
+        f for f in files
+        if f["exists"] and int(f.get("bytes") or 0) >= FILE_SIZE_RED_BYTES
+    ]
+    warning_size = [
+        f for f in files
+        if f["exists"]
+        and FILE_SIZE_YELLOW_BYTES <= int(f.get("bytes") or 0) < FILE_SIZE_RED_BYTES
+    ]
+
     if missing:
         reasons.append("Eksik dosya: " + ", ".join(missing))
     if invalid:
         reasons.append("Bozuk JSON: " + ", ".join(invalid))
+    if critical_size:
+        reasons.append(
+            "Kritik dosya büyüklüğü: "
+            + ", ".join(
+                f"{item['path']}={int(item.get('bytes') or 0) / (1024 * 1024):.2f}MB"
+                for item in critical_size
+            )
+        )
+    if warning_size:
+        reasons.append(
+            "Dosya büyüme uyarısı: "
+            + ", ".join(
+                f"{item['path']}={int(item.get('bytes') or 0) / (1024 * 1024):.2f}MB"
+                for item in warning_size
+            )
+        )
     if workflow_path and not Path(workflow_path).exists():
         reasons.append("Workflow dosyası yok: " + workflow_path)
-    if invalid:
+    if invalid or critical_size:
         return "RED", reasons, None
     if files and sum(1 for f in files if f["exists"]) == 0:
         return "RED", reasons, None
+
     age_hours = None
     if latest_ts:
         # Küçük saat farkları olsa bile raporda negatif veri yaşı gösterme.
@@ -452,9 +488,10 @@ def health_status(files, latest_ts, stale_hours, workflow_path):
     else:
         reasons.append("Güncellik timestamp'i bulunamadı")
         return "YELLOW", reasons, None
-    if missing:
+
+    if missing or warning_size:
         return "YELLOW", reasons, age_hours
-    reasons.append("Dosyalar geçerli ve veri güncel")
+    reasons.append("Dosyalar geçerli, boyut kontrollü ve veri güncel")
     return "GREEN", reasons, age_hours
 
 def build_report(root="."):
@@ -551,7 +588,7 @@ def report_markdown(report):
         "## Güvenlik",
         "",
         "- `auto_apply = false`",
-        "- Telegram göndermez.",
+        "- Telegram yalnız genel sağlık RED olduğunda, aynı hata için 12 saatlik tekrar engeliyle gönderilir.",
         "- Emir açmaz.",
         "- Mevcut bot state/ledger dosyalarına yazmaz.",
         "- Strateji/config/TP/SL değiştirmez.",
@@ -562,10 +599,117 @@ def report_markdown(report):
     ]
     return "\n".join(lines)
 
+def critical_alert_fingerprint(report):
+    executive = report.get("executive", {}) if isinstance(report, dict) else {}
+    if executive.get("overall_health") != "RED":
+        return ""
+
+    components = report.get("components", {})
+    critical = sorted(executive.get("critical_components") or [])
+    payload = {
+        key: {
+            "health": (components.get(key) or {}).get("health"),
+            "reasons": (components.get(key) or {}).get("health_reasons") or [],
+        }
+        for key in critical
+    }
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def build_critical_alert_message(report):
+    executive = report.get("executive", {})
+    components = report.get("components", {})
+    lines = [
+        "🔴 SİSTEM KONTROL KRİTİK",
+        f"UTC: {report.get('generated_at_utc') or utc_text()}",
+        "Genel sağlık: RED",
+    ]
+    for key in executive.get("critical_components") or []:
+        item = components.get(key) or {}
+        reasons = item.get("health_reasons") or []
+        reason_text = "; ".join(str(value) for value in reasons[:2]) or "Kritik teknik hata"
+        lines.append(f"- {item.get('label') or key}: {reason_text}")
+    lines.append("Emir veya strateji değişikliği yapılmadı; yalnız teknik uyarıdır.")
+    return "\n".join(lines)
+
+
+def load_alert_state(filename=ALERT_STATE_FILE):
+    try:
+        return load_json_file(filename)
+    except Exception:
+        return {}
+
+
+def send_critical_telegram(message, token, chat_id):
+    if not token or not chat_id:
+        return False
+    payload = urllib.parse.urlencode({
+        "chat_id": str(chat_id),
+        "text": str(message),
+        "disable_web_page_preview": "true",
+    }).encode("utf-8")
+    request = urllib.request.Request(
+        f"https://api.telegram.org/bot{token}/sendMessage",
+        data=payload,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=TELEGRAM_TIMEOUT_SECONDS) as response:
+            return 200 <= int(response.getcode()) < 300
+    except Exception as exc:
+        print("Kritik Telegram gönderim hatası:", type(exc).__name__)
+        return False
+
+
+def maybe_send_critical_alert(
+    report,
+    state_file=ALERT_STATE_FILE,
+    token=None,
+    chat_id=None,
+    current_ts=None,
+    sender=send_critical_telegram,
+):
+    current_ts = int(current_ts if current_ts is not None else now_ts())
+    fingerprint = critical_alert_fingerprint(report)
+    if not fingerprint:
+        return {"sent": False, "reason": "NOT_RED"}
+
+    state = load_alert_state(state_file)
+    last_fingerprint = str(state.get("last_fingerprint") or "")
+    last_sent_at = int(safe_float(state.get("last_sent_at"), 0) or 0)
+    if (
+        fingerprint == last_fingerprint
+        and current_ts - last_sent_at < CRITICAL_ALERT_COOLDOWN_SECONDS
+    ):
+        return {"sent": False, "reason": "COOLDOWN"}
+
+    token = token if token is not None else os.getenv("TOKEN")
+    chat_id = chat_id if chat_id is not None else os.getenv("CHAT_ID")
+    if not token or not chat_id:
+        return {"sent": False, "reason": "MISSING_CREDENTIALS"}
+
+    message = build_critical_alert_message(report)
+    if not sender(message, token, chat_id):
+        return {"sent": False, "reason": "SEND_FAILED"}
+
+    executive = report.get("executive", {})
+    atomic_write_json(state_file, {
+        "version": "SYSTEM_CONTROL_ALERT_STATE_V1",
+        "last_fingerprint": fingerprint,
+        "last_sent_at": current_ts,
+        "last_sent_at_utc": utc_text(current_ts),
+        "critical_components": executive.get("critical_components") or [],
+    })
+    return {"sent": True, "reason": "SENT"}
+
+
 def run():
     report = build_report(".")
     atomic_write_json(REPORT_JSON, report)
     atomic_write_text(REPORT_MD, report_markdown(report))
+    alert_result = maybe_send_critical_alert(report)
     ex = report["executive"]
     print("=== SISTEM KONTROL MERKEZI ===")
     print("Version:", VERSION)
@@ -574,6 +718,7 @@ def run():
     print("Counts:", ex["health_counts"])
     print("Critical:", ex["critical_components"])
     print("Attention:", ex["attention_components"])
+    print("Critical alert:", alert_result.get("reason"))
     for key, item in report["components"].items():
         print(icon(item["health"]), key, item["health"], "age_hours=", item["age_hours"], "perf=", item["performance"].get("decision_code"))
 
