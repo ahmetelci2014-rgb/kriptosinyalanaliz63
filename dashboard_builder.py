@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 
-VERSION = "KRIPTO_KONTROL_PANELI_V1_3_2026_08_14"
+VERSION = "KRIPTO_KONTROL_PANELI_V1_4_2026_08_14"
 TR_TIMEZONE = timezone(timedelta(hours=3))
 
 SOURCE_SPECS = (
@@ -384,6 +384,100 @@ def build_open_risk_summary(open_trades: list[dict[str, Any]]) -> dict[str, Any]
     }
 
 
+def build_result_breakdown(
+    closed_results: list[dict[str, Any]],
+    current: datetime,
+) -> dict[str, Any]:
+    direction_rows: list[dict[str, Any]] = []
+    for direction in ("LONG", "SHORT"):
+        rows = [row for row in closed_results if row.get("direction") == direction]
+        outcomes = Counter(row["outcome"] for row in rows)
+        exact_r = [float(row["r_result"]) for row in rows if row.get("r_result") is not None]
+        tp = sum(
+            count
+            for outcome, count in outcomes.items()
+            if outcome.startswith("TP") and "BE" not in outcome
+        )
+        sl = int(outcomes.get("SL", 0))
+        direction_rows.append({
+            "direction": direction,
+            "sample": len(rows),
+            "tp": tp,
+            "sl": sl,
+            "tp_rate": round(tp / len(rows) * 100, 1) if rows else None,
+            "sl_rate": round(sl / len(rows) * 100, 1) if rows else None,
+            "exact_r_sample": len(exact_r),
+            "net_r": round(sum(exact_r), 4) if exact_r else None,
+            "average_r": round(sum(exact_r) / len(exact_r), 4) if exact_r else None,
+        })
+
+    current_day = current.astimezone(TR_TIMEZONE).date()
+    daily: list[dict[str, Any]] = []
+    daily_index: dict[str, dict[str, Any]] = {}
+    for days_ago in range(29, -1, -1):
+        day = (current_day - timedelta(days=days_ago)).isoformat()
+        row = {
+            "date": day,
+            "count": 0,
+            "tp": 0,
+            "sl": 0,
+            "exact_r_sample": 0,
+            "net_r": 0.0,
+        }
+        daily.append(row)
+        daily_index[day] = row
+    for result in closed_results:
+        timestamp = safe_int(result.get("closed_at"))
+        if timestamp <= 0:
+            continue
+        day = datetime.fromtimestamp(timestamp, TR_TIMEZONE).date().isoformat()
+        target = daily_index.get(day)
+        if target is None:
+            continue
+        target["count"] += 1
+        outcome = str(result.get("outcome") or "")
+        if outcome.startswith("TP") and "BE" not in outcome:
+            target["tp"] += 1
+        elif outcome == "SL":
+            target["sl"] += 1
+        if result.get("r_result") is not None:
+            target["exact_r_sample"] += 1
+            target["net_r"] += float(result["r_result"])
+    for row in daily:
+        row["net_r"] = round(float(row["net_r"]), 4)
+
+    sequence_type = None
+    sequence_count = 0
+    for result in closed_results:
+        outcome = str(result.get("outcome") or "")
+        if outcome.startswith("TP") and "BE" not in outcome:
+            category = "TP"
+        elif outcome == "SL":
+            category = "SL"
+        elif outcome == "BE" or "BE" in outcome:
+            category = "BE"
+        elif outcome == "EXPIRED":
+            category = "EXPIRED"
+        else:
+            category = "OTHER"
+        if sequence_type is None:
+            sequence_type = category
+        if category != sequence_type:
+            break
+        sequence_count += 1
+
+    measured_days = [row for row in daily if row["exact_r_sample"] > 0]
+    best_day = max(measured_days, key=lambda row: row["net_r"]) if measured_days else None
+    worst_day = min(measured_days, key=lambda row: row["net_r"]) if measured_days else None
+    return {
+        "directions": direction_rows,
+        "daily_30d": daily,
+        "recent_sequence": {"type": sequence_type, "count": sequence_count},
+        "best_day": dict(best_day) if best_day else None,
+        "worst_day": dict(worst_day) if worst_day else None,
+    }
+
+
 def collect_open_trades(root: Path, warnings: list[str]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
 
@@ -548,6 +642,7 @@ def build_dashboard_data(root: Path | str, now: datetime | None = None) -> dict[
     current = now or datetime.now(timezone.utc)
     if current.tzinfo is None:
         current = current.replace(tzinfo=timezone.utc)
+    result_breakdown = build_result_breakdown(closed_results, current)
     performance = build_performance_analytics(closed_results)
     performance_windows: dict[str, dict[str, Any]] = {}
     for key, days, label in (
@@ -604,6 +699,7 @@ def build_dashboard_data(root: Path | str, now: datetime | None = None) -> dict[
         "outcome_counts": dict(sorted(outcome_counts.items())),
         "performance": performance,
         "performance_windows": performance_windows,
+        "result_breakdown": result_breakdown,
         "sources": sources,
         "health": health,
         "data_quality": {
@@ -661,7 +757,7 @@ def render_dashboard(
       const warningBox=document.getElementById("qualityWarning");
       warningBox.classList.remove("show");
       warningBox.textContent="";
-      initHeader(); renderKpis(); renderSystems(); renderRisk(); renderPerformance(); renderSources(); renderOpen(); renderResults(); renderHealth();
+      initHeader(); renderKpis(); renderSystems(); renderRisk(); renderPerformance(); renderDirection(); renderSources(); renderOpen(); renderResults(); renderHealth();
     }
 
     function setConnection(status, text) {
@@ -702,9 +798,10 @@ def render_dashboard(
         eyebrow = "Birleşik operasyon görünümü"
         bootstrap_script = (
             "    initHeader(); renderKpis(); renderSystems(); "
-            "renderRisk(); renderPerformance(); renderSources(); renderOpen(); renderResults(); renderHealth();"
+            "renderRisk(); renderPerformance(); renderDirection(); renderSources(); renderOpen(); renderResults(); renderHealth();"
         )
 
+    market_nav_link = '<a href="#market">Coin Grafiği</a>' if market_mode else ""
     market_section = ""
     market_script = ""
     if market_mode:
@@ -803,19 +900,21 @@ def render_dashboard(
     main{{padding:42px 0 70px}} .hero{{display:grid;grid-template-columns:1.55fr .75fr;gap:22px;align-items:stretch;margin-bottom:22px}} .hero-copy,.health-hero{{border:1px solid var(--line);border-radius:24px;background:linear-gradient(145deg,rgba(13,32,41,.94),rgba(7,19,26,.9));overflow:hidden;position:relative}} .hero-copy{{padding:34px}} .eyebrow{{color:var(--teal);font-size:12px;font-weight:850;letter-spacing:.14em;text-transform:uppercase}} h1{{font-size:clamp(32px,5vw,62px);line-height:1.02;letter-spacing:-.052em;margin:14px 0 16px;max-width:900px}} h1 span{{color:var(--teal)}} .lead{{color:#a8c1be;font-size:16px;max-width:760px;margin:0}} .safety{{margin-top:24px;display:flex;gap:10px;flex-wrap:wrap}} .safety .badge:first-child{{border-color:rgba(44,230,191,.35);color:var(--teal)}}
     .health-hero{{padding:26px;display:flex;align-items:center;justify-content:center;gap:24px}} .health-ring{{--score:100;width:132px;height:132px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--green) calc(var(--score)*1%),#17313a 0);position:relative;flex:0 0 auto;box-shadow:0 0 44px rgba(66,226,140,.14)}} .health-ring:before{{content:"";position:absolute;inset:9px;background:#091820;border-radius:50%}} .health-ring>div{{z-index:1;text-align:center}} .health-ring strong{{font-size:30px;display:block;line-height:1}} .health-ring span{{font-size:10px;color:var(--muted);font-weight:800;letter-spacing:.12em}} .health-meta strong{{display:block;font-size:18px}} .health-meta p{{color:var(--muted);margin:7px 0 0}}
     .quality-warning{{display:none;border:1px solid rgba(255,189,89,.42);background:rgba(255,189,89,.08);color:#ffe0aa;padding:13px 16px;border-radius:13px;margin-bottom:20px}} .quality-warning.show{{display:block}}
+    .quick-nav{{position:sticky;top:84px;z-index:8;display:flex;gap:7px;overflow:auto;margin:0 0 22px;padding:9px;border:1px solid rgba(25,52,63,.9);border-radius:14px;background:rgba(6,16,22,.88);backdrop-filter:blur(14px);scrollbar-width:thin}} .quick-nav a{{white-space:nowrap;border:1px solid var(--line);border-radius:999px;padding:6px 10px;color:#9db6b3;font-size:11px;font-weight:800}} .quick-nav a:hover{{border-color:var(--teal);color:var(--teal)}}
     .kpis{{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:32px}} .kpi{{border:1px solid var(--line);border-radius:var(--radius);background:rgba(10,24,32,.9);padding:18px;min-height:112px;position:relative;overflow:hidden}} .kpi:after{{content:"";position:absolute;right:-20px;bottom:-35px;width:90px;height:90px;border-radius:50%;background:var(--accent,var(--teal));filter:blur(40px);opacity:.12}} .kpi label{{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em;font-weight:800}} .kpi strong{{font-size:30px;line-height:1.2;display:block;margin-top:10px}} .kpi small{{color:#8eaaa7}} .kpi.open{{--accent:var(--blue)}} .kpi.tp{{--accent:var(--green)}} .kpi.sl{{--accent:var(--red)}} .kpi.be{{--accent:var(--amber)}}
     .section{{margin-top:32px}} .section-head{{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:14px}} .section-head h2{{margin:0;font-size:22px;letter-spacing:-.025em}} .section-head p{{color:var(--muted);margin:4px 0 0;font-size:13px}} .filters{{display:flex;gap:7px;flex-wrap:wrap}} .filter{{border:1px solid var(--line);color:#91aaa7;background:#091820;border-radius:999px;padding:7px 11px;cursor:pointer;font-weight:750;font-size:12px}} .filter:hover,.filter.active{{color:#04110e;background:var(--teal);border-color:var(--teal)}} .select-filter{{border:1px solid var(--line);color:#c4d8d5;background:#091820;border-radius:10px;padding:8px 10px;outline:none;font-weight:750;font-size:12px}} .select-filter:focus{{border-color:var(--teal)}}
     .system-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}} .system-card{{border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(150deg,rgba(13,32,41,.92),rgba(8,21,28,.88));padding:18px}} .system-top{{display:flex;align-items:center;justify-content:space-between}} .system-card h3{{margin:13px 0 5px;font-size:17px}} .system-card .open-number{{font-size:25px;font-weight:850}} .system-card .caption{{color:var(--muted);font-size:12px}} .decision{{margin-top:15px;padding-top:12px;border-top:1px solid var(--line);font-size:12px;color:#b9cecb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
     .risk-panel{{padding:16px}} .risk-grid{{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}} .risk-card{{border:1px solid var(--line);border-radius:14px;background:rgba(10,24,32,.82);padding:14px;min-height:105px}} .risk-card label{{display:block;color:var(--muted);font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.08em}} .risk-card strong{{display:block;font-size:23px;margin-top:9px}} .risk-card small{{color:var(--muted)}} .risk-systems{{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}} .risk-system{{border:1px solid rgba(25,52,63,.72);border-radius:11px;padding:9px 11px;display:flex;justify-content:space-between;color:var(--muted);font-size:11px}} .risk-system b{{color:var(--text)}} .risk-note{{margin-top:12px;color:var(--muted);font-size:11px}} .risk-note.attention{{color:var(--amber)}}
     .analytics-grid{{display:grid;grid-template-columns:.92fr 1.58fr;gap:14px}} .perf-grid{{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}} .perf-card{{border:1px solid var(--line);border-radius:14px;background:rgba(10,24,32,.82);padding:14px}} .perf-card h3{{margin:0;font-size:13px}} .perf-number{{font-size:23px;font-weight:850;margin:8px 0 2px}} .perf-meta{{display:flex;gap:9px;flex-wrap:wrap;color:var(--muted);font-size:11px}} .canvas-panel{{padding:16px;min-height:300px}} .canvas-head{{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:10px}} .canvas-head h3{{margin:0}} .canvas-head p{{margin:3px 0 0;color:var(--muted);font-size:11px}} .canvas-wrap{{position:relative;width:100%;min-height:240px}} .canvas-wrap canvas{{display:block;width:100%;height:100%}}
+    .direction-layout{{display:grid;grid-template-columns:.78fr 1.42fr;gap:14px}} .direction-cards{{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}} .direction-card{{border:1px solid var(--line);border-radius:14px;background:rgba(10,24,32,.82);padding:15px}} .direction-card h3{{display:flex;align-items:center;justify-content:space-between;margin:0;font-size:14px}} .direction-card strong{{display:block;font-size:24px;margin:11px 0 3px}} .direction-card p{{color:var(--muted);font-size:11px;margin:0}} .direction-summary{{grid-column:1/-1;border:1px solid var(--line);border-radius:14px;background:rgba(10,24,32,.82);padding:14px;color:var(--muted);font-size:11px;display:grid;gap:7px}} .direction-summary b{{color:var(--text)}}
     .source-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}} .source-card{{border:1px solid var(--line);border-radius:14px;background:rgba(10,24,32,.78);padding:14px;min-height:120px}} .source-card-top{{display:flex;justify-content:space-between;gap:8px;align-items:start}} .source-card h3{{font-size:12px;margin:0}} .source-file{{color:var(--muted);font-size:10px;margin-top:4px;word-break:break-all}} .source-age{{font-size:18px;font-weight:850;margin-top:14px}} .source-card.FRESH{{border-color:rgba(66,226,140,.28)}} .source-card.STALE{{border-color:rgba(255,189,89,.35)}} .source-card.ERROR{{border-color:rgba(255,98,125,.4)}} .source-status{{font-size:9px;font-weight:900;border-radius:999px;padding:4px 7px}} .source-status.FRESH{{background:rgba(66,226,140,.12);color:var(--green)}} .source-status.STALE{{background:rgba(255,189,89,.12);color:var(--amber)}} .source-status.ERROR{{background:rgba(255,98,125,.12);color:var(--red)}} .source-status.UNKNOWN{{background:rgba(130,162,159,.12);color:var(--muted)}}
     .chart-panel{{padding:16px}} .market-controls{{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin-bottom:14px}} .market-controls label{{display:grid;gap:5px;color:var(--muted);font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.08em}} .market-controls input,.market-controls select{{border:1px solid var(--line);border-radius:10px;background:#061219;color:var(--text);padding:10px 11px;outline:none;min-width:160px}} .market-controls select{{min-width:100px}} .market-controls input:focus,.market-controls select:focus{{border-color:var(--teal)}} .market-button{{border:0;border-radius:10px;background:var(--teal);color:#03110e;font-weight:900;padding:11px 15px;cursor:pointer}} .market-canvas{{height:440px;border:1px solid rgba(25,52,63,.72);border-radius:12px;background:#07151c;overflow:hidden}} .chart-legend{{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin-top:10px}} .symbol-button{{border:0;padding:0;background:none;color:var(--teal);font-weight:850;letter-spacing:.02em;cursor:pointer;text-align:left}} .symbol-button:hover{{text-decoration:underline}}
     .panel{{border:1px solid var(--line);border-radius:var(--radius);background:rgba(9,23,31,.9);overflow:hidden}} .toolbar{{padding:12px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}} .result-toolbar{{justify-content:flex-start;flex-wrap:wrap}} .result-toolbar .search{{margin-right:auto}} .export-button{{border:1px solid rgba(44,230,191,.38);border-radius:10px;background:rgba(44,230,191,.08);color:var(--teal);padding:8px 11px;cursor:pointer;font-weight:850;font-size:12px}} .export-button:hover{{background:var(--teal);color:#03110e}} .search{{width:min(300px,100%);border:1px solid var(--line);border-radius:10px;background:#061219;color:var(--text);padding:9px 11px;outline:none}} .search:focus{{border-color:var(--teal)}} .table-wrap{{overflow:auto}} table{{border-collapse:collapse;width:100%;min-width:960px}} th{{text-align:left;color:#789894;font-size:10px;text-transform:uppercase;letter-spacing:.1em;background:#08171e}} th,td{{padding:13px 14px;border-bottom:1px solid rgba(25,52,63,.72)}} tbody tr:hover{{background:rgba(44,230,191,.035)}} tbody tr:last-child td{{border-bottom:0}} .symbol{{font-weight:850;letter-spacing:.02em}} .sub{{display:block;color:var(--muted);font-size:11px;margin-top:2px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}} .direction,.result-pill,.health-pill{{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:850;letter-spacing:.05em}} .direction.LONG{{background:rgba(66,226,140,.12);color:var(--green)}} .direction.SHORT{{background:rgba(255,98,125,.12);color:#ff8ca0}} .result-pill.TP{{background:rgba(66,226,140,.12);color:var(--green)}} .result-pill.SL{{background:rgba(255,98,125,.12);color:var(--red)}} .result-pill.BE,.result-pill.EXPIRED{{background:rgba(255,189,89,.12);color:var(--amber)}} .progress{{display:flex;gap:5px;min-width:170px}} .step{{height:6px;flex:1;border-radius:9px;background:#173039}} .step.hit{{background:var(--teal);box-shadow:0 0 10px rgba(44,230,191,.3)}} .price-stack{{font-variant-numeric:tabular-nums}} .price-stack small{{display:block;color:var(--muted)}}
     .result-layout{{display:grid;grid-template-columns:.72fr 1.28fr;gap:14px}} .distribution{{padding:20px}} .distribution h3{{margin:0 0 18px}} .bar-row{{margin:14px 0}} .bar-label{{display:flex;justify-content:space-between;color:#b8cecb;font-size:12px;margin-bottom:7px}} .bar{{height:8px;background:#173039;border-radius:99px;overflow:hidden}} .bar i{{display:block;height:100%;width:0;border-radius:99px;background:var(--color,var(--teal))}} .distribution-note{{color:var(--muted);font-size:11px;margin-top:18px}} .pagination{{display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;border-top:1px solid var(--line)}} .page-button{{border:1px solid var(--line);border-radius:9px;background:#091820;color:#c4d8d5;padding:7px 11px;cursor:pointer;font-weight:800}} .page-button:hover:not(:disabled){{border-color:var(--teal);color:var(--teal)}} .page-button:disabled{{opacity:.35;cursor:not-allowed}} .page-info{{color:var(--muted);font-size:11px;min-width:110px;text-align:center}}
     .health-grid{{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}} .health-card{{border:1px solid var(--line);border-radius:15px;background:rgba(10,24,32,.82);padding:15px;min-height:150px}} .health-card-top{{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}} .health-card h3{{font-size:14px;margin:0}} .kind{{color:var(--muted);font-size:10px;font-weight:800;letter-spacing:.07em;margin-top:3px}} .health-pill.GREEN{{color:var(--green);background:rgba(66,226,140,.12)}} .health-pill.YELLOW{{color:var(--amber);background:rgba(255,189,89,.12)}} .health-pill.RED{{color:var(--red);background:rgba(255,98,125,.12)}} .health-pill.UNKNOWN{{color:var(--muted);background:rgba(130,162,159,.12)}} .health-reason{{color:#9db6b3;font-size:12px;margin:14px 0}} .health-foot{{border-top:1px solid var(--line);padding-top:10px;color:var(--muted);font-size:11px}} .health-foot b{{color:#cce0dd;font-weight:750}} .empty{{padding:48px 20px;text-align:center;color:var(--muted)}}
     footer{{margin-top:42px;padding-top:22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:16px;color:var(--muted);font-size:11px}}
-    @media(max-width:1050px){{.hero{{grid-template-columns:1fr}}.kpis{{grid-template-columns:repeat(3,1fr)}}.system-grid{{grid-template-columns:repeat(2,1fr)}}.risk-grid{{grid-template-columns:repeat(3,1fr)}}.risk-systems{{grid-template-columns:repeat(2,1fr)}}.source-grid{{grid-template-columns:repeat(2,1fr)}}.health-grid{{grid-template-columns:repeat(2,1fr)}}.result-layout,.analytics-grid{{grid-template-columns:1fr}}}}
-    @media(max-width:680px){{.shell{{width:min(100% - 20px,1480px)}}.topbar{{height:auto;min-height:70px;padding:10px 0}}.brand small,.top-actions .badge:nth-child(2){{display:none}}main{{padding-top:24px}}.hero-copy{{padding:24px}}.health-hero{{justify-content:flex-start}}.kpis{{grid-template-columns:repeat(2,1fr)}}.kpi:last-child{{grid-column:1/-1}}.system-grid,.health-grid,.source-grid,.perf-grid,.risk-grid,.risk-systems{{grid-template-columns:1fr}}.section-head{{align-items:flex-start;flex-direction:column}}.toolbar{{align-items:stretch;flex-direction:column}}.search{{width:100%}}.market-controls>*{{width:100%}}.market-controls input,.market-controls select{{width:100%}}.market-canvas{{height:360px}}footer{{flex-direction:column}}}}
+    @media(max-width:1050px){{.hero{{grid-template-columns:1fr}}.kpis{{grid-template-columns:repeat(3,1fr)}}.system-grid{{grid-template-columns:repeat(2,1fr)}}.risk-grid{{grid-template-columns:repeat(3,1fr)}}.risk-systems{{grid-template-columns:repeat(2,1fr)}}.source-grid{{grid-template-columns:repeat(2,1fr)}}.health-grid{{grid-template-columns:repeat(2,1fr)}}.result-layout,.analytics-grid,.direction-layout{{grid-template-columns:1fr}}}}
+    @media(max-width:680px){{.shell{{width:min(100% - 20px,1480px)}}.topbar{{height:auto;min-height:70px;padding:10px 0}}.brand small,.top-actions .badge:nth-child(2){{display:none}}main{{padding-top:24px}}.quick-nav{{top:76px}}.hero-copy{{padding:24px}}.health-hero{{justify-content:flex-start}}.kpis{{grid-template-columns:repeat(2,1fr)}}.kpi:last-child{{grid-column:1/-1}}.system-grid,.health-grid,.source-grid,.perf-grid,.risk-grid,.risk-systems,.direction-cards{{grid-template-columns:1fr}}.direction-summary{{grid-column:auto}}.section-head{{align-items:flex-start;flex-direction:column}}.toolbar{{align-items:stretch;flex-direction:column}}.search{{width:100%}}.market-controls>*{{width:100%}}.market-controls input,.market-controls select{{width:100%}}.market-canvas{{height:360px}}footer{{flex-direction:column}}}}
   </style>
 </head>
 <body>
@@ -823,13 +922,16 @@ def render_dashboard(
   <main id="top" class="shell">
     <section class="hero"><div class="hero-copy"><div class="eyebrow">{eyebrow}</div><h1>Gerçek sinyaller.<br><span>Tek kontrol ekranı.</span></h1><p class="lead">Premium, Scalp, Pump/Dump ve Yeni Liste işlemleri; TP/SL sonuçları ve System Control sağlığı aynı panelde. Bu ekran veri gösterir, işlem açmaz.</p><div class="safety"><span class="badge">{safety_badge}</span><span class="badge">✓ Telegram göndermez</span><span class="badge">✓ Stratejiye dokunmaz</span></div></div><div class="health-hero"><div id="healthRing" class="health-ring"><div><strong id="healthScore">—</strong><span>SİSTEM SAĞLIĞI</span></div></div><div class="health-meta"><strong id="overallHealth">—</strong><p id="healthBreakdown">—</p><p id="healthAge">—</p></div></div></section>
     <div id="qualityWarning" class="quality-warning"></div>
+    <nav class="quick-nav" aria-label="Panel bölümleri"><a href="#systems">Sistemler</a><a href="#risk">Açık Risk</a><a href="#performance">Performans</a><a href="#direction-performance">Yön / Gün</a><a href="#sources">Veri</a>{market_nav_link}<a href="#open">Açık İşlemler</a><a href="#results">Geçmiş</a><a href="#health">Sağlık</a></nav>
     <section id="kpis" class="kpis"></section>
 
-    <section class="section"><div class="section-head"><div><h2>Canlı Sistemler</h2><p>Gerçek işlem sinyali üreten veya gerçek sinyal takibi yapan katmanlar</p></div></div><div id="systemGrid" class="system-grid"></div></section>
+    <section class="section" id="systems"><div class="section-head"><div><h2>Canlı Sistemler</h2><p>Gerçek işlem sinyali üreten veya gerçek sinyal takibi yapan katmanlar</p></div></div><div id="systemGrid" class="system-grid"></div></section>
 
     <section class="section" id="risk"><div class="section-head"><div><h2>Açık Risk Özeti</h2><p>Açık kayıtların yön, stop mesafesi ve hedef/risk görünümü; bilgi amaçlıdır, emir üretmez</p></div></div><div class="panel risk-panel"><div id="riskGrid" class="risk-grid"></div><div id="riskSystems" class="risk-systems"></div><div id="riskNote" class="risk-note"></div></div></section>
 
     <section class="section" id="performance"><div class="section-head"><div><h2>Performans Analitiği</h2><p>Premium, Scalp, Pump/Dump ve Yeni Liste sonuçları ayrı örneklerle; yalnız kesin R kayıtları özsermaye eğrisine girer</p></div><select id="performanceWindow" class="select-filter" aria-label="Performans dönemi"><option value="7D">Son 7 gün</option><option value="30D">Son 30 gün</option><option value="90D">Son 90 gün</option><option value="ALL" selected>Tüm kayıtlar</option></select></div><div class="analytics-grid"><div id="performanceGrid" class="perf-grid"></div><div class="panel canvas-panel"><div class="canvas-head"><div><h3>Kümülatif Net R</h3><p id="equityCaption">Kapanış sırasına göre gerçek ledger sonuçları</p></div><span id="drawdownBadge" class="badge">Maks. DD: —</span></div><div class="canvas-wrap"><canvas id="equityCanvas" aria-label="Kümülatif Net R grafiği"></canvas></div></div></div></section>
+
+    <section class="section" id="direction-performance"><div class="section-head"><div><h2>Yön ve Gün Analizi</h2><p>LONG ile SHORT sonuçlarını ayrı örneklerle karşılaştır; son 30 günlük Net R hareketini Türkiye tarihine göre izle</p></div></div><div class="direction-layout"><div id="directionCards" class="direction-cards"></div><div class="panel canvas-panel"><div class="canvas-head"><div><h3>Son 30 Günlük Net R</h3><p>Yalnız kesin R değeri bulunan kapanışlar günlük toplamı etkiler</p></div><span id="sequenceBadge" class="badge">Son seri: —</span></div><div class="canvas-wrap"><canvas id="dailyCanvas" aria-label="Son 30 günlük Net R grafiği"></canvas></div></div></div></section>
 
     <section class="section" id="sources"><div class="section-head"><div><h2>Veri Güncelliği</h2><p>Her veri kaynağı ayrı kontrol edilir; eski veya zamanı belirsiz kritik kayıtlar uyarı üretir</p></div></div><div id="sourceGrid" class="source-grid"></div></section>
 
@@ -933,6 +1035,33 @@ def render_dashboard(
       const last=points[points.length-1];ctx.fillStyle="#2ce6bf";ctx.beginPath();ctx.arc(x(points.length-1),y(Number(last.cumulative_r)),4,0,Math.PI*2);ctx.fill();ctx.fillStyle="#789894";ctx.fillText(`${{points.length}} kesin R kaydı`,margin.left,height-7);
     }}
 
+    function renderDirection() {{
+      const breakdown=DASHBOARD_DATA.result_breakdown||{{directions:[],daily_30d:[],recent_sequence:{{type:null,count:0}},best_day:null,worst_day:null}};
+      const directions=["LONG","SHORT"].map(direction=>(breakdown.directions||[]).find(row=>row.direction===direction)||{{direction,sample:0,tp:0,sl:0,tp_rate:null,sl_rate:null,exact_r_sample:0,net_r:null,average_r:null}});
+      const directionHtml=directions.map(row=>`<article class="direction-card"><h3><span>${{e(row.direction)}} sonuçları</span><span class="direction ${{e(row.direction)}}">${{e(row.direction)}}</span></h3><strong>${{row.net_r==null?"—":fmtR(row.net_r)}}</strong><p>${{row.sample}} kapanış · ${{row.exact_r_sample}} kesin R</p><p>TP %${{row.tp_rate??"—"}} · SL %${{row.sl_rate??"—"}} · Ort. ${{row.average_r==null?"—":fmtR(row.average_r)}}</p></article>`).join("");
+      const sequence=breakdown.recent_sequence||{{type:null,count:0}},sequenceText=sequence.type?`${{e(sequence.type)}} · ${{sequence.count}} işlem`:"Henüz sonuç yok";
+      const dayText=day=>day?`${{e(String(day.date).slice(5).replace("-","/"))}} · ${{fmtR(day.net_r)}}`:"—";
+      document.getElementById("directionCards").innerHTML=directionHtml+`<div class="direction-summary"><span><b>Son sonuç serisi:</b> ${{sequenceText}}</span><span><b>30 günün en iyi günü:</b> ${{dayText(breakdown.best_day)}}</span><span><b>30 günün en zayıf günü:</b> ${{dayText(breakdown.worst_day)}}</span></div>`;
+      document.getElementById("sequenceBadge").textContent=`Son seri: ${{sequence.type?`${{sequence.type}} · ${{sequence.count}}`:"—"}}`;
+      drawDailyChart();
+    }}
+
+    function drawDailyChart() {{
+      const canvas=document.getElementById("dailyCanvas"),rows=DASHBOARD_DATA.result_breakdown?.daily_30d||[];
+      if(!canvas)return;
+      const {{ctx,width,height}}=setupCanvas(canvas,240);ctx.clearRect(0,0,width,height);
+      const margin={{left:46,right:16,top:16,bottom:32}},chartW=width-margin.left-margin.right,chartH=height-margin.top-margin.bottom;
+      const values=rows.map(row=>Number(row.net_r)).filter(Number.isFinite),min=Math.min(0,...values),max=Math.max(0,...values),span=Math.max(max-min,.5),low=min-span*.16,high=max+span*.16;
+      const y=value=>margin.top+(high-value)/(high-low)*chartH,x=index=>margin.left+(index+.5)/Math.max(rows.length,1)*chartW;
+      ctx.strokeStyle="rgba(130,162,159,.14)";ctx.fillStyle="#789894";ctx.font="11px system-ui";ctx.lineWidth=1;
+      for(let i=0;i<=4;i++){{const value=high-(high-low)*i/4,yy=y(value);ctx.beginPath();ctx.moveTo(margin.left,yy);ctx.lineTo(width-margin.right,yy);ctx.stroke();ctx.fillText(`${{value.toFixed(2)}}R`,4,yy+4);}}
+      const zeroY=y(0);ctx.strokeStyle="rgba(255,255,255,.3)";ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(margin.left,zeroY);ctx.lineTo(width-margin.right,zeroY);ctx.stroke();ctx.setLineDash([]);
+      if(!rows.some(row=>Number(row.exact_r_sample)>0)){{ctx.fillStyle="#82a29f";ctx.textAlign="center";ctx.fillText("Son 30 günde kesin R kaydı bulunmuyor",width/2,height/2);ctx.textAlign="left";return;}}
+      const barWidth=Math.max(3,Math.min(16,chartW/Math.max(rows.length,1)*.62));
+      rows.forEach((row,index)=>{{const value=Number(row.net_r)||0,yy=y(value),top=Math.min(zeroY,yy),barHeight=Math.max(1,Math.abs(zeroY-yy));ctx.fillStyle=value>0?"#42e28c":value<0?"#ff627d":"#36515a";ctx.fillRect(x(index)-barWidth/2,top,barWidth,barHeight);}});
+      [0,7,14,21,29].forEach(index=>{{const row=rows[index];if(!row)return;ctx.fillStyle="#789894";ctx.textAlign=index===0?"left":index===29?"right":"center";ctx.fillText(String(row.date).slice(5).replace("-","/"),x(index),height-8);}});ctx.textAlign="left";
+    }}
+
     function renderSources() {{
       const statusLabels={{FRESH:"GÜNCEL",STALE:"ESKİ",UNKNOWN:"ZAMAN YOK",ERROR:"HATA"}};
       document.getElementById("sourceGrid").innerHTML=(DASHBOARD_DATA.sources||[]).map(row=>`<article class="source-card ${{e(row.status)}}"><div class="source-card-top"><div><h3>${{e(row.label)}}</h3><div class="source-file">${{e(row.filename)}}</div></div><span class="source-status ${{e(row.status)}}">${{e(statusLabels[row.status]||row.status)}}</span></div><div class="source-age">${{row.age_hours==null?"—":row.age_hours<1?`${{Math.max(1,Math.round(row.age_hours*60))}} dk`:`${{row.age_hours.toFixed(1)}} sa`}}</div><span class="sub">Eşik: ${{row.threshold_hours}} sa · ${{row.critical?"kritik":"bilgi"}}</span></article>`).join("");
@@ -1007,7 +1136,7 @@ def render_dashboard(
 {market_script}
 {bootstrap_script}
     let resizeTimer=null;
-    window.addEventListener("resize",()=>{{window.clearTimeout(resizeTimer);resizeTimer=window.setTimeout(()=>{{if(DASHBOARD_DATA)drawEquityChart();if(typeof drawMarketChart==="function"&&typeof marketPayload!=="undefined"&&marketPayload)drawMarketChart();}},120);}});
+    window.addEventListener("resize",()=>{{window.clearTimeout(resizeTimer);resizeTimer=window.setTimeout(()=>{{if(DASHBOARD_DATA){{drawEquityChart();drawDailyChart();}}if(typeof drawMarketChart==="function"&&typeof marketPayload!=="undefined"&&marketPayload)drawMarketChart();}},120);}});
   </script>
 </body>
 </html>'''

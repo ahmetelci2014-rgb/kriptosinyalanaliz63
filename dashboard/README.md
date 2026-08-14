@@ -1,7 +1,7 @@
 # Şifreli Canlı Kripto Kontrol Paneli
 
 Panel, private GitHub reposundaki gerçek JSON state ve ledger dosyalarını
-sunucu tarafında okur. Tarayıcı açıkken her 30 saniyede bir yenilenir. V1.3;
+sunucu tarafında okur. Tarayıcı açıkken her 30 saniyede bir yenilenir. V1.4;
 sistem bazlı performans analitiği, veri kaynağı güncellik kontrolü ve canlı
 coin/işlem grafiği içerir.
 
@@ -31,6 +31,9 @@ coin/işlem grafiği içerir.
 - TP, SL, break-even ve süresi dolan kayıtlar
 - Her sistemin örnek sayısı, TP/SL oranı ve kesin R toplamı
 - Kapanış sırasına göre kümülatif Net R ve maksimum düşüş
+- LONG ve SHORT işlemler için ayrı örnek, TP/SL oranı, toplam ve ortalama Net R
+- Türkiye tarihine göre son 30 günlük Net R grafiği, son sonuç serisi ve
+  en iyi/en zayıf gün özeti
 - Sekiz JSON kaynağı için güncellik/eskilik durumu
 - İstenen USDT coininde 1m, 5m, 15m, 1H, 4H ve 1D canlı mumlar
 - Coin sistemde açık işlemse grafikte Giriş, TP1, TP2, TP3 ve SL çizgileri
@@ -43,6 +46,8 @@ coin/işlem grafiği içerir.
   ortalama TP1/TP3 hedef-risk oranı
 - Sistem bazlı açık işlem dağılımı ve eksik/geniş stop bilgi notu
 - Seçili coin, sistem, sonuç ve dönem filtrelerini koruyan CSV dışa aktarma
+- Uzun panelde Sistemler, Risk, Performans, Grafik, İşlemler ve Sağlık
+  bölümleri arasında yapışkan hızlı geçiş menüsü
 - System Control teknik sağlık durumu
 
 State dosyalarının uzun süre değişmemesi tek başına workflow arızası sayılmaz;

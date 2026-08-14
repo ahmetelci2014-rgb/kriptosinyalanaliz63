@@ -41,7 +41,7 @@ from typing import Any
 from dashboard_builder import build_dashboard_data, render_dashboard
 
 
-VERSION = "KRIPTO_KONTROL_PANELI_LIVE_V1_3_2026_08_14"
+VERSION = "KRIPTO_KONTROL_PANELI_LIVE_V1_4_2026_08_14"
 PASSWORD_ITERATIONS = 310_000
 SESSION_COOKIE = "panel_session"
 LOGIN_CSRF_COOKIE = "panel_login_csrf"

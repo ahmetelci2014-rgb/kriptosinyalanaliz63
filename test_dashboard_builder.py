@@ -63,6 +63,20 @@ class DashboardBuilderTests(unittest.TestCase):
             self.assertEqual(len(data["sources"]), 8)
             self.assertEqual(data["performance_windows"]["ALL"]["exact_r_sample"], 3)
             self.assertEqual(data["performance_windows"]["7D"]["exact_r_sample"], 0)
+            directions = {
+                row["direction"]: row
+                for row in data["result_breakdown"]["directions"]
+            }
+            self.assertEqual(directions["LONG"]["sample"], 2)
+            self.assertAlmostEqual(directions["LONG"]["net_r"], 1.6)
+            self.assertAlmostEqual(directions["LONG"]["average_r"], 0.8)
+            self.assertEqual(directions["SHORT"]["sample"], 1)
+            self.assertAlmostEqual(directions["SHORT"]["net_r"], -1.0)
+            self.assertEqual(
+                data["result_breakdown"]["recent_sequence"],
+                {"type": "TP", "count": 1},
+            )
+            self.assertEqual(len(data["result_breakdown"]["daily_30d"]), 30)
             closed = next(row for row in data["recent_results"] if row["id"] == "p-closed")
             self.assertEqual(closed["tp3"], 12.0)
             self.assertEqual(closed["sl"], 9.0)
@@ -84,6 +98,9 @@ class DashboardBuilderTests(unittest.TestCase):
             self.assertNotIn("localStorage", html)
             self.assertNotIn("<script src=", html)
             self.assertIn("Açık Risk Özeti", html)
+            self.assertIn("Yön ve Gün Analizi", html)
+            self.assertIn("dailyCanvas", html)
+            self.assertIn('class="quick-nav"', html)
             self.assertIn("CSV indir", html)
             self.assertIn("exportFilteredResults", html)
 
@@ -104,8 +121,36 @@ class DashboardBuilderTests(unittest.TestCase):
         self.assertIn("resultPagination", html)
         self.assertIn("20 / sayfa", html)
         self.assertIn("Açık Risk Özeti", html)
+        self.assertIn("Yön ve Gün Analizi", html)
+        self.assertIn("Coin Grafiği", html)
+        self.assertIn("renderDirection", html)
         self.assertIn("CSV indir", html)
         self.assertIn('nonce="test-nonce"', html)
+
+    def test_daily_result_breakdown_uses_turkey_day_and_exact_r_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.make_fixture(root)
+            current = datetime(2026, 8, 14, 12, 0, tzinfo=timezone.utc)
+            current_ts = int(current.timestamp())
+            premium = json.loads((root / "trade_ledger.json").read_text(encoding="utf-8"))
+            premium["trades"]["p-closed"]["closed_at"] = current_ts - 3600
+            self.write_json(root, "trade_ledger.json", premium)
+            scalp = json.loads((root / "scalp_performance_ledger.json").read_text(encoding="utf-8"))
+            scalp["records"][0]["trade_closed_at"] = current_ts - 7200
+            self.write_json(root, "scalp_performance_ledger.json", scalp)
+            pump = json.loads((root / "pump_performance_ledger.json").read_text(encoding="utf-8"))
+            pump["records"][0]["trade_closed_at"] = current_ts - 10800
+            self.write_json(root, "pump_performance_ledger.json", pump)
+
+            breakdown = build_dashboard_data(root, now=current)["result_breakdown"]
+            today = breakdown["daily_30d"][-1]
+            self.assertEqual(today["date"], "2026-08-14")
+            self.assertEqual(today["count"], 3)
+            self.assertEqual(today["exact_r_sample"], 3)
+            self.assertAlmostEqual(today["net_r"], 0.6)
+            self.assertEqual(breakdown["recent_sequence"], {"type": "TP", "count": 1})
+            self.assertEqual(breakdown["best_day"]["date"], "2026-08-14")
 
     def test_source_freshness_accepts_iso_and_millisecond_timestamps(self):
         with tempfile.TemporaryDirectory() as directory:
