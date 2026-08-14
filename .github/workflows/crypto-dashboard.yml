@@ -22,6 +22,7 @@ on:
       - "dashboard_filter_app.py"
       - "dashboard_route_app.py"
       - "dashboard_memory_app.py"
+      - "dashboard_commercial_app.py"
       - "test_dashboard_builder.py"
       - "test_dashboard_live_app.py"
       - "test_dashboard_accounts_app.py"
@@ -38,6 +39,7 @@ on:
       - "test_dashboard_filter_app.py"
       - "test_dashboard_route_app.py"
       - "test_dashboard_memory_app.py"
+      - "test_dashboard_commercial_app.py"
       - "Dockerfile.dashboard"
       - ".dockerignore"
       - "render.yaml"
@@ -62,6 +64,7 @@ on:
       - "dashboard_filter_app.py"
       - "dashboard_route_app.py"
       - "dashboard_memory_app.py"
+      - "dashboard_commercial_app.py"
       - "test_dashboard_builder.py"
       - "test_dashboard_live_app.py"
       - "test_dashboard_accounts_app.py"
@@ -78,6 +81,7 @@ on:
       - "test_dashboard_filter_app.py"
       - "test_dashboard_route_app.py"
       - "test_dashboard_memory_app.py"
+      - "test_dashboard_commercial_app.py"
       - "Dockerfile.dashboard"
       - ".dockerignore"
       - "render.yaml"
@@ -107,18 +111,18 @@ jobs:
             dashboard_builder.py dashboard_live_app.py dashboard_accounts_app.py dashboard_product_app.py \
             dashboard_market_app.py dashboard_compact_app.py dashboard_focus_app.py dashboard_focus_market_app.py \
             dashboard_home_app.py dashboard_notify_app.py dashboard_alert_app.py dashboard_watchlist_app.py \
-            dashboard_opportunity_app.py dashboard_score_app.py dashboard_filter_app.py dashboard_route_app.py dashboard_memory_app.py \
+            dashboard_opportunity_app.py dashboard_score_app.py dashboard_filter_app.py dashboard_route_app.py dashboard_memory_app.py dashboard_commercial_app.py \
             test_dashboard_builder.py test_dashboard_live_app.py test_dashboard_accounts_app.py test_dashboard_product_app.py \
             test_dashboard_market_app.py test_dashboard_compact_app.py test_dashboard_focus_app.py test_dashboard_home_app.py \
             test_dashboard_notify_app.py test_dashboard_alert_app.py test_dashboard_watchlist_app.py test_dashboard_opportunity_app.py \
-            test_dashboard_score_app.py test_dashboard_filter_app.py test_dashboard_route_app.py test_dashboard_memory_app.py
+            test_dashboard_score_app.py test_dashboard_filter_app.py test_dashboard_route_app.py test_dashboard_memory_app.py test_dashboard_commercial_app.py
       - name: Statik ve canlı panel testlerini çalıştır
         run: |
           python -m unittest -v \
             test_dashboard_builder.py test_dashboard_live_app.py test_dashboard_accounts_app.py test_dashboard_product_app.py \
             test_dashboard_market_app.py test_dashboard_compact_app.py test_dashboard_focus_app.py test_dashboard_home_app.py \
             test_dashboard_notify_app.py test_dashboard_alert_app.py test_dashboard_watchlist_app.py test_dashboard_opportunity_app.py \
-            test_dashboard_score_app.py test_dashboard_filter_app.py test_dashboard_route_app.py test_dashboard_memory_app.py
+            test_dashboard_score_app.py test_dashboard_filter_app.py test_dashboard_route_app.py test_dashboard_memory_app.py test_dashboard_commercial_app.py
       - name: Render Docker imajını doğrula
         run: docker build -f Dockerfile.dashboard -t kripto-panel-ci .
       - name: Gerçek verilerden panel üret
@@ -135,16 +139,19 @@ jobs:
           {
             echo "## Kripto Kontrol Paneli doğrulandı"
             echo ""
-            echo "V2.10 Fırsat Favorileri ve Filtre Hafızası dahil canlı panel ve Docker build testleri başarılı."
+            echo "V3.0 Herkese Açık Vitrin + FREE/PREMIUM/ADMIN + Ödeme Bildirimi dahil canlı panel ve Docker build testleri başarılı."
             echo "Artifact yalnız acil durum anlık görüntüsüdür; canlı panel değildir."
             echo ""
-            echo "- Fırsat kartından mevcut İzleme Listesi favorilerine ekleme/çıkarma yalnız tarayıcı localStorage kullanır"
-            echo "- Fırsat arama, filtre ve sıralama tercihleri cihaz bazında hatırlanır"
-            echo "- Yenileme sonrası aktif panel sekmesi URL hash üzerinden korunur"
+            echo "- Ana sayfa giriş zorunluluğu olmadan güvenli toplu istatistik gösterir"
+            echo "- Public özet coin, Entry, TP veya SL seviyelerini tarayıcıya göndermez"
+            echo "- Yeni kullanıcılar FREE planla kayıt olabilir"
+            echo "- Eski aktif MEMBER hesapları geriye uyum için Premium kabul edilir"
+            echo "- Premium süresi dolunca hesap tamamen kapanmak yerine FREE plana düşer"
+            echo "- FREE kullanıcı Premium API uçlarına sunucu tarafında erişemez"
+            echo "- Kullanıcı Ödeme yaptım bildirimi bırakabilir; yönetici manuel onayla Premium süre açar"
+            echo "- Kripto ödeme UI seçeneği varsayılan kapalıdır; PANEL_CRYPTO_PAYMENT_ENABLED=1 gerektirir"
             echo "- Sinyal/strateji davranışı değişmez"
             echo "- Telegram gönderim mantığı değişmez"
-            echo "- İnceleme Skoru başarı ihtimali veya yeni işlem sinyali değildir"
-            echo "- Eski ayrıntılı panel /advanced altında korunur"
             echo "- Private GitHub anahtarları yalnız sunucu tarafında"
             echo "- Kullanıcı şifreleri yalnız PBKDF2 özet olarak saklanır"
             echo "- Emir açma yok"
