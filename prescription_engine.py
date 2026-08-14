@@ -35,7 +35,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 
-VERSION = "PRESCRIPTION_ENGINE_V2_2026_08_10"
+VERSION = "PRESCRIPTION_ENGINE_V3_LEGACY_SWING_REMOVED_2026_08_14"
 MODE = "ANALYSIS_AND_BACKTEST_ONLY_NO_AUTO_APPLY_NO_ORDERS_NO_TELEGRAM"
 DEFAULT_OUTPUT = "prescription_report.json"
 
@@ -43,7 +43,6 @@ FILES = {
     "decision_report": "decision_report.json",
     "premium": "trade_ledger.json",
     "scalp": "scalp_performance_ledger.json",
-    "swing": "swing_performance_ledger.json",
     "pump": "pump_performance_ledger.json",
     "portfolio": "portfolio_risk_outcomes.json",
     "range": "range_shadow.json",
@@ -670,7 +669,7 @@ def analyze_filter_component(
     # Premium için çok eski farklı sürümleri karıştırmamak adına en son 500 kapanışı kullan.
     if component == "PREMIUM" and len(records) > 500:
         records = records[-500:]
-    if component in {"SCALP", "SWING"} and len(records) > 300:
+    if component == "SCALP" and len(records) > 300:
         records = records[-300:]
 
     overall = summarize_side(records)
@@ -993,7 +992,6 @@ def build_report(base_dir: str = ".", current_ts: Optional[int] = None) -> Dict[
     for name, source_name in (
         ("PREMIUM", "premium"),
         ("SCALP", "scalp"),
-        ("SWING", "swing"),
         ("PUMP_DUMP", "pump"),
     ):
         components[name] = analyze_filter_component(
