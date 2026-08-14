@@ -147,7 +147,7 @@ Kararlar otomatik uygulanmaz.
 
 ### System Control Center
 
-`system_control_center.py` workflow, dosya, JSON, veri güncelliği ve dosya büyüklüğünü kontrol eder. Dosya başına 4 MB üzerinde sarı, 8 MB üzerinde kırmızı sağlık uyarısı üretir. Telegram yalnız genel sağlık RED olduğunda ve aynı hata için 12 saatlik tekrar engeliyle kullanılır. Teknik sağlık ile işlem performansını birbirinden ayırır.
+`system_control_center.py` workflow, dosya, JSON, veri güncelliği ve repo kökündeki tüm JSON dosyalarının büyüklüğünü kontrol eder. Dosya başına 4 MB üzerinde sarı, 8 MB üzerinde kırmızı sağlık uyarısı üretir. Telegram yalnız genel sağlık RED olduğunda ve aynı hata için 12 saatlik tekrar engeliyle kullanılır. Teknik sağlık ile işlem performansını birbirinden ayırır.
 
 ### Diğer Gölge Katmanları
 
@@ -247,7 +247,7 @@ Token ve kimlik bilgileri Python, JSON, YAML, README veya Actions loglarına dü
 - Telegram sırları yalnız GitHub Secrets içinde tutulur.
 - JSON dosyaları atomik yazılır.
 - Ortak portföy gölge kayıtları bot başına ayrılır ve saatlik tek yazıcıyla birleştirilir.
-- Büyüyen JSON dosyaları System Control Center tarafından izlenir.
+- Kök dizindeki tüm JSON dosyaları bozulma ve büyüme açısından System Control Center tarafından izlenir.
 - Workflow'larda concurrency, timeout ve güvenli push kullanılır.
 - Repo özel tutuluyorsa erişim ve Actions kotası düzenli kontrol edilmelidir.
 
