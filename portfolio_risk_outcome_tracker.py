@@ -1,7 +1,7 @@
 """Portfolio Risk kararlarının sonradan piyasa sonucunu ölçen gölge izleyici.
 
 Bu modül canlı sinyal kararını değiştirmez, Telegram mesajı göndermez ve emir açmaz.
-`portfolio_risk_shadow.json` içindeki BLOCK/ALLOW kararlarını okur; OKX 5M
+Botlara ayrılmış portföy gölge ledger'larını birleştirir; BLOCK/ALLOW kararlarını OKX 5M
 mumlarıyla 60/240/720/1440 dakikalık yönsel hareket, MFE/MAE ve ortak
 %0.5/%1.0 eşiklerinde önce olumlu mu olumsuz mu hareket görüldüğünü ayrı
 `portfolio_risk_outcomes.json` dosyasına kaydeder.
@@ -20,6 +20,13 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 
 SOURCE_FILE = "portfolio_risk_shadow.json"
+SOURCE_FILES: Tuple[str, ...] = (
+    SOURCE_FILE,
+    "portfolio_risk_shadow_main_mtf.json",
+    "portfolio_risk_shadow_scalp.json",
+    "portfolio_risk_shadow_pump_dump.json",
+    "portfolio_risk_shadow_new_listing.json",
+)
 OUTCOME_FILE = "portfolio_risk_outcomes.json"
 TIMEFRAME = "5m"
 CANDLE_MS = 5 * 60 * 1000
@@ -153,6 +160,49 @@ def make_record_key(source_record: Dict[str, Any]) -> str:
     identity = str(source_record.get("identity") or "")
     recorded_at = int(safe_float(source_record.get("recorded_at"), 0) or 0)
     return f"{identity}|{recorded_at}" if identity and recorded_at > 0 else ""
+
+
+def load_merged_source_records(
+    source_files: Sequence[str],
+) -> List[Dict[str, Any]]:
+    """Bot ledger'larını karar kimliği + zaman anahtarıyla kayıpsız birleştirir."""
+    merged: Dict[str, Dict[str, Any]] = {}
+    for filename in source_files:
+        loaded = load_json(str(filename))
+        records = loaded.get("records")
+        if not isinstance(records, list):
+            continue
+        for record in records:
+            if not isinstance(record, dict):
+                continue
+            record_key = make_record_key(record)
+            if record_key:
+                merged[record_key] = record
+
+    ordered = sorted(
+        merged.values(),
+        key=lambda item: int(safe_float(item.get("recorded_at"), 0) or 0),
+    )
+    return ordered[-MAX_SOURCE_RECORDS:]
+
+
+def build_aggregate_shadow(
+    records: Sequence[Dict[str, Any]],
+    current_ts: int,
+) -> Dict[str, Any]:
+    clean = [dict(item) for item in records if isinstance(item, dict)]
+    return {
+        "version": "PORTFOLIO_RISK_SHADOW_V2_ISOLATED_WRITERS",
+        "mode": "AGGREGATED_SHADOW_ONLY_NO_SIGNAL_CHANGE_NO_ORDERS",
+        "source_files": list(SOURCE_FILES[1:]),
+        "records": clean[-MAX_SOURCE_RECORDS:],
+        "summary": {
+            "total_records": len(clean[-MAX_SOURCE_RECORDS:]),
+            "blocked_records": sum(1 for item in clean[-MAX_SOURCE_RECORDS:] if item.get("would_block")),
+            "allowed_records": sum(1 for item in clean[-MAX_SOURCE_RECORDS:] if not item.get("would_block")),
+        },
+        "last_update": int(current_ts),
+    }
 
 
 def select_reference_candle(
@@ -409,11 +459,14 @@ def run_tracker(
     current_ts: Optional[int] = None,
 ) -> Dict[str, Any]:
     current_ts = int(current_ts or now_ts())
-    source = load_json(source_file)
-    source_records = source.get("records")
-    if not isinstance(source_records, list):
-        source_records = []
-    source_records = source_records[-MAX_SOURCE_RECORDS:]
+    source_files = SOURCE_FILES if source_file == SOURCE_FILE else (source_file,)
+    source_records = load_merged_source_records(source_files)
+
+    if source_file == SOURCE_FILE:
+        save_json_atomically(
+            SOURCE_FILE,
+            build_aggregate_shadow(source_records, current_ts),
+        )
 
     previous = load_json(outcome_file)
     previous_records = previous.get("records")
@@ -499,9 +552,10 @@ def run_tracker(
         }
 
     result = {
-        "version": "PORTFOLIO_RISK_OUTCOME_SHADOW_V1_1_2026_08_04",
+        "version": "PORTFOLIO_RISK_OUTCOME_SHADOW_V1_2_ISOLATED_WRITERS_2026_08_14",
         "mode": "SHADOW_ANALYSIS_ONLY_NO_SIGNAL_CHANGE_NO_ORDERS",
         "source_file": source_file,
+        "source_files": list(source_files),
         "timeframe": TIMEFRAME,
         "checkpoints_minutes": list(CHECKPOINT_MINUTES),
         "thresholds_percent": list(THRESHOLDS_PERCENT),
