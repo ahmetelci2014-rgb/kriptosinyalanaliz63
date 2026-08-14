@@ -8,8 +8,10 @@ on:
     paths:
       - "dashboard_builder.py"
       - "dashboard_live_app.py"
+      - "dashboard_accounts_app.py"
       - "test_dashboard_builder.py"
       - "test_dashboard_live_app.py"
+      - "test_dashboard_accounts_app.py"
       - "Dockerfile.dashboard"
       - "render.yaml"
       - ".github/workflows/crypto-dashboard.yml"
@@ -19,8 +21,10 @@ on:
     paths:
       - "dashboard_builder.py"
       - "dashboard_live_app.py"
+      - "dashboard_accounts_app.py"
       - "test_dashboard_builder.py"
       - "test_dashboard_live_app.py"
+      - "test_dashboard_accounts_app.py"
       - "Dockerfile.dashboard"
       - "render.yaml"
       - ".github/workflows/crypto-dashboard.yml"
@@ -51,14 +55,17 @@ jobs:
           python -m py_compile \
             dashboard_builder.py \
             dashboard_live_app.py \
+            dashboard_accounts_app.py \
             test_dashboard_builder.py \
-            test_dashboard_live_app.py
+            test_dashboard_live_app.py \
+            test_dashboard_accounts_app.py
 
       - name: Statik ve canlı panel testlerini çalıştır
         run: |
           python -m unittest -v \
             test_dashboard_builder.py \
-            test_dashboard_live_app.py
+            test_dashboard_live_app.py \
+            test_dashboard_accounts_app.py
 
       - name: Gerçek verilerden panel üret
         run: python dashboard_builder.py --root . --output dashboard_output/index.html
@@ -76,11 +83,12 @@ jobs:
           {
             echo "## Kripto Kontrol Paneli doğrulandı"
             echo ""
-            echo "Canlı web katmanı ve statik panel testleri başarılı."
+            echo "Canlı web katmanı, çoklu kullanıcı yönetimi ve statik panel testleri başarılı."
             echo "Artifact yalnız acil durum anlık görüntüsüdür; canlı panel değildir."
             echo ""
-            echo "- Salt okunur"
-            echo "- Private GitHub anahtarı yalnız sunucu tarafında"
+            echo "- Sinyal/strateji davranışı değişmez"
+            echo "- Private GitHub anahtarları yalnız sunucu tarafında"
+            echo "- Kullanıcı şifreleri yalnız PBKDF2 özet olarak saklanır"
             echo "- Telegram yok"
             echo "- Emir açma yok"
           } >> "$GITHUB_STEP_SUMMARY"
