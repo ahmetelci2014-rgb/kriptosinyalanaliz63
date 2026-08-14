@@ -34,7 +34,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 
-VERSION = "DECISION_ENGINE_V1_2026_08_10"
+VERSION = "DECISION_ENGINE_V2_2026_08_14"
 MODE = "ANALYSIS_ONLY_NO_SIGNAL_CHANGE_NO_TELEGRAM_NO_ORDERS"
 DEFAULT_OUTPUT = "decision_report.json"
 
@@ -50,6 +50,8 @@ FILES = {
     "momentum_shadow": "momentum_shadow.json",
     "range_shadow": "range_shadow.json",
     "portfolio_risk_outcomes": "portfolio_risk_outcomes.json",
+    "post_result_v2": "post_result_shadow_v2_report.json",
+    "post_result_v3": "post_result_shadow_v3_report.json",
 }
 
 THRESHOLDS = {
@@ -953,7 +955,11 @@ def summarize_portfolio(data: Dict[str, Any]) -> Dict[str, Any]:
     )
 
 
-def summarize_post_result(trade_ledger: Dict[str, Any]) -> Dict[str, Any]:
+def summarize_post_result(
+    trade_ledger: Dict[str, Any],
+    v2_report: Optional[Dict[str, Any]] = None,
+    v3_report: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
     records = iter_records(trade_ledger)
     tracked: List[Dict[str, Any]] = []
     for trade in records:
@@ -1016,6 +1022,8 @@ def summarize_post_result(trade_ledger: Dict[str, Any]) -> Dict[str, Any]:
         "tracked_total": len(tracked),
         "completed_total": completed_total,
         "groups": group_metrics,
+        "v2_report": v2_report if isinstance(v2_report, dict) else {},
+        "v3_report": v3_report if isinstance(v3_report, dict) else {},
     }
 
     if completed_total < THRESHOLDS["post_result"]["min_completed_for_rule_review"]:
@@ -1030,6 +1038,19 @@ def summarize_post_result(trade_ledger: Dict[str, Any]) -> Dict[str, Any]:
 
     reasons: List[str] = []
     shadow_test = False
+
+    v3_models = (v3_report or {}).get("models") if isinstance(v3_report, dict) else {}
+    if isinstance(v3_models, dict):
+        for model_name, model in sorted(v3_models.items()):
+            if not isinstance(model, dict):
+                continue
+            model_sample = safe_int(model.get("sample"), 0)
+            model_avg = safe_float(model.get("average_incremental_r"), None)
+            if model_sample >= THRESHOLDS["post_result"]["min_completed_for_rule_review"] and model_avg is not None:
+                reasons.append(
+                    f"V3 {model_name}: {model_sample} örnek, ortalama ek sonuç {model_avg:+.3f}R."
+                )
+                shadow_test = True
 
     tp1 = group_metrics.get("TP1_SONRASI_BE", {})
     tp1_n = safe_int(tp1.get("completed"), 0)
@@ -1072,7 +1093,7 @@ def summarize_post_result(trade_ledger: Dict[str, Any]) -> Dict[str, Any]:
             "🟠 İŞLEM YÖNETİMİ ALTERNATİFİNİ GÖLGE TEST ET",
             completed_total,
             reasons or ["Post-result verisi alternatif yönetim testini destekliyor."],
-            "Mevcut BE/TP kuralını değiştirme; yalnız alternatif runner/BE yönetimini paralel sanal sonuçla ölç.",
+            "V3 modellerini karşılaştır; yalnız yeterli örnek ve pozitif net ek R doğrulanırsa canlı kural önerisi üret.",
             metrics,
         )
 
@@ -1166,6 +1187,8 @@ def build_report(base_dir: str = ".", current_ts: Optional[int] = None) -> Dict[
         ),
         "POST_RESULT_SHADOW": summarize_post_result(
             loaded["premium_trade_ledger"],
+            loaded["post_result_v2"],
+            loaded["post_result_v3"],
         ),
     }
 
