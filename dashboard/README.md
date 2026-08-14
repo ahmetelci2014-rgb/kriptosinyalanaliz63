@@ -1,9 +1,9 @@
 # Şifreli Canlı Kripto Kontrol Paneli
 
 Panel, private GitHub reposundaki gerçek JSON state ve ledger dosyalarını
-sunucu tarafında okur. Tarayıcı açıkken her 30 saniyede bir yenilenir. V1.1;
+sunucu tarafında okur. Tarayıcı açıkken her 30 saniyede bir yenilenir. V1.2;
 sistem bazlı performans analitiği, veri kaynağı güncellik kontrolü ve canlı
-coin grafiği içerir.
+coin/işlem grafiği içerir.
 
 ## Güvenlik sınırları
 
@@ -34,13 +34,18 @@ coin grafiği içerir.
 - Sekiz JSON kaynağı için güncellik/eskilik durumu
 - İstenen USDT coininde 1m, 5m, 15m, 1H, 4H ve 1D canlı mumlar
 - Coin sistemde açık işlemse grafikte Giriş, TP1, TP2, TP3 ve SL çizgileri
+- Kapanmış TP/SL işlemine tıklayınca işlem tarihinin çevresindeki geçmiş mumlar
+- Kapanmış işlem grafiğinde Giriş, TP1–TP3, SL ve Çıkış seviyeleri
+- 7, 30, 90 gün veya tüm kayıtlar için ayrı performans görünümü
+- Coin, sistem, sonuç ve dönem bazlı işlem geçmişi filtreleri
 - System Control teknik sağlık durumu
 
 Canlı mumlar sunucu tarafındaki `/api/market/candles` adresinden gelir. Bu
 adres de panel oturumu gerektirir, sembol ve periyot doğrular ve aynı isteği
 kısa süre önbelleğe alır. Önce OKX perpetual swap, yoksa spot USDT paritesi
-denenir. Arayüzde herhangi bir coin sembolü yazılabilir; açık işlem satırındaki
-coin adına tıklanınca ilgili grafik otomatik açılır.
+denenir. Arayüzde herhangi bir coin sembolü yazılabilir; açık veya kapanmış
+işlem satırındaki coin adına tıklanınca ilgili grafik otomatik açılır. Kapanmış
+işlemlerde OKX `history-candles` verisi işlem zamanının çevresinden okunur.
 
 ## Yerel deneme
 
