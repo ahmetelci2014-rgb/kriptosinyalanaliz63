@@ -1,9 +1,6 @@
 # Şifreli Canlı Kripto Kontrol Paneli
 
-Panel, private GitHub reposundaki gerçek JSON state ve ledger dosyalarını
-sunucu tarafında okur. Tarayıcı açıkken her 30 saniyede bir yenilenir. V1.6;
-sistem bazlı performans analitiği, veri kaynağı güncellik kontrolü ve canlı
-coin/işlem grafiği içerir.
+Panel, private GitHub reposundaki gerçek JSON state ve ledger dosyalarını sunucu tarafında okur. Tarayıcı açıkken varsayılan olarak her 30 saniyede yenilenir. V1.7; V1.6 yönetici/üye veri ayrımının üstüne çoklu kullanıcı, rol, üyelik süresi ve şifre yönetimi ekler.
 
 ## Güvenlik sınırları
 
@@ -11,50 +8,43 @@ coin/işlem grafiği içerir.
 - Kullanıcı parası veya kripto varlığı tutmaz.
 - Borsa hesabı yönetmez.
 - Telegram mesajı göndermez.
-- Sinyal stratejisi ve config dosyalarını değiştirmez.
+- Sinyal stratejisi, `main.py`, `strategy.py` ve `config.py` davranışını değiştirmez.
 - Kesin kazanç veya kâr garantisi vermez.
-- GitHub erişim anahtarı tarayıcıya ve HTML kaynağına gönderilmez.
-- OKX canlı grafiği yalnız herkese açık piyasa verisini okur; borsa API
-  anahtarı istemez ve emir endpoint'i içermez.
+- GitHub erişim anahtarları tarayıcıya ve HTML kaynağına gönderilmez.
+- Kullanıcı şifreleri düz metin olarak saklanmaz; PBKDF2-SHA256 özeti tutulur.
+- OKX canlı grafiği yalnız herkese açık piyasa verisini okur; borsa API anahtarı istemez ve emir endpoint'i içermez.
 
 ## Canlı çalışma şekli
 
-1. Kullanıcı şifreli HTTPS adresinden giriş yapar.
-2. Tarayıcı yalnız \`/api/dashboard\` adresine bağlanır.
-3. Python sunucusu private GitHub reposunu salt-okunur token ile kontrol eder.
-4. Değişmeyen dosyalarda ETag önbelleği kullanılır.
-5. GitHub geçici olarak erişilemezse son geçerli veri gösterilir ve uyarı çıkar.
+1. Kullanıcı HTTPS adresinden giriş yapar.
+2. Tarayıcı panel verisi için yalnız `/api/dashboard`, piyasa grafiği için `/api/market/candles` adresine bağlanır.
+3. Python sunucusu private GitHub reposundaki sinyal verilerini salt-okunur token ile kontrol eder.
+4. Yönetici hesabı kullanıcı yönetim ekranına girebilir.
+5. Dinamik kullanıcı hesapları `panel-users` veri dalındaki `panel_users.json` dosyasında tutulur.
+6. Kullanıcı hesabı değişiklikleri için ayrı bir GitHub token kullanılır; sinyal verisi tokeni read-only kalır.
+7. GitHub veri kaynağı geçici olarak erişilemezse panel mümkün olduğunda son geçerli sinyal verisini gösterir.
 
 ## Panelde görünenler
 
-- Premium, Scalp, Pump/Dump ve Yeni Liste açık gerçek işlemleri
+- Premium/Main, Scalp, Pump/Dump ve Yeni Liste açık gerçek işlemleri
 - TP, SL, break-even ve süresi dolan kayıtlar
 - Her sistemin örnek sayısı, TP/SL oranı ve kesin R toplamı
 - Kapanış sırasına göre kümülatif Net R ve maksimum düşüş
 - LONG ve SHORT işlemler için ayrı örnek, TP/SL oranı, toplam ve ortalama Net R
-- Türkiye tarihine göre son 30 günlük Net R grafiği, son sonuç serisi ve
-  en iyi/en zayıf gün özeti
-- Son 7/30 gün ile önceki eşit dönemin sistem bazlı örnek, TP/SL oranı ve
-  Net R karşılaştırması
-- Sekiz JSON kaynağı için güncellik/eskilik durumu
+- Türkiye tarihine göre son 30 günlük Net R grafiği ve gün analizi
+- Son 7/30 gün ile önceki eşit dönemin sistem bazlı karşılaştırması
+- JSON kaynakları için güncellik/eskilik durumu
 - İstenen USDT coininde 1m, 5m, 15m, 1H, 4H ve 1D canlı mumlar
-- Coin sistemde açık işlemse grafikte Giriş, TP1, TP2, TP3 ve SL çizgileri
-- Kapanmış TP/SL işlemine tıklayınca işlem tarihinin çevresindeki geçmiş mumlar
-- Kapanmış işlem grafiğinde Giriş, TP1–TP3, SL ve Çıkış seviyeleri
-- 7, 30, 90 gün veya tüm kayıtlar için ayrı performans görünümü
+- Açık işlem grafiğinde Giriş, TP1, TP2, TP3 ve SL çizgileri
+- Kapanmış işlemlerde işlem tarihinin çevresindeki geçmiş mumlar ve çıkış seviyesi
+- 7, 30, 90 gün veya tüm kayıtlar için performans görünümü
 - Coin, sistem, sonuç ve dönem bazlı işlem geçmişi filtreleri
-- Uzun işlem geçmişinde 20/50 kayıt seçenekli önceki/sonraki sayfalama
-- Açık işlemlerde LONG/SHORT dengesi, ortalama/en geniş stop mesafesi ve
-  ortalama TP1/TP3 hedef-risk oranı
-- Sistem bazlı açık işlem dağılımı ve eksik/geniş stop bilgi notu
-- Seçili coin, sistem, sonuç ve dönem filtrelerini koruyan CSV dışa aktarma
-- Uzun panelde Sistemler, Risk, Performans, Grafik, İşlemler ve Sağlık
-  bölümleri arasında yapışkan hızlı geçiş menüsü
+- İşlem geçmişinde sayfalama
+- Açık risk özeti ve sistem bazlı açık işlem dağılımı
+- Yönetici için filtreli CSV dışa aktarma
 - System Control teknik sağlık durumu
 
-## Yönetici ve üye ayrımı
-
-V1.6 iki ayrı görünüm destekler:
+## Yönetici ve üye veri ayrımı
 
 | Bölüm | Yönetici | Üye |
 | --- | --- | --- |
@@ -64,80 +54,94 @@ V1.6 iki ayrı görünüm destekler:
 | Kaynak dosyaları ve veri güncelliği teşhisi | Görür | Göremez |
 | Dönem yönetim karşılaştırması ve System Control ayrıntıları | Görür | Göremez |
 | Filtreli CSV dışa aktarma | Görür | Göremez |
+| Kullanıcı yönetim ekranı | Görür | Göremez |
 
-Yetki ayrımı yalnız arayüzde yapılmaz. Üye oturumunda `/api/dashboard` cevabı
-da sunucu tarafında filtrelenir; gizlenen yönetim verisi tarayıcıya gönderilmez.
-Mevcut `PANEL_USERNAME` hesabı geriye uyumlu biçimde yönetici hesabıdır. Üye
-girişi tanımlanmazsa panel yalnız yönetici hesabıyla çalışmaya devam eder.
+Yetki ayrımı yalnız arayüzde yapılmaz. MEMBER oturumunda `/api/dashboard` cevabı sunucu tarafında filtrelenir; gizlenen yönetim verisi tarayıcıya gönderilmez.
 
-State dosyalarının uzun süre değişmemesi tek başına workflow arızası sayılmaz;
-teknik kritik sağlık kararı System Control raporundan gelir. Scalp state içindeki
-`last_sent`, `early_last_sent` ve `prewatch_last_sent` zamanları veri güncelliği
-hesabına katılır.
+## V1.7 çoklu kullanıcı yönetimi
 
-Canlı mumlar sunucu tarafındaki `/api/market/candles` adresinden gelir. Bu
-adres de panel oturumu gerektirir, sembol ve periyot doğrular ve aynı isteği
-kısa süre önbelleğe alır. Önce OKX perpetual swap, yoksa spot USDT paritesi
-denenir. Arayüzde herhangi bir coin sembolü yazılabilir; açık veya kapanmış
-işlem satırındaki coin adına tıklanınca ilgili grafik otomatik açılır. Kapanmış
-işlemlerde OKX `history-candles` verisi işlem zamanının çevresinden okunur.
+Yönetici panel üst çubuğundaki **Kullanıcılar** bağlantısından `/admin/users` ekranına gider.
 
-CSV raporu yalnız tarayıcıda, o anda uygulanan filtrelerden üretilir. Sunucuya
-yeni veri yazmaz ve indirilen dosyada Excel formül enjeksiyonuna karşı hücre
-başlangıçları güvenli hale getirilir.
+Yapılabilen işlemler:
 
-## Yerel deneme
+- Sınırsız kullanım için süre alanını boş bırakarak üye oluşturma
+- 1-3650 gün arası üyelik süresi verme
+- MEMBER veya ADMIN rolü verme
+- Kullanıcıyı aktif/pasif yapma
+- Üyelik süresini yenileme veya süresiz yapma
+- Şifre sıfırlama
+- Rol değiştirme
+- Pasifleştirme, rol değiştirme veya şifre sıfırlamada kullanıcının mevcut panel oturumlarını kapatma
 
-Repo JSON dosyalarının bulunduğu bilgisayarda PowerShell:
+Kurucu yönetici `PANEL_USERNAME` + `PANEL_PASSWORD_HASH` hesabıdır. Bu hesap ortam değişkeninde kalır ve acil erişim hesabı olarak kullanıcı yönetim ekranından kapatılamaz.
 
-\`\`\`powershell
-$env:PANEL_USERNAME="ahmet"
-$env:PANEL_PASSWORD="yalnız-kendinizin-bildiği-şifre"
-$env:PANEL_COOKIE_SECURE="0"
-python dashboard_live_app.py --root .
-\`\`\`
+Dinamik kullanıcı verisi `panel-users` dalında tutulur. Bu dalın amacı üyelik verisi değiştiğinde `main` dalında gereksiz deployment tetiklenmesini önlemektir. `panel_users.json` yalnız kullanıcı adı, rol, aktiflik, süre ve PBKDF2 şifre özeti içerir; düz şifre içermez.
 
-Ardından \`http://127.0.0.1:8080\` açılır. Yerel dosyalar değiştikçe panel
-yenilenir.
+## Gerekli ortam değişkenleri
+
+### Sinyal verisi için
+
+- `GITHUB_PANEL_TOKEN`: yalnız private repo için **Contents: Read-only** fine-grained token
+- `GITHUB_REPOSITORY=ahmetelci2014-rgb/kriptosinyalanaliz63`
+- `GITHUB_REF_NAME=main`
+
+### Kurucu yönetici için
+
+- `PANEL_USERNAME=ahmet`
+- `PANEL_PASSWORD_HASH`: `dashboard_live_app.py --hash-password` ile üretilen yönetici şifre özeti
+
+### Çoklu kullanıcı yönetimi için
+
+- `GITHUB_PANEL_USERS_TOKEN`: yalnız bu private repo için **Contents: Read and write** yetkili ayrı fine-grained token
+- `PANEL_USERS_REF=panel-users`
+- `PANEL_USERS_PATH=panel_users.json`
+
+### Diğer
+
+- `PANEL_REFRESH_SECONDS=30`
+- `PANEL_SESSION_HOURS=12`
+- `PANEL_COOKIE_SECURE=1`
+- `PANEL_TRUST_PROXY=1`
+
+`PANEL_MEMBER_USERNAME` ve `PANEL_MEMBER_PASSWORD_HASH` V1.6 geriye uyumluluğu için hâlâ desteklenir; V1.7 kullanılırken yeni üyeler kullanıcı yönetim ekranından açılmalıdır.
+
+Token ve şifre hiçbir zaman README, YAML veya Actions loglarına düz değer olarak yazılmaz. `render.yaml` gizli değerleri yalnız `sync: false` olarak tanımlar.
 
 ## Güvenli şifre özeti üretme
 
-\`\`\`bash
+```bash
 python dashboard_live_app.py --hash-password
-\`\`\`
+```
 
-Komutun ürettiği değer barındırma hizmetinde \`PANEL_PASSWORD_HASH\` gizli
-değişkenine yazılır. Şifre veya hash GitHub dosyalarına eklenmez.
-Üye hesabı açılacaksa komut ikinci kez farklı bir şifreyle çalıştırılır ve
-çıktı \`PANEL_MEMBER_PASSWORD_HASH\` değişkenine yazılır.
+Bu komut kurucu yönetici şifresi için kullanılır. Dinamik kullanıcıların şifre özetini V1.7 kullanıcı yönetimi otomatik üretir.
+
+## Yerel deneme
+
+Repo JSON dosyalarının bulunduğu bilgisayarda:
+
+```powershell
+$env:PANEL_USERNAME="ahmet"
+$env:PANEL_PASSWORD="yalnız-kendinizin-bildiği-şifre"
+$env:PANEL_COOKIE_SECURE="0"
+python dashboard_accounts_app.py --root .
+```
+
+`GITHUB_PANEL_USERS_TOKEN` tanımlı değilse panel kurucu yöneticiyle çalışır ve kullanıcı yönetim ekranı hesap deposunu salt-okunur/kapalı gösterir.
 
 ## İnternette 24 saat çalışma
 
-Repo kökündeki \`render.yaml\` ve \`Dockerfile.dashboard\`, HTTPS sunan bir
-barındırma hizmetinde dağıtım için hazırlanmıştır.
+`render.yaml` ve `Dockerfile.dashboard` V1.7 giriş noktası olarak `dashboard_accounts_app.py` dosyasını kullanır. `/healthz` endpoint'i V1.7 sürümünü bildirir.
 
-Gizli ortam değişkenleri:
+## Testler
 
-- \`GITHUB_PANEL_TOKEN\`: yalnız bu private repo için **Contents: Read-only**
-  yetkili fine-grained GitHub token
-- \`PANEL_PASSWORD_HASH\`: yukarıdaki komutla üretilen yönetici şifre özeti
-- \`PANEL_MEMBER_PASSWORD_HASH\`: isteğe bağlı üye hesabının şifre özeti
+`Kripto Panel Kontrolü` workflow'u şu kontrolleri çalıştırır:
 
-Normal ortam değişkenleri:
+- `dashboard_builder.py`
+- `dashboard_live_app.py`
+- `dashboard_accounts_app.py`
+- panel testleri
+- canlı panel testleri
+- çoklu kullanıcı yönetimi testleri
+- gerçek verilerden statik panel üretimi
 
-- \`GITHUB_REPOSITORY=ahmetelci2014-rgb/kriptosinyalanaliz63\`
-- \`GITHUB_REF_NAME=main\`
-- \`PANEL_USERNAME=ahmet\`
-- \`PANEL_MEMBER_USERNAME=uye\` (isteğe bağlı; üye hash'i ile birlikte kullanılır)
-- \`PANEL_REFRESH_SECONDS=30\`
-- \`PANEL_COOKIE_SECURE=1\`
-- \`PANEL_TRUST_PROXY=1\`
-
-Token ve şifre hiçbir zaman sohbette, README'de, YAML içinde veya Actions
-loglarında paylaşılmaz.
-
-## Statik yedek
-
-\`Kripto Panel Kontrolü\` workflow'u manuel çalıştırıldığında üç gün saklanan
-bir statik HTML yedeği üretir. Bu dosya yalnız acil durum görüntüsüdür ve
-canlı panel yerine kullanılmaz.
+Statik HTML artifact yalnız acil durum anlık görüntüsüdür; canlı panel değildir.
