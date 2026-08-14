@@ -49,6 +49,7 @@ from portfolio_risk import (
 
 BOT_NAME = "Swing Radar v3 - Gölge Takip"
 SWING_SHADOW_ONLY = True
+SWING_TELEGRAM_ENABLED = False
 SWING_SHADOW_WARNING = (
     "⚠️ GÖLGE SWING – İŞLEM AÇMA\n"
     "Bu bildirim yalnız performans verisi toplamak içindir."
@@ -148,6 +149,9 @@ M15_LIMIT = 260
 # =========================================================
 
 def send_telegram(message, delivery_key=None):
+    if not SWING_TELEGRAM_ENABLED:
+        print("Swing V3 Telegram kapalı; kayıt sessizce takip edildi.")
+        return False
     if SWING_SHADOW_ONLY and not str(message).startswith(SWING_SHADOW_WARNING):
         message = f"{SWING_SHADOW_WARNING}\n\n{message}"
     return send_telegram_once(
