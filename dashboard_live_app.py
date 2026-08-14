@@ -41,10 +41,12 @@ from typing import Any
 from dashboard_builder import build_dashboard_data, render_dashboard
 
 
-VERSION = "KRIPTO_KONTROL_PANELI_LIVE_V1_5_2026_08_14"
+VERSION = "KRIPTO_KONTROL_PANELI_LIVE_V1_6_2026_08_14"
 PASSWORD_ITERATIONS = 310_000
 SESSION_COOKIE = "panel_session"
 LOGIN_CSRF_COOKIE = "panel_login_csrf"
+ROLE_ADMIN = "ADMIN"
+ROLE_MEMBER = "MEMBER"
 
 DATA_FILES = (
     "open_signals.json",
@@ -128,6 +130,9 @@ class PanelConfig:
     cookie_secure: bool
     trust_proxy: bool
     session_hours: int
+    member_username: str | None = None
+    member_password: str | None = None
+    member_password_hash_value: str | None = None
 
     @classmethod
     def from_env(cls, root: Path | str = ".") -> "PanelConfig":
@@ -152,6 +157,9 @@ class PanelConfig:
                 1,
                 min(int(os.getenv("PANEL_SESSION_HOURS", "12")), 72),
             ),
+            member_username=(os.getenv("PANEL_MEMBER_USERNAME") or "").strip() or None,
+            member_password=os.getenv("PANEL_MEMBER_PASSWORD"),
+            member_password_hash_value=os.getenv("PANEL_MEMBER_PASSWORD_HASH"),
         )
 
     def validate(self) -> None:
@@ -159,6 +167,14 @@ class PanelConfig:
             raise RuntimeError(
                 "PANEL_PASSWORD veya PANEL_PASSWORD_HASH tanımlanmalıdır."
             )
+        member_secret = bool(self.member_password or self.member_password_hash_value)
+        if bool(self.member_username) != member_secret:
+            raise RuntimeError(
+                "Üye girişi için PANEL_MEMBER_USERNAME ile PANEL_MEMBER_PASSWORD "
+                "veya PANEL_MEMBER_PASSWORD_HASH birlikte tanımlanmalıdır."
+            )
+        if self.member_username and self.member_username == self.username:
+            raise RuntimeError("Yönetici ve üye kullanıcı adları farklı olmalıdır.")
         if self.github_token:
             if "/" not in self.repository:
                 raise RuntimeError("GITHUB_REPOSITORY owner/repo biçiminde olmalıdır.")
@@ -169,16 +185,47 @@ class PanelConfig:
             )
 
 
+def authenticate_account(
+    config: PanelConfig,
+    username: str,
+    password: str,
+) -> dict[str, str] | None:
+    accounts = [(
+        config.username,
+        config.password_hash_value,
+        config.password,
+        ROLE_ADMIN,
+    )]
+    if config.member_username:
+        accounts.append((
+            config.member_username,
+            config.member_password_hash_value,
+            config.member_password,
+            ROLE_MEMBER,
+        ))
+    authenticated: dict[str, str] | None = None
+    for account_username, configured_hash, configured_plain, role in accounts:
+        username_ok = hmac.compare_digest(
+            username.encode("utf-8"),
+            account_username.encode("utf-8"),
+        )
+        password_ok = verify_password(password, configured_hash, configured_plain)
+        if username_ok and password_ok:
+            authenticated = {"username": account_username, "role": role}
+    return authenticated
+
+
 class SessionStore:
     def __init__(self, lifetime_seconds: int):
         self.lifetime_seconds = lifetime_seconds
         self._sessions: dict[str, dict[str, Any]] = {}
         self._lock = threading.Lock()
 
-    def create(self, username: str) -> tuple[str, dict[str, Any]]:
+    def create(self, username: str, role: str = ROLE_ADMIN) -> tuple[str, dict[str, Any]]:
         token = secrets.token_urlsafe(32)
         session = {
             "username": username,
+            "role": role if role in {ROLE_ADMIN, ROLE_MEMBER} else ROLE_MEMBER,
             "csrf": secrets.token_urlsafe(24),
             "expires_at": time.time() + self.lifetime_seconds,
         }
@@ -566,6 +613,69 @@ class LiveDashboardService:
                 return stale
 
 
+def dashboard_for_session(
+    data: dict[str, Any],
+    session: dict[str, Any],
+) -> dict[str, Any]:
+    filtered = copy.deepcopy(data)
+    role = str(session.get("role") or ROLE_MEMBER).upper()
+    if role not in {ROLE_ADMIN, ROLE_MEMBER}:
+        role = ROLE_MEMBER
+    filtered["viewer"] = {
+        "username": str(session.get("username") or "üye"),
+        "role": role,
+        "is_admin": role == ROLE_ADMIN,
+    }
+    if role == ROLE_ADMIN:
+        return filtered
+
+    filtered["mode"] = "MEMBER_READ_ONLY_NO_INTERNAL_DIAGNOSTICS"
+    filtered.pop("live_source", None)
+    filtered["live_systems"] = []
+    filtered["open_risk"] = {
+        "total": 0,
+        "long": 0,
+        "short": 0,
+        "unknown_direction": 0,
+        "with_stop": 0,
+        "missing_stop": 0,
+        "average_stop_percent": None,
+        "max_stop_percent": None,
+        "widest_stop_symbol": None,
+        "wide_stop_count": 0,
+        "average_tp1_rr": None,
+        "average_tp3_rr": None,
+        "systems": [],
+    }
+    filtered["period_comparisons"] = {}
+    filtered["sources"] = []
+    quality = filtered.get("data_quality") or {}
+    quality_ok = bool(quality.get("ok", False))
+    filtered["data_quality"] = {
+        "ok": quality_ok,
+        "warnings": [] if quality_ok else [
+            "Canlı veri geçici olarak güncellenemedi; son geçerli kayıt gösteriliyor."
+        ],
+    }
+    health = filtered.get("health") or {}
+    overall = str(health.get("overall") or "UNKNOWN").upper()
+    filtered["health"] = {
+        "overall": overall,
+        "counts": {
+            "green": 1 if overall == "GREEN" else 0,
+            "yellow": 1 if overall == "YELLOW" else 0,
+            "red": 1 if overall == "RED" else 0,
+        },
+        "generated_at": health.get("generated_at", 0),
+        "components": [],
+    }
+    for row in filtered.get("open_trades", []):
+        row["source"] = "Canlı Sinyal"
+    for row in filtered.get("recent_results", []):
+        row["source"] = "Sonuç Kaydı"
+    return filtered
+
+
 def cookie_value(
     name: str,
     value: str,
@@ -730,11 +840,12 @@ def make_handler(
             self,
             error: str | None = None,
             status: int = HTTPStatus.OK,
+            username: str = "",
         ) -> None:
             csrf = secrets.token_urlsafe(24)
             self._send(
                 status,
-                login_page(config.username, csrf, error),
+                login_page(username, csrf, error),
                 "text/html; charset=utf-8",
                 cookies=[
                     cookie_value(
@@ -759,14 +870,18 @@ def make_handler(
                     self._serve_login()
                 return
             if path == "/api/dashboard":
-                if not self._session():
+                session = self._session()
+                if not session:
                     self._json(
                         HTTPStatus.UNAUTHORIZED,
                         {"error": "authentication_required"},
                     )
                     return
                 try:
-                    self._json(HTTPStatus.OK, service.get_data())
+                    self._json(
+                        HTTPStatus.OK,
+                        dashboard_for_session(service.get_data(), session),
+                    )
                 except Exception:
                     self._json(
                         HTTPStatus.SERVICE_UNAVAILABLE,
@@ -809,6 +924,12 @@ def make_handler(
                     self._redirect("/login")
                     return
                 csrf = html.escape(str(session["csrf"]), quote=True)
+                role = str(session.get("role") or ROLE_MEMBER).upper()
+                role_label = "Yönetici" if role == ROLE_ADMIN else "Üye"
+                account_label = html.escape(
+                    f"{role_label} · {session.get('username') or 'üye'}"
+                )
+                account_badge = f'<span class="badge">{account_label}</span>'
                 logout = (
                     '<form method="post" action="/logout">'
                     f'<input type="hidden" name="csrf" value="{csrf}">'
@@ -822,7 +943,7 @@ def make_handler(
                     market_endpoint="/api/market/candles",
                     refresh_seconds=config.refresh_seconds,
                     script_nonce=nonce,
-                    top_action_html=logout,
+                    top_action_html=account_badge + logout,
                 )
                 self._send(
                     HTTPStatus.OK,
@@ -869,24 +990,24 @@ def make_handler(
                     csrf_cookie,
                     csrf_form,
                 )
-                username_ok = hmac.compare_digest(
-                    form.get("username", "").encode("utf-8"),
-                    config.username.encode("utf-8"),
-                )
-                password_ok = verify_password(
+                account = authenticate_account(
+                    config,
+                    form.get("username", ""),
                     form.get("password", ""),
-                    config.password_hash_value,
-                    config.password,
                 )
-                if not (csrf_ok and username_ok and password_ok):
+                if not (csrf_ok and account):
                     limiter.record_failure(identity)
                     self._serve_login(
                         "Kullanıcı adı veya şifre hatalı.",
                         HTTPStatus.UNAUTHORIZED,
+                        form.get("username", ""),
                     )
                     return
                 limiter.clear(identity)
-                token, _session = sessions.create(config.username)
+                token, _session = sessions.create(
+                    account["username"],
+                    account["role"],
+                )
                 self._redirect(
                     "/",
                     cookies=[
