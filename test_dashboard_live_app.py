@@ -316,6 +316,9 @@ class LiveDashboardAppTests(unittest.TestCase):
                 self.assertIn("Coin ve İşlem Grafiği", page)
                 self.assertIn("İşlem İnceleme Merkezi", page)
                 self.assertIn("Açık Risk Özeti", page)
+                self.assertIn("Yön ve Gün Analizi", page)
+                self.assertIn("dailyCanvas", page)
+                self.assertIn('class="quick-nav"', page)
                 self.assertIn("CSV indir", page)
                 self.assertIn("Canlı veri bağlanıyor", page)
                 self.assertNotIn("test-password", page)
@@ -332,6 +335,11 @@ class LiveDashboardAppTests(unittest.TestCase):
                 self.assertEqual(data["summary"]["open_total"], 1)
                 self.assertEqual(data["open_risk"]["long"], 1)
                 self.assertEqual(data["open_risk"]["with_stop"], 1)
+                self.assertEqual(len(data["result_breakdown"]["daily_30d"]), 30)
+                self.assertEqual(
+                    [row["direction"] for row in data["result_breakdown"]["directions"]],
+                    ["LONG", "SHORT"],
+                )
                 self.assertEqual(
                     data["live_source"]["mode"],
                     "LOCAL_REPOSITORY_FILES",
