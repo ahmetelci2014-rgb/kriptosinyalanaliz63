@@ -67,6 +67,14 @@ COMPONENTS = {
         "stale_hours": HOURLY_STALE_HOURS,
         "open_paths": [("swing_radar_state.json", "open_swing_signals")],
     },
+    "SWING_V4_SHADOW": {
+        "label": "Swing Shadow V4",
+        "kind": "SHADOW",
+        "files": ["swing_shadow_v4_ledger.json"],
+        "workflow": ".github/workflows/swing-shadow-v4.yml",
+        "stale_hours": HOURLY_STALE_HOURS,
+        "open_paths": [("swing_shadow_v4_ledger.json", "open_positions")],
+    },
     "POSITION_TREND": {
         "label": "Ana Trend Pozisyon Radarı",
         "kind": "SHADOW",
@@ -158,6 +166,7 @@ DECISION_MAP = {
     "SCALP": "SCALP",
     "PUMP_DUMP": "PUMP_DUMP",
     "SWING": "SWING",
+    "SWING_V4_SHADOW": "SWING_V4_SHADOW",
     "MOMENTUM_SHADOW": "MOMENTUM_SHADOW",
     "RANGE_SHADOW": "RANGE_SHADOW",
     "PORTFOLIO_RISK": "PORTFOLIO_RISK",
