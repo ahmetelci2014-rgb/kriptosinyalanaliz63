@@ -24801,11 +24801,11 @@
     "2026-08-14": {
       "opened": 25,
       "radar": 0,
-      "tp1": 18,
-      "tp2": 9,
+      "tp1": 19,
+      "tp2": 10,
       "tp3": 7,
-      "sl": 5,
-      "be": 10,
+      "sl": 6,
+      "be": 11,
       "expired": 1,
       "long": 7,
       "short": 18,
@@ -25025,11 +25025,11 @@
         "WLFIUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
-          "tp2": 0,
+          "tp1": 1,
+          "tp2": 1,
           "tp3": 0,
           "sl": 0,
-          "be": 0,
+          "be": 1,
           "expired": 0
         },
         "XRPUSDT": {
@@ -25078,13 +25078,13 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         }
       },
       "direction_stops": {
-        "LONG": 1,
+        "LONG": 2,
         "SHORT": 4
       },
       "stop_times": {
@@ -25092,7 +25092,8 @@
         "BCHUSDT": 1786669286,
         "WUSDT": 1786722360,
         "SPKUSDT": 1786723283,
-        "TURBOUSDT": 1786723286
+        "TURBOUSDT": 1786723286,
+        "QTUMUSDT": 1786738583
       },
       "closed_times": {
         "MEUSDT": 1786657558,
@@ -25112,7 +25113,8 @@
         "ZROUSDT": 1786720185,
         "LINEAUSDT": 1786721474,
         "RAVEUSDT": 1786724166,
-        "ATHUSDT": 1786735873
+        "ATHUSDT": 1786735873,
+        "WLFIUSDT": 1786738579
       },
       "closed_results": {
         "MEUSDT": "BE",
@@ -25132,7 +25134,8 @@
         "ZROUSDT": "BE",
         "LINEAUSDT": "BE",
         "RAVEUSDT": "TP3",
-        "ATHUSDT": "BE"
+        "ATHUSDT": "BE",
+        "WLFIUSDT": "BE"
       },
       "closed_history": [
         {
@@ -25634,14 +25637,54 @@
           "exit": 0.003722,
           "source": "5M_RADAR",
           "score": 100
+        },
+        {
+          "time": "23:16:11",
+          "symbol": "WLFIUSDT",
+          "direction": "LONG",
+          "result": "TP1",
+          "entry": 0.05546,
+          "exit": 0.0559087429,
+          "source": "15M_ENTRY",
+          "score": 99
+        },
+        {
+          "time": "23:16:16",
+          "symbol": "WLFIUSDT",
+          "direction": "LONG",
+          "result": "TP2",
+          "entry": 0.05546,
+          "exit": 0.056316691,
+          "source": "15M_ENTRY",
+          "score": 99
+        },
+        {
+          "time": "23:16:19",
+          "symbol": "WLFIUSDT",
+          "direction": "LONG",
+          "result": "BE",
+          "entry": 0.05546,
+          "exit": 0.05546,
+          "source": "15M_ENTRY",
+          "score": 99
+        },
+        {
+          "time": "23:16:23",
+          "symbol": "QTUMUSDT",
+          "direction": "LONG",
+          "result": "SL",
+          "entry": 0.6917,
+          "exit": 0.6863,
+          "source": "15M_ENTRY",
+          "score": 96
         }
       ],
       "sl_after_tp1": 2,
       "sl_after_tp2": 0,
-      "sl_after_no_return": 2
+      "sl_after_no_return": 4
     }
   },
-  "last_update": 1786737394,
+  "last_update": 1786738587,
   "last_open_summary": 1786736770,
   "last_status_message": 1786736162,
   "last_daily_report": "2026-08-13",
@@ -25692,12 +25735,15 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-08-14"
     },
     "TURBOUSDT_SHORT_1786723286": {
       "trade_id": "TURBOUSDT_SHORT_15M_ENTRY_1786720779",
@@ -25717,8 +25763,31 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-08-14"
+    },
+    "QTUMUSDT_LONG_1786738583": {
+      "trade_id": "QTUMUSDT_LONG_15M_ENTRY_1786736978",
+      "symbol": "QTUMUSDT",
+      "direction": "LONG",
+      "source": "15M_ENTRY",
+      "entry": 0.6917,
+      "tp1": 0.6942285074,
+      "tp2": 0.6965271504,
+      "tp3": 0.6990556578,
+      "sl": 0.6871027139,
+      "score": 96,
+      "risk_percent": 0.665,
+      "stopped_at": 1786738583,
+      "stop_exit": 0.6863,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
