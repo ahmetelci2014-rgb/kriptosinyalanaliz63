@@ -81,7 +81,11 @@ jobs:
           TOKEN: ""
           CHAT_ID: ""
         run: |
-          python -m pytest -q
+          for test_file in test_*.py
+          do
+            echo "Çalıştırılıyor: ${test_file}"
+            python -m pytest -q "${test_file}"
+          done
 
       - name: Yeni Liste Radar self-testini çalıştır
         env:
