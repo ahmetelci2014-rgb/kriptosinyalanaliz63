@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 import time
 import unittest
@@ -101,6 +102,23 @@ class HealthTests(unittest.TestCase):
         now = int(time.time())
         files = [{"path": "x.json", "exists": True, "valid_json": True, "latest_timestamp": now - 10 * 3600}]
         self.assertEqual(scc.health_status(files, now - 10 * 3600, 6.0, None)[0], "YELLOW")
+
+class JsonStorageTests(unittest.TestCase):
+    def test_global_storage_guard_detects_unreferenced_invalid_json(self):
+        with tempfile.TemporaryDirectory() as td:
+            original = os.getcwd()
+            os.chdir(td)
+            try:
+                Path("valid.json").write_text('{"ok": true}', encoding="utf-8")
+                Path("broken.json").write_text('{"ok":', encoding="utf-8")
+                result = scc.json_storage_component()
+            finally:
+                os.chdir(original)
+
+        self.assertEqual(result["health"], "RED")
+        self.assertEqual(result["metrics"]["file_count"], 2)
+        self.assertTrue(any("broken.json" in reason for reason in result["health_reasons"]))
+
 
 class OpenTests(unittest.TestCase):
     def test_unique_open_dedup(self):
