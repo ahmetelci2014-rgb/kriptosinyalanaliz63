@@ -1,0 +1,61 @@
+name: Swing Shadow V4
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "27 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: swing-shadow-v4
+  cancel-in-progress: false
+
+jobs:
+  swing-shadow-v4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Repo indir
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Paketleri kur
+        env:
+          PIP_DISABLE_PIP_VERSION_CHECK: "1"
+        run: python -m pip install --prefer-binary -r requirements.txt
+
+      - name: Swing Shadow V4 çalıştır
+        run: python swing_shadow_v4.py
+
+      - name: Swing V4 gölge ledger kaydet
+        if: always()
+        run: |
+          set -e
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add swing_shadow_v4_ledger.json
+          if git diff --cached --quiet; then
+            echo "Swing V4 için yeni veri yok."
+            exit 0
+          fi
+          git commit -m "Update Swing Shadow V4 ledger"
+          for attempt in 1 2 3
+          do
+            git pull --rebase --autostash origin main
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            sleep 10
+          done
+          exit 1
