@@ -20,6 +20,7 @@ on:
       - "dashboard_watchlist_app.py"
       - "dashboard_opportunity_app.py"
       - "dashboard_score_app.py"
+      - "dashboard_filter_app.py"
       - "test_dashboard_builder.py"
       - "test_dashboard_live_app.py"
       - "test_dashboard_accounts_app.py"
@@ -33,6 +34,7 @@ on:
       - "test_dashboard_watchlist_app.py"
       - "test_dashboard_opportunity_app.py"
       - "test_dashboard_score_app.py"
+      - "test_dashboard_filter_app.py"
       - "Dockerfile.dashboard"
       - ".dockerignore"
       - "render.yaml"
@@ -55,6 +57,7 @@ on:
       - "dashboard_watchlist_app.py"
       - "dashboard_opportunity_app.py"
       - "dashboard_score_app.py"
+      - "dashboard_filter_app.py"
       - "test_dashboard_builder.py"
       - "test_dashboard_live_app.py"
       - "test_dashboard_accounts_app.py"
@@ -68,6 +71,7 @@ on:
       - "test_dashboard_watchlist_app.py"
       - "test_dashboard_opportunity_app.py"
       - "test_dashboard_score_app.py"
+      - "test_dashboard_filter_app.py"
       - "Dockerfile.dashboard"
       - ".dockerignore"
       - "render.yaml"
@@ -111,6 +115,7 @@ jobs:
             dashboard_watchlist_app.py \
             dashboard_opportunity_app.py \
             dashboard_score_app.py \
+            dashboard_filter_app.py \
             test_dashboard_builder.py \
             test_dashboard_live_app.py \
             test_dashboard_accounts_app.py \
@@ -123,7 +128,8 @@ jobs:
             test_dashboard_alert_app.py \
             test_dashboard_watchlist_app.py \
             test_dashboard_opportunity_app.py \
-            test_dashboard_score_app.py
+            test_dashboard_score_app.py \
+            test_dashboard_filter_app.py
 
       - name: Statik ve canlı panel testlerini çalıştır
         run: |
@@ -140,7 +146,8 @@ jobs:
             test_dashboard_alert_app.py \
             test_dashboard_watchlist_app.py \
             test_dashboard_opportunity_app.py \
-            test_dashboard_score_app.py
+            test_dashboard_score_app.py \
+            test_dashboard_filter_app.py
 
       - name: Render Docker imajını doğrula
         run: docker build -f Dockerfile.dashboard -t kripto-panel-ci .
@@ -161,16 +168,17 @@ jobs:
           {
             echo "## Kripto Kontrol Paneli doğrulandı"
             echo ""
-            echo "V2.7 İnceleme Skoru, V2.6 Piyasa Fırsat Merkezi, V2.5 İzleme Listesi, sesli/renkli canlı uyarı, Bildirim Merkezi, akıllı ana sayfa, hızlı coin analiz çekmecesi, üyelik/yönetim, canlı piyasa merkezi ve Docker build testleri başarılı."
+            echo "V2.8 Akıllı Fırsat Filtreleri, V2.7 İnceleme Skoru, V2.6 Piyasa Fırsat Merkezi, V2.5 İzleme Listesi, sesli/renkli canlı uyarı, Bildirim Merkezi, akıllı ana sayfa, hızlı coin analiz çekmecesi, üyelik/yönetim, canlı piyasa merkezi ve Docker build testleri başarılı."
             echo "Artifact yalnız acil durum anlık görüntüsüdür; canlı panel değildir."
             echo ""
             echo "- Sinyal/strateji davranışı değişmez"
             echo "- Telegram gönderim mantığı değişmez"
+            echo "- V2.8 filtreleri yalnız tarayıcı tarafında mevcut fırsat ve skor verisini süzer/sıralar"
+            echo "- 80+ skor, teknik yön ve hacim filtreleri yeni işlem sinyali değildir"
             echo "- İnceleme Skoru 15m + 1H EMA trend, RSI, 15m hacim oranı ve 24s momentumdan hesaplanır"
             echo "- İnceleme Skoru başarı ihtimali veya yeni işlem sinyali değildir"
             echo "- Skor verisi OKX public veriden gelir ve sunucuda kısa süre önbelleklenir"
             echo "- Piyasa Fırsat Merkezi yalnız OKX public piyasa verisini sınıflandırır"
-            echo "- Fırsat grupları yeni işlem sinyali değildir ve emir açmaz"
             echo "- İzleme Listesi favorileri yalnız tarayıcı localStorage alanındadır"
             echo "- Sesli uyarı kullanıcı tarafından açılır ve yalnız tarayıcı Web Audio kullanır"
             echo "- Renkli toast uyarıları yalnız mevcut panel verilerinden üretilir"
