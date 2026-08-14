@@ -117,13 +117,15 @@ Canlı adaylık için en az 30 kapanmış sanal işlem ve bütün başarı kapı
 
 ### Portföy Risk
 
-`portfolio_risk.py`, Premium, Scalp ve Pump/Dump açık sinyallerini birlikte kontrol eder.
+`portfolio_risk.py`, Premium, Scalp, Pump/Dump ve Yeni Liste açık sinyallerini birlikte kontrol eder.
 
 - Aynı coin aynı yön çakışması
 - Aynı coin ters yön çakışması
 - Yön yoğunluğu
 - Toplam portföy yoğunluğu
 - BLOCK/ALLOW sonuçlarının gölge performans takibi
+- Her canlı bot için ayrı portföy gölge ledger'ı; saatlik tekil birleştirme
+- Eşzamanlı workflow yazmalarına karşı dosya çakışma koruması
 
 Swing Shadow V4 sanal olduğu için canlı portföy risk hesabına eklenmez.
 
@@ -145,7 +147,7 @@ Kararlar otomatik uygulanmaz.
 
 ### System Control Center
 
-`system_control_center.py` workflow, dosya, JSON ve veri güncelliğini kontrol eder. Teknik sağlık ile işlem performansını birbirinden ayırır.
+`system_control_center.py` workflow, dosya, JSON, veri güncelliği ve dosya büyüklüğünü kontrol eder. Dosya başına 4 MB üzerinde sarı, 8 MB üzerinde kırmızı sağlık uyarısı üretir. Telegram yalnız genel sağlık RED olduğunda ve aynı hata için 12 saatlik tekrar engeliyle kullanılır. Teknik sağlık ile işlem performansını birbirinden ayırır.
 
 ### Diğer Gölge Katmanları
 
@@ -191,6 +193,7 @@ Telegram'a yalnız işlem yapılabilir canlı sinyaller ve gerekli sonuç bildir
 - Pump/Dump: açık
 - Swing Shadow V4: kapalı
 - Diğer gölge ve analiz sistemleri: kapalı
+- System Control Center: yalnız kritik RED teknik uyarısı; aynı hata 12 saat içinde tekrarlanmaz
 
 ## Kurulum ve Test
 
@@ -200,12 +203,13 @@ Bağımlılıklar:
 
 ```bash
 python -m pip install --prefer-binary -r requirements.txt
+python -m pip install "pytest>=8,<10"
 ```
 
 Çekirdek testler:
 
 ```bash
-python -m unittest discover -v
+for test_file in test_*.py; do python -m pytest -q "$test_file"; done
 ```
 
 Ana bileşenleri manuel çalıştırma:
@@ -242,6 +246,8 @@ Token ve kimlik bilgileri Python, JSON, YAML, README veya Actions loglarına dü
 - Otomatik emir yoktur.
 - Telegram sırları yalnız GitHub Secrets içinde tutulur.
 - JSON dosyaları atomik yazılır.
+- Ortak portföy gölge kayıtları bot başına ayrılır ve saatlik tek yazıcıyla birleştirilir.
+- Büyüyen JSON dosyaları System Control Center tarafından izlenir.
 - Workflow'larda concurrency, timeout ve güvenli push kullanılır.
 - Repo özel tutuluyorsa erişim ve Actions kotası düzenli kontrol edilmelidir.
 
