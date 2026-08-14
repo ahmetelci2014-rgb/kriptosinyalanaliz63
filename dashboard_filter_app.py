@@ -81,7 +81,7 @@ def filter_dashboard_page(session: dict[str, Any], nonce: str) -> str:
           <select class="opp-sort" id="oppSort" aria-label="Fırsat sıralaması">
             <option value="default">Grup sırası</option>
             <option value="score">Skor yüksek</option>
-            <option value="change">24s değişim</option>
+            <option value="change">24s hareket gücü</option>
             <option value="volume">Hacim oranı</option>
           </select>
           <span class="opp-filter-status" id="oppFilterStatus">Filtre hazır</span>
@@ -102,8 +102,9 @@ def filter_dashboard_page(session: dict[str, Any], nonce: str) -> str:
   const bar=document.getElementById('oppFilterBar');
   if(!page||!search||!sort||!status||!bar)return;
 
-  let filter='all',busy=false,decorateTimer=null;
+  let filter='all',busy=false,decorateTimer=null,observer=null;
   const scoreCache=new Map(),pending=new Map();
+  const observeOptions={childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['class','title']};
 
   const cards=()=>[...page.querySelectorAll('.opp-list .opp-card[data-focus-symbol]')];
   const symbolOf=card=>String(card?.dataset?.focusSymbol||'').toUpperCase();
@@ -183,19 +184,24 @@ def filter_dashboard_page(session: dict[str, Any], nonce: str) -> str:
   }
 
   function apply(updateStatus=true){
-    const all=cards();
-    const visibleSymbols=new Set(),allSymbols=new Set();
-    for(const list of page.querySelectorAll('.opp-list'))sortList(list);
-    for(const card of all){
-      const symbol=symbolOf(card);if(symbol)allSymbols.add(symbol);
-      const show=matches(card);card.classList.toggle('v28-hidden',!show);if(show&&symbol)visibleSymbols.add(symbol);
+    if(observer)observer.disconnect();
+    try{
+      const all=cards();
+      const visibleSymbols=new Set(),allSymbols=new Set();
+      for(const list of page.querySelectorAll('.opp-list'))sortList(list);
+      for(const card of all){
+        const symbol=symbolOf(card);if(symbol)allSymbols.add(symbol);
+        const show=matches(card);card.classList.toggle('v28-hidden',!show);if(show&&symbol)visibleSymbols.add(symbol);
+      }
+      for(const group of page.querySelectorAll('.opp-group')){
+        const any=[...group.querySelectorAll('.opp-card[data-focus-symbol]')].some(card=>!card.classList.contains('v28-hidden'));
+        group.classList.toggle('v28-hidden',!any);
+      }
+      empty?.classList.toggle('show',visibleSymbols.size===0&&allSymbols.size>0);
+      if(updateStatus&&!busy)status.textContent=`${visibleSymbols.size}/${allSymbols.size} coin gösteriliyor`;
+    }finally{
+      if(observer)observer.observe(page,observeOptions);
     }
-    for(const group of page.querySelectorAll('.opp-group')){
-      const any=[...group.querySelectorAll('.opp-card[data-focus-symbol]')].some(card=>!card.classList.contains('v28-hidden'));
-      group.classList.toggle('v28-hidden',!any);
-    }
-    empty?.classList.toggle('show',visibleSymbols.size===0&&allSymbols.size>0);
-    if(updateStatus&&!busy)status.textContent=`${visibleSymbols.size}/${allSymbols.size} coin gösteriliyor`;
   }
 
   async function activateFilter(key,button){
@@ -231,8 +237,8 @@ def filter_dashboard_page(session: dict[str, Any], nonce: str) -> str:
     apply();
   }
 
-  const observer=new MutationObserver(()=>{clearTimeout(decorateTimer);decorateTimer=setTimeout(decorate,70);});
-  observer.observe(page,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['class','title']});
+  observer=new MutationObserver(()=>{clearTimeout(decorateTimer);decorateTimer=setTimeout(decorate,70);});
+  observer.observe(page,observeOptions);
   document.addEventListener('click',event=>{if(event.target.closest('[data-view="opportunities"]'))setTimeout(decorate,120);});
   decorate();
 })();
