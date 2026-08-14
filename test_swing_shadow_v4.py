@@ -16,6 +16,12 @@ def candidate(direction="LONG"):
 
 
 class SwingShadowV4Tests(unittest.TestCase):
+    def test_quote_volume_falls_back_to_okx_info(self):
+        self.assertEqual(
+            v4.safe_quote_volume({"quoteVolume": None, "info": {"volCcy24h": "2500000"}}),
+            2500000.0,
+        )
+
     def test_same_candle_stop_and_tp_is_stop_first(self):
         item = v4.build_position(candidate("LONG"), current_ts=2)
         candle = {"timestamp": 2000, "open": 100, "high": 101, "low": 98.9, "close": 100}
