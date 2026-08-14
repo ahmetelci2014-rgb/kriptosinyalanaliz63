@@ -33,10 +33,7 @@ class DashboardQualityV35Tests(unittest.TestCase):
         self.assertEqual(payload["premium"]["package_name"], "Premium 30 Gün")
         self.assertEqual(payload["premium"]["price_label"], "499 TL")
         self.assertEqual(payload["premium"]["days"], 30)
-        self.assertEqual(
-            set(payload),
-            {"version", "system", "free", "premium", "disclaimer"},
-        )
+        self.assertEqual(set(payload), {"version", "system", "free", "premium", "disclaimer"})
         self.assertEqual(
             set(payload["system"]),
             {"health", "open_count", "free_visible_open", "premium_locked_open", "recent_result_count", "tp_rate_percent", "updated_at"},
@@ -75,8 +72,8 @@ class DashboardQualityV35Tests(unittest.TestCase):
         body = app.enhance_free_quality(base, "nonce123")
         self.assertIn("FREE ile gerçek sistemi ölç", body)
         self.assertIn("✓ Gerçek sinyal", body)
-        self.assertIn("Son 5 kayıt", body)
-        self.assertIn("6 canlı coin", body)
+        self.assertIn("Şeffaf sonuç", body)
+        self.assertIn("Gelişmiş hedefler", body)
         self.assertIn("Premium özellikleri aç", body)
         self.assertIn(transparency.FREE_FOLLOW_STORAGE_KEY, body)
         self.assertIn("kripto-free-preview", body)
