@@ -76110,9 +76110,9 @@
         "max_adverse_r": 1.3055,
         "best_price": 0.02198,
         "worst_price": 0.02223,
-        "last_checked_at": 1786721773,
+        "last_checked_at": 1786722667,
         "completed_at": 0,
-        "last_price": 0.02214
+        "last_price": 0.02218
       }
     },
     "SNXUSDT_SHORT_15M_ENTRY_1786700971": {
@@ -76316,14 +76316,14 @@
         "watched_levels": {},
         "reached_levels": {},
         "max_favorable_percent": 0.0,
-        "max_adverse_percent": 1.1804,
+        "max_adverse_percent": 1.2839,
         "max_favorable_r": 0.0,
-        "max_adverse_r": 2.1711,
+        "max_adverse_r": 2.3615,
         "best_price": 0.1932191763,
-        "worst_price": 0.1955,
-        "last_checked_at": 1786721773,
+        "worst_price": 0.1957,
+        "last_checked_at": 1786722667,
         "completed_at": 0,
-        "last_price": 0.195
+        "last_price": 0.1956
       }
     },
     "RAVEUSDT_SHORT_15M_ENTRY_1786701897": {
@@ -76401,9 +76401,9 @@
       "worst_adverse_r": 0.9607,
       "best_favorable_price": 0.2781,
       "worst_adverse_price": 0.2857,
-      "last_market_price": 0.279,
+      "last_market_price": 0.2799,
       "tp1_hit_at": 1786720380,
-      "last_tracking_at": 1786721460
+      "last_tracking_at": 1786722300
     },
     "PYTHUSDT_SHORT_15M_ENTRY_1786703743": {
       "trade_id": "PYTHUSDT_SHORT_15M_ENTRY_1786703743",
@@ -76568,9 +76568,9 @@
         "max_adverse_r": 0.8962,
         "best_price": 0.03876,
         "worst_price": 0.03963,
-        "last_checked_at": 1786721773,
+        "last_checked_at": 1786722667,
         "completed_at": 0,
-        "last_price": 0.03916
+        "last_price": 0.03896
       }
     },
     "WUSDT_SHORT_15M_ENTRY_1786705571": {
@@ -76590,17 +76590,22 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "SL",
+      "r_result": -1.0,
+      "exit_price": 0.008127,
+      "closed_at": 1786722360,
+      "closed_day": "2026-08-14",
       "events": [
         {
           "time": 1786705571,
           "event": "OPENED",
           "price": 0.008005
+        },
+        {
+          "time": 1786722360,
+          "event": "SL",
+          "price": 0.008127
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -76638,14 +76643,49 @@
       "market_guard_short_allowed": true,
       "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %-0.04 | ETHUSDT: 15M EMA20 altı, 5M %-0.03 | SOLUSDT: 15M EMA20 altı, 5M %-0.08",
       "best_favorable_percent": 0.0375,
-      "worst_adverse_percent": 1.4866,
+      "worst_adverse_percent": 1.6115,
       "best_favorable_r": 0.0245,
-      "worst_adverse_r": 0.9715,
+      "worst_adverse_r": 1.0531,
       "best_favorable_price": 0.008002,
-      "worst_adverse_price": 0.008124,
-      "last_market_price": 0.008094,
+      "worst_adverse_price": 0.008134,
+      "last_market_price": 0.008127,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786721460
+      "last_tracking_at": 1786721940,
+      "duration_minutes": 279,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "KURULUM DEVAM ETMEDI",
+        "confidence": "ORTA",
+        "factors": [
+          "Islem yeterli lehe ivme olusturmadan stop oldu."
+        ],
+        "duration_minutes": 279,
+        "best_favorable_r": 0.0245,
+        "worst_adverse_r": 1.0531,
+        "provisional": true,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "stop_root_cause": {
+        "version": "STOP_ROOT_CAUSE_V1",
+        "primary": "TAKIP_SURUYOR",
+        "label": "Takip sürüyor",
+        "preliminary": "KURULUM_DEVAM_ETMEDI",
+        "preliminary_label": "Kurulum devam etmedi",
+        "secondary": [],
+        "confidence": "DUSUK",
+        "provisional": true,
+        "factors": [
+          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+        ],
+        "metrics": {
+          "duration_minutes": 279,
+          "mfe_r": 0.0245,
+          "mae_r": 1.0531,
+          "risk_percent": 1.53,
+          "return_minutes": null
+        },
+        "updated_at": 1786722360
+      }
     },
     "LINEAUSDT_SHORT_15M_ENTRY_1786710953": {
       "trade_id": "LINEAUSDT_SHORT_15M_ENTRY_1786710953",
@@ -76754,7 +76794,17 @@
         "reference_label": "BE_ENTRY",
         "reference_price": 0.0021,
         "timeframe": "1m",
-        "checkpoints": {},
+        "checkpoints": {
+          "15": {
+            "target_at": 1786722374,
+            "candle_time": 1786722300,
+            "close_price": 0.002109,
+            "directional_return_percent": -0.4286,
+            "max_favorable_percent": 0.1429,
+            "max_adverse_percent": 0.4286,
+            "directional_r_from_reference": -0.6101
+          }
+        },
         "watched_levels": {
           "TP1": 0.002091887,
           "TP2": 0.0020845115,
@@ -76762,14 +76812,14 @@
         },
         "reached_levels": {},
         "max_favorable_percent": 0.1429,
-        "max_adverse_percent": 0.1905,
+        "max_adverse_percent": 0.5714,
         "max_favorable_r": 0.2034,
-        "max_adverse_r": 0.2712,
+        "max_adverse_r": 0.8135,
         "best_price": 0.002097,
-        "worst_price": 0.002104,
-        "last_checked_at": 1786721773,
+        "worst_price": 0.002112,
+        "last_checked_at": 1786722667,
         "completed_at": 0,
-        "last_price": 0.002104
+        "last_price": 0.002109
       }
     },
     "ZROUSDT_SHORT_15M_ENTRY_1786713654": {
@@ -76888,6 +76938,15 @@
             "max_favorable_percent": 0.0902,
             "max_adverse_percent": 0.3736,
             "directional_r_from_reference": -0.1988
+          },
+          "30": {
+            "target_at": 1786721984,
+            "candle_time": 1786721880,
+            "close_price": 0.7818,
+            "directional_return_percent": -0.7215,
+            "max_favorable_percent": 0.0902,
+            "max_adverse_percent": 0.7472,
+            "directional_r_from_reference": -0.6186
           }
         },
         "watched_levels": {
@@ -76897,14 +76956,14 @@
         },
         "reached_levels": {},
         "max_favorable_percent": 0.0902,
-        "max_adverse_percent": 0.554,
+        "max_adverse_percent": 0.9791,
         "max_favorable_r": 0.0773,
-        "max_adverse_r": 0.475,
+        "max_adverse_r": 0.8395,
         "best_price": 0.7755,
-        "worst_price": 0.7805,
-        "last_checked_at": 1786721773,
+        "worst_price": 0.7838,
+        "last_checked_at": 1786722667,
         "completed_at": 0,
-        "last_price": 0.7794
+        "last_price": 0.7823
       }
     },
     "SPKUSDT_SHORT_15M_ENTRY_1786720397": {
@@ -76972,14 +77031,14 @@
       "market_guard_short_allowed": true,
       "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %0.05 | ETHUSDT: 15M EMA20 altı, 5M %0.01 | SOLUSDT: 15M EMA20 altı, 5M %-0.09",
       "best_favorable_percent": 0.0,
-      "worst_adverse_percent": 0.2892,
+      "worst_adverse_percent": 0.4338,
       "best_favorable_r": 0.0,
-      "worst_adverse_r": 0.4788,
+      "worst_adverse_r": 0.7181,
       "best_favorable_price": 0.01383,
-      "worst_adverse_price": 0.01387,
-      "last_market_price": 0.01387,
+      "worst_adverse_price": 0.01389,
+      "last_market_price": 0.01388,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786721460
+      "last_tracking_at": 1786722360
     },
     "TURBOUSDT_SHORT_15M_ENTRY_1786720779": {
       "trade_id": "TURBOUSDT_SHORT_15M_ENTRY_1786720779",
@@ -77046,15 +77105,15 @@
       "market_guard_short_allowed": true,
       "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %0.04 | ETHUSDT: 15M EMA20 altı, 5M %0.04 | SOLUSDT: 15M EMA20 altı, 5M %0.08",
       "best_favorable_percent": 0.0,
-      "worst_adverse_percent": 0.5168,
+      "worst_adverse_percent": 0.8786,
       "best_favorable_r": 0.0,
-      "worst_adverse_r": 0.4486,
+      "worst_adverse_r": 0.7627,
       "best_favorable_price": 0.000774,
-      "worst_adverse_price": 0.000778,
-      "last_market_price": 0.0007764,
+      "worst_adverse_price": 0.0007808,
+      "last_market_price": 0.0007808,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1786721460
+      "last_tracking_at": 1786722360
     }
   },
-  "last_update": 1786721776
+  "last_update": 1786722670
 }
