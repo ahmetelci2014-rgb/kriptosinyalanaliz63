@@ -1,0 +1,55 @@
+name: Kripto Kontrol Paneli
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crypto-dashboard
+  cancel-in-progress: true
+
+jobs:
+  build-dashboard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+
+    steps:
+      - name: Repo indir
+        uses: actions/checkout@v4
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Panel testlerini çalıştır
+        run: python -m unittest -v test_dashboard_builder.py
+
+      - name: Gerçek verilerden panel üret
+        run: python dashboard_builder.py --root . --output dashboard_output/index.html
+
+      - name: Özel panel artifact'ını yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: kripto-kontrol-paneli
+          path: dashboard_output/index.html
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Kullanım özetini yaz
+        run: |
+          {
+            echo "## Kripto Kontrol Paneli hazır"
+            echo ""
+            echo "Bu çalışmanın **Artifacts** bölümünden \`kripto-kontrol-paneli\` dosyasını indir."
+            echo "ZIP içindeki \`index.html\` dosyasını tarayıcıda aç."
+            echo ""
+            echo "- Salt okunur"
+            echo "- API anahtarı yok"
+            echo "- Telegram yok"
+            echo "- Emir açma yok"
+          } >> "$GITHUB_STEP_SUMMARY"
