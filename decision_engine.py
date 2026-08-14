@@ -753,6 +753,9 @@ def summarize_swing_v4(ledger: Dict[str, Any]) -> Dict[str, Any]:
     summary = ledger.get("summary") if isinstance(ledger.get("summary"), dict) else {}
     closed = safe_int(summary.get("closed"), 0)
     metrics = dict(summary)
+    metrics["last_cycle"] = ledger.get("last_cycle") if isinstance(ledger.get("last_cycle"), dict) else {}
+    metrics["rejections"] = ledger.get("rejections") if isinstance(ledger.get("rejections"), dict) else {}
+    metrics["latest_near_misses"] = (ledger.get("latest_near_misses") or [])[:5]
     live_candidate = bool(summary.get("live_candidate"))
 
     if live_candidate:
