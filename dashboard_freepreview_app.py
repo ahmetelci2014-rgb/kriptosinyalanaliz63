@@ -56,7 +56,7 @@ def _safe_number(value: Any) -> float | None:
 
 
 def _row_timestamp(row: dict[str, Any]) -> int:
-    for key in ("opened_at", "sent_at", "created_at", "timestamp", "updated_at"):
+    for key in ("closed_at", "finalized_at", "opened_at", "sent_at", "created_at", "timestamp", "updated_at"):
         value = commercial._int(row.get(key), 0)
         if value > 0:
             return value
