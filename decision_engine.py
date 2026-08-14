@@ -47,6 +47,7 @@ FILES = {
     "pump_ledger": "pump_performance_ledger.json",
     "swing_state": "swing_radar_state.json",
     "swing_ledger": "swing_performance_ledger.json",
+    "swing_v4_ledger": "swing_shadow_v4_ledger.json",
     "momentum_shadow": "momentum_shadow.json",
     "range_shadow": "range_shadow.json",
     "portfolio_risk_outcomes": "portfolio_risk_outcomes.json",
@@ -748,6 +749,52 @@ def summarize_swing(state: Dict[str, Any], ledger: Dict[str, Any]) -> Dict[str, 
     )
 
 
+def summarize_swing_v4(ledger: Dict[str, Any]) -> Dict[str, Any]:
+    summary = ledger.get("summary") if isinstance(ledger.get("summary"), dict) else {}
+    closed = safe_int(summary.get("closed"), 0)
+    metrics = dict(summary)
+    live_candidate = bool(summary.get("live_candidate"))
+
+    if live_candidate:
+        return decision_entry(
+            "CANLI_ADAYI_GOLGE_DOGRULANDI",
+            "🟠 SWING V4 CANLI ADAYI / SON İNCELEME",
+            closed,
+            [
+                f"Stop %{safe_float(summary.get('stop_rate_percent')):.1f}, "
+                f"TP3 %{safe_float(summary.get('tp3_rate_percent')):.1f}.",
+                f"Pozitif kapanış %{safe_float(summary.get('positive_close_rate_percent')):.1f}, "
+                f"maksimum yön payı %{safe_float(summary.get('max_direction_share_percent')):.1f}.",
+            ],
+            "Otomatik canlıya alma; maliyet ve ileri dönem doğrulamasını incele.",
+            metrics,
+            confidence_override="YUKSEK" if closed >= 50 else "ORTA",
+        )
+
+    if closed < 30:
+        return decision_entry(
+            "VERI_TOPLA",
+            "⚪ SWING V4 GÖLGE VERİ TOPLA",
+            closed,
+            [f"Kapanmış Swing V4 sanal işlemi: {closed}/30."],
+            "Telegram ve emir kapalı kalsın; 30 kapanışa kadar veri topla.",
+            metrics,
+        )
+
+    failed = [
+        name for name, passed in (summary.get("gates") or {}).items()
+        if name != "minimum_sample" and not passed
+    ]
+    return decision_entry(
+        "GOLGEDE_YENIDEN_AYARLA",
+        "🟠 SWING V4 GÖLGEDE AYARLA",
+        closed,
+        [f"Başarısız doğrulama kapıları: {', '.join(failed) or 'bilinmiyor'}."],
+        "Canlıya alma; yalnız başarısız kapıları küçük gölge değişikliklerle düzelt.",
+        metrics,
+    )
+
+
 def summarize_range(data: Dict[str, Any]) -> Dict[str, Any]:
     summary = data.get("summary") if isinstance(data.get("summary"), dict) else {}
     n = safe_int(summary.get("total_closed"), 0)
@@ -1115,6 +1162,9 @@ PRIORITY = {
     "SETUPLARI_AYIR_GOLGE_TEST": 4,
     "LIMIT_GEVSETME_GOLGE_TEST": 4,
     "YONETIM_ALTERNATIFI_GOLGE_TEST": 4,
+    "CANLI_ADAYI_GOLGE_DOGRULANDI": 4,
+    "GOLGEDE_YENIDEN_AYARLA": 5,
+    "VERI_TOPLA": 9,
     "GOLGEDE_TUT": 5,
     "IZLE": 6,
     "KORU_IZLE": 7,
@@ -1175,6 +1225,9 @@ def build_report(base_dir: str = ".", current_ts: Optional[int] = None) -> Dict[
         "SWING": summarize_swing(
             loaded["swing_state"],
             loaded["swing_ledger"],
+        ),
+        "SWING_V4_SHADOW": summarize_swing_v4(
+            loaded["swing_v4_ledger"],
         ),
         "RANGE_SHADOW": summarize_range(
             loaded["range_shadow"],
