@@ -319,6 +319,8 @@ class LiveDashboardAppTests(unittest.TestCase):
                 self.assertIn("Yön ve Gün Analizi", page)
                 self.assertIn("dailyCanvas", page)
                 self.assertIn('class="quick-nav"', page)
+                self.assertIn("Dönem Karşılaştırması", page)
+                self.assertIn("comparisonWindow", page)
                 self.assertIn("CSV indir", page)
                 self.assertIn("Canlı veri bağlanıyor", page)
                 self.assertNotIn("test-password", page)
@@ -340,6 +342,8 @@ class LiveDashboardAppTests(unittest.TestCase):
                     [row["direction"] for row in data["result_breakdown"]["directions"]],
                     ["LONG", "SHORT"],
                 )
+                self.assertEqual(data["period_comparisons"]["7D"]["days"], 7)
+                self.assertEqual(data["period_comparisons"]["30D"]["days"], 30)
                 self.assertEqual(
                     data["live_source"]["mode"],
                     "LOCAL_REPOSITORY_FILES",

@@ -77,6 +77,8 @@ class DashboardBuilderTests(unittest.TestCase):
                 {"type": "TP", "count": 1},
             )
             self.assertEqual(len(data["result_breakdown"]["daily_30d"]), 30)
+            self.assertEqual(len(data["period_comparisons"]["7D"]["rows"]), 5)
+            self.assertEqual(len(data["period_comparisons"]["30D"]["rows"]), 5)
             closed = next(row for row in data["recent_results"] if row["id"] == "p-closed")
             self.assertEqual(closed["tp3"], 12.0)
             self.assertEqual(closed["sl"], 9.0)
@@ -101,6 +103,8 @@ class DashboardBuilderTests(unittest.TestCase):
             self.assertIn("Yön ve Gün Analizi", html)
             self.assertIn("dailyCanvas", html)
             self.assertIn('class="quick-nav"', html)
+            self.assertIn("Dönem Karşılaştırması", html)
+            self.assertIn("comparisonWindow", html)
             self.assertIn("CSV indir", html)
             self.assertIn("exportFilteredResults", html)
 
@@ -124,6 +128,8 @@ class DashboardBuilderTests(unittest.TestCase):
         self.assertIn("Yön ve Gün Analizi", html)
         self.assertIn("Coin Grafiği", html)
         self.assertIn("renderDirection", html)
+        self.assertIn("Dönem Karşılaştırması", html)
+        self.assertIn("renderComparison", html)
         self.assertIn("CSV indir", html)
         self.assertIn('nonce="test-nonce"', html)
 
@@ -151,6 +157,54 @@ class DashboardBuilderTests(unittest.TestCase):
             self.assertAlmostEqual(today["net_r"], 0.6)
             self.assertEqual(breakdown["recent_sequence"], {"type": "TP", "count": 1})
             self.assertEqual(breakdown["best_day"]["date"], "2026-08-14")
+
+    def test_period_comparison_separates_current_and_previous_windows(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.make_fixture(root)
+            current = datetime(2026, 8, 14, 12, 0, tzinfo=timezone.utc)
+            current_ts = int(current.timestamp())
+
+            premium = json.loads((root / "trade_ledger.json").read_text(encoding="utf-8"))
+            premium["trades"]["p-closed"]["closed_at"] = current_ts - 86400
+            premium["trades"]["p-previous"] = {
+                "trade_id": "p-previous",
+                "symbol": "ADAUSDT",
+                "direction": "LONG",
+                "final_result": "SL",
+                "r_result": -1,
+                "closed_at": current_ts - 10 * 86400,
+            }
+            self.write_json(root, "trade_ledger.json", premium)
+
+            scalp = json.loads((root / "scalp_performance_ledger.json").read_text(encoding="utf-8"))
+            scalp["records"][0]["trade_closed_at"] = current_ts - 2 * 86400
+            scalp["records"].append({
+                "id": "s-previous",
+                "stage": "REAL_SIGNAL",
+                "symbol": "LINKUSDT",
+                "direction": "SHORT",
+                "trade_outcome": "TP1",
+                "trade_result_r": 1.2,
+                "trade_closed_at": current_ts - 11 * 86400,
+            })
+            self.write_json(root, "scalp_performance_ledger.json", scalp)
+
+            pump = json.loads((root / "pump_performance_ledger.json").read_text(encoding="utf-8"))
+            pump["records"][0]["trade_closed_at"] = current_ts - 3 * 86400
+            self.write_json(root, "pump_performance_ledger.json", pump)
+
+            comparison = build_dashboard_data(root, now=current)["period_comparisons"]["7D"]
+            total = next(row for row in comparison["rows"] if row["system"] == "ALL")
+            self.assertEqual(total["current"]["sample"], 3)
+            self.assertAlmostEqual(total["current"]["net_r"], 0.6)
+            self.assertEqual(total["previous"]["sample"], 2)
+            self.assertAlmostEqual(total["previous"]["net_r"], 0.2)
+            self.assertAlmostEqual(total["net_r_delta"], 0.4)
+            premium_row = next(
+                row for row in comparison["rows"] if row["system"] == "PREMIUM"
+            )
+            self.assertAlmostEqual(premium_row["net_r_delta"], 2.6)
 
     def test_source_freshness_accepts_iso_and_millisecond_timestamps(self):
         with tempfile.TemporaryDirectory() as directory:
