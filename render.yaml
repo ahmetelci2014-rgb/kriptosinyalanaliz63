@@ -2,9 +2,11 @@ services:
   - type: web
     name: kripto-kontrol-paneli
     runtime: docker
+    plan: free
+    region: frankfurt
     dockerfilePath: ./Dockerfile.dashboard
     healthCheckPath: /healthz
-    autoDeploy: true
+    autoDeployTrigger: checksPass
     envVars:
       - key: GITHUB_REPOSITORY
         value: ahmetelci2014-rgb/kriptosinyalanaliz63
