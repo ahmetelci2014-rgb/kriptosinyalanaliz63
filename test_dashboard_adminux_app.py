@@ -90,7 +90,7 @@ class DashboardAdminUXTests(unittest.TestCase):
         body = app.admin_center_page(FakeConfig(), FakeStore(), FakeService(), session, settings)
         self.assertIn("Yönetim Merkezi", body)
         self.assertIn("Kullanıcı Yönetimi", body)
-        self.assertIn("Üyelik &amp; Ödemeler", body)
+        self.assertIn("Üyelik & Ödemeler", body)
         self.assertIn("Teknik Sistem", body)
         self.assertIn("Dinamik kullanıcı", body)
         self.assertIn("Bekleyen ödeme", body)
