@@ -177,6 +177,34 @@ class DecisionEngineTests(unittest.TestCase):
         )
         self.assertFalse(result["auto_apply"])
 
+    def test_swing_v4_requires_thirty_closed_before_review(self):
+        result = de.summarize_swing_v4({
+            "summary": {
+                "closed": 12,
+                "stop_rate_percent": 20.0,
+                "tp3_rate_percent": 40.0,
+                "positive_close_rate_percent": 75.0,
+                "max_direction_share_percent": 60.0,
+                "live_candidate": False,
+            }
+        })
+        self.assertEqual(result["decision_code"], "VERI_TOPLA")
+        self.assertFalse(result["auto_apply"])
+
+    def test_swing_v4_candidate_never_auto_applies(self):
+        result = de.summarize_swing_v4({
+            "summary": {
+                "closed": 30,
+                "stop_rate_percent": 30.0,
+                "tp3_rate_percent": 30.0,
+                "positive_close_rate_percent": 70.0,
+                "max_direction_share_percent": 50.0,
+                "live_candidate": True,
+            }
+        })
+        self.assertEqual(result["decision_code"], "CANLI_ADAYI_GOLGE_DOGRULANDI")
+        self.assertFalse(result["auto_apply"])
+
     def test_build_report_never_auto_applies(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
