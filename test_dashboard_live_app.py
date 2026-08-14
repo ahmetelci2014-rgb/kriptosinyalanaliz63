@@ -315,6 +315,8 @@ class LiveDashboardAppTests(unittest.TestCase):
                 self.assertIn("/api/market/candles", page)
                 self.assertIn("Coin ve İşlem Grafiği", page)
                 self.assertIn("İşlem İnceleme Merkezi", page)
+                self.assertIn("Açık Risk Özeti", page)
+                self.assertIn("CSV indir", page)
                 self.assertIn("Canlı veri bağlanıyor", page)
                 self.assertNotIn("test-password", page)
                 self.assertNotIn("GITHUB_PANEL_TOKEN", page)
@@ -328,6 +330,8 @@ class LiveDashboardAppTests(unittest.TestCase):
                 self.assertEqual(response.status, 200)
                 data = json.loads(response.read().decode("utf-8"))
                 self.assertEqual(data["summary"]["open_total"], 1)
+                self.assertEqual(data["open_risk"]["long"], 1)
+                self.assertEqual(data["open_risk"]["with_stop"], 1)
                 self.assertEqual(
                     data["live_source"]["mode"],
                     "LOCAL_REPOSITORY_FILES",
