@@ -39,10 +39,6 @@ DEFAULT_STATE_SOURCES = {
         "filename": "pump_radar_state.json",
         "containers": ["open_signals", "open_pump_signals"],
     },
-    "SWING": {
-        "filename": "swing_radar_state.json",
-        "containers": ["open_swing_signals"],
-    },
     "NEW_LISTING": {
         "filename": "new_listing_performance_ledger.json",
         "containers": ["records"],
