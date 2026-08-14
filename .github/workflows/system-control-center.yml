@@ -33,6 +33,9 @@ jobs:
           python -m unittest -v test_system_control_center.py
 
       - name: Merkezi raporu üret
+        env:
+          TOKEN: ${{ secrets.TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
         run: |
           python system_control_center.py
 
@@ -43,7 +46,7 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          for file in system_control_center_report.json system_control_center_report.md
+          for file in system_control_center_report.json system_control_center_report.md system_control_alert_state.json
           do
             if [ -f "$file" ]; then
               git add "$file"
