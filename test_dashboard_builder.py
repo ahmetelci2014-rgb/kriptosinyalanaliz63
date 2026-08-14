@@ -105,6 +105,8 @@ class DashboardBuilderTests(unittest.TestCase):
             self.assertIn('class="quick-nav"', html)
             self.assertIn("Dönem Karşılaştırması", html)
             self.assertIn("comparisonWindow", html)
+            self.assertIn("data-admin-only", html)
+            self.assertIn("applyViewerPermissions", html)
             self.assertIn("CSV indir", html)
             self.assertIn("exportFilteredResults", html)
 
@@ -130,6 +132,7 @@ class DashboardBuilderTests(unittest.TestCase):
         self.assertIn("renderDirection", html)
         self.assertIn("Dönem Karşılaştırması", html)
         self.assertIn("renderComparison", html)
+        self.assertIn("data-viewer-role", html)
         self.assertIn("CSV indir", html)
         self.assertIn('nonce="test-nonce"', html)
 

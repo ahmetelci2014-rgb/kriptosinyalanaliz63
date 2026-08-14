@@ -17,7 +17,11 @@ from dashboard_live_app import (
     LoginRateLimiter,
     OKXMarketDataClient,
     PanelConfig,
+    ROLE_ADMIN,
+    ROLE_MEMBER,
     SessionStore,
+    authenticate_account,
+    dashboard_for_session,
     make_handler,
     password_hash,
     verify_password,
@@ -94,6 +98,69 @@ class LiveDashboardAppTests(unittest.TestCase):
         encoded = password_hash("güçlü-şifre", iterations=100_000)
         self.assertTrue(verify_password("güçlü-şifre", encoded, None))
         self.assertFalse(verify_password("yanlış", encoded, None))
+
+    def test_admin_and_member_authentication_are_separate(self):
+        config = PanelConfig(
+            username="ahmet",
+            password="admin-secret",
+            password_hash_value=None,
+            repository="owner/private-repo",
+            ref="main",
+            github_token="token",
+            root=Path("."),
+            refresh_seconds=30,
+            cookie_secure=True,
+            trust_proxy=True,
+            session_hours=12,
+            member_username="demo-member",
+            member_password="member-secret",
+        )
+        self.assertEqual(
+            authenticate_account(config, "ahmet", "admin-secret"),
+            {"username": "ahmet", "role": ROLE_ADMIN},
+        )
+        self.assertEqual(
+            authenticate_account(config, "demo-member", "member-secret"),
+            {"username": "demo-member", "role": ROLE_MEMBER},
+        )
+        self.assertIsNone(
+            authenticate_account(config, "demo-member", "admin-secret")
+        )
+        self.assertIsNone(
+            authenticate_account(config, "ahmet", "member-secret")
+        )
+
+    def test_member_dashboard_filter_removes_internal_diagnostics(self):
+        data = {
+            "mode": "ADMIN",
+            "live_source": {"mode": "PRIVATE_GITHUB"},
+            "live_systems": [{"decision": "KORU"}],
+            "open_risk": {"total": 2},
+            "period_comparisons": {"7D": {"rows": [1]}},
+            "sources": [{"filename": "secret.json"}],
+            "data_quality": {"ok": False, "warnings": ["secret.json eski"]},
+            "health": {
+                "overall": "GREEN",
+                "counts": {"green": 8, "yellow": 0, "red": 0},
+                "generated_at": 10,
+                "components": [{"decision": "İÇ KARAR"}],
+            },
+            "open_trades": [{"source": "MTF_SECRET"}],
+            "recent_results": [{"source": "LEDGER_SECRET"}],
+        }
+        filtered = dashboard_for_session(
+            data,
+            {"username": "demo-member", "role": ROLE_MEMBER},
+        )
+        self.assertEqual(filtered["viewer"]["role"], ROLE_MEMBER)
+        self.assertNotIn("live_source", filtered)
+        self.assertEqual(filtered["live_systems"], [])
+        self.assertEqual(filtered["period_comparisons"], {})
+        self.assertEqual(filtered["sources"], [])
+        self.assertEqual(filtered["health"]["components"], [])
+        self.assertNotIn("secret.json", " ".join(filtered["data_quality"]["warnings"]))
+        self.assertEqual(filtered["open_trades"][0]["source"], "Canlı Sinyal")
+        self.assertEqual(filtered["recent_results"][0]["source"], "Sonuç Kaydı")
 
     def test_github_source_keeps_token_server_side_and_reuses_etag_cache(self):
         source = GitHubJsonSource("owner/private", "main", "top-secret")
@@ -348,10 +415,47 @@ class LiveDashboardAppTests(unittest.TestCase):
                     data["live_source"]["mode"],
                     "LOCAL_REPOSITORY_FILES",
                 )
+                self.assertEqual(data["viewer"]["role"], ROLE_ADMIN)
                 self.assertEqual(
                     response.getheader("Cache-Control"),
                     "no-store, max-age=0",
                 )
+
+                member_token, member_session = sessions.create(
+                    "demo-member",
+                    ROLE_MEMBER,
+                )
+                self.assertEqual(member_session["role"], ROLE_MEMBER)
+                member_cookie = f"panel_session={member_token}"
+                connection.request(
+                    "GET",
+                    "/api/dashboard",
+                    headers={"Cookie": member_cookie},
+                )
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                member_data = json.loads(response.read().decode("utf-8"))
+                self.assertEqual(member_data["viewer"]["role"], ROLE_MEMBER)
+                self.assertFalse(member_data["viewer"]["is_admin"])
+                self.assertNotIn("live_source", member_data)
+                self.assertEqual(member_data["sources"], [])
+                self.assertEqual(member_data["health"]["components"], [])
+                self.assertEqual(member_data["period_comparisons"], {})
+                self.assertEqual(
+                    member_data["open_trades"][0]["source"],
+                    "Canlı Sinyal",
+                )
+
+                connection.request(
+                    "GET",
+                    "/",
+                    headers={"Cookie": member_cookie},
+                )
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                member_page = response.read().decode("utf-8")
+                self.assertIn("Üye · demo-member", member_page)
+                self.assertIn("applyViewerPermissions", member_page)
 
                 connection.request(
                     "GET",

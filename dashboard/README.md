@@ -1,7 +1,7 @@
 # Şifreli Canlı Kripto Kontrol Paneli
 
 Panel, private GitHub reposundaki gerçek JSON state ve ledger dosyalarını
-sunucu tarafında okur. Tarayıcı açıkken her 30 saniyede bir yenilenir. V1.5;
+sunucu tarafında okur. Tarayıcı açıkken her 30 saniyede bir yenilenir. V1.6;
 sistem bazlı performans analitiği, veri kaynağı güncellik kontrolü ve canlı
 coin/işlem grafiği içerir.
 
@@ -52,6 +52,24 @@ coin/işlem grafiği içerir.
   bölümleri arasında yapışkan hızlı geçiş menüsü
 - System Control teknik sağlık durumu
 
+## Yönetici ve üye ayrımı
+
+V1.6 iki ayrı görünüm destekler:
+
+| Bölüm | Yönetici | Üye |
+| --- | --- | --- |
+| Aktif sinyaller, coin grafiği ve sonuçlar | Görür | Görür |
+| Genel performans ve yön/gün grafiği | Görür | Görür |
+| Canlı sistem kararları ve açık risk özeti | Görür | Göremez |
+| Kaynak dosyaları ve veri güncelliği teşhisi | Görür | Göremez |
+| Dönem yönetim karşılaştırması ve System Control ayrıntıları | Görür | Göremez |
+| Filtreli CSV dışa aktarma | Görür | Göremez |
+
+Yetki ayrımı yalnız arayüzde yapılmaz. Üye oturumunda `/api/dashboard` cevabı
+da sunucu tarafında filtrelenir; gizlenen yönetim verisi tarayıcıya gönderilmez.
+Mevcut `PANEL_USERNAME` hesabı geriye uyumlu biçimde yönetici hesabıdır. Üye
+girişi tanımlanmazsa panel yalnız yönetici hesabıyla çalışmaya devam eder.
+
 State dosyalarının uzun süre değişmemesi tek başına workflow arızası sayılmaz;
 teknik kritik sağlık kararı System Control raporundan gelir. Scalp state içindeki
 `last_sent`, `early_last_sent` ve `prewatch_last_sent` zamanları veri güncelliği
@@ -90,6 +108,8 @@ python dashboard_live_app.py --hash-password
 
 Komutun ürettiği değer barındırma hizmetinde \`PANEL_PASSWORD_HASH\` gizli
 değişkenine yazılır. Şifre veya hash GitHub dosyalarına eklenmez.
+Üye hesabı açılacaksa komut ikinci kez farklı bir şifreyle çalıştırılır ve
+çıktı \`PANEL_MEMBER_PASSWORD_HASH\` değişkenine yazılır.
 
 ## İnternette 24 saat çalışma
 
@@ -100,13 +120,15 @@ Gizli ortam değişkenleri:
 
 - \`GITHUB_PANEL_TOKEN\`: yalnız bu private repo için **Contents: Read-only**
   yetkili fine-grained GitHub token
-- \`PANEL_PASSWORD_HASH\`: yukarıdaki komutla üretilen şifre özeti
+- \`PANEL_PASSWORD_HASH\`: yukarıdaki komutla üretilen yönetici şifre özeti
+- \`PANEL_MEMBER_PASSWORD_HASH\`: isteğe bağlı üye hesabının şifre özeti
 
 Normal ortam değişkenleri:
 
 - \`GITHUB_REPOSITORY=ahmetelci2014-rgb/kriptosinyalanaliz63\`
 - \`GITHUB_REF_NAME=main\`
 - \`PANEL_USERNAME=ahmet\`
+- \`PANEL_MEMBER_USERNAME=uye\` (isteğe bağlı; üye hash'i ile birlikte kullanılır)
 - \`PANEL_REFRESH_SECONDS=30\`
 - \`PANEL_COOKIE_SECURE=1\`
 - \`PANEL_TRUST_PROXY=1\`
