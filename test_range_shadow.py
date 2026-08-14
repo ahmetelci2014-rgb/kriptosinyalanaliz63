@@ -134,6 +134,30 @@ class PositionLifecycleTests(unittest.TestCase):
 
 
 class LedgerTests(unittest.TestCase):
+    def test_old_records_are_compacted_without_losing_summary(self):
+        ledger = rs.empty_ledger()
+        total = rs.MAX_CLOSED_RECORDS + 5
+        ledger["closed_positions"] = [
+            {
+                "record_id": f"R{i}",
+                "symbol": "TESTUSDT",
+                "direction": "LONG",
+                "risk_percent": 1.0,
+                "outcome": "SL",
+                "gross_r": -1.0,
+                "net_r": -1.1,
+                "cost_r": 0.1,
+                "entry_diagnostics": {"risk_band": "GTE_0_60"},
+                "close_diagnostics": {"primary_reason": "TEST"},
+            }
+            for i in range(total)
+        ]
+        moved = rs.archive_closed_positions(ledger)
+        self.assertEqual(moved, 5)
+        self.assertEqual(len(ledger["closed_positions"]), rs.MAX_CLOSED_RECORDS)
+        self.assertEqual(len(ledger["archived_positions"]), 5)
+        self.assertEqual(rs.calculate_summary(ledger)["total_closed"], total)
+
     def test_atomic_json_save(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             path = os.path.join(temp_dir, "range_shadow.json")
