@@ -134,11 +134,15 @@ COMPONENTS = {
     "POST_RESULT": {
         "label": "TP Sonrası / Post Result Shadow",
         "kind": "INTEGRATED_ANALYSIS",
-        "files": ["trade_ledger.json"],
-        "workflow": None,
+        "files": [
+            "trade_ledger.json",
+            "post_result_shadow_v2_report.json",
+            "post_result_shadow_v3_report.json",
+        ],
+        "workflow": ".github/workflows/main.yml",
         "stale_hours": FAST_STALE_HOURS,
         "open_paths": [],
-        "integrated_note": "Premium trade_ledger.json içine entegre takip",
+        "integrated_note": "Premium ledger + V2 ölçüm + V3 karşılaştırmalı yönetim",
     },
 }
 
