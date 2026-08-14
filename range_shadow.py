@@ -44,7 +44,7 @@ except ImportError:
     AverageTrueRange = None
 
 
-VERSION = "RANGE_CYCLE_SHADOW_V3_DIAGNOSTIC_2026_08_06"
+VERSION = "RANGE_CYCLE_SHADOW_V3_ARCHIVED_2026_08_14"
 LEDGER_FILE = "range_shadow.json"
 
 TIMEFRAME = "5m"
@@ -53,7 +53,8 @@ RANGE_WINDOW = 48
 MAX_SCAN_COINS = 80
 MAX_NEW_POSITIONS_PER_RUN = 3
 MAX_OPEN_POSITIONS = 6
-MAX_CLOSED_RECORDS = 2500
+MAX_CLOSED_RECORDS = 250
+MAX_ARCHIVED_RECORDS = 2250
 MAX_CANDIDATES_SAVED = 30
 MAX_HOLD_MINUTES = 360
 DUPLICATE_COOLDOWN_MINUTES = 90
@@ -286,6 +287,11 @@ def empty_ledger() -> Dict[str, Any]:
         "cycle_logic": "SUPPORT_LONG_TO_RESISTANCE_EXIT_THEN_SHORT_TO_SUPPORT_EXIT",
         "open_positions": {},
         "closed_positions": [],
+        "archived_positions": [],
+        "archive_meta": {
+            "archived_total": 0,
+            "last_archived_at": 0,
+        },
         "latest_candidates": [],
         "summary": {
             "total_opened": 0,
@@ -842,7 +848,8 @@ def recent_duplicate(
 
 
 def calculate_summary(ledger: Dict[str, Any]) -> Dict[str, Any]:
-    closed = ledger.get("closed_positions") or []
+    closed = list(ledger.get("archived_positions") or [])
+    closed.extend(ledger.get("closed_positions") or [])
     outcomes = [str(item.get("outcome") or "") for item in closed]
     wins = sum(1 for item in closed if safe_float(item.get("net_r")) > 0)
     total_closed = len(closed)
@@ -1044,7 +1051,7 @@ def update_existing_positions(
             print(position.get("symbol"), "açık gölge işlem takip hatası:", exc)
 
     ledger["open_positions"] = open_positions
-    ledger["closed_positions"] = closed_positions[-MAX_CLOSED_RECORDS:]
+    ledger["closed_positions"] = closed_positions
     return updated, resolved
 
 
@@ -1131,6 +1138,59 @@ def apply_new_candidates(
     return added
 
 
+def compact_archive_record(position: Dict[str, Any]) -> Dict[str, Any]:
+    entry_diag = position.get("entry_diagnostics")
+    if not isinstance(entry_diag, dict):
+        entry_diag = build_entry_diagnostics(position)
+    close_diag = position.get("close_diagnostics")
+    if not isinstance(close_diag, dict):
+        close_diag = classify_close_diagnostics(
+            position,
+            str(position.get("outcome") or ""),
+            safe_float(position.get("gross_r")),
+            safe_float(position.get("net_r")),
+        )
+    return {
+        "record_id": position.get("record_id") or position.get("position_id"),
+        "symbol": position.get("symbol"),
+        "direction": position.get("direction"),
+        "risk_percent": position.get("risk_percent"),
+        "outcome": position.get("outcome"),
+        "gross_r": round(safe_float(position.get("gross_r")), 4),
+        "net_r": round(safe_float(position.get("net_r")), 4),
+        "cost_r": round(safe_float(position.get("cost_r"), cost_in_r(position)), 4),
+        "opened_at": position.get("opened_at"),
+        "closed_at": position.get("closed_at"),
+        "entry_diagnostics": {
+            "risk_band": entry_diag.get("risk_band"),
+        },
+        "close_diagnostics": {
+            "primary_reason": close_diag.get("primary_reason"),
+        },
+        "archived_compact": True,
+    }
+
+
+def archive_closed_positions(ledger: Dict[str, Any]) -> int:
+    closed = list(ledger.get("closed_positions") or [])
+    if len(closed) <= MAX_CLOSED_RECORDS:
+        ledger.setdefault("archived_positions", [])
+        ledger.setdefault("archive_meta", {"archived_total": 0, "last_archived_at": 0})
+        return 0
+
+    move_count = len(closed) - MAX_CLOSED_RECORDS
+    archived = list(ledger.get("archived_positions") or [])
+    archived.extend(compact_archive_record(item) for item in closed[:move_count])
+    ledger["archived_positions"] = archived[-MAX_ARCHIVED_RECORDS:]
+    ledger["closed_positions"] = closed[move_count:]
+
+    meta = ledger.setdefault("archive_meta", {})
+    meta["archived_total"] = safe_int(meta.get("archived_total")) + move_count
+    meta["stored_compact_records"] = len(ledger["archived_positions"])
+    meta["last_archived_at"] = now_ts()
+    return move_count
+
+
 def enrich_legacy_diagnostics(ledger: Dict[str, Any]) -> None:
     for position in (ledger.get("open_positions") or {}).values():
         if not isinstance(position.get("entry_diagnostics"), dict):
@@ -1161,6 +1221,8 @@ def run_cycle(filename: str = LEDGER_FILE) -> Dict[str, Any]:
         )
         ledger.setdefault("open_positions", {})
         ledger.setdefault("closed_positions", [])
+        ledger.setdefault("archived_positions", [])
+        ledger.setdefault("archive_meta", {"archived_total": 0, "last_archived_at": 0})
         ledger.setdefault("latest_candidates", [])
 
     enrich_legacy_diagnostics(ledger)
@@ -1173,6 +1235,7 @@ def run_cycle(filename: str = LEDGER_FILE) -> Dict[str, Any]:
     )
     ledger["latest_candidates"] = list(candidates[:MAX_CANDIDATES_SAVED])
     added = apply_new_candidates(ledger, candidates)
+    archived_now = archive_closed_positions(ledger)
     ledger["summary"] = calculate_summary(ledger)
     ledger["last_update"] = now_ts()
     ledger["last_cycle"] = {
@@ -1182,6 +1245,7 @@ def run_cycle(filename: str = LEDGER_FILE) -> Dict[str, Any]:
         "new_positions": added,
         "updated_open_positions": updated,
         "resolved_positions": resolved,
+        "archived_positions": archived_now,
         "global_guard": global_guard,
     }
 
@@ -1195,6 +1259,7 @@ def run_cycle(filename: str = LEDGER_FILE) -> Dict[str, Any]:
     print("Yeni sanal işlem:", added)
     print("Açık sanal işlem:", len(ledger.get("open_positions") or {}))
     print("Sonuçlanan:", resolved)
+    print("Bu tur arşivlenen:", archived_now)
     print("Gross R:", ledger["summary"].get("gross_r"))
     print("Net R:", ledger["summary"].get("net_r"))
     print(
