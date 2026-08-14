@@ -10,10 +10,12 @@ on:
       - "dashboard_live_app.py"
       - "dashboard_accounts_app.py"
       - "dashboard_product_app.py"
+      - "dashboard_market_app.py"
       - "test_dashboard_builder.py"
       - "test_dashboard_live_app.py"
       - "test_dashboard_accounts_app.py"
       - "test_dashboard_product_app.py"
+      - "test_dashboard_market_app.py"
       - "Dockerfile.dashboard"
       - ".dockerignore"
       - "render.yaml"
@@ -26,10 +28,12 @@ on:
       - "dashboard_live_app.py"
       - "dashboard_accounts_app.py"
       - "dashboard_product_app.py"
+      - "dashboard_market_app.py"
       - "test_dashboard_builder.py"
       - "test_dashboard_live_app.py"
       - "test_dashboard_accounts_app.py"
       - "test_dashboard_product_app.py"
+      - "test_dashboard_market_app.py"
       - "Dockerfile.dashboard"
       - ".dockerignore"
       - "render.yaml"
@@ -63,10 +67,12 @@ jobs:
             dashboard_live_app.py \
             dashboard_accounts_app.py \
             dashboard_product_app.py \
+            dashboard_market_app.py \
             test_dashboard_builder.py \
             test_dashboard_live_app.py \
             test_dashboard_accounts_app.py \
-            test_dashboard_product_app.py
+            test_dashboard_product_app.py \
+            test_dashboard_market_app.py
 
       - name: Statik ve canlı panel testlerini çalıştır
         run: |
@@ -74,7 +80,8 @@ jobs:
             test_dashboard_builder.py \
             test_dashboard_live_app.py \
             test_dashboard_accounts_app.py \
-            test_dashboard_product_app.py
+            test_dashboard_product_app.py \
+            test_dashboard_market_app.py
 
       - name: Render Docker imajını doğrula
         run: docker build -f Dockerfile.dashboard -t kripto-panel-ci .
@@ -95,10 +102,11 @@ jobs:
           {
             echo "## Kripto Kontrol Paneli doğrulandı"
             echo ""
-            echo "Canlı web katmanı, çoklu kullanıcı yönetimi, üyelik merkezi, Docker build ve statik panel testleri başarılı."
+            echo "Canlı web katmanı, çoklu kullanıcı yönetimi, üyelik merkezi, canlı piyasa merkezi, Docker build ve statik panel testleri başarılı."
             echo "Artifact yalnız acil durum anlık görüntüsüdür; canlı panel değildir."
             echo ""
             echo "- Sinyal/strateji davranışı değişmez"
+            echo "- OKX yalnız public market verisi için kullanılır"
             echo "- Private GitHub anahtarları yalnız sunucu tarafında"
             echo "- Kullanıcı şifreleri yalnız PBKDF2 özet olarak saklanır"
             echo "- Telegram yok"
