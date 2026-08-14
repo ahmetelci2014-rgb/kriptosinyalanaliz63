@@ -20,7 +20,9 @@ import hashlib
 import hmac
 import html
 import json
+import math
 import os
+import re
 import secrets
 import tempfile
 import threading
@@ -39,7 +41,7 @@ from typing import Any
 from dashboard_builder import build_dashboard_data, render_dashboard
 
 
-VERSION = "KRIPTO_KONTROL_PANELI_LIVE_V1_2026_08_14"
+VERSION = "KRIPTO_KONTROL_PANELI_LIVE_V1_1_2026_08_14"
 PASSWORD_ITERATIONS = 310_000
 SESSION_COOKIE = "panel_session"
 LOGIN_CSRF_COOKIE = "panel_login_csrf"
@@ -54,6 +56,9 @@ DATA_FILES = (
     "pump_performance_ledger.json",
     "system_control_center_report.json",
 )
+
+MARKET_BARS = {"1m", "5m", "15m", "1H", "4H", "1D"}
+MARKET_SYMBOL_PATTERN = re.compile(r"^[A-Z0-9]{2,15}USDT$")
 
 
 def env_bool(name: str, default: bool) -> bool:
@@ -338,6 +343,126 @@ class LocalJsonSource:
         }
 
 
+class MarketDataError(RuntimeError):
+    """Herkese açık piyasa verisi güvenli biçimde alınamadığında kullanılır."""
+
+
+class OKXMarketDataClient:
+    """API anahtarı kullanmadan OKX public mum verisini okur ve kısa süre saklar."""
+
+    def __init__(self, cache_seconds: int = 20):
+        self.cache_seconds = max(5, min(int(cache_seconds), 60))
+        self._cache: dict[tuple[str, str], tuple[float, dict[str, Any]]] = {}
+        self._lock = threading.Lock()
+
+    @staticmethod
+    def normalize_symbol(value: str) -> str:
+        symbol = re.sub(r"[^A-Za-z0-9]", "", str(value or "")).upper()
+        if not MARKET_SYMBOL_PATTERN.fullmatch(symbol):
+            raise ValueError("Sembol BTCUSDT biçiminde bir USDT paritesi olmalıdır.")
+        return symbol
+
+    @staticmethod
+    def validate_bar(value: str) -> str:
+        if value not in MARKET_BARS:
+            raise ValueError("Desteklenmeyen mum periyodu.")
+        return value
+
+    def _request_candles(self, inst_id: str, bar: str) -> list[list[Any]]:
+        query = urllib.parse.urlencode({
+            "instId": inst_id,
+            "bar": bar,
+            "limit": "120",
+        })
+        request = urllib.request.Request(
+            f"https://www.okx.com/api/v5/market/candles?{query}",
+            headers={
+                "Accept": "application/json",
+                "User-Agent": "Kripto-Kontrol-Paneli-Market/1.1",
+            },
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=12) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+        except (
+            OSError,
+            UnicodeDecodeError,
+            json.JSONDecodeError,
+            urllib.error.HTTPError,
+        ) as exc:
+            raise MarketDataError(f"OKX bağlantısı kurulamadı ({type(exc).__name__}).") from exc
+        if not isinstance(payload, dict) or str(payload.get("code")) != "0":
+            raise MarketDataError("OKX geçerli mum verisi döndürmedi.")
+        rows = payload.get("data")
+        if not isinstance(rows, list) or not rows:
+            raise MarketDataError("Bu parite için mum verisi bulunamadı.")
+        return [row for row in rows if isinstance(row, list) and len(row) >= 6]
+
+    def get_candles(self, symbol_value: str, bar_value: str) -> dict[str, Any]:
+        symbol = self.normalize_symbol(symbol_value)
+        bar = self.validate_bar(bar_value)
+        cache_key = (symbol, bar)
+        now = time.monotonic()
+        with self._lock:
+            cached = self._cache.get(cache_key)
+            if cached and now - cached[0] < self.cache_seconds:
+                return copy.deepcopy(cached[1])
+
+        base = symbol[:-4]
+        attempts = (
+            (f"{base}-USDT-SWAP", "SWAP"),
+            (f"{base}-USDT", "SPOT"),
+        )
+        last_error: MarketDataError | None = None
+        rows: list[list[Any]] = []
+        inst_id = ""
+        market_type = ""
+        for candidate, candidate_type in attempts:
+            try:
+                rows = self._request_candles(candidate, bar)
+                inst_id = candidate
+                market_type = candidate_type
+                break
+            except MarketDataError as exc:
+                last_error = exc
+        if not rows:
+            raise last_error or MarketDataError("Piyasa verisi bulunamadı.")
+
+        candles: list[dict[str, Any]] = []
+        for row in reversed(rows):
+            try:
+                values = [float(row[index]) for index in range(1, 6)]
+                timestamp = int(float(row[0]) / 1000)
+            except (TypeError, ValueError, IndexError):
+                continue
+            if not all(math.isfinite(value) for value in values) or timestamp <= 0:
+                continue
+            candles.append({
+                "ts": timestamp,
+                "open": values[0],
+                "high": values[1],
+                "low": values[2],
+                "close": values[3],
+                "volume": values[4],
+                "confirmed": str(row[8]) == "1" if len(row) > 8 else None,
+            })
+        if not candles:
+            raise MarketDataError("Mum verisi çözümlenemedi.")
+        result = {
+            "symbol": symbol,
+            "inst_id": inst_id,
+            "market_type": market_type,
+            "bar": bar,
+            "candles": candles,
+            "last_price": candles[-1]["close"],
+            "fetched_at": int(time.time()),
+            "source": "OKX_PUBLIC_NO_API_KEY",
+        }
+        with self._lock:
+            self._cache[cache_key] = (time.monotonic(), result)
+        return copy.deepcopy(result)
+
+
 class LiveDashboardService:
     def __init__(self, source: GitHubJsonSource | LocalJsonSource, cache_seconds: int):
         self.source = source
@@ -469,7 +594,10 @@ def make_handler(
     service: LiveDashboardService,
     sessions: SessionStore,
     limiter: LoginRateLimiter,
+    market_client: OKXMarketDataClient | None = None,
 ) -> type[BaseHTTPRequestHandler]:
+    market_client = market_client or OKXMarketDataClient()
+
     class PanelHandler(BaseHTTPRequestHandler):
         server_version = "KriptoPanel/1.0"
         sys_version = ""
@@ -585,7 +713,8 @@ def make_handler(
             )
 
         def do_GET(self) -> None:
-            path = urllib.parse.urlsplit(self.path).path
+            parsed_url = urllib.parse.urlsplit(self.path)
+            path = parsed_url.path
             if path == "/healthz":
                 self._json(HTTPStatus.OK, {"status": "ok", "version": VERSION})
                 return
@@ -610,6 +739,35 @@ def make_handler(
                         {"error": "live_data_unavailable"},
                     )
                 return
+            if path == "/api/market/candles":
+                if not self._session():
+                    self._json(
+                        HTTPStatus.UNAUTHORIZED,
+                        {"error": "authentication_required"},
+                    )
+                    return
+                query = urllib.parse.parse_qs(
+                    parsed_url.query,
+                    keep_blank_values=True,
+                    max_num_fields=4,
+                )
+                symbol = (query.get("symbol") or [""])[0]
+                bar = (query.get("bar") or ["15m"])[0]
+                try:
+                    payload = market_client.get_candles(symbol, bar)
+                except ValueError as exc:
+                    self._json(
+                        HTTPStatus.BAD_REQUEST,
+                        {"error": "invalid_market_request", "message": str(exc)},
+                    )
+                except MarketDataError:
+                    self._json(
+                        HTTPStatus.BAD_GATEWAY,
+                        {"error": "market_data_unavailable"},
+                    )
+                else:
+                    self._json(HTTPStatus.OK, payload)
+                return
             if path == "/":
                 session = self._session()
                 if not session:
@@ -626,6 +784,7 @@ def make_handler(
                 body = render_dashboard(
                     None,
                     live_endpoint="/api/dashboard",
+                    market_endpoint="/api/market/candles",
                     refresh_seconds=config.refresh_seconds,
                     script_nonce=nonce,
                     top_action_html=logout,

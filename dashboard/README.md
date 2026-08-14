@@ -1,7 +1,9 @@
 # Şifreli Canlı Kripto Kontrol Paneli
 
 Panel, private GitHub reposundaki gerçek JSON state ve ledger dosyalarını
-sunucu tarafında okur. Tarayıcı açıkken her 30 saniyede bir yenilenir.
+sunucu tarafında okur. Tarayıcı açıkken her 30 saniyede bir yenilenir. V1.1;
+sistem bazlı performans analitiği, veri kaynağı güncellik kontrolü ve canlı
+coin grafiği içerir.
 
 ## Güvenlik sınırları
 
@@ -12,6 +14,8 @@ sunucu tarafında okur. Tarayıcı açıkken her 30 saniyede bir yenilenir.
 - Sinyal stratejisi ve config dosyalarını değiştirmez.
 - Kesin kazanç veya kâr garantisi vermez.
 - GitHub erişim anahtarı tarayıcıya ve HTML kaynağına gönderilmez.
+- OKX canlı grafiği yalnız herkese açık piyasa verisini okur; borsa API
+  anahtarı istemez ve emir endpoint'i içermez.
 
 ## Canlı çalışma şekli
 
@@ -20,6 +24,23 @@ sunucu tarafında okur. Tarayıcı açıkken her 30 saniyede bir yenilenir.
 3. Python sunucusu private GitHub reposunu salt-okunur token ile kontrol eder.
 4. Değişmeyen dosyalarda ETag önbelleği kullanılır.
 5. GitHub geçici olarak erişilemezse son geçerli veri gösterilir ve uyarı çıkar.
+
+## Panelde görünenler
+
+- Premium, Scalp, Pump/Dump ve Yeni Liste açık gerçek işlemleri
+- TP, SL, break-even ve süresi dolan kayıtlar
+- Her sistemin örnek sayısı, TP/SL oranı ve kesin R toplamı
+- Kapanış sırasına göre kümülatif Net R ve maksimum düşüş
+- Sekiz JSON kaynağı için güncellik/eskilik durumu
+- İstenen USDT coininde 1m, 5m, 15m, 1H, 4H ve 1D canlı mumlar
+- Coin sistemde açık işlemse grafikte Giriş, TP1, TP2, TP3 ve SL çizgileri
+- System Control teknik sağlık durumu
+
+Canlı mumlar sunucu tarafındaki `/api/market/candles` adresinden gelir. Bu
+adres de panel oturumu gerektirir, sembol ve periyot doğrular ve aynı isteği
+kısa süre önbelleğe alır. Önce OKX perpetual swap, yoksa spot USDT paritesi
+denenir. Arayüzde herhangi bir coin sembolü yazılabilir; açık işlem satırındaki
+coin adına tıklanınca ilgili grafik otomatik açılır.
 
 ## Yerel deneme
 

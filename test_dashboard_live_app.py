@@ -15,6 +15,7 @@ from dashboard_live_app import (
     LiveDashboardService,
     LocalJsonSource,
     LoginRateLimiter,
+    OKXMarketDataClient,
     PanelConfig,
     SessionStore,
     make_handler,
@@ -142,6 +143,45 @@ class LiveDashboardAppTests(unittest.TestCase):
             self.assertIsNone(warning)
             self.assertNotIn("top-secret", json.dumps(cached))
 
+    def test_okx_market_client_uses_public_api_and_normalizes_candles(self):
+        client = OKXMarketDataClient(cache_seconds=20)
+
+        class FakeResponse:
+            def read(self):
+                return json.dumps({
+                    "code": "0",
+                    "data": [
+                        ["2000000", "101", "105", "99", "104", "12", "0", "0", "1"],
+                        ["1000000", "100", "103", "98", "101", "10", "0", "0", "1"],
+                    ],
+                }).encode("utf-8")
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        with mock.patch(
+            "dashboard_live_app.urllib.request.urlopen",
+            return_value=FakeResponse(),
+        ) as mocked:
+            payload = client.get_candles("btc/usdt", "15m")
+            cached = client.get_candles("BTCUSDT", "15m")
+            request = mocked.call_args.args[0]
+            self.assertEqual(mocked.call_count, 1)
+            self.assertIsNone(request.get_header("Authorization"))
+            self.assertIn("BTC-USDT-SWAP", request.full_url)
+            self.assertEqual(payload["source"], "OKX_PUBLIC_NO_API_KEY")
+            self.assertEqual(payload["symbol"], "BTCUSDT")
+            self.assertEqual(payload["candles"][0]["open"], 100.0)
+            self.assertEqual(payload["last_price"], 104.0)
+            self.assertEqual(cached, payload)
+        with self.assertRaises(ValueError):
+            client.get_candles("../../etc/passwd", "15m")
+        with self.assertRaises(ValueError):
+            client.get_candles("BTCUSDT", "2H")
+
     def test_live_http_login_and_private_api(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -161,11 +201,36 @@ class LiveDashboardAppTests(unittest.TestCase):
             )
             service = LiveDashboardService(LocalJsonSource(root), 1)
             sessions = SessionStore(3600)
+
+            class FakeMarketClient:
+                def get_candles(self, symbol, bar):
+                    normalized = OKXMarketDataClient.normalize_symbol(symbol)
+                    OKXMarketDataClient.validate_bar(bar)
+                    return {
+                        "symbol": normalized,
+                        "inst_id": "BTC-USDT-SWAP",
+                        "market_type": "SWAP",
+                        "bar": bar,
+                        "candles": [{
+                            "ts": 1,
+                            "open": 100,
+                            "high": 102,
+                            "low": 99,
+                            "close": 101,
+                            "volume": 5,
+                            "confirmed": True,
+                        }],
+                        "last_price": 101,
+                        "fetched_at": 2,
+                        "source": "OKX_PUBLIC_NO_API_KEY",
+                    }
+
             handler = make_handler(
                 config,
                 service,
                 sessions,
                 LoginRateLimiter(),
+                FakeMarketClient(),
             )
             server = ThreadingHTTPServer(("127.0.0.1", 0), handler)
             thread = threading.Thread(target=server.serve_forever, daemon=True)
@@ -175,6 +240,11 @@ class LiveDashboardAppTests(unittest.TestCase):
             try:
                 connection = http.client.HTTPConnection(host, port, timeout=5)
                 connection.request("GET", "/api/dashboard")
+                response = connection.getresponse()
+                self.assertEqual(response.status, 401)
+                response.read()
+
+                connection.request("GET", "/api/market/candles?symbol=BTCUSDT&bar=15m")
                 response = connection.getresponse()
                 self.assertEqual(response.status, 401)
                 response.read()
@@ -232,6 +302,8 @@ class LiveDashboardAppTests(unittest.TestCase):
                 csp = response.getheader("Content-Security-Policy")
                 self.assertIn("nonce-", csp)
                 self.assertIn("/api/dashboard", page)
+                self.assertIn("/api/market/candles", page)
+                self.assertIn("Canlı Coin Grafiği", page)
                 self.assertIn("Canlı veri bağlanıyor", page)
                 self.assertNotIn("test-password", page)
                 self.assertNotIn("GITHUB_PANEL_TOKEN", page)
@@ -253,6 +325,26 @@ class LiveDashboardAppTests(unittest.TestCase):
                     response.getheader("Cache-Control"),
                     "no-store, max-age=0",
                 )
+
+                connection.request(
+                    "GET",
+                    "/api/market/candles?symbol=BTCUSDT&bar=15m",
+                    headers={"Cookie": session_cookie},
+                )
+                response = connection.getresponse()
+                self.assertEqual(response.status, 200)
+                market = json.loads(response.read().decode("utf-8"))
+                self.assertEqual(market["last_price"], 101)
+                self.assertEqual(market["source"], "OKX_PUBLIC_NO_API_KEY")
+
+                connection.request(
+                    "GET",
+                    "/api/market/candles?symbol=BAD&bar=15m",
+                    headers={"Cookie": session_cookie},
+                )
+                response = connection.getresponse()
+                self.assertEqual(response.status, 400)
+                response.read()
 
                 connection.request("GET", "/healthz")
                 response = connection.getresponse()
