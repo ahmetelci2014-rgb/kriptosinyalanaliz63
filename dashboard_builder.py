@@ -7,6 +7,7 @@ Telegram'a veya herhangi bir dış servise bağlanmaz; emir ve sinyal üretmez.
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import math
 from collections import Counter
@@ -343,8 +344,80 @@ def _embedded_json(data: dict[str, Any]) -> str:
     return raw.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
 
 
-def render_dashboard(data: dict[str, Any]) -> str:
-    payload = _embedded_json(data)
+def render_dashboard(
+    data: dict[str, Any] | None,
+    *,
+    live_endpoint: str | None = None,
+    refresh_seconds: int = 30,
+    script_nonce: str | None = None,
+    top_action_html: str = "",
+) -> str:
+    live_mode = bool(live_endpoint)
+    refresh_seconds = max(10, min(int(refresh_seconds), 300))
+    nonce_attr = (
+        f' nonce="{html.escape(script_nonce, quote=True)}"'
+        if script_nonce
+        else ""
+    )
+    if live_mode:
+        endpoint_json = json.dumps(str(live_endpoint), ensure_ascii=False)
+        data_declaration = (
+            "let DASHBOARD_DATA = null;\n"
+            f"    const LIVE_ENDPOINT = {endpoint_json};\n"
+            f"    const LIVE_REFRESH_SECONDS = {refresh_seconds};"
+        )
+        live_badge = (
+            '<span class="badge"><span id="connectionDot" '
+            'class="dot LIVE"></span><span id="connectionBadge">'
+            "Canlı veri bağlanıyor</span></span>"
+        )
+        safety_badge = "✓ Anahtar tarayıcıya çıkmaz"
+        eyebrow = "Canlı birleşik operasyon görünümü"
+        bootstrap_script = """
+    function renderAll() {
+      const warningBox=document.getElementById("qualityWarning");
+      warningBox.classList.remove("show");
+      warningBox.textContent="";
+      initHeader(); renderKpis(); renderSystems(); renderOpen(); renderResults(); renderHealth();
+    }
+
+    function setConnection(status, text) {
+      const dot=document.getElementById("connectionDot"), label=document.getElementById("connectionBadge");
+      if(!dot||!label)return;
+      dot.className="dot "+status;
+      label.textContent=text;
+    }
+
+    async function loadLiveData(initial=false) {
+      if(initial)setConnection("LIVE","Canlı veri bağlanıyor");
+      try {
+        const response=await fetch(LIVE_ENDPOINT,{credentials:"same-origin",cache:"no-store",headers:{Accept:"application/json"}});
+        if(response.status===401){window.location.assign("/login");return;}
+        if(!response.ok)throw new Error("HTTP "+response.status);
+        DASHBOARD_DATA=await response.json();
+        renderAll();
+        setConnection("GREEN","Canlı · "+new Date().toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit",second:"2-digit"}));
+      } catch(error) {
+        setConnection("ERROR",DASHBOARD_DATA?"Bağlantı kesildi · son veri gösteriliyor":"Canlı veri alınamadı");
+      }
+    }
+
+    loadLiveData(true);
+    window.setInterval(()=>loadLiveData(false),LIVE_REFRESH_SECONDS*1000);
+"""
+    else:
+        payload = _embedded_json(data or {})
+        data_declaration = (
+            f"const DASHBOARD_DATA = {payload};\n"
+            "    const LIVE_ENDPOINT = null;"
+        )
+        live_badge = '<span class="badge">Anlık görüntü</span>'
+        safety_badge = "✓ API anahtarı kullanmaz"
+        eyebrow = "Birleşik operasyon görünümü"
+        bootstrap_script = (
+            "    initHeader(); renderKpis(); renderSystems(); "
+            "renderOpen(); renderResults(); renderHealth();"
+        )
     return f'''<!doctype html>
 <html lang="tr">
 <head>
@@ -352,14 +425,14 @@ def render_dashboard(data: dict[str, Any]) -> str:
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark">
   <title>Kripto Kontrol Merkezi</title>
-  <style>
+  <style{nonce_attr}>
     :root{{--bg:#061016;--panel:#0a1820;--panel2:#0d2029;--line:#19343f;--text:#eaf7f4;--muted:#82a29f;--teal:#2ce6bf;--teal2:#10a98e;--green:#42e28c;--amber:#ffbd59;--red:#ff627d;--blue:#60a5fa;--radius:18px}}
     *{{box-sizing:border-box}} html{{scroll-behavior:smooth}} body{{margin:0;background:radial-gradient(circle at 85% 0,#10342f 0,transparent 28%),radial-gradient(circle at 0 35%,#0b2533 0,transparent 25%),var(--bg);color:var(--text);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}}
     body:before{{content:"";position:fixed;inset:0;pointer-events:none;opacity:.16;background-image:linear-gradient(rgba(44,230,191,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(44,230,191,.05) 1px,transparent 1px);background-size:38px 38px;mask-image:linear-gradient(to bottom,black,transparent 72%)}}
     a{{color:inherit;text-decoration:none}} button,input{{font:inherit}} .shell{{width:min(1480px,calc(100% - 32px));margin:auto;position:relative}}
     .topbar{{height:76px;border-bottom:1px solid rgba(44,230,191,.16);background:rgba(6,16,22,.78);backdrop-filter:blur(18px);position:sticky;top:0;z-index:10}}
     .topbar .shell{{height:100%;display:flex;align-items:center;justify-content:space-between;gap:20px}} .brand{{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.02em}} .brand-mark{{width:39px;height:39px;border-radius:12px;border:1px solid rgba(44,230,191,.5);background:linear-gradient(145deg,rgba(44,230,191,.22),rgba(44,230,191,.03));display:grid;place-items:center;box-shadow:0 0 30px rgba(44,230,191,.12)}} .brand-mark i{{display:block;width:18px;height:18px;border:3px solid var(--teal);border-left-color:transparent;border-radius:50%;transform:rotate(-24deg);position:relative}} .brand-mark i:after{{content:"";position:absolute;width:6px;height:6px;background:var(--teal);border-radius:50%;right:-5px;top:3px;box-shadow:-12px 8px 0 rgba(44,230,191,.48)}} .brand small{{display:block;color:var(--muted);font-size:10px;letter-spacing:.16em;font-weight:700}}
-    .top-actions{{display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:flex-end}} .badge{{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--line);border-radius:999px;background:rgba(10,24,32,.82);color:#b8cfcc;font-size:12px;font-weight:700}} .dot{{width:8px;height:8px;border-radius:50%;background:var(--muted);box-shadow:0 0 12px currentColor}} .dot.GREEN{{background:var(--green);color:var(--green)}} .dot.YELLOW{{background:var(--amber);color:var(--amber)}} .dot.RED{{background:var(--red);color:var(--red)}}
+    .top-actions{{display:flex;align-items:center;gap:9px;flex-wrap:wrap;justify-content:flex-end}} .top-actions form{{margin:0}} .top-actions button{{cursor:pointer}} .badge{{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--line);border-radius:999px;background:rgba(10,24,32,.82);color:#b8cfcc;font-size:12px;font-weight:700}} .dot{{width:8px;height:8px;border-radius:50%;background:var(--muted);box-shadow:0 0 12px currentColor}} .dot.LIVE{{background:var(--blue);color:var(--blue)}} .dot.GREEN{{background:var(--green);color:var(--green)}} .dot.YELLOW{{background:var(--amber);color:var(--amber)}} .dot.RED,.dot.ERROR{{background:var(--red);color:var(--red)}}
     main{{padding:42px 0 70px}} .hero{{display:grid;grid-template-columns:1.55fr .75fr;gap:22px;align-items:stretch;margin-bottom:22px}} .hero-copy,.health-hero{{border:1px solid var(--line);border-radius:24px;background:linear-gradient(145deg,rgba(13,32,41,.94),rgba(7,19,26,.9));overflow:hidden;position:relative}} .hero-copy{{padding:34px}} .eyebrow{{color:var(--teal);font-size:12px;font-weight:850;letter-spacing:.14em;text-transform:uppercase}} h1{{font-size:clamp(32px,5vw,62px);line-height:1.02;letter-spacing:-.052em;margin:14px 0 16px;max-width:900px}} h1 span{{color:var(--teal)}} .lead{{color:#a8c1be;font-size:16px;max-width:760px;margin:0}} .safety{{margin-top:24px;display:flex;gap:10px;flex-wrap:wrap}} .safety .badge:first-child{{border-color:rgba(44,230,191,.35);color:var(--teal)}}
     .health-hero{{padding:26px;display:flex;align-items:center;justify-content:center;gap:24px}} .health-ring{{--score:100;width:132px;height:132px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--green) calc(var(--score)*1%),#17313a 0);position:relative;flex:0 0 auto;box-shadow:0 0 44px rgba(66,226,140,.14)}} .health-ring:before{{content:"";position:absolute;inset:9px;background:#091820;border-radius:50%}} .health-ring>div{{z-index:1;text-align:center}} .health-ring strong{{font-size:30px;display:block;line-height:1}} .health-ring span{{font-size:10px;color:var(--muted);font-weight:800;letter-spacing:.12em}} .health-meta strong{{display:block;font-size:18px}} .health-meta p{{color:var(--muted);margin:7px 0 0}}
     .quality-warning{{display:none;border:1px solid rgba(255,189,89,.42);background:rgba(255,189,89,.08);color:#ffe0aa;padding:13px 16px;border-radius:13px;margin-bottom:20px}} .quality-warning.show{{display:block}}
@@ -375,9 +448,9 @@ def render_dashboard(data: dict[str, Any]) -> str:
   </style>
 </head>
 <body>
-  <header class="topbar"><div class="shell"><a class="brand" href="#top"><span class="brand-mark"><i></i></span><span>Kripto Kontrol<small>GERÇEK VERİ MERKEZİ</small></span></a><div class="top-actions"><span class="badge"><span id="topHealthDot" class="dot"></span><span id="topHealth">Kontrol ediliyor</span></span><span class="badge">Salt okunur</span><span class="badge" id="generatedBadge">—</span></div></div></header>
+  <header class="topbar"><div class="shell"><a class="brand" href="#top"><span class="brand-mark"><i></i></span><span>Kripto Kontrol<small>GERÇEK VERİ MERKEZİ</small></span></a><div class="top-actions">{live_badge}<span class="badge"><span id="topHealthDot" class="dot"></span><span id="topHealth">Kontrol ediliyor</span></span><span class="badge">Salt okunur</span><span class="badge" id="generatedBadge">—</span>{top_action_html}</div></div></header>
   <main id="top" class="shell">
-    <section class="hero"><div class="hero-copy"><div class="eyebrow">Birleşik operasyon görünümü</div><h1>Gerçek sinyaller.<br><span>Tek kontrol ekranı.</span></h1><p class="lead">Premium, Scalp, Pump/Dump ve Yeni Liste işlemleri; TP/SL sonuçları ve System Control sağlığı aynı panelde. Bu ekran veri gösterir, işlem açmaz.</p><div class="safety"><span class="badge">✓ API anahtarı kullanmaz</span><span class="badge">✓ Telegram göndermez</span><span class="badge">✓ Stratejiye dokunmaz</span></div></div><div class="health-hero"><div id="healthRing" class="health-ring"><div><strong id="healthScore">—</strong><span>SİSTEM SAĞLIĞI</span></div></div><div class="health-meta"><strong id="overallHealth">—</strong><p id="healthBreakdown">—</p><p id="healthAge">—</p></div></div></section>
+    <section class="hero"><div class="hero-copy"><div class="eyebrow">{eyebrow}</div><h1>Gerçek sinyaller.<br><span>Tek kontrol ekranı.</span></h1><p class="lead">Premium, Scalp, Pump/Dump ve Yeni Liste işlemleri; TP/SL sonuçları ve System Control sağlığı aynı panelde. Bu ekran veri gösterir, işlem açmaz.</p><div class="safety"><span class="badge">{safety_badge}</span><span class="badge">✓ Telegram göndermez</span><span class="badge">✓ Stratejiye dokunmaz</span></div></div><div class="health-hero"><div id="healthRing" class="health-ring"><div><strong id="healthScore">—</strong><span>SİSTEM SAĞLIĞI</span></div></div><div class="health-meta"><strong id="overallHealth">—</strong><p id="healthBreakdown">—</p><p id="healthAge">—</p></div></div></section>
     <div id="qualityWarning" class="quality-warning"></div>
     <section id="kpis" class="kpis"></section>
 
@@ -391,8 +464,8 @@ def render_dashboard(data: dict[str, Any]) -> str:
 
     <footer><span id="footerVersion"></span><span>Finansal tavsiye değildir · Otomatik emir kapalıdır</span></footer>
   </main>
-  <script>
-    const DASHBOARD_DATA = {payload};
+  <script{nonce_attr}>
+    {data_declaration}
     const SYSTEMS = ["ALL","PREMIUM","SCALP","PUMP_DUMP","NEW_LISTING"];
     const state = {{ openSystem:"ALL", healthKind:"ALL", query:"" }};
     const labels = {{ALL:"Tümü",PREMIUM:"Premium",SCALP:"Scalp",PUMP_DUMP:"Pump/Dump",NEW_LISTING:"Yeni Liste",LIVE_SIGNAL:"Canlı",RADAR:"Radar",SHADOW:"Gölge",ANALYSIS:"Analiz",INTEGRATED_ANALYSIS:"Entegre",GUARD:"Koruma"}};
@@ -407,7 +480,7 @@ def render_dashboard(data: dict[str, Any]) -> str:
     function initHeader() {{
       const health=DASHBOARD_DATA.health, score=healthScore(health.counts), overall=health.overall;
       document.getElementById("topHealth").textContent=`System Control: ${{overall}}`;
-      document.getElementById("topHealthDot").classList.add(overall);
+      document.getElementById("topHealthDot").className="dot "+overall;
       document.getElementById("generatedBadge").textContent=`Panel: ${{fmtDate(DASHBOARD_DATA.generated_at)}}`;
       document.getElementById("healthScore").textContent=score;
       document.getElementById("healthRing").style.setProperty("--score",score);
@@ -470,7 +543,7 @@ def render_dashboard(data: dict[str, Any]) -> str:
     }}
 
     document.getElementById("searchInput").addEventListener("input",event=>{{state.query=event.target.value;renderOpen();}});
-    initHeader(); renderKpis(); renderSystems(); renderOpen(); renderResults(); renderHealth();
+{bootstrap_script}
   </script>
 </body>
 </html>'''
