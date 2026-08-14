@@ -135,18 +135,34 @@ def to_okx_symbol(symbol: str) -> str:
     return f"{base}/USDT:USDT"
 
 
+def safe_quote_volume(ticker: Dict[str, Any]) -> float:
+    value = ticker.get("quoteVolume")
+    if value is not None:
+        return safe_float(value)
+    info = ticker.get("info") if isinstance(ticker.get("info"), dict) else {}
+    for key in ("volCcy24h", "volUsd24h", "vol24h"):
+        if info.get(key) is not None:
+            return safe_float(info.get(key))
+    return 0.0
+
+
 def get_universe(exchange: Any) -> List[str]:
     markets = exchange.load_markets()
-    tickers = exchange.fetch_tickers()
-    rows = []
-    for symbol, market in markets.items():
+    okx_symbols = []
+    for market in markets.values():
         if not (
-            market.get("swap") and market.get("active", True)
+            market.get("swap", False) and market.get("active", True)
             and market.get("quote") == "USDT" and market.get("settle") == "USDT"
         ):
             continue
+        symbol = market.get("symbol")
+        if symbol and "/USDT:USDT" in symbol:
+            okx_symbols.append(symbol)
+    tickers = exchange.fetch_tickers(okx_symbols)
+    rows = []
+    for symbol in okx_symbols:
         ticker = tickers.get(symbol) or {}
-        volume = safe_float(ticker.get("quoteVolume"))
+        volume = safe_quote_volume(ticker)
         if volume < MIN_QUOTE_VOLUME_USDT:
             continue
         rows.append((volume, normalize_symbol(symbol)))
@@ -463,6 +479,8 @@ def run_cycle(filename: str = LEDGER_FILE) -> Dict[str, Any]:
     current_ts = now_ts()
     resolved = update_open_positions(exchange, ledger)
     universe = get_universe(exchange)
+    if not universe:
+        raise RuntimeError("Swing V4 tarama evreni bos; OKX sembol/hacim verisi alinamadi")
     candidates: List[Dict[str, Any]] = []
     rejections = Counter()
     scanned = 0
@@ -526,3 +544,4 @@ if __name__ == "__main__":
         run_cycle()
     except Exception as exc:
         print("Swing Shadow V4 genel hata:", exc)
+        raise
