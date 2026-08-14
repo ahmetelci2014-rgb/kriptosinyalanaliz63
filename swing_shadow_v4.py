@@ -18,7 +18,7 @@ except ImportError:
     pd = None
 
 
-VERSION = "SWING_SHADOW_V4_REGIME_PULLBACK_2026_08_14"
+VERSION = "SWING_SHADOW_V4_REGIME_PULLBACK_DIAGNOSTICS_2026_08_14"
 LEDGER_FILE = "swing_shadow_v4_ledger.json"
 MODE = "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS"
 
@@ -30,6 +30,7 @@ MAX_CLOSED_RECORDS = 500
 MAX_HOLD_HOURS = 120
 DUPLICATE_HOURS = 24
 MAX_DIRECTION_SHARE = 0.70
+MAX_NEAR_MISSES = 12
 
 MIN_SCORE = 82
 MIN_RISK_PERCENT = 0.80
@@ -67,6 +68,7 @@ def empty_ledger() -> Dict[str, Any]:
         "open_positions": {},
         "closed_positions": [],
         "latest_candidates": [],
+        "latest_near_misses": [],
         "rejections": {},
         "summary": {},
         "last_update": 0,
@@ -237,8 +239,15 @@ def body_strength(row: Dict[str, float]) -> float:
 
 def evaluate_setup(
     symbol: str, d1: Any, h4: Any, h1: Any, m15: Any,
+    diagnostic_sink: Optional[Dict[str, Any]] = None,
 ) -> Tuple[Optional[Dict[str, Any]], str]:
+    diagnostic_sink = diagnostic_sink if diagnostic_sink is not None else {}
     if any(frame is None or len(frame) < 3 for frame in (d1, h4, h1, m15)):
+        diagnostic_sink.update({
+            "symbol": symbol, "direction": "UNKNOWN",
+            "first_failure": "DATA_MISSING", "passed_checks": 0,
+            "total_checks": 9, "missing_checks": ["DATA_MISSING"],
+        })
         return None, "DATA_MISSING"
     day = row_values(d1.iloc[-1])
     four = row_values(h4.iloc[-1])
@@ -249,6 +258,12 @@ def evaluate_setup(
     long_regime = day["close"] > day["ema50"] and day["ema20"] > day["ema50"] and 48 <= day["rsi"] <= 70
     short_regime = day["close"] < day["ema50"] and day["ema20"] < day["ema50"] and 30 <= day["rsi"] <= 52
     if long_regime == short_regime:
+        diagnostic_sink.update({
+            "symbol": symbol, "direction": "NEUTRAL",
+            "first_failure": "D1_REGIME_NEUTRAL", "passed_checks": 0,
+            "total_checks": 9, "missing_checks": ["D1_REGIME_NEUTRAL"],
+            "metrics": {"d1_rsi": round(day["rsi"], 2)},
+        })
         return None, "D1_REGIME_NEUTRAL"
     direction = "LONG" if long_regime else "SHORT"
 
@@ -275,6 +290,20 @@ def evaluate_setup(
         "M15_BODY": body_strength(trigger) >= 0.35,
     }
     missing = [name for name, passed in checks.items() if not passed]
+    setup_metrics = {
+        "d1_rsi": round(day["rsi"], 2), "h4_adx": round(four["adx"], 2),
+        "h1_adx": round(hour["adx"], 2), "h1_rsi": round(hour["rsi"], 2),
+        "m15_rsi": round(trigger["rsi"], 2),
+        "m15_volume_ratio": round(trigger["volume_ratio"], 3),
+        "m15_body_strength": round(body_strength(trigger), 3),
+    }
+    diagnostic_sink.update({
+        "symbol": symbol, "direction": direction,
+        "first_failure": missing[0] if missing else None,
+        "passed_checks": len(checks) - len(missing),
+        "total_checks": len(checks), "missing_checks": missing,
+        "metrics": setup_metrics,
+    })
     if missing:
         return None, missing[0]
 
@@ -296,7 +325,10 @@ def evaluate_setup(
     score += min(4.0, body_strength(trigger) * 5)
     score += 3.0 if risk_percent <= 1.8 else 1.0
     score = int(round(min(99.0, score)))
+    diagnostic_sink["score"] = score
     if score < MIN_SCORE:
+        diagnostic_sink["first_failure"] = "SCORE_LOW"
+        diagnostic_sink["missing_checks"] = ["SCORE_LOW"]
         return None, "SCORE_LOW"
 
     return {
@@ -305,14 +337,17 @@ def evaluate_setup(
         "risk_percent": round(risk_percent, 4),
         "signal_candle_ms": int(trigger["timestamp"]),
         "setup": "D1_REGIME_4H_TREND_1H_PULLBACK_15M_TRIGGER",
-        "diagnostics": {
-            "d1_rsi": round(day["rsi"], 2), "h4_adx": round(four["adx"], 2),
-            "h1_adx": round(hour["adx"], 2), "h1_rsi": round(hour["rsi"], 2),
-            "m15_rsi": round(trigger["rsi"], 2),
-            "m15_volume_ratio": round(trigger["volume_ratio"], 3),
-            "m15_body_strength": round(body_strength(trigger), 3),
-        },
+        "diagnostics": setup_metrics,
     }, "PASS"
+
+
+def rank_near_misses(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def rank(item: Dict[str, Any]) -> Tuple[float, int, float]:
+        passed = int(item.get("passed_checks") or 0)
+        total = max(1, int(item.get("total_checks") or 1))
+        return passed / total, passed, safe_float(item.get("score"))
+
+    return sorted(items, key=rank, reverse=True)[:MAX_NEAR_MISSES]
 
 
 def direction_allowed(ledger: Dict[str, Any], direction: str) -> bool:
@@ -482,6 +517,7 @@ def run_cycle(filename: str = LEDGER_FILE) -> Dict[str, Any]:
     if not universe:
         raise RuntimeError("Swing V4 tarama evreni bos; OKX sembol/hacim verisi alinamadi")
     candidates: List[Dict[str, Any]] = []
+    near_misses: List[Dict[str, Any]] = []
     rejections = Counter()
     scanned = 0
 
@@ -502,15 +538,25 @@ def run_cycle(filename: str = LEDGER_FILE) -> Dict[str, Any]:
                 continue
             h1 = fetch_frame(exchange, symbol, "1h")
             m15 = fetch_frame(exchange, symbol, "15m")
-            candidate, reason = evaluate_setup(symbol, d1, h4, h1, m15)
+            setup_diagnostic: Dict[str, Any] = {}
+            candidate, reason = evaluate_setup(
+                symbol, d1, h4, h1, m15, diagnostic_sink=setup_diagnostic,
+            )
             if candidate is None:
                 rejections[reason] += 1
+                near_misses.append(setup_diagnostic)
                 continue
             if recent_duplicate(ledger, symbol, candidate["direction"], current_ts):
                 rejections["DUPLICATE"] += 1
+                setup_diagnostic["first_failure"] = "DUPLICATE"
+                setup_diagnostic["missing_checks"] = ["DUPLICATE"]
+                near_misses.append(setup_diagnostic)
                 continue
             if not direction_allowed(ledger, candidate["direction"]):
                 rejections["DIRECTION_BALANCE_GATE"] += 1
+                setup_diagnostic["first_failure"] = "DIRECTION_BALANCE_GATE"
+                setup_diagnostic["missing_checks"] = ["DIRECTION_BALANCE_GATE"]
+                near_misses.append(setup_diagnostic)
                 continue
             candidates.append(candidate)
         except Exception as exc:
@@ -525,12 +571,14 @@ def run_cycle(filename: str = LEDGER_FILE) -> Dict[str, Any]:
         open_positions[position["id"]] = position
     ledger["open_positions"] = open_positions
     ledger["latest_candidates"] = candidates[:20]
+    ledger["latest_near_misses"] = rank_near_misses(near_misses)
     ledger["rejections"] = dict(rejections)
     ledger["summary"] = calculate_summary(ledger)
     ledger["last_update"] = current_ts
     ledger["last_cycle"] = {
         "scanned": scanned, "qualified": len(candidates), "opened": len(selected),
         "resolved": resolved, "universe": len(universe),
+        "near_misses": len(near_misses),
     }
     if not atomic_save(filename, ledger):
         raise RuntimeError("Swing V4 ledger kaydedilemedi")
