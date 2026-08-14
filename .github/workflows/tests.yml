@@ -43,6 +43,7 @@ jobs:
       - name: Bağımlılıkları kur
         run: |
           python -m pip install --prefer-binary -r requirements.txt
+          python -m pip install "pytest>=8,<10"
 
       - name: Gerekli dosyaları kontrol et
         run: |
@@ -75,12 +76,12 @@ jobs:
             prescription_engine.py \
             system_control_center.py
 
-      - name: Tüm unittest testlerini çalıştır
+      - name: Tüm Python testlerini çalıştır
         env:
           TOKEN: ""
           CHAT_ID: ""
         run: |
-          python -m unittest discover -v
+          python -m pytest -q
 
       - name: Yeni Liste Radar self-testini çalıştır
         env:
