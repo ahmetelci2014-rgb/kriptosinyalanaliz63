@@ -45,6 +45,12 @@ class DashboardBuilderTests(unittest.TestCase):
             self.assertAlmostEqual(data["summary"]["net_r"], 0.6)
             self.assertEqual(data["health"]["overall"], "GREEN")
             self.assertEqual(data["open_trades"][0]["symbol"], "ETHUSDT")
+            self.assertEqual(data["open_risk"]["long"], 1)
+            self.assertEqual(data["open_risk"]["short"], 1)
+            self.assertAlmostEqual(data["open_risk"]["average_stop_percent"], 6.0)
+            self.assertAlmostEqual(data["open_risk"]["average_tp1_rr"], 1.0)
+            self.assertAlmostEqual(data["open_risk"]["average_tp3_rr"], 3.0)
+            self.assertEqual(data["open_risk"]["widest_stop_symbol"], "ETHUSDT")
             self.assertEqual(data["performance"]["exact_r_sample"], 3)
             self.assertAlmostEqual(data["performance"]["net_r"], 0.6)
             self.assertAlmostEqual(data["performance"]["max_drawdown_r"], 1.0)
@@ -77,6 +83,9 @@ class DashboardBuilderTests(unittest.TestCase):
             self.assertNotIn("fetch(", html)
             self.assertNotIn("localStorage", html)
             self.assertNotIn("<script src=", html)
+            self.assertIn("Açık Risk Özeti", html)
+            self.assertIn("CSV indir", html)
+            self.assertIn("exportFilteredResults", html)
 
     def test_live_html_adds_authenticated_market_chart_only_in_live_mode(self):
         html = render_dashboard(
@@ -94,6 +103,8 @@ class DashboardBuilderTests(unittest.TestCase):
         self.assertIn("resultOutcome", html)
         self.assertIn("resultPagination", html)
         self.assertIn("20 / sayfa", html)
+        self.assertIn("Açık Risk Özeti", html)
+        self.assertIn("CSV indir", html)
         self.assertIn('nonce="test-nonce"', html)
 
     def test_source_freshness_accepts_iso_and_millisecond_timestamps(self):
