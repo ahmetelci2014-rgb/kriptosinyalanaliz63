@@ -45,6 +45,16 @@ class DashboardBuilderTests(unittest.TestCase):
             self.assertAlmostEqual(data["summary"]["net_r"], 0.6)
             self.assertEqual(data["health"]["overall"], "GREEN")
             self.assertEqual(data["open_trades"][0]["symbol"], "ETHUSDT")
+            self.assertEqual(data["performance"]["exact_r_sample"], 3)
+            self.assertAlmostEqual(data["performance"]["net_r"], 0.6)
+            self.assertAlmostEqual(data["performance"]["max_drawdown_r"], 1.0)
+            premium = next(
+                row
+                for row in data["performance"]["systems"]
+                if row["system"] == "PREMIUM"
+            )
+            self.assertEqual(premium["tp_rate"], 100.0)
+            self.assertEqual(len(data["sources"]), 8)
 
     def test_html_is_self_contained_read_only_and_escapes_payload(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -61,6 +71,36 @@ class DashboardBuilderTests(unittest.TestCase):
             self.assertNotIn("fetch(", html)
             self.assertNotIn("localStorage", html)
             self.assertNotIn("<script src=", html)
+
+    def test_live_html_adds_authenticated_market_chart_only_in_live_mode(self):
+        html = render_dashboard(
+            None,
+            live_endpoint="/api/dashboard",
+            market_endpoint="/api/market/candles",
+            script_nonce="test-nonce",
+        )
+        self.assertIn("Canlı Coin Grafiği", html)
+        self.assertIn("/api/market/candles", html)
+        self.assertIn("OKX herkese açık veri", html)
+        self.assertIn("data-market-symbol", html)
+        self.assertIn('nonce="test-nonce"', html)
+
+    def test_source_freshness_accepts_iso_and_millisecond_timestamps(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.make_fixture(root)
+            current = datetime(2026, 8, 14, 12, 0, tzinfo=timezone.utc)
+            current_ts = int(current.timestamp())
+            premium = json.loads((root / "open_signals.json").read_text(encoding="utf-8"))
+            premium["BTC_SHORT"]["last_checked_at"] = "2026-08-14T11:45:00Z"
+            self.write_json(root, "open_signals.json", premium)
+            report = json.loads((root / "system_control_center_report.json").read_text(encoding="utf-8"))
+            report["generated_at"] = current_ts * 1000
+            self.write_json(root, "system_control_center_report.json", report)
+            data = build_dashboard_data(root, now=current)
+            statuses = {row["filename"]: row for row in data["sources"]}
+            self.assertEqual(statuses["open_signals.json"]["status"], "FRESH")
+            self.assertEqual(statuses["system_control_center_report.json"]["status"], "FRESH")
 
     def test_missing_or_invalid_files_do_not_crash(self):
         with tempfile.TemporaryDirectory() as directory:
