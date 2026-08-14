@@ -12,12 +12,15 @@ on:
       - "dashboard_product_app.py"
       - "dashboard_market_app.py"
       - "dashboard_compact_app.py"
+      - "dashboard_focus_app.py"
+      - "dashboard_focus_market_app.py"
       - "test_dashboard_builder.py"
       - "test_dashboard_live_app.py"
       - "test_dashboard_accounts_app.py"
       - "test_dashboard_product_app.py"
       - "test_dashboard_market_app.py"
       - "test_dashboard_compact_app.py"
+      - "test_dashboard_focus_app.py"
       - "Dockerfile.dashboard"
       - ".dockerignore"
       - "render.yaml"
@@ -32,12 +35,15 @@ on:
       - "dashboard_product_app.py"
       - "dashboard_market_app.py"
       - "dashboard_compact_app.py"
+      - "dashboard_focus_app.py"
+      - "dashboard_focus_market_app.py"
       - "test_dashboard_builder.py"
       - "test_dashboard_live_app.py"
       - "test_dashboard_accounts_app.py"
       - "test_dashboard_product_app.py"
       - "test_dashboard_market_app.py"
       - "test_dashboard_compact_app.py"
+      - "test_dashboard_focus_app.py"
       - "Dockerfile.dashboard"
       - ".dockerignore"
       - "render.yaml"
@@ -73,12 +79,15 @@ jobs:
             dashboard_product_app.py \
             dashboard_market_app.py \
             dashboard_compact_app.py \
+            dashboard_focus_app.py \
+            dashboard_focus_market_app.py \
             test_dashboard_builder.py \
             test_dashboard_live_app.py \
             test_dashboard_accounts_app.py \
             test_dashboard_product_app.py \
             test_dashboard_market_app.py \
-            test_dashboard_compact_app.py
+            test_dashboard_compact_app.py \
+            test_dashboard_focus_app.py
 
       - name: Statik ve canlı panel testlerini çalıştır
         run: |
@@ -88,7 +97,8 @@ jobs:
             test_dashboard_accounts_app.py \
             test_dashboard_product_app.py \
             test_dashboard_market_app.py \
-            test_dashboard_compact_app.py
+            test_dashboard_compact_app.py \
+            test_dashboard_focus_app.py
 
       - name: Render Docker imajını doğrula
         run: docker build -f Dockerfile.dashboard -t kripto-panel-ci .
@@ -109,13 +119,13 @@ jobs:
           {
             echo "## Kripto Kontrol Paneli doğrulandı"
             echo ""
-            echo "Sade V2 arayüz, ayrıntılı yedek görünüm, çoklu kullanıcı yönetimi, canlı piyasa merkezi ve Docker build testleri başarılı."
+            echo "Sade V2.1 arayüz, hızlı coin analiz çekmecesi, doğrudan seçili coin grafiği, ayrıntılı yedek görünüm, çoklu kullanıcı yönetimi, canlı piyasa merkezi ve Docker build testleri başarılı."
             echo "Artifact yalnız acil durum anlık görüntüsüdür; canlı panel değildir."
             echo ""
             echo "- Sinyal/strateji davranışı değişmez"
             echo "- Telegram gönderim mantığı değişmez"
+            echo "- Coin analiz göstergeleri yalnız OKX public mumlarından panel içinde hesaplanır"
             echo "- Eski ayrıntılı panel /advanced altında korunur"
-            echo "- OKX yalnız public market verisi için kullanılır"
             echo "- Private GitHub anahtarları yalnız sunucu tarafında"
             echo "- Kullanıcı şifreleri yalnız PBKDF2 özet olarak saklanır"
             echo "- Emir açma yok"
