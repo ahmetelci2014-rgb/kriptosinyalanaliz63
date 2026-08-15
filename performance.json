@@ -25684,17 +25684,17 @@
       "sl_after_no_return": 4
     },
     "2026-08-15": {
-      "opened": 8,
+      "opened": 9,
       "radar": 0,
-      "tp1": 4,
-      "tp2": 1,
+      "tp1": 6,
+      "tp2": 2,
       "tp3": 0,
-      "sl": 2,
+      "sl": 3,
       "be": 2,
       "expired": 0,
-      "long": 3,
+      "long": 4,
       "short": 5,
-      "normal": 7,
+      "normal": 8,
       "radar_trade": 1,
       "coins": {
         "HUMAUSDT": {
@@ -25770,14 +25770,34 @@
         "OKBUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
-          "tp2": 0,
+          "tp1": 1,
+          "tp2": 1,
           "tp3": 0,
           "sl": 0,
           "be": 0,
           "expired": 0
         },
         "SHELLUSDT": {
+          "opened": 1,
+          "radar": 0,
+          "tp1": 1,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 0,
+          "be": 0,
+          "expired": 0
+        },
+        "ZILUSDT": {
+          "opened": 0,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 1,
+          "be": 0,
+          "expired": 0
+        },
+        "ETHFIUSDT": {
           "opened": 1,
           "radar": 0,
           "tp1": 0,
@@ -25789,11 +25809,12 @@
         }
       },
       "direction_stops": {
-        "SHORT": 2
+        "SHORT": 3
       },
       "stop_times": {
         "HUMAUSDT": 1786743579,
-        "MEGAUSDT": 1786747500
+        "MEGAUSDT": 1786747500,
+        "ZILUSDT": 1786752969
       },
       "closed_times": {
         "BSBUSDT": 1786745763,
@@ -25893,14 +25914,54 @@
           "exit": 2.2476795419,
           "source": "15M_ENTRY",
           "score": 91
+        },
+        {
+          "time": "03:16:09",
+          "symbol": "ZILUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.002307,
+          "exit": 0.002331,
+          "source": "15M_ENTRY",
+          "score": 94
+        },
+        {
+          "time": "03:16:15",
+          "symbol": "OKBUSDT",
+          "direction": "LONG",
+          "result": "TP1",
+          "entry": 107.19,
+          "exit": 107.7610632597,
+          "source": "15M_ENTRY",
+          "score": 100
+        },
+        {
+          "time": "03:16:17",
+          "symbol": "OKBUSDT",
+          "direction": "LONG",
+          "result": "TP2",
+          "entry": 107.19,
+          "exit": 108.2802116777,
+          "source": "15M_ENTRY",
+          "score": 100
+        },
+        {
+          "time": "03:16:20",
+          "symbol": "SHELLUSDT",
+          "direction": "LONG",
+          "result": "TP1",
+          "entry": 0.02002,
+          "exit": 0.0201477336,
+          "source": "15M_ENTRY",
+          "score": 94
         }
       ],
       "sl_after_tp1": 0,
       "sl_after_tp2": 0,
-      "sl_after_no_return": 0
+      "sl_after_no_return": 1
     }
   },
-  "last_update": 1786752381,
+  "last_update": 1786753185,
   "last_open_summary": 1786748489,
   "last_status_message": 1786748716,
   "last_daily_report": "2026-08-14",
@@ -25923,12 +25984,15 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-08-15"
     },
     "HUMAUSDT_SHORT_1786743579": {
       "trade_id": "HUMAUSDT_SHORT_15M_ENTRY_1786741556",
@@ -25972,6 +26036,26 @@
         30,
         60
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "ZILUSDT_SHORT_1786752969": {
+      "trade_id": "ZILUSDT_SHORT_15M_ENTRY_1786731678",
+      "symbol": "ZILUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.002307,
+      "tp1": 0.0022893431,
+      "tp2": 0.0022732914,
+      "tp3": 0.0022556346,
+      "sl": 0.0023391034,
+      "score": 94,
+      "risk_percent": 1.392,
+      "stopped_at": 1786752969,
+      "stop_exit": 0.002331,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
