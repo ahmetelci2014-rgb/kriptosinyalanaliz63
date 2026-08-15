@@ -237,7 +237,7 @@ def filter_lifecycle_rows(rows: list[dict[str, Any]], *, segment: str = "action"
     elif sort == "username":
         selected.sort(key=lambda row: str(row.get("username") or "").casefold())
     else:
-        selected.sort(key=lambda row: (int(row.get("priority") or 99), _stamp(row.get("expires_at")) or 9_999_999_999, str(row.get("username") or "").casefold()))
+        selected.sort(key=lambda row: (int(row.get("priority", 99)), _stamp(row.get("expires_at")) or 9_999_999_999, str(row.get("username") or "").casefold()))
     return selected
 
 
