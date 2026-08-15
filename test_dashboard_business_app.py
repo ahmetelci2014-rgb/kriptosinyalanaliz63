@@ -37,8 +37,12 @@ class DashboardBusinessV36Tests(unittest.TestCase):
         self.assertEqual(proof["sl_count"], 1)
         self.assertEqual(proof["be_count"], 1)
         self.assertEqual(proof["tp_rate_percent"], 33.3)
+        self.assertEqual(
+            set(proof),
+            {"health", "open_count", "recent_count", "tp_count", "sl_count", "be_count", "tp_rate_percent", "updated_at"},
+        )
         text = repr(proof).lower()
-        for forbidden in ("btcusdt", "ethusdt", "entry", "tp1", "sl", "score"):
+        for forbidden in ("btcusdt", "ethusdt", "solusdt", "entry", "tp1", "score", "open_trades", "recent_results"):
             self.assertNotIn(forbidden, text)
 
     def test_business_metrics_use_real_operational_counts(self):
