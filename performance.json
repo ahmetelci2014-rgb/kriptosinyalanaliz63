@@ -25687,9 +25687,9 @@
       "opened": 16,
       "radar": 0,
       "tp1": 12,
-      "tp2": 6,
+      "tp2": 7,
       "tp3": 5,
-      "sl": 4,
+      "sl": 6,
       "be": 6,
       "expired": 0,
       "long": 10,
@@ -25861,7 +25861,7 @@
           "opened": 1,
           "radar": 0,
           "tp1": 1,
-          "tp2": 0,
+          "tp2": 1,
           "tp3": 0,
           "sl": 0,
           "be": 0,
@@ -25883,20 +25883,32 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
+          "be": 0,
+          "expired": 0
+        },
+        "AEROUSDT": {
+          "opened": 0,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         }
       },
       "direction_stops": {
-        "SHORT": 3,
+        "SHORT": 5,
         "LONG": 1
       },
       "stop_times": {
         "HUMAUSDT": 1786743579,
         "MEGAUSDT": 1786747500,
         "ZILUSDT": 1786752969,
-        "SOXLUSDT": 1786766491
+        "SOXLUSDT": 1786766491,
+        "AEROUSDT": 1786770086,
+        "MINAUSDT": 1786770093
       },
       "closed_times": {
         "BSBUSDT": 1786745763,
@@ -26254,6 +26266,36 @@
           "exit": 0.0566349972,
           "source": "15M_ENTRY",
           "score": 92
+        },
+        {
+          "time": "08:01:26",
+          "symbol": "AEROUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.3994,
+          "exit": 0.404,
+          "source": "15M_ENTRY",
+          "score": 94
+        },
+        {
+          "time": "08:01:30",
+          "symbol": "WLFIUSDT",
+          "direction": "LONG",
+          "result": "TP2",
+          "entry": 0.0561,
+          "exit": 0.0571213583,
+          "source": "15M_ENTRY",
+          "score": 92
+        },
+        {
+          "time": "08:01:33",
+          "symbol": "MINAUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.03888,
+          "exit": 0.03906,
+          "source": "15M_ENTRY",
+          "score": 100
         }
       ],
       "sl_after_tp1": 0,
@@ -26261,7 +26303,7 @@
       "sl_after_no_return": 4
     }
   },
-  "last_update": 1786768788,
+  "last_update": 1786770096,
   "last_open_summary": 1786766495,
   "last_status_message": 1786768526,
   "last_daily_report": "2026-08-14",
@@ -26309,8 +26351,49 @@
       "stopped_at": 1786766491,
       "stop_exit": 144.49,
       "reported_checkpoints": [
-        30
+        30,
+        60
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "AEROUSDT_SHORT_1786770086": {
+      "trade_id": "AEROUSDT_SHORT_15M_ENTRY_1786732570",
+      "symbol": "AEROUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.3994,
+      "tp1": 0.3965119434,
+      "tp2": 0.3938864375,
+      "tp3": 0.3909983809,
+      "sl": 0.4046510119,
+      "score": 94,
+      "risk_percent": 1.315,
+      "stopped_at": 1786770086,
+      "stop_exit": 0.404,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "MINAUSDT_SHORT_1786770093": {
+      "trade_id": "MINAUSDT_SHORT_15M_ENTRY_1786766689",
+      "symbol": "MINAUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.03888,
+      "tp1": 0.0387802638,
+      "tp2": 0.0386895945,
+      "tp3": 0.0385898583,
+      "sl": 0.0390613385,
+      "score": 100,
+      "risk_percent": 0.466,
+      "stopped_at": 1786770093,
+      "stop_exit": 0.03906,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
