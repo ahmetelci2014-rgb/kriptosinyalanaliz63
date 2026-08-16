@@ -26368,11 +26368,11 @@
     "2026-08-16": {
       "opened": 5,
       "radar": 0,
-      "tp1": 0,
-      "tp2": 0,
+      "tp1": 1,
+      "tp2": 1,
       "tp3": 0,
-      "sl": 1,
-      "be": 0,
+      "sl": 2,
+      "be": 1,
       "expired": 5,
       "long": 0,
       "short": 5,
@@ -26442,11 +26442,11 @@
         "ARKMUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
-          "tp2": 0,
+          "tp1": 1,
+          "tp2": 1,
           "tp3": 0,
           "sl": 0,
-          "be": 0,
+          "be": 1,
           "expired": 0
         },
         "ZRXUSDT": {
@@ -26475,30 +26475,33 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         }
       },
       "direction_stops": {
-        "SHORT": 1
+        "SHORT": 2
       },
       "stop_times": {
-        "ONEUSDT": 1786864564
+        "ONEUSDT": 1786864564,
+        "PARTIUSDT": 1786865478
       },
       "closed_times": {
         "MEUSDT": 1786863155,
         "SKYUSDT": 1786863155,
         "ZAMAUSDT": 1786863156,
         "OUSDT": 1786863157,
-        "ZROUSDT": 1786863158
+        "ZROUSDT": 1786863158,
+        "ARKMUSDT": 1786865475
       },
       "closed_results": {
         "MEUSDT": "EXPIRED",
         "SKYUSDT": "EXPIRED",
         "ZAMAUSDT": "EXPIRED",
         "OUSDT": "EXPIRED",
-        "ZROUSDT": "EXPIRED"
+        "ZROUSDT": "EXPIRED",
+        "ARKMUSDT": "BE"
       },
       "closed_history": [
         {
@@ -26560,43 +26563,58 @@
           "exit": 0.000672,
           "source": "5M_RADAR",
           "score": 100
+        },
+        {
+          "time": "10:31:11",
+          "symbol": "ARKMUSDT",
+          "direction": "SHORT",
+          "result": "TP1",
+          "entry": 0.09028,
+          "exit": 0.0898816504,
+          "source": "15M_ENTRY",
+          "score": 99
+        },
+        {
+          "time": "10:31:13",
+          "symbol": "ARKMUSDT",
+          "direction": "SHORT",
+          "result": "TP2",
+          "entry": 0.09028,
+          "exit": 0.0895195144,
+          "source": "15M_ENTRY",
+          "score": 99
+        },
+        {
+          "time": "10:31:15",
+          "symbol": "ARKMUSDT",
+          "direction": "SHORT",
+          "result": "BE",
+          "entry": 0.09028,
+          "exit": 0.09028,
+          "source": "15M_ENTRY",
+          "score": 99
+        },
+        {
+          "time": "10:31:18",
+          "symbol": "PARTIUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.02238,
+          "exit": 0.02261,
+          "source": "5M_RADAR",
+          "score": 100
         }
       ],
       "sl_after_tp1": 0,
       "sl_after_tp2": 0,
-      "sl_after_no_return": 3
+      "sl_after_no_return": 4
     }
   },
-  "last_update": 1786864969,
+  "last_update": 1786865480,
   "last_open_summary": 1786863733,
-  "last_status_message": 1786772970,
+  "last_status_message": 1786865735,
   "last_daily_report": "2026-08-14",
   "sl_after_follow": {
-    "CLUSDT_LONG_1786778167": {
-      "trade_id": "CLUSDT_LONG_15M_ENTRY_1786765785",
-      "symbol": "CLUSDT",
-      "direction": "LONG",
-      "source": "15M_ENTRY",
-      "entry": 81.61,
-      "tp1": 81.9033881347,
-      "tp2": 82.1701046208,
-      "tp3": 82.4634927555,
-      "sl": 81.0765670278,
-      "score": 100,
-      "risk_percent": 0.654,
-      "stopped_at": 1786778167,
-      "stop_exit": 81.02,
-      "reported_checkpoints": [
-        30,
-        60,
-        120,
-        180
-      ],
-      "after_sl_tp1": false,
-      "after_sl_tp2": false,
-      "after_sl_tp3": false,
-      "resolved": false
-    },
     "ONEUSDT_SHORT_1786864564": {
       "trade_id": "ONEUSDT_SHORT_5M_RADAR_1786863428",
       "symbol": "ONEUSDT",
@@ -26611,6 +26629,26 @@
       "risk_percent": 1.325,
       "stopped_at": 1786864564,
       "stop_exit": 0.000672,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "PARTIUSDT_SHORT_1786865478": {
+      "trade_id": "PARTIUSDT_SHORT_5M_RADAR_1786864749",
+      "symbol": "PARTIUSDT",
+      "direction": "SHORT",
+      "source": "5M_RADAR",
+      "entry": 0.02238,
+      "tp1": 0.0222521489,
+      "tp2": 0.0221359206,
+      "tp3": 0.0220080695,
+      "sl": 0.0226124566,
+      "score": 100,
+      "risk_percent": 1.039,
+      "stopped_at": 1786865478,
+      "stop_exit": 0.02261,
       "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
