@@ -1,11 +1,11 @@
-"""Kripto Kontrol Merkezi V3.32.4 - masaüstü korunur, mobil Piyasa/Coin JS'sizdir.
+"""Kripto Kontrol Merkezi V3.32.5 - masaüstü korunur, mobil üyelik JS'sizdir.
 
 V3.32.1 klasik Premium/Admin runtime onarımı masaüstünde aynen korunur. V3.32.3
-telefon/tablet ana paneli sunucu tarafında çalışmaya devam eder. V3.32.4 yalnız mobil
-Piyasa Merkezi ve Coin Merkezi rotalarını sunucu tarafı HTML/SVG görünümüne taşır.
+mobil ana panel, V3.32.4 mobil Piyasa/Coin sunucu görünümü korunur. V3.32.5 yalnız
+mobil Hesap ve Premium/üyelik sayfalarını JS'siz sunucu HTML görünümüne taşır.
 
-FREE yalnız public piyasa verisi, PREMIUM/ADMIN coin bazlı işlem seviyeleri ve performans
-özeti görür. Canlı sinyal, strateji, radar, Telegram, TP/SL/BE ve ledger değişmez.
+Üyelik/ödeme backend'i, /payment/notify POST akışı, admin onayı, canlı sinyal,
+strateji, radar, Telegram, TP/SL/BE ve ledger yazımları değişmez.
 """
 from __future__ import annotations
 
@@ -23,9 +23,9 @@ import dashboard_commercial_app as commercial
 import dashboard_earlyperformance_app as earlyperf
 import dashboard_market_app as market
 import dashboard_runtimefix_v3321_base as base
-from dashboard_live_app import LoginRateLimiter, OKXMarketDataClient, PanelConfig, build_service
+from dashboard_live_app import LoginRateLimiter, OKXMarketDataClient, PanelConfig, build_service, env_bool
 
-VERSION = "KRIPTO_KONTROL_MERKEZI_V3_32_4_MOBILE_MARKET_COIN_2026_08_16"
+VERSION = "KRIPTO_KONTROL_MERKEZI_V3_32_5_MOBILE_ACCOUNT_2026_08_16"
 CSS = base.CSS
 SCRIPT = base.SCRIPT
 enhance_runtime_repair = base.enhance_runtime_repair
@@ -47,7 +47,7 @@ def make_v3321_handler(
     overview_client=None,
     history_cache: earlyperf.HistoricalPulseCache | None = None,
 ):
-    """Masaüstünde V3.32.1; mobil ana V3.32.3; mobil Piyasa/Coin V3.32.4."""
+    """Masaüstünde V3.32.1; mobil ana V3.32.3; Piyasa/Coin V3.32.4; Hesap V3.32.5."""
     candle_client = market_client or chartfix.ResilientMarketDataClient(cache_seconds=2)
     overview = overview_client or market.OKXMarketOverviewClient(cache_seconds=20)
     cache = history_cache or earlyperf.HistoricalPulseCache()
@@ -55,8 +55,8 @@ def make_v3321_handler(
         config, service, sessions, limiter, store, candle_client, overview, history_cache=cache
     )
 
-    class V3324Handler(BaseHandler):
-        server_version = "KriptoPanel/3.32.4"
+    class V3325Handler(BaseHandler):
+        server_version = "KriptoPanel/3.32.5"
 
         def _safe_data(self) -> dict[str, Any]:
             try:
@@ -194,6 +194,51 @@ def make_v3321_handler(
             )
             self._send(HTTPStatus.OK, body, "text/html; charset=utf-8")
 
+        def _serve_mobile_account(self) -> None:
+            import dashboard_mobile_account_app as mobileaccount
+
+            session, is_admin, premium_flag, plan, label = self._identity()
+            if not session:
+                self._redirect("/login")
+                return
+            try:
+                info = self._plan_info(session) or {}
+            except Exception:
+                info = {"plan": plan}
+            body = mobileaccount.render_account_page(
+                session,
+                info,
+                plan=plan,
+                plan_label=label,
+                store=store,
+            )
+            self._send(HTTPStatus.OK, body, "text/html; charset=utf-8")
+
+        def _serve_mobile_premium(self) -> None:
+            import dashboard_billing_app as billing
+            import dashboard_mobile_account_app as mobileaccount
+
+            session, is_admin, premium_flag, plan, label = self._identity()
+            if not session:
+                self._redirect("/register")
+                return
+            try:
+                info = self._plan_info(session) or {}
+            except Exception:
+                info = {"plan": plan}
+            settings = billing._settings()
+            crypto_enabled = env_bool("PANEL_CRYPTO_PAYMENT_ENABLED", False)
+            body = mobileaccount.render_premium_page(
+                session,
+                info,
+                plan=plan,
+                plan_label=label,
+                store=store,
+                settings=settings,
+                crypto_enabled=crypto_enabled,
+            )
+            self._send(HTTPStatus.OK, body, "text/html; charset=utf-8")
+
         def do_GET(self):
             import dashboard_mobile_server_app as mobile
 
@@ -215,6 +260,11 @@ def make_v3321_handler(
                     "mobile_market": "server_rendered_public_okx",
                     "mobile_coin": "server_rendered_premium_svg",
                     "mobile_chart": "svg_no_javascript",
+                    "mobile_account": "server_rendered_no_javascript",
+                    "mobile_premium": "server_rendered_existing_billing_backend",
+                    "mobile_renewal": "existing_7_3_1_day_rules",
+                    "membership_backend": "unchanged",
+                    "payment_backend": "unchanged",
                     "free_runtime": "separate_preserved",
                     "premium_dashboard_api": "preserved",
                     "signal_engine": "unchanged",
@@ -226,12 +276,20 @@ def make_v3321_handler(
             session = self._session()
             force_market = path == "/mobile/market"
             force_coin = path == "/mobile/coin"
+            force_account = path == "/mobile/account"
+            force_premium = path == "/mobile/premium"
             detected_mobile = bool(session and mobile.mobile_request(self.headers, query))
             if path in {"/mobile/market", "/market-center"} and (force_market or detected_mobile):
                 self._serve_mobile_market(query)
                 return
             if path in {"/mobile/coin", "/coin-center"} and (force_coin or detected_mobile):
                 self._serve_mobile_coin(query)
+                return
+            if path in {"/mobile/account", "/account"} and (force_account or detected_mobile):
+                self._serve_mobile_account()
+                return
+            if path in {"/mobile/premium", "/premium"} and (force_premium or detected_mobile):
+                self._serve_mobile_premium()
                 return
             if path == "/mobile":
                 self._serve_mobile(query)
@@ -241,11 +299,11 @@ def make_v3321_handler(
                 return
             return super().do_GET()
 
-    return V3324Handler
+    return V3325Handler
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Kripto Kontrol Merkezi V3.32.4 mobil ürün runtime")
+    parser = argparse.ArgumentParser(description="Kripto Kontrol Merkezi V3.32.5 mobil ürün runtime")
     parser.add_argument("--host", default=os.getenv("HOST", "127.0.0.1"))
     parser.add_argument("--port", type=int, default=int(os.getenv("PORT", "8080")))
     parser.add_argument("--root", default=".")
@@ -260,7 +318,7 @@ def main() -> None:
     overview_client = market.OKXMarketOverviewClient(cache_seconds=20)
     handler = make_v3321_handler(config, service, sessions, limiter, store, candle_client, overview_client)
     server = ThreadingHTTPServer((args.host, args.port), handler)
-    print(f"{VERSION} http://{args.host}:{args.port} desktop_v3321=1 mobile_main_v3323=1 mobile_market_coin=1 signal_engine=unchanged")
+    print(f"{VERSION} http://{args.host}:{args.port} desktop_v3321=1 mobile_main_v3323=1 mobile_market_coin_v3324=1 mobile_account=1 signal_engine=unchanged")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
