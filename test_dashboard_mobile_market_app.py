@@ -4,6 +4,7 @@ import inspect
 import unittest
 from pathlib import Path
 
+import dashboard_accountflow_runtime_app as account_runtime
 import dashboard_app as app
 import dashboard_mobile_market_app as mobilemarket
 import dashboard_runtimefix_app as runtimefix
@@ -79,12 +80,15 @@ class MobileMarketCoinTests(unittest.TestCase):
     def test_svg_chart_fails_closed_without_candles(self):
         self.assertIn("Grafik verisi şu anda alınamadı", mobilemarket._svg_chart([], self.summary["open_trades"][0]))
 
-    def test_active_runtime_keeps_runtimefix_and_v3324_routes_are_presentation_only(self):
-        self.assertEqual(app.ACTIVE_MODULE, "dashboard_runtimefix_app")
-        self.assertEqual(app.VERSION, runtimefix.VERSION)
-        self.assertIs(app.make_handler, runtimefix.make_v3321_handler)
+    def test_active_runtime_keeps_v3326_mobile_market_under_account_flow(self):
+        self.assertEqual(app.ACTIVE_MODULE, "dashboard_accountflow_runtime_app")
+        self.assertEqual(app.VERSION, account_runtime.VERSION)
+        self.assertIs(app.make_handler, account_runtime.make_v3321_handler)
+        self.assertIn("V3_32_7_ACCOUNT_FLOW", account_runtime.VERSION)
+        self.assertIn("V3_32_6_SURFACE_PARITY", runtimefix.VERSION)
         repair_source = inspect.getsource(runtimefix)
         helper_source = inspect.getsource(mobilemarket)
+        account_source = inspect.getsource(account_runtime)
         self.assertIn('path in {"/mobile/market", "/market-center"}', repair_source)
         self.assertIn('path in {"/mobile/coin", "/coin-center"}', repair_source)
         self.assertIn('"mobile_chart": "svg_no_javascript"', repair_source)
@@ -94,10 +98,13 @@ class MobileMarketCoinTests(unittest.TestCase):
         self.assertIn('"ledger_write": "unchanged"', repair_source)
         self.assertNotIn("def do_POST", repair_source)
         self.assertNotIn("def do_POST", helper_source)
+        self.assertIn("runtimefix.make_v3321_handler", account_source)
         dockerfile = Path("Dockerfile.dashboard").read_text(encoding="utf-8")
         dockerignore = Path(".dockerignore").read_text(encoding="utf-8")
         self.assertIn("dashboard_mobile_market_app.py", dockerfile)
+        self.assertIn("dashboard_accountflow_runtime_app.py", dockerfile)
         self.assertIn("!dashboard_mobile_market_app.py", dockerignore)
+        self.assertIn("!dashboard_accountflow_runtime_app.py", dockerignore)
 
 
 if __name__ == "__main__":
