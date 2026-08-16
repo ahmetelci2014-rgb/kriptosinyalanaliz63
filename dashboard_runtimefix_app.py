@@ -99,12 +99,7 @@ def make_v3321_handler(
             if parity.premium_plan(plan) and view in {"signals", "trades", "results"}:
                 data = parity.filter_mobile_data(data, query, view)
             body = mobile.mobile_page(
-                session,
-                data,
-                plan=plan,
-                plan_label=label,
-                view=view,
-                is_admin=is_admin,
+                session, data, plan=plan, plan_label=label, view=view, is_admin=is_admin
             )
             active = view if parity.premium_plan(plan) else "home"
             body = parity.enhance_mobile_core(body, plan=plan, active=active, query=query)
@@ -143,12 +138,8 @@ def make_v3321_handler(
                 for item in items:
                     item.update(context.get(str(item.get("symbol") or ""), {}))
             body = mobilemarket.render_market_page(
-                session,
-                items=items,
-                plan=plan,
-                plan_label=label,
-                selected=selected,
-                market_error=market_error,
+                session, items=items, plan=plan, plan_label=label,
+                selected=selected, market_error=market_error,
             )
             body = parity.enhance_mobile_market(body, plan=plan, active="market")
             self._send(HTTPStatus.OK, body, "text/html; charset=utf-8")
@@ -198,15 +189,9 @@ def make_v3321_handler(
             except Exception:
                 market_error = True
             body = mobilemarket.render_coin_page(
-                session,
-                symbol=symbol,
-                bar=bar,
-                plan_label=label,
-                overview_item=overview_item,
-                summary=summary,
-                candles=candles,
-                chart_source=chart_source,
-                market_error=market_error,
+                session, symbol=symbol, bar=bar, plan_label=label,
+                overview_item=overview_item, summary=summary, candles=candles,
+                chart_source=chart_source, market_error=market_error,
             )
             body = parity.enhance_mobile_market(body, plan=plan, active="")
             self._send(HTTPStatus.OK, body, "text/html; charset=utf-8")
@@ -324,7 +309,14 @@ def make_v3321_handler(
                     "mobile_runtime": "server_rendered_no_javascript",
                     "mobile_main": "V3.32.3 preserved",
                     "mobile_market": "V3.32.4 preserved",
-                    "mobile_account": "V3.32.5 preserved",
+                    "mobile_coin": "server_rendered_premium_svg",
+                    "mobile_chart": "svg_no_javascript",
+                    "mobile_account": "server_rendered_no_javascript",
+                    "mobile_premium": "server_rendered_existing_billing_backend",
+                    "mobile_renewal": "existing_7_3_1_day_rules",
+                    "mobile_legacy_spa_bypassed": True,
+                    "mobile_progressive_disclosure": True,
+                    "mobile_primary_levels": "entry_tp1_sl",
                     "mobile_navigation": "consistent_core",
                     "mobile_filters": "server_rendered",
                     "mobile_watchlist": "server_rendered_cookie_preference",
