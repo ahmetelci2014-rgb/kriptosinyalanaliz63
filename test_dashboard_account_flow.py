@@ -112,16 +112,17 @@ class DashboardAccountFlowTests(unittest.TestCase):
         self.assertNotIn("v3327PaymentFeedback", unknown)
         self.assertNotIn("onerror", unknown)
 
-    def test_runtime_contract_preserves_v3326_and_adds_only_account_payment_flow(self):
+    def test_runtime_contract_preserves_v3327_account_flow_under_v3328(self):
         source = inspect.getsource(runtime)
         helper = inspect.getsource(flow)
         self.assertEqual(app.ACTIVE_MODULE, "dashboard_accountflow_runtime_app")
         self.assertEqual(app.VERSION, runtime.VERSION)
-        self.assertIn("V3_32_7_ACCOUNT_FLOW", runtime.VERSION)
+        self.assertIn("V3_32_8_WATCHLIST_SYNC", runtime.VERSION)
         self.assertIn("runtimefix.make_v3321_handler", source)
         self.assertIn("/account/password", source)
         self.assertIn("/payment/notify", source)
         self.assertIn('"password_recovery": "not_enabled_without_verified_identity"', source)
+        self.assertIn('"watchlist_sync": "managed_account_cross_device"', source)
         self.assertIn("V3_32_6_SURFACE_PARITY", runtimefix.VERSION)
         for forbidden in ("trade_ledger.json", "open_signals.json", "strategy.py", "config.py"):
             self.assertNotIn(forbidden, helper)
