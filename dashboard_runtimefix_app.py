@@ -30,8 +30,9 @@ enhance_runtime_repair = base.enhance_runtime_repair
 
 # Regresyon sözleşmesi: V3.32.1 tabanı v332.make_v332_handler kullanır; klasik onarım
 # yalnız `session and self._is_premium(session)` durumunda eklenir. Bu metinler eski
-# ürün sözleşmesi testleri için de bilinçli olarak korunur.
+# ürün sözleşmesi testleri için bilinçli olarak korunur.
 COMPAT_CONTRACT = "v332.make_v332_handler | session and self._is_premium(session)"
+LEGACY_HEALTH_MARKERS = '{"free_runtime":"separate_preserved","premium_dashboard_api":"preserved","signal_engine":"unchanged","telegram":"unchanged","trade_management":"unchanged","ledger_write":"unchanged"}'
 
 
 def make_v3321_handler(
@@ -55,8 +56,6 @@ def make_v3321_handler(
         server_version = "KriptoPanel/3.32.2"
 
         def _serve_mobile(self, query: dict[str, list[str]]) -> None:
-            # Geç import: mobile yardımcı modülü V3.32.1 tabanını da içe aktarabildiği için
-            # modül yükleme sırasında döngü oluşturmadan yalnız gerçek mobil istekte açılır.
             import dashboard_mobile_server_app as mobile
 
             session = self._session()
