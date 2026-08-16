@@ -6,6 +6,7 @@ from pathlib import Path
 
 import dashboard_app as app
 import dashboard_commercial_app as commercial
+import dashboard_mobile_server_app as mobile
 import dashboard_runtimefix_app as runtimefix
 import dashboard_surface_parity_app as parity
 
@@ -58,6 +59,41 @@ class DashboardSurfaceParityTests(unittest.TestCase):
         results = parity.filter_mobile_data(data, {"outcome": ["SL"], "system": ["SCALP"]}, "results")
         self.assertEqual([r["symbol"] for r in results["recent_results"]], ["ETHUSDT"])
         self.assertEqual(len(data["open_trades"]), 3, "filtre kaynak veriyi değiştirmemeli")
+
+    def test_mobile_filter_is_before_signal_list_and_new_pages_stay_javascript_free(self):
+        session = {"username": "member", "csrf": "csrf-test"}
+        data = {
+            "open_trades": [{
+                "symbol": "BTCUSDT", "direction": "LONG", "system": "PREMIUM",
+                "entry": 100, "tp1": 105, "tp2": 110, "tp3": 115, "sl": 95,
+            }],
+            "recent_results": [],
+        }
+        raw = mobile.mobile_page(
+            session, data, plan=commercial.PLAN_PREMIUM,
+            plan_label="Premium", view="signals", is_admin=False,
+        )
+        body = parity.enhance_mobile_core(
+            raw, plan=commercial.PLAN_PREMIUM, active="signals", query={}
+        )
+        self.assertIn('<form class="v3326-filter"', body)
+        self.assertLess(body.index('<form class="v3326-filter"'), body.index("BTCUSDT"))
+
+        watch = parity.render_watchlist_page(
+            session, plan=commercial.PLAN_PREMIUM, plan_label="Premium",
+            symbols=["BTCUSDT"],
+            items=[{"symbol": "BTCUSDT", "last": 100, "change_24h_pct": 2.4}],
+            data={"open_trades": [], "recent_results": []},
+        )
+        opportunities = parity.render_opportunities_page(
+            session, plan=commercial.PLAN_PREMIUM, plan_label="Premium",
+            rows=[{"symbol": "BTCUSDT", "last": 100, "change_24h_pct": 2.4, "group": "rising"}],
+            meta={"filter": "all", "sort": "default", "q": ""},
+            summary={"universe": 1, "up": 1, "down": 0},
+        )
+        for page in (watch, opportunities):
+            self.assertNotIn("<script", page.lower())
+            self.assertIn("/mobile/coin?symbol=BTCUSDT", page)
 
     def test_watchlist_preference_is_bounded_validated_and_http_only(self):
         symbols = []
