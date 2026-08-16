@@ -56,41 +56,41 @@ class DashboardRuntimeFixTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_runtime_script_loads_data_and_switches_views_when_node_exists(self):
-        """Gerçek tarayıcı olmadan temel DOM/fetch davranışını Node içinde çalıştırır."""
+        """Temel DOM/fetch davranışını Node içinde gerçekten çalıştırır."""
         if not shutil.which("node"):
             self.skipTest("node not installed")
 
         runtime_js = json.dumps(self._runtime_javascript())
-        harness = f"""
+        harness = r'''
 const assert = require('assert');
 
-function makeClassList(initial=false) {{
+function makeClassList(initial=false) {
   const set = new Set(initial ? ['active'] : []);
-  return {{
-    toggle(name, force) {{
+  return {
+    toggle(name, force) {
       const on = force === undefined ? !set.has(name) : Boolean(force);
       if (on) set.add(name); else set.delete(name);
       return on;
-    }},
-    contains(name) {{ return set.has(name); }},
-    add(name) {{ set.add(name); }},
-    remove(name) {{ set.delete(name); }}
-  }};
-}}
+    },
+    contains(name) { return set.has(name); },
+    add(name) { set.add(name); },
+    remove(name) { set.delete(name); }
+  };
+}
 
-function makeEl(id, dataset={{}}) {{
-  return {{
+function makeEl(id, dataset={}) {
+  return {
     id,
     dataset,
     value: '',
     innerHTML: '',
     textContent: '',
     classList: makeClassList(id === 'page-home'),
-    listeners: {{}},
-    addEventListener(type, fn) {{ this.listeners[type] = fn; }},
-    closest() {{ return null; }}
-  }};
-}}
+    listeners: {},
+    addEventListener(type, fn) { this.listeners[type] = fn; },
+    closest() { return null; }
+  };
+}
 
 const ids = new Map();
 [
@@ -100,56 +100,56 @@ const ids = new Map();
   'refreshBtn','liveText','topTitle'
 ].forEach(id => ids.set(id, makeEl(id)));
 
-const pages = ['home','signals','trades','results'].map(view => ids.get(`page-${{view}}`));
-const navs = ['home','signals','trades','results'].map(view => {{
-  const el = makeEl(`nav-${{view}}`, {{view}});
+const pages = ['home','signals','trades','results'].map(view => ids.get(`page-${view}`));
+const navs = ['home','signals','trades','results'].map(view => {
+  const el = makeEl(`nav-${view}`, {view});
   el.classList = makeClassList(view === 'home');
   return el;
-}});
+});
 
-const documentListeners = {{}};
+const documentListeners = {};
 const dispatched = [];
 const fetched = [];
 let assigned = null;
 
-global.document = {{
-  documentElement: {{dataset: {{admin: 'false'}}}},
-  getElementById(id) {{ return ids.get(id) || null; }},
-  querySelectorAll(selector) {{
+global.document = {
+  documentElement: {dataset: {admin: 'false'}},
+  getElementById(id) { return ids.get(id) || null; },
+  querySelectorAll(selector) {
     if (selector === '.page') return pages;
     if (selector === '[data-view]') return navs;
     return [];
-  }},
-  addEventListener(type, fn) {{ documentListeners[type] = fn; }}
-}};
+  },
+  addEventListener(type, fn) { documentListeners[type] = fn; }
+};
 
-global.window = {{
+global.window = {
   __v3321RuntimeRepair: false,
-  dispatchEvent(event) {{ dispatched.push(event); return true; }},
-  scrollTo() {{}}
-}};
-global.CustomEvent = class CustomEvent {{
-  constructor(type, init={{}}) {{ this.type = type; this.detail = init.detail; }}
-}};
-global.location = {{assign(url) {{ assigned = url; }}};
+  dispatchEvent(event) { dispatched.push(event); return true; },
+  scrollTo() {}
+};
+global.CustomEvent = class CustomEvent {
+  constructor(type, init={}) { this.type = type; this.detail = init.detail; }
+};
+global.location = {assign(url) { assigned = url; }};
 global.setInterval = () => 1;
-global.fetch = async (url) => {{
+global.fetch = async (url) => {
   fetched.push(String(url));
-  return {{
+  return {
     status: 200,
     ok: true,
-    async json() {{
-      return {{
-        open_trades: [{{symbol:'BTCUSDT',system_label:'Premium',direction:'LONG',entry:100,tp1:102,tp2:104,tp3:106,sl:98}}],
-        recent_results: [{{symbol:'ETHUSDT',system_label:'Scalp',direction:'SHORT',outcome:'TP1',r_result:1}}],
-        data_quality: {{ok:true}}
-      }};
-    }}
-  }};
-}};
+    async json() {
+      return {
+        open_trades: [{symbol:'BTCUSDT',system_label:'Premium',direction:'LONG',entry:100,tp1:102,tp2:104,tp3:106,sl:98}],
+        recent_results: [{symbol:'ETHUSDT',system_label:'Scalp',direction:'SHORT',outcome:'TP1',r_result:1}],
+        data_quality: {ok:true}
+      };
+    }
+  };
+};
 
-(async () => {{
-  eval({runtime_js});
+(async () => {
+  eval(__RUNTIME_JS__);
   await new Promise(resolve => setTimeout(resolve, 0));
 
   assert.strictEqual(assigned, null, 'runtime unexpectedly redirected');
@@ -162,17 +162,17 @@ global.fetch = async (url) => {{
 
   const click = documentListeners.click;
   assert.ok(click, 'navigation click listener was not registered');
-  click({{
-    target: {{closest(selector) {{ return selector === '[data-view]' ? navs[1] : null; }}}},
-    preventDefault() {{}},
-    stopImmediatePropagation() {{}}
-  }});
+  click({
+    target: {closest(selector) { return selector === '[data-view]' ? navs[1] : null; }},
+    preventDefault() {},
+    stopImmediatePropagation() {}
+  });
   assert.strictEqual(pages[0].classList.contains('active'), false, 'home stayed active');
   assert.strictEqual(pages[1].classList.contains('active'), true, 'signals view did not activate');
   assert.strictEqual(navs[1].classList.contains('active'), true, 'signals nav did not activate');
   assert.strictEqual(ids.get('topTitle').textContent, 'Sinyaller');
-}})().catch(error => {{ console.error(error); process.exit(1); }});
-"""
+})().catch(error => { console.error(error); process.exit(1); });
+'''.replace("__RUNTIME_JS__", runtime_js)
 
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "runtimefix_behavior.js"
