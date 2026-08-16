@@ -11,6 +11,7 @@ import dashboard_home_app as home
 import dashboard_market_app as market
 import dashboard_marketcoinux_app as marketcoin
 import dashboard_mobile_recovery_app as recovery
+import dashboard_mobile_safe_app as safe
 import dashboard_mobileux_app as mobile
 import dashboard_roleboundary_app as roleux
 import dashboard_simplevoice_app as simplevoice
@@ -27,7 +28,7 @@ class DashboardProductContractTests(unittest.TestCase):
             "nonce-contract",
         )
 
-    def test_real_home_keeps_cumulative_product_layers(self):
+    def test_real_home_keeps_cumulative_desktop_product_layers(self):
         body = self.current_home()
         body = sitewide.enhance_sitewide_ui(body, "nonce-contract", premium_access=True)
         body = flowux.enhance_flow_ui(body, "nonce-contract", premium_access=True)
@@ -55,15 +56,10 @@ class DashboardProductContractTests(unittest.TestCase):
         self.assertIn("Daha fazla bilgi", body)
         self.assertIn("Sesli bildirim kapalı", body)
         self.assertIn("v333Status", body)
-        self.assertIn('body .mobile-nav a[href="/market-center"]{display:flex!important}', body)
-        self.assertIn('.focus-overlay:not(.open),.notify-overlay:not(.open)', body)
-        self.assertIn('.focus-overlay,.focus-drawer,.notify-overlay,.notify-drawer', body)
-        self.assertIn("document.addEventListener('click',captureMobileNavigation,true)", body)
 
     def test_real_market_template_keeps_free_access_and_symbol_deeplink(self):
         body = market.market_center_page("nonce-contract")
         body = marketcoin.enhance_market_page(body, "nonce-contract", premium_access=False)
-
         self.assertIn("/api/market/overview", body)
         self.assertIn("/api/market/candles", body)
         self.assertIn("new URLSearchParams(location.search).get('symbol')", body)
@@ -74,7 +70,6 @@ class DashboardProductContractTests(unittest.TestCase):
     def test_real_coin_template_keeps_deep_review_contract(self):
         body = coin.coin_center_page("nonce-contract", "SOLUSDT")
         body = marketcoin.enhance_coin_page(body, "nonce-contract")
-
         self.assertIn("SOLUSDT", body)
         self.assertIn('id="chart"', body)
         self.assertIn("/api/market/candles", body)
@@ -84,35 +79,39 @@ class DashboardProductContractTests(unittest.TestCase):
         self.assertIn("Analiz ayrıntılarını göster", body)
         self.assertIn("Önce karar bilgisi", body)
 
+    def test_mobile_safe_shell_is_javascript_free_and_keeps_core_routes(self):
+        body = safe.mobile_safe_page(
+            {"username": "member", "csrf": "csrf-contract"},
+            {"open_trades": [{"symbol": "BTCUSDT", "direction": "LONG", "entry": 1, "tp1": 2, "sl": 0.5}], "recent_results": []},
+            "home",
+        )
+        self.assertIn("Mobil güvenli görünüm", body)
+        self.assertNotIn("<script", body.lower())
+        self.assertIn('href="/mobile-safe?view=signals"', body)
+        self.assertIn('href="/mobile-safe?view=trades"', body)
+        self.assertIn('href="/mobile-safe?view=results"', body)
+        self.assertIn('href="/market-center"', body)
+        self.assertIn('href="/account"', body)
+
     def test_stable_entrypoint_points_to_current_safe_runtime(self):
-        self.assertEqual(app.ACTIVE_MODULE, "dashboard_mobile_recovery_app")
-        self.assertEqual(app.VERSION, recovery.VERSION)
-        self.assertIs(app.make_handler, recovery.make_v336_handler)
+        self.assertEqual(app.ACTIVE_MODULE, "dashboard_mobile_safe_app")
+        self.assertEqual(app.VERSION, safe.VERSION)
+        self.assertIs(app.make_handler, safe.make_v337_handler)
 
         dockerfile = Path("Dockerfile.dashboard").read_text(encoding="utf-8")
         dockerignore = Path(".dockerignore").read_text(encoding="utf-8")
-        self.assertIn("dashboard_app.py", dockerfile)
-        self.assertIn("dashboard_simplevoice_app.py", dockerfile)
-        self.assertIn("dashboard_mobileux_app.py", dockerfile)
-        self.assertIn("dashboard_touchguard_app.py", dockerfile)
         self.assertIn("dashboard_mobile_recovery_app.py", dockerfile)
+        self.assertIn("dashboard_mobile_safe_app.py", dockerfile)
         self.assertIn('CMD ["python", "dashboard_app.py"', dockerfile)
-        self.assertIn("!dashboard_app.py", dockerignore)
-        self.assertIn("!dashboard_simplevoice_app.py", dockerignore)
-        self.assertIn("!dashboard_mobileux_app.py", dockerignore)
-        self.assertIn("!dashboard_touchguard_app.py", dockerignore)
         self.assertIn("!dashboard_mobile_recovery_app.py", dockerignore)
+        self.assertIn("!dashboard_mobile_safe_app.py", dockerignore)
 
     def test_latest_runtime_remains_presentation_only(self):
-        source = inspect.getsource(recovery)
+        source = inspect.getsource(safe)
         self.assertNotIn("def do_POST", source)
-        self.assertIn("touch.make_v335_handler", source)
-        self.assertIn('"touch_guard": "preserved"', source)
-        self.assertIn('"mobile_repair": "preserved"', source)
-        self.assertIn('"simple_voice": "preserved"', source)
-        self.assertIn('"market_coin_ux": "preserved"', source)
-        self.assertIn('"role_boundary": "preserved"', source)
-        self.assertIn('"account_ux": "preserved"', source)
+        self.assertIn("recovery.make_v336_handler", source)
+        self.assertIn('"mobile_safe_javascript": False', source)
+        self.assertIn('"desktop_runtime": "V3.36 preserved"', source)
         self.assertIn('"signal_engine": "unchanged"', source)
         self.assertIn('"telegram": "unchanged"', source)
         self.assertIn('"trade_management": "unchanged"', source)
