@@ -105,9 +105,11 @@ def test_source_contract_preserves_live_core_boundaries():
     assert "portfolio_risk" not in app.SAFE_DETAIL_KEYS
 
 
-def test_docker_runs_v324_signal_guide():
+def test_docker_preserves_v324_signal_guide_through_stable_entrypoint():
     docker = Path("Dockerfile.dashboard").read_text(encoding="utf-8")
     ignore = Path(".dockerignore").read_text(encoding="utf-8")
+    entrypoint = Path("dashboard_app.py").read_text(encoding="utf-8")
     assert "dashboard_signalguide_app.py" in docker
-    assert 'CMD ["python", "dashboard_signalguide_app.py", "--host", "0.0.0.0"]' in docker
+    assert 'CMD ["python", "dashboard_app.py", "--host", "0.0.0.0"]' in docker
     assert "!dashboard_signalguide_app.py" in ignore
+    assert "ACTIVE_MODULE" in entrypoint
