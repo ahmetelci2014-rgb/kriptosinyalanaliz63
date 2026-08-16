@@ -5,57 +5,8 @@ on:
   push:
     branches: [main]
     paths:
-      - "dashboard_builder.py"
-      - "dashboard_live_app.py"
-      - "dashboard_accounts_app.py"
-      - "dashboard_product_app.py"
-      - "dashboard_market_app.py"
-      - "dashboard_compact_app.py"
-      - "dashboard_focus_app.py"
-      - "dashboard_focus_market_app.py"
-      - "dashboard_home_app.py"
-      - "dashboard_notify_app.py"
-      - "dashboard_alert_app.py"
-      - "dashboard_watchlist_app.py"
-      - "dashboard_opportunity_app.py"
-      - "dashboard_score_app.py"
-      - "dashboard_filter_app.py"
-      - "dashboard_route_app.py"
-      - "dashboard_memory_app.py"
-      - "dashboard_commercial_app.py"
-      - "dashboard_billing_app.py"
-      - "dashboard_adminux_app.py"
-      - "dashboard_freepreview_app.py"
-      - "dashboard_transparency_app.py"
-      - "dashboard_quality_app.py"
-      - "dashboard_quality_runtime_app.py"
-      - "dashboard_business_app.py"
-      - "dashboard_lifecycle_app.py"
-      - "test_dashboard_builder.py"
-      - "test_dashboard_live_app.py"
-      - "test_dashboard_accounts_app.py"
-      - "test_dashboard_product_app.py"
-      - "test_dashboard_market_app.py"
-      - "test_dashboard_compact_app.py"
-      - "test_dashboard_focus_app.py"
-      - "test_dashboard_home_app.py"
-      - "test_dashboard_notify_app.py"
-      - "test_dashboard_alert_app.py"
-      - "test_dashboard_watchlist_app.py"
-      - "test_dashboard_opportunity_app.py"
-      - "test_dashboard_score_app.py"
-      - "test_dashboard_filter_app.py"
-      - "test_dashboard_route_app.py"
-      - "test_dashboard_memory_app.py"
-      - "test_dashboard_commercial_app.py"
-      - "test_dashboard_billing_app.py"
-      - "test_dashboard_adminux_app.py"
-      - "test_dashboard_freepreview_app.py"
-      - "test_dashboard_transparency_app.py"
-      - "test_dashboard_quality_app.py"
-      - "test_dashboard_quality_runtime_app.py"
-      - "test_dashboard_business_app.py"
-      - "test_dashboard_lifecycle_app.py"
+      - "dashboard_*.py"
+      - "test_dashboard_*.py"
       - "Dockerfile.dashboard"
       - ".dockerignore"
       - "render.yaml"
@@ -63,57 +14,8 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "dashboard_builder.py"
-      - "dashboard_live_app.py"
-      - "dashboard_accounts_app.py"
-      - "dashboard_product_app.py"
-      - "dashboard_market_app.py"
-      - "dashboard_compact_app.py"
-      - "dashboard_focus_app.py"
-      - "dashboard_focus_market_app.py"
-      - "dashboard_home_app.py"
-      - "dashboard_notify_app.py"
-      - "dashboard_alert_app.py"
-      - "dashboard_watchlist_app.py"
-      - "dashboard_opportunity_app.py"
-      - "dashboard_score_app.py"
-      - "dashboard_filter_app.py"
-      - "dashboard_route_app.py"
-      - "dashboard_memory_app.py"
-      - "dashboard_commercial_app.py"
-      - "dashboard_billing_app.py"
-      - "dashboard_adminux_app.py"
-      - "dashboard_freepreview_app.py"
-      - "dashboard_transparency_app.py"
-      - "dashboard_quality_app.py"
-      - "dashboard_quality_runtime_app.py"
-      - "dashboard_business_app.py"
-      - "dashboard_lifecycle_app.py"
-      - "test_dashboard_builder.py"
-      - "test_dashboard_live_app.py"
-      - "test_dashboard_accounts_app.py"
-      - "test_dashboard_product_app.py"
-      - "test_dashboard_market_app.py"
-      - "test_dashboard_compact_app.py"
-      - "test_dashboard_focus_app.py"
-      - "test_dashboard_home_app.py"
-      - "test_dashboard_notify_app.py"
-      - "test_dashboard_alert_app.py"
-      - "test_dashboard_watchlist_app.py"
-      - "test_dashboard_opportunity_app.py"
-      - "test_dashboard_score_app.py"
-      - "test_dashboard_filter_app.py"
-      - "test_dashboard_route_app.py"
-      - "test_dashboard_memory_app.py"
-      - "test_dashboard_commercial_app.py"
-      - "test_dashboard_billing_app.py"
-      - "test_dashboard_adminux_app.py"
-      - "test_dashboard_freepreview_app.py"
-      - "test_dashboard_transparency_app.py"
-      - "test_dashboard_quality_app.py"
-      - "test_dashboard_quality_runtime_app.py"
-      - "test_dashboard_business_app.py"
-      - "test_dashboard_lifecycle_app.py"
+      - "dashboard_*.py"
+      - "test_dashboard_*.py"
       - "Dockerfile.dashboard"
       - ".dockerignore"
       - "render.yaml"
@@ -138,23 +40,9 @@ jobs:
         with:
           python-version: "3.11"
       - name: Panel Python dosyalarını derle
-        run: |
-          python -m py_compile \
-            dashboard_builder.py dashboard_live_app.py dashboard_accounts_app.py dashboard_product_app.py \
-            dashboard_market_app.py dashboard_compact_app.py dashboard_focus_app.py dashboard_focus_market_app.py \
-            dashboard_home_app.py dashboard_notify_app.py dashboard_alert_app.py dashboard_watchlist_app.py \
-            dashboard_opportunity_app.py dashboard_score_app.py dashboard_filter_app.py dashboard_route_app.py dashboard_memory_app.py dashboard_commercial_app.py dashboard_billing_app.py dashboard_adminux_app.py dashboard_freepreview_app.py dashboard_transparency_app.py dashboard_quality_app.py dashboard_quality_runtime_app.py dashboard_business_app.py dashboard_lifecycle_app.py \
-            test_dashboard_builder.py test_dashboard_live_app.py test_dashboard_accounts_app.py test_dashboard_product_app.py \
-            test_dashboard_market_app.py test_dashboard_compact_app.py test_dashboard_focus_app.py test_dashboard_home_app.py \
-            test_dashboard_notify_app.py test_dashboard_alert_app.py test_dashboard_watchlist_app.py test_dashboard_opportunity_app.py \
-            test_dashboard_score_app.py test_dashboard_filter_app.py test_dashboard_route_app.py test_dashboard_memory_app.py test_dashboard_commercial_app.py test_dashboard_billing_app.py test_dashboard_adminux_app.py test_dashboard_freepreview_app.py test_dashboard_transparency_app.py test_dashboard_quality_app.py test_dashboard_quality_runtime_app.py test_dashboard_business_app.py test_dashboard_lifecycle_app.py
+        run: python -m py_compile dashboard_*.py test_dashboard_*.py
       - name: Statik ve canlı panel testlerini çalıştır
-        run: |
-          python -m unittest -v \
-            test_dashboard_builder.py test_dashboard_live_app.py test_dashboard_accounts_app.py test_dashboard_product_app.py \
-            test_dashboard_market_app.py test_dashboard_compact_app.py test_dashboard_focus_app.py test_dashboard_home_app.py \
-            test_dashboard_notify_app.py test_dashboard_alert_app.py test_dashboard_watchlist_app.py test_dashboard_opportunity_app.py \
-            test_dashboard_score_app.py test_dashboard_filter_app.py test_dashboard_route_app.py test_dashboard_memory_app.py test_dashboard_commercial_app.py test_dashboard_billing_app.py test_dashboard_adminux_app.py test_dashboard_freepreview_app.py test_dashboard_transparency_app.py test_dashboard_quality_app.py test_dashboard_quality_runtime_app.py test_dashboard_business_app.py test_dashboard_lifecycle_app.py
+        run: python -m unittest -v test_dashboard_*.py
       - name: Render Docker imajını doğrula
         run: docker build -f Dockerfile.dashboard -t kripto-panel-ci .
       - name: Gerçek verilerden panel üret
@@ -171,15 +59,16 @@ jobs:
           {
             echo "## Kripto Kontrol Paneli doğrulandı"
             echo ""
-            echo "V3.7 Müşteri Yaşam Döngüsü + Yenileme Merkezi dahil canlı panel ve Docker build testleri başarılı."
+            echo "V3.8 Yenileme + Müşteri Tutundurma dahil canlı panel ve Docker build testleri başarılı."
             echo "Artifact yalnız acil durum anlık görüntüsüdür; canlı panel değildir."
             echo ""
-            echo "- Admin yaşam döngüsü ekranında FREE, Premium, 3/7/30 gün içinde bitecek, süresi biten, pasif ve ödeme bekleyen üyeler ayrılır"
-            echo "- Kullanıcı arama, segment filtreleme ve öncelik sıralaması sunucu tarafında çalışır"
-            echo "- Ödeme beklemeyen üyelerde +30/+90 gün hızlı Premium uzatma vardır"
-            echo "- Bekleyen ödeme varken manuel hızlı süre ekleme engellenir; önce ödeme kararı gerekir"
-            echo "- V3.6 yeni kullanıcı metriği created_at metadata ile gerçek kayıttan beslenir"
-            echo "- Yönetim Merkezi yaşam döngüsü ekranına görünür kısayol içerir"
+            echo "- Premium bitişine 7/3/1 gün kala kullanıcı panelinde yenileme uyarısı gösterilir"
+            echo "- Son 7 günde aktif Premium kullanıcı mevcut ödeme bildirimiyle üyeliğini yenileyebilir"
+            echo "- Onaylanan yenileme mevcut bitiş tarihinin üzerine süre ekler"
+            echo "- Bekleyen ödeme varken ikinci yenileme bildirimi engellenir"
+            echo "- Süresi biten hesap kapanmaz; FREE planla devam eder ve yenileme çağrısı görür"
+            echo "- Admin Yenileme Merkezi ödeme, süresi biten ve 1/3/7 gün içinde bitecek kullanıcıları önceliklendirir"
+            echo "- V3.7 Müşteri Yaşam Döngüsü ve hızlı +30/+90 gün yönetimi korunur"
             echo "- Premium satış, FREE gerçek sinyal, şeffaf sonuç ve kota bandı korunur"
             echo "- Premium API uçları FREE kullanıcıya sunucu tarafında kapalı kalır"
             echo "- Mobil ve masaüstü Çıkış ile Yönetim Merkezi korunur"
