@@ -39,6 +39,57 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: CANLI Render V3.32.6 yüzey paritesini doğrula
+        run: |
+          python - <<'PY'
+          import json
+          import time
+          import urllib.request
+
+          url = "https://kripto-kontrol-paneli.onrender.com/healthz"
+          expected = {
+              "version": "KRIPTO_KONTROL_MERKEZI_V3_32_6_SURFACE_PARITY_2026_08_16",
+              "surface_audit": "desktop_mobile_unauth_free_premium_admin",
+              "desktop_runtime": "V3.32.1 preserved",
+              "mobile_runtime": "server_rendered_no_javascript",
+              "mobile_navigation": "consistent_core",
+              "mobile_filters": "server_rendered",
+              "mobile_watchlist": "server_rendered_cookie_preference",
+              "mobile_opportunities": "server_rendered_existing_analysis",
+              "mobile_sound": "desktop_only_by_design",
+              "mobile_chart": "svg_no_javascript",
+              "mobile_account": "server_rendered_no_javascript",
+              "mobile_premium": "server_rendered_existing_billing_backend",
+              "mobile_free_premium_separated": True,
+              "membership_backend": "unchanged",
+              "payment_backend": "unchanged",
+              "signal_engine": "unchanged",
+              "telegram": "unchanged",
+              "trade_management": "unchanged",
+              "ledger_write": "unchanged",
+          }
+          last_error = None
+          for attempt in range(18):
+              try:
+                  req = urllib.request.Request(url, headers={"User-Agent": "github-actions-v3326-live-check"})
+                  with urllib.request.urlopen(req, timeout=15) as response:
+                      assert response.status == 200, response.status
+                      payload = json.loads(response.read().decode("utf-8"))
+                  mismatches = {
+                      key: (payload.get(key), value)
+                      for key, value in expected.items()
+                      if payload.get(key) != value
+                  }
+                  if not mismatches:
+                      print("CANLI V3.32.6 doğrulandı:", json.dumps(payload, ensure_ascii=False, sort_keys=True))
+                      break
+                  last_error = f"health sözleşmesi henüz eşleşmedi: {mismatches}"
+              except Exception as exc:
+                  last_error = repr(exc)
+              if attempt == 17:
+                  raise SystemExit(f"CANLI Render V3.32.6 doğrulanamadı: {last_error}")
+              time.sleep(10)
+          PY
       - name: Panel Python dosyalarını derle
         run: python -m py_compile dashboard_*.py test_dashboard_*.py
       - name: Statik ve canlı panel testlerini çalıştır
