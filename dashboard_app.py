@@ -1,18 +1,17 @@
 """Kripto Kontrol Merkezi - sabit uygulama giriş noktası.
 
-Aktif panel runtime'ı burada seçilir. 2026-08-16 mobil/rol regresyonları nedeniyle
-ürün görünümü son doğrulanmış V3.32 Market/Coin UX katmanına geri alınmıştır.
-V3.33+ dosyaları repoda korunur ancak aktif runtime değildir. Canlı sinyal motoru,
-Telegram, TP/SL/BE, state/ledger ve üyelik backend'i değiştirilmez.
+Aktif ürün görünümü V3.32 olarak korunur. V3.32.1 yalnız klasik Premium/Admin
+panelde kırılan istemci runtime'ı için bağımsız navigasyon ve veri yükleme onarımı
+ekler; FREE/PREMIUM sınırları ve canlı işlem çekirdeği değiştirilmez.
 """
 from __future__ import annotations
 
-from dashboard_marketcoinux_app import VERSION as ACTIVE_VERSION
-from dashboard_marketcoinux_app import main as _active_main
-from dashboard_marketcoinux_app import make_v332_handler as make_handler
+from dashboard_runtimefix_app import VERSION as ACTIVE_VERSION
+from dashboard_runtimefix_app import main as _active_main
+from dashboard_runtimefix_app import make_v3321_handler as make_handler
 
 VERSION = ACTIVE_VERSION
-ACTIVE_MODULE = "dashboard_marketcoinux_app"
+ACTIVE_MODULE = "dashboard_runtimefix_app"
 
 
 def main() -> None:
