@@ -83,6 +83,29 @@ def make_v3321_handler(
         def _watch_snapshot(self, username: str) -> dict[str, Any]:
             return watchsync.account_watchlist_snapshot(store, username)
 
+        def _mobile_watch_state(self, session) -> tuple[bool, list[str], str | None]:
+            """İlk geçişi bir kez yapar; sonrasında yönetilen hesap listesini otorite kabul eder."""
+            username = str(session.get("username") or "")
+            browser_symbols = parity.read_watchlist(self.headers.get("Cookie"))
+            snapshot = self._watch_snapshot(username)
+            managed = bool(snapshot.get("managed"))
+            initialized = bool(snapshot.get("initialized"))
+            server_symbols = watchsync.normalize_watchlist(snapshot.get("symbols") or [])
+            cookie_to_set = None
+            if not managed:
+                return False, browser_symbols, None
+            if initialized:
+                symbols = server_symbols
+            else:
+                symbols = watchsync.first_sync_list(server_symbols, browser_symbols)
+                try:
+                    symbols = watchsync.save_account_watchlist(store, username, symbols, actor=username)
+                except (accounts.AccountStoreError, ValueError):
+                    return False, browser_symbols, None
+            if symbols != browser_symbols:
+                cookie_to_set = parity.watch_cookie(symbols, secure=config.cookie_secure)
+            return True, symbols, cookie_to_set
+
         def _serve_synced_mobile_watchlist(self, query: dict[str, list[str]]) -> None:
             session, is_admin, premium_flag, plan, label = self._identity()
             if not session:
@@ -92,41 +115,17 @@ def make_v3321_handler(
                 self._redirect("/premium")
                 return
 
-            username = str(session.get("username") or "")
-            browser_symbols = parity.read_watchlist(self.headers.get("Cookie"))
-            snapshot = self._watch_snapshot(username)
-            managed = bool(snapshot.get("managed"))
-            initialized = bool(snapshot.get("initialized"))
-            server_symbols = watchsync.normalize_watchlist(snapshot.get("symbols") or [])
-            cookie_to_set = None
+            managed, symbols, cookie_to_set = self._mobile_watch_state(session)
 
-            if managed:
-                if initialized:
-                    symbols = server_symbols
-                else:
-                    symbols = watchsync.first_sync_list(server_symbols, browser_symbols)
-                    try:
-                        symbols = watchsync.save_account_watchlist(store, username, symbols, actor=username)
-                        initialized = True
-                    except (accounts.AccountStoreError, ValueError):
-                        managed = False
-                        symbols = browser_symbols
-                if managed and symbols != browser_symbols:
+            # Eski kurucu/env fallback davranışında GET cookie tercihi korunur.
+            # Yönetilen hesapta kalıcı yazma yalnız POST /mobile/watchlist/update ile yapılır.
+            if not managed:
+                add = str((query.get("add") or [""])[0] or "")
+                remove = str((query.get("remove") or [""])[0] or "")
+                updated = parity.update_watchlist(symbols, add=add, remove=remove)
+                if updated != symbols:
+                    symbols = updated
                     cookie_to_set = parity.watch_cookie(symbols, secure=config.cookie_secure)
-            else:
-                symbols = browser_symbols
-
-            add = str((query.get("add") or [""])[0] or "")
-            remove = str((query.get("remove") or [""])[0] or "")
-            updated = parity.update_watchlist(symbols, add=add, remove=remove)
-            if updated != symbols:
-                symbols = updated
-                if managed:
-                    try:
-                        symbols = watchsync.save_account_watchlist(store, username, symbols, actor=username)
-                    except accounts.AccountStoreError:
-                        managed = False
-                cookie_to_set = parity.watch_cookie(symbols, secure=config.cookie_secure)
 
             try:
                 payload = overview.get_overview(symbols) if symbols else {"items": []}
@@ -153,6 +152,11 @@ def make_v3321_handler(
                 score_symbol=score_symbol,
             )
             body = watchsync.enhance_mobile_watchlist_notice(body, managed=managed)
+            if managed:
+                body = watchsync.enhance_mobile_watchlist_forms(
+                    body,
+                    csrf=str(session.get("csrf") or ""),
+                )
             self._send(
                 HTTPStatus.OK,
                 body,
@@ -184,6 +188,7 @@ def make_v3321_handler(
                     "payment_feedback": "user_visible_fixed_codes",
                     "watchlist_sync": "managed_account_cross_device",
                     "watchlist_first_migration": "browser_favorites_preserved_once",
+                    "watchlist_mobile_write": "csrf_post",
                     "watchlist_unmanaged_fallback": "device_local_preserved",
                     "membership_backend": "unchanged_except_user_preference_field",
                     "payment_backend": "unchanged",
@@ -217,21 +222,60 @@ def make_v3321_handler(
 
         def do_POST(self):
             path = urllib.parse.urlsplit(self.path).path
-            if path == "/api/account/watchlist":
+            if path in {"/api/account/watchlist", "/mobile/watchlist/update"}:
                 session, premium = self._watch_access()
                 if not session:
-                    self._json(HTTPStatus.UNAUTHORIZED, {"error": "Oturum gerekli."})
+                    if path == "/api/account/watchlist":
+                        self._json(HTTPStatus.UNAUTHORIZED, {"error": "Oturum gerekli."})
+                    else:
+                        self._redirect("/login")
                     return
                 if not premium:
-                    self._json(HTTPStatus.FORBIDDEN, {"error": "Premium erişim gerekli."})
+                    if path == "/api/account/watchlist":
+                        self._json(HTTPStatus.FORBIDDEN, {"error": "Premium erişim gerekli."})
+                    else:
+                        self._redirect("/premium")
                     return
                 form = self._form()
                 if not commercial._csrf_ok(session, form.get("csrf", "")):
-                    self._json(HTTPStatus.FORBIDDEN, {"error": "Oturum doğrulaması geçersiz."})
+                    if path == "/api/account/watchlist":
+                        self._json(HTTPStatus.FORBIDDEN, {"error": "Oturum doğrulaması geçersiz."})
+                    else:
+                        self._redirect("/mobile/watchlist")
                     return
+
                 username = str(session.get("username") or "")
                 snapshot = self._watch_snapshot(username)
-                if not snapshot.get("managed"):
+                managed = bool(snapshot.get("managed"))
+
+                if path == "/mobile/watchlist/update":
+                    if not managed:
+                        # Env/kurucu hesap eski cihaz-local GET fallback'ine yönlenir.
+                        params = {}
+                        if form.get("add"):
+                            params["add"] = form.get("add", "")
+                        if form.get("remove"):
+                            params["remove"] = form.get("remove", "")
+                        target = "/mobile/watchlist"
+                        if params:
+                            target += "?" + urllib.parse.urlencode(params)
+                        self._redirect(target)
+                        return
+                    current = watchsync.normalize_watchlist(snapshot.get("symbols") or [])
+                    symbols = parity.update_watchlist(
+                        current,
+                        add=form.get("add", ""),
+                        remove=form.get("remove", ""),
+                    )
+                    try:
+                        watchsync.save_account_watchlist(store, username, symbols, actor=username)
+                    except (accounts.AccountStoreError, ValueError):
+                        self._redirect("/mobile/watchlist")
+                        return
+                    self._redirect("/mobile/watchlist")
+                    return
+
+                if not managed:
                     self._json(HTTPStatus.OK, {
                         "managed": False,
                         "initialized": False,
@@ -242,7 +286,7 @@ def make_v3321_handler(
                 symbols = watchsync.normalize_watchlist(form.get("symbols", ""))
                 try:
                     symbols = watchsync.save_account_watchlist(store, username, symbols, actor=username)
-                except accounts.AccountStoreError:
+                except (accounts.AccountStoreError, ValueError):
                     self._json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": "İzleme listesi şu anda kaydedilemedi."})
                     return
                 cookie = parity.watch_cookie(symbols, secure=config.cookie_secure)
