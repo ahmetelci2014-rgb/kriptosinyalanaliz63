@@ -1,10 +1,11 @@
-"""Kripto Kontrol Merkezi V3.32.2 - masaüstü korunur, mobil sunucu render edilir.
+"""Kripto Kontrol Merkezi V3.32.3 - masaüstü korunur, mobil ürün UX geliştirilir.
 
 V3.32.1 klasik Premium/Admin runtime onarımı masaüstünde aynen korunur. Telefon/tablet
 isteklerinde ana panel SPA/overlay zinciri tamamen bypass edilir; mobil HTML sunucuda
 üretilir. FREE yalnız güvenli özet, PREMIUM/ADMIN gerçek işlem verisi görür.
 
-Canlı sinyal, strateji, radar, Telegram, TP/SL/BE, state/ledger ve ödeme yazımları değişmez.
+V3.32.3 mobil sunumda karar bilgisini öne alır, teknik ve uzun içeriği isteğe bağlı
+detaylara taşır. Canlı sinyal, strateji, radar, Telegram, TP/SL/BE ve ledger değişmez.
 """
 from __future__ import annotations
 
@@ -23,14 +24,14 @@ import dashboard_market_app as market
 import dashboard_runtimefix_v3321_base as base
 from dashboard_live_app import LoginRateLimiter, PanelConfig, build_service
 
-VERSION = "KRIPTO_KONTROL_MERKEZI_V3_32_2_MOBILE_SERVER_2026_08_16"
+VERSION = "KRIPTO_KONTROL_MERKEZI_V3_32_3_MOBILE_PRODUCT_UX_2026_08_16"
 CSS = base.CSS
 SCRIPT = base.SCRIPT
 enhance_runtime_repair = base.enhance_runtime_repair
 
 # Regresyon sözleşmesi: V3.32.1 tabanı v332.make_v332_handler kullanır; klasik onarım
 # yalnız `session and self._is_premium(session)` durumunda eklenir. Bu metinler eski
-# ürün sözleşmesi testleri için bilinçli olarak korunur.
+# ürün sözleşmesi testleri için de bilinçli olarak korunur.
 COMPAT_CONTRACT = "v332.make_v332_handler | session and self._is_premium(session)"
 LEGACY_HEALTH_MARKERS = '{"free_runtime":"separate_preserved","premium_dashboard_api":"preserved","signal_engine":"unchanged","telegram":"unchanged","trade_management":"unchanged","ledger_write":"unchanged"}'
 
@@ -45,15 +46,15 @@ def make_v3321_handler(
     overview_client=None,
     history_cache: earlyperf.HistoricalPulseCache | None = None,
 ):
-    """Masaüstünde V3.32.1; mobilde JS'siz, plan-aware sunucu görünümü."""
+    """Masaüstünde V3.32.1; mobilde JS'siz, plan-aware V3.32.3 ürün görünümü."""
     candle_client = market_client or chartfix.ResilientMarketDataClient(cache_seconds=2)
     cache = history_cache or earlyperf.HistoricalPulseCache()
     BaseHandler = base.make_v3321_handler(
         config, service, sessions, limiter, store, candle_client, overview_client, history_cache=cache
     )
 
-    class V3322Handler(BaseHandler):
-        server_version = "KriptoPanel/3.32.2"
+    class V3323Handler(BaseHandler):
+        server_version = "KriptoPanel/3.32.3"
 
         def _serve_mobile(self, query: dict[str, list[str]]) -> None:
             import dashboard_mobile_server_app as mobile
@@ -97,6 +98,8 @@ def make_v3321_handler(
                     "mobile_runtime": "server_rendered_no_javascript",
                     "mobile_legacy_spa_bypassed": True,
                     "mobile_free_premium_separated": True,
+                    "mobile_progressive_disclosure": True,
+                    "mobile_primary_levels": "entry_tp1_sl",
                     "free_runtime": "separate_preserved",
                     "premium_dashboard_api": "preserved",
                     "signal_engine": "unchanged",
@@ -114,11 +117,11 @@ def make_v3321_handler(
                 return
             return super().do_GET()
 
-    return V3322Handler
+    return V3323Handler
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Kripto Kontrol Merkezi V3.32.2 mobil sunucu runtime")
+    parser = argparse.ArgumentParser(description="Kripto Kontrol Merkezi V3.32.3 mobil ürün runtime")
     parser.add_argument("--host", default=os.getenv("HOST", "127.0.0.1"))
     parser.add_argument("--port", type=int, default=int(os.getenv("PORT", "8080")))
     parser.add_argument("--root", default=".")
@@ -133,7 +136,7 @@ def main() -> None:
     overview_client = market.OKXMarketOverviewClient(cache_seconds=20)
     handler = make_v3321_handler(config, service, sessions, limiter, store, candle_client, overview_client)
     server = ThreadingHTTPServer((args.host, args.port), handler)
-    print(f"{VERSION} http://{args.host}:{args.port} desktop_v3321=1 mobile_server=1 signal_engine=unchanged")
+    print(f"{VERSION} http://{args.host}:{args.port} desktop_v3321=1 mobile_product_ux=1 signal_engine=unchanged")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
