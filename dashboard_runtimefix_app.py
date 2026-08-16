@@ -1,11 +1,12 @@
-"""Kripto Kontrol Merkezi V3.32.5 - masaüstü korunur, mobil üyelik JS'sizdir.
+"""Kripto Kontrol Merkezi V3.32.6 - masaüstü/mobil/plan yüzey paritesi.
 
-V3.32.1 klasik Premium/Admin runtime onarımı masaüstünde aynen korunur. V3.32.3
-mobil ana panel, V3.32.4 mobil Piyasa/Coin sunucu görünümü korunur. V3.32.5 yalnız
-mobil Hesap ve Premium/üyelik sayfalarını JS'siz sunucu HTML görünümüne taşır.
+V3.32.1 masaüstü klasik runtime onarımı, V3.32.3 mobil ana panel, V3.32.4 mobil
+Piyasa/Coin ve V3.32.5 mobil Hesap/Premium korunur. Bu sürüm yalnız doğrulanmış
+ürün-parite açıklarını kapatır: mobil çekirdek menü tutarlılığı, JS'siz arama/filtre,
+Premium İzleme Listesi, Fırsat Merkezi/İnceleme Skoru ve cihaz-doğru vitrin metni.
 
-Üyelik/ödeme backend'i, /payment/notify POST akışı, admin onayı, canlı sinyal,
-strateji, radar, Telegram, TP/SL/BE ve ledger yazımları değişmez.
+Canlı sinyal, strategy/config, radar, Telegram, TP/SL/BE, state/ledger ve ödeme/
+üyelik POST davranışları değişmez.
 """
 from __future__ import annotations
 
@@ -22,17 +23,19 @@ import dashboard_chartfix_app as chartfix
 import dashboard_commercial_app as commercial
 import dashboard_earlyperformance_app as earlyperf
 import dashboard_market_app as market
+import dashboard_opportunity_app as opportunity
 import dashboard_runtimefix_v3321_base as base
+import dashboard_score_app as score
+import dashboard_surface_parity_app as parity
 from dashboard_live_app import LoginRateLimiter, OKXMarketDataClient, PanelConfig, build_service, env_bool
 
-VERSION = "KRIPTO_KONTROL_MERKEZI_V3_32_5_MOBILE_ACCOUNT_2026_08_16"
+VERSION = "KRIPTO_KONTROL_MERKEZI_V3_32_6_SURFACE_PARITY_2026_08_16"
 CSS = base.CSS
 SCRIPT = base.SCRIPT
 enhance_runtime_repair = base.enhance_runtime_repair
 
 # Regresyon sözleşmesi: V3.32.1 tabanı v332.make_v332_handler kullanır; klasik onarım
-# yalnız `session and self._is_premium(session)` durumunda eklenir. Bu metinler eski
-# ürün sözleşmesi testleri için de bilinçli olarak korunur.
+# yalnız `session and self._is_premium(session)` durumunda eklenir.
 COMPAT_CONTRACT = "v332.make_v332_handler | session and self._is_premium(session)"
 LEGACY_HEALTH_MARKERS = '{"free_runtime":"separate_preserved","premium_dashboard_api":"preserved","signal_engine":"unchanged","telegram":"unchanged","trade_management":"unchanged","ledger_write":"unchanged"}'
 
@@ -47,16 +50,22 @@ def make_v3321_handler(
     overview_client=None,
     history_cache: earlyperf.HistoricalPulseCache | None = None,
 ):
-    """Masaüstünde V3.32.1; mobil ana V3.32.3; Piyasa/Coin V3.32.4; Hesap V3.32.5."""
+    """Masaüstü V3.32.1 korunur; mobil kullanıcı işleri JS'siz parite kazanır."""
     candle_client = market_client or chartfix.ResilientMarketDataClient(cache_seconds=2)
     overview = overview_client or market.OKXMarketOverviewClient(cache_seconds=20)
     cache = history_cache or earlyperf.HistoricalPulseCache()
+    analysis_service = score.AnalysisScoreService(candle_client, overview, cache_seconds=120)
     BaseHandler = base.make_v3321_handler(
         config, service, sessions, limiter, store, candle_client, overview, history_cache=cache
     )
 
-    class V3325Handler(BaseHandler):
-        server_version = "KriptoPanel/3.32.5"
+    class V3326Handler(BaseHandler):
+        server_version = "KriptoPanel/3.32.6"
+
+        def _send(self, status, body, content_type, *, cookies=None, nonce=None):
+            if isinstance(body, str) and content_type.startswith("text/html"):
+                body = parity.correct_product_copy(body)
+            return super()._send(status, body, content_type, cookies=cookies, nonce=nonce)
 
         def _safe_data(self) -> dict[str, Any]:
             try:
@@ -79,12 +88,16 @@ def make_v3321_handler(
         def _serve_mobile(self, query: dict[str, list[str]]) -> None:
             import dashboard_mobile_server_app as mobile
 
-            session, is_admin, premium, plan, label = self._identity()
+            session, is_admin, premium_flag, plan, label = self._identity()
             if not session:
                 self._redirect("/login")
                 return
-            data = self._safe_data()
             view = str((query.get("view") or ["home"])[0]).lower()
+            if view not in {"home", "signals", "trades", "results"}:
+                view = "home"
+            data = self._safe_data()
+            if parity.premium_plan(plan) and view in {"signals", "trades", "results"}:
+                data = parity.filter_mobile_data(data, query, view)
             body = mobile.mobile_page(
                 session,
                 data,
@@ -93,6 +106,8 @@ def make_v3321_handler(
                 view=view,
                 is_admin=is_admin,
             )
+            active = view if parity.premium_plan(plan) else "home"
+            body = parity.enhance_mobile_core(body, plan=plan, active=active, query=query)
             self._send(HTTPStatus.OK, body, "text/html; charset=utf-8")
 
         def _serve_mobile_market(self, query: dict[str, list[str]]) -> None:
@@ -102,7 +117,7 @@ def make_v3321_handler(
             if not session:
                 self._redirect("/login")
                 return
-            premium = plan in {commercial.PLAN_PREMIUM, commercial.PLAN_ADMIN}
+            premium = parity.premium_plan(plan)
             data = self._safe_data()
             raw = str((query.get("symbol") or [""])[0] or "").strip().upper()
             selected = "BTCUSDT"
@@ -135,6 +150,7 @@ def make_v3321_handler(
                 selected=selected,
                 market_error=market_error,
             )
+            body = parity.enhance_mobile_market(body, plan=plan, active="market")
             self._send(HTTPStatus.OK, body, "text/html; charset=utf-8")
 
         def _serve_mobile_coin(self, query: dict[str, list[str]]) -> None:
@@ -145,7 +161,7 @@ def make_v3321_handler(
             if not session:
                 self._redirect("/login")
                 return
-            if plan not in {commercial.PLAN_PREMIUM, commercial.PLAN_ADMIN}:
+            if not parity.premium_plan(plan):
                 self._redirect("/premium")
                 return
             raw_symbol = str((query.get("symbol") or ["BTCUSDT"])[0] or "BTCUSDT")
@@ -192,6 +208,7 @@ def make_v3321_handler(
                 chart_source=chart_source,
                 market_error=market_error,
             )
+            body = parity.enhance_mobile_market(body, plan=plan, active="")
             self._send(HTTPStatus.OK, body, "text/html; charset=utf-8")
 
         def _serve_mobile_account(self) -> None:
@@ -206,12 +223,9 @@ def make_v3321_handler(
             except Exception:
                 info = {"plan": plan}
             body = mobileaccount.render_account_page(
-                session,
-                info,
-                plan=plan,
-                plan_label=label,
-                store=store,
+                session, info, plan=plan, plan_label=label, store=store
             )
+            body = parity.replace_mobile_nav(body, plan=plan, active="account")
             self._send(HTTPStatus.OK, body, "text/html; charset=utf-8")
 
         def _serve_mobile_premium(self) -> None:
@@ -229,13 +243,68 @@ def make_v3321_handler(
             settings = billing._settings()
             crypto_enabled = env_bool("PANEL_CRYPTO_PAYMENT_ENABLED", False)
             body = mobileaccount.render_premium_page(
-                session,
-                info,
-                plan=plan,
-                plan_label=label,
-                store=store,
-                settings=settings,
-                crypto_enabled=crypto_enabled,
+                session, info, plan=plan, plan_label=label, store=store,
+                settings=settings, crypto_enabled=crypto_enabled,
+            )
+            body = parity.replace_mobile_nav(
+                body, plan=plan, active="premium" if not parity.premium_plan(plan) else "account"
+            )
+            self._send(HTTPStatus.OK, body, "text/html; charset=utf-8")
+
+        def _serve_mobile_watchlist(self, query: dict[str, list[str]]) -> None:
+            session, is_admin, premium_flag, plan, label = self._identity()
+            if not session:
+                self._redirect("/login")
+                return
+            if not parity.premium_plan(plan):
+                self._redirect("/premium")
+                return
+            symbols = parity.read_watchlist(self.headers.get("Cookie"))
+            add = str((query.get("add") or [""])[0] or "")
+            remove = str((query.get("remove") or [""])[0] or "")
+            updated = parity.update_watchlist(symbols, add=add, remove=remove)
+            cookie = None
+            if updated != symbols:
+                symbols = updated
+                cookie = parity.watch_cookie(symbols, secure=config.cookie_secure)
+            try:
+                payload = overview.get_overview(symbols) if symbols else {"items": []}
+                items = [row for row in payload.get("items", []) if isinstance(row, dict)]
+            except Exception:
+                items = []
+            score_symbol = str((query.get("tech") or [""])[0] or "").upper()
+            technical = None
+            if score_symbol and score_symbol in symbols:
+                try:
+                    technical = analysis_service.get_score(score_symbol)
+                except Exception:
+                    technical = None
+            body = parity.render_watchlist_page(
+                session, plan=plan, plan_label=label, symbols=symbols, items=items,
+                data=self._safe_data(), score=technical, score_symbol=score_symbol,
+            )
+            self._send(
+                HTTPStatus.OK, body, "text/html; charset=utf-8",
+                cookies=[cookie] if cookie else None,
+            )
+
+        def _serve_mobile_opportunities(self, query: dict[str, list[str]]) -> None:
+            session, is_admin, premium_flag, plan, label = self._identity()
+            if not session:
+                self._redirect("/login")
+                return
+            if not parity.premium_plan(plan):
+                self._redirect("/premium")
+                return
+            data = self._safe_data()
+            try:
+                payload = opportunity.build_opportunity_payload(overview, data, per_group=10)
+            except Exception:
+                payload = {"summary": {}, "groups": {}}
+            rows, meta = parity.prepare_opportunities(payload, query, analysis_service)
+            summary = payload.get("summary") if isinstance(payload.get("summary"), dict) else {}
+            body = parity.render_opportunities_page(
+                session, plan=plan, plan_label=label, rows=rows, meta=meta, summary=summary
             )
             self._send(HTTPStatus.OK, body, "text/html; charset=utf-8")
 
@@ -251,18 +320,17 @@ def make_v3321_handler(
                     "version": VERSION,
                     "classic_runtime_repair": True,
                     "desktop_runtime": "V3.32.1 preserved",
+                    "surface_audit": "desktop_mobile_unauth_free_premium_admin",
                     "mobile_runtime": "server_rendered_no_javascript",
                     "mobile_main": "V3.32.3 preserved",
-                    "mobile_legacy_spa_bypassed": True,
+                    "mobile_market": "V3.32.4 preserved",
+                    "mobile_account": "V3.32.5 preserved",
+                    "mobile_navigation": "consistent_core",
+                    "mobile_filters": "server_rendered",
+                    "mobile_watchlist": "server_rendered_cookie_preference",
+                    "mobile_opportunities": "server_rendered_existing_analysis",
+                    "mobile_sound": "desktop_only_by_design",
                     "mobile_free_premium_separated": True,
-                    "mobile_progressive_disclosure": True,
-                    "mobile_primary_levels": "entry_tp1_sl",
-                    "mobile_market": "server_rendered_public_okx",
-                    "mobile_coin": "server_rendered_premium_svg",
-                    "mobile_chart": "svg_no_javascript",
-                    "mobile_account": "server_rendered_no_javascript",
-                    "mobile_premium": "server_rendered_existing_billing_backend",
-                    "mobile_renewal": "existing_7_3_1_day_rules",
                     "membership_backend": "unchanged",
                     "payment_backend": "unchanged",
                     "free_runtime": "separate_preserved",
@@ -278,7 +346,15 @@ def make_v3321_handler(
             force_coin = path == "/mobile/coin"
             force_account = path == "/mobile/account"
             force_premium = path == "/mobile/premium"
+            force_watchlist = path == "/mobile/watchlist"
+            force_opportunities = path == "/mobile/opportunities"
             detected_mobile = bool(session and mobile.mobile_request(self.headers, query))
+            if force_watchlist:
+                self._serve_mobile_watchlist(query)
+                return
+            if force_opportunities:
+                self._serve_mobile_opportunities(query)
+                return
             if path in {"/mobile/market", "/market-center"} and (force_market or detected_mobile):
                 self._serve_mobile_market(query)
                 return
@@ -299,11 +375,11 @@ def make_v3321_handler(
                 return
             return super().do_GET()
 
-    return V3325Handler
+    return V3326Handler
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Kripto Kontrol Merkezi V3.32.5 mobil ürün runtime")
+    parser = argparse.ArgumentParser(description="Kripto Kontrol Merkezi V3.32.6 yüzey paritesi")
     parser.add_argument("--host", default=os.getenv("HOST", "127.0.0.1"))
     parser.add_argument("--port", type=int, default=int(os.getenv("PORT", "8080")))
     parser.add_argument("--root", default=".")
@@ -318,7 +394,7 @@ def main() -> None:
     overview_client = market.OKXMarketOverviewClient(cache_seconds=20)
     handler = make_v3321_handler(config, service, sessions, limiter, store, candle_client, overview_client)
     server = ThreadingHTTPServer((args.host, args.port), handler)
-    print(f"{VERSION} http://{args.host}:{args.port} desktop_v3321=1 mobile_main_v3323=1 mobile_market_coin_v3324=1 mobile_account=1 signal_engine=unchanged")
+    print(f"{VERSION} http://{args.host}:{args.port} surface_parity=1 desktop_v3321=1 mobile_js=0 signal_engine=unchanged")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
