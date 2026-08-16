@@ -38,8 +38,8 @@ class SimpleVoiceUxTests(unittest.TestCase):
         node = shutil.which("node")
         if not node:
             self.skipTest("node is not available")
-        script = simplevoice.SCRIPT
-        js = script.split("\n", 1)[1].rsplit("\n</script>", 1)[0]
+        script = simplevoice.SCRIPT.strip()
+        js = script.split(">", 1)[1].rsplit("</script>", 1)[0]
         with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8", delete=False) as handle:
             handle.write(js)
             path = Path(handle.name)
