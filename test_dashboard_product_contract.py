@@ -4,6 +4,7 @@ import inspect
 import unittest
 from pathlib import Path
 
+import dashboard_accountflow_runtime_app as account_runtime
 import dashboard_app as app
 import dashboard_coin_app as coin
 import dashboard_flowux_app as flowux
@@ -17,7 +18,7 @@ import dashboard_sitewideux_app as sitewide
 
 
 class DashboardProductContractTests(unittest.TestCase):
-    """V3.32 ürün görünümünü, V3.32.1 masaüstü ve V3.32.4 mobil katmanını birlikte korur."""
+    """V3.32 ürün görünümünü, V3.32.1 masaüstü ve V3.32.6 mobil/parite katmanını birlikte korur."""
 
     def current_home_v332(self, *, premium_access: bool = True) -> str:
         body = home.home_dashboard_page(
@@ -74,11 +75,15 @@ class DashboardProductContractTests(unittest.TestCase):
         self.assertIn("Analiz ayrıntılarını göster", body)
         self.assertIn("Önce karar bilgisi", body)
 
-    def test_stable_entrypoint_remains_runtimefix_with_v3324_mobile_routes(self):
-        self.assertEqual(app.ACTIVE_MODULE, "dashboard_runtimefix_app")
-        self.assertEqual(app.VERSION, runtimefix.VERSION)
-        self.assertIs(app.make_handler, runtimefix.make_v3321_handler)
+    def test_stable_entrypoint_is_account_flow_over_runtimefix_with_v3326_routes(self):
+        self.assertEqual(app.ACTIVE_MODULE, "dashboard_accountflow_runtime_app")
+        self.assertEqual(app.VERSION, account_runtime.VERSION)
+        self.assertIs(app.make_handler, account_runtime.make_v3321_handler)
+        self.assertIn("V3_32_7_ACCOUNT_FLOW", account_runtime.VERSION)
+        self.assertIn("V3_32_6_SURFACE_PARITY", runtimefix.VERSION)
         repair_source = inspect.getsource(runtimefix)
+        account_source = inspect.getsource(account_runtime)
+        self.assertIn("runtimefix.make_v3321_handler", account_source)
         self.assertIn('_serve_mobile_market', repair_source)
         self.assertIn('_serve_mobile_coin', repair_source)
         self.assertIn('"mobile_chart": "svg_no_javascript"', repair_source)
@@ -87,11 +92,13 @@ class DashboardProductContractTests(unittest.TestCase):
         self.assertIn("dashboard_app.py", dockerfile)
         self.assertIn("dashboard_marketcoinux_app.py", dockerfile)
         self.assertIn("dashboard_runtimefix_app.py", dockerfile)
+        self.assertIn("dashboard_accountflow_runtime_app.py", dockerfile)
         self.assertIn("dashboard_mobile_market_app.py", dockerfile)
         self.assertIn('CMD ["python", "dashboard_app.py"', dockerfile)
         self.assertIn("!dashboard_app.py", dockerignore)
         self.assertIn("!dashboard_marketcoinux_app.py", dockerignore)
         self.assertIn("!dashboard_runtimefix_app.py", dockerignore)
+        self.assertIn("!dashboard_accountflow_runtime_app.py", dockerignore)
         self.assertIn("!dashboard_mobile_market_app.py", dockerignore)
 
     def test_v332_role_boundaries_remain_under_repair_and_mobile_helpers(self):
