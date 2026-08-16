@@ -8,7 +8,7 @@ WORKDIR /app
 
 RUN useradd --create-home --uid 10001 panel
 
-COPY dashboard_builder.py dashboard_live_app.py dashboard_accounts_app.py dashboard_product_app.py dashboard_market_app.py dashboard_compact_app.py dashboard_focus_app.py dashboard_focus_market_app.py dashboard_home_app.py dashboard_notify_app.py dashboard_alert_app.py dashboard_watchlist_app.py dashboard_opportunity_app.py dashboard_score_app.py dashboard_filter_app.py dashboard_route_app.py dashboard_memory_app.py dashboard_commercial_app.py dashboard_billing_app.py dashboard_adminux_app.py dashboard_freepreview_app.py dashboard_transparency_app.py dashboard_quality_app.py dashboard_quality_runtime_app.py dashboard_business_app.py dashboard_lifecycle_app.py dashboard_retention_app.py dashboard_performance_app.py dashboard_improvement_app.py dashboard_experiment_app.py dashboard_ux_app.py dashboard_coin_app.py dashboard_chartlevel_app.py dashboard_chartfix_app.py dashboard_chartcoord_app.py dashboard_livechart_app.py dashboard_tradeprogress_app.py dashboard_earlypulse_app.py dashboard_earlyperformance_app.py ./
+COPY dashboard_builder.py dashboard_live_app.py dashboard_accounts_app.py dashboard_product_app.py dashboard_market_app.py dashboard_compact_app.py dashboard_focus_app.py dashboard_focus_market_app.py dashboard_home_app.py dashboard_notify_app.py dashboard_alert_app.py dashboard_watchlist_app.py dashboard_opportunity_app.py dashboard_score_app.py dashboard_filter_app.py dashboard_route_app.py dashboard_memory_app.py dashboard_commercial_app.py dashboard_billing_app.py dashboard_adminux_app.py dashboard_freepreview_app.py dashboard_transparency_app.py dashboard_quality_app.py dashboard_quality_runtime_app.py dashboard_business_app.py dashboard_lifecycle_app.py dashboard_retention_app.py dashboard_performance_app.py dashboard_improvement_app.py dashboard_experiment_app.py dashboard_ux_app.py dashboard_coin_app.py dashboard_chartlevel_app.py dashboard_chartfix_app.py dashboard_chartcoord_app.py dashboard_livechart_app.py dashboard_tradeprogress_app.py dashboard_earlypulse_app.py dashboard_earlyperformance_app.py dashboard_systemquality_app.py ./
 
 USER panel
 
@@ -17,4 +17,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3).read()"
 
-CMD ["python", "dashboard_earlyperformance_app.py", "--host", "0.0.0.0"]
+CMD ["python", "dashboard_systemquality_app.py", "--host", "0.0.0.0"]
