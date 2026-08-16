@@ -39,6 +39,52 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: CANLI Render V3.32.8 watchlist senkronunu doğrula
+        run: |
+          python - <<'PY'
+          import json
+          import time
+          import urllib.request
+
+          url = "https://kripto-kontrol-paneli.onrender.com/healthz"
+          expected = {
+              "version": "KRIPTO_KONTROL_MERKEZI_V3_32_8_WATCHLIST_SYNC_2026_08_16",
+              "watchlist_sync": "managed_account_cross_device",
+              "watchlist_first_migration": "browser_favorites_preserved_once",
+              "watchlist_mobile_write": "csrf_post",
+              "watchlist_unmanaged_fallback": "device_local_preserved",
+              "account_password_change": "current_password_required_all_sessions_revoked",
+              "payment_feedback": "user_visible_fixed_codes",
+              "signal_engine": "unchanged",
+              "telegram": "unchanged",
+              "trade_management": "unchanged",
+              "ledger_write": "unchanged",
+          }
+          last = None
+          for attempt in range(1, 25):
+              try:
+                  with urllib.request.urlopen(url, timeout=20) as response:
+                      status = response.status
+                      payload = json.loads(response.read().decode("utf-8"))
+                  last = payload
+                  errors = [f"HTTP={status}"] if status != 200 else []
+                  for key, value in expected.items():
+                      if payload.get(key) != value:
+                          errors.append(f"{key}={payload.get(key)!r}")
+                  if payload.get("mobile_free_premium_separated") is not True:
+                      errors.append("mobile_free_premium_separated!=true")
+                  if payload.get("classic_runtime_repair") is not True:
+                      errors.append("classic_runtime_repair!=true")
+                  if not errors:
+                      print("CANLI_RENDER_OK", payload["version"])
+                      print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+                      raise SystemExit(0)
+                  print(f"Deneme {attempt}: Render henüz beklenen sürümde değil: " + ", ".join(errors))
+              except Exception as exc:
+                  print(f"Deneme {attempt}: canlı erişim hatası: {exc}")
+              time.sleep(10)
+          raise SystemExit("CANLI_RENDER_DOGRULAMA_BASARISIZ last=" + repr(last))
+          PY
       - name: Panel Python dosyalarını derle
         run: python -m py_compile dashboard_*.py test_dashboard_*.py
       - name: Statik ve canlı panel testlerini çalıştır
