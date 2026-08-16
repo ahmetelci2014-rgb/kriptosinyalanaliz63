@@ -4,6 +4,7 @@ import inspect
 import unittest
 from pathlib import Path
 
+import dashboard_accountflow_runtime_app as account_runtime
 import dashboard_app as app
 import dashboard_commercial_app as commercial
 import dashboard_mobile_server_app as mobile
@@ -137,11 +138,12 @@ class DashboardSurfaceParityTests(unittest.TestCase):
         self.assertIn("Masaüstünde sesli ve renkli yeni sinyal uyarısı", fixed)
         self.assertIn("(masaüstü)", fixed)
 
-    def test_runtime_contract_adds_only_read_only_surface_parity(self):
+    def test_runtime_contract_keeps_v3326_surface_parity_under_account_flow(self):
         source = inspect.getsource(runtimefix)
         helper = inspect.getsource(parity)
-        self.assertEqual(app.ACTIVE_MODULE, "dashboard_runtimefix_app")
-        self.assertEqual(app.VERSION, runtimefix.VERSION)
+        self.assertEqual(app.ACTIVE_MODULE, "dashboard_accountflow_runtime_app")
+        self.assertEqual(app.VERSION, account_runtime.VERSION)
+        self.assertIn("V3_32_7_ACCOUNT_FLOW", account_runtime.VERSION)
         self.assertIn("V3_32_6_SURFACE_PARITY", runtimefix.VERSION)
         self.assertIn('_serve_mobile_watchlist', source)
         self.assertIn('_serve_mobile_opportunities', source)
