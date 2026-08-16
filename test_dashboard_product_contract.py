@@ -11,6 +11,7 @@ import dashboard_home_app as home
 import dashboard_market_app as market
 import dashboard_marketcoinux_app as marketcoin
 import dashboard_roleboundary_app as roleux
+import dashboard_simplevoice_app as simplevoice
 import dashboard_sitewideux_app as sitewide
 
 
@@ -29,6 +30,7 @@ class DashboardProductContractTests(unittest.TestCase):
         body = flowux.enhance_flow_ui(body, "nonce-contract", premium_access=True)
         body = roleux.enhance_role_ui(body, "nonce-contract", is_admin=False)
         body = marketcoin.enhance_root_navigation(body, "nonce-contract", premium_access=True)
+        body = simplevoice.enhance_simple_voice_ui(body, "nonce-contract")
 
         self.assertIn('id="homeSmartMetrics"', body)
         self.assertIn('id="v324SignalGuide"', body)
@@ -37,10 +39,13 @@ class DashboardProductContractTests(unittest.TestCase):
         self.assertIn('id="v329-flow-script"', body)
         self.assertIn('id="v331-role-script"', body)
         self.assertIn('id="v332-marketcoin-script"', body)
+        self.assertIn('id="v333-simplevoice-script"', body)
         self.assertIn('id="page-signals"', body)
         self.assertIn('id="page-trades"', body)
         self.assertIn('id="page-results"', body)
         self.assertIn("Daha fazla bilgi", body)
+        self.assertIn("Sesli bildirim kapalı", body)
+        self.assertIn("v333Status", body)
 
     def test_real_market_template_keeps_free_access_and_symbol_deeplink(self):
         body = market.market_center_page("nonce-contract")
@@ -67,20 +72,25 @@ class DashboardProductContractTests(unittest.TestCase):
         self.assertIn("Önce karar bilgisi", body)
 
     def test_stable_entrypoint_points_to_current_safe_runtime(self):
-        self.assertEqual(app.ACTIVE_MODULE, "dashboard_marketcoinux_app")
-        self.assertEqual(app.VERSION, marketcoin.VERSION)
-        self.assertIs(app.make_handler, marketcoin.make_v332_handler)
+        self.assertEqual(app.ACTIVE_MODULE, "dashboard_simplevoice_app")
+        self.assertEqual(app.VERSION, simplevoice.VERSION)
+        self.assertIs(app.make_handler, simplevoice.make_v333_handler)
 
         dockerfile = Path("Dockerfile.dashboard").read_text(encoding="utf-8")
         dockerignore = Path(".dockerignore").read_text(encoding="utf-8")
         self.assertIn("dashboard_app.py", dockerfile)
+        self.assertIn("dashboard_simplevoice_app.py", dockerfile)
         self.assertIn('CMD ["python", "dashboard_app.py"', dockerfile)
         self.assertIn("!dashboard_app.py", dockerignore)
+        self.assertIn("!dashboard_simplevoice_app.py", dockerignore)
 
     def test_latest_runtime_remains_presentation_only(self):
-        source = inspect.getsource(marketcoin)
+        source = inspect.getsource(simplevoice)
         self.assertNotIn("def do_POST", source)
-        self.assertIn("roleux.make_v331_handler", source)
+        self.assertIn("marketcoin.make_v332_handler", source)
+        self.assertIn('"market_coin_ux": "preserved"', source)
+        self.assertIn('"role_boundary": "preserved"', source)
+        self.assertIn('"account_ux": "preserved"', source)
         self.assertIn('"signal_engine": "unchanged"', source)
         self.assertIn('"telegram": "unchanged"', source)
         self.assertIn('"trade_management": "unchanged"', source)
