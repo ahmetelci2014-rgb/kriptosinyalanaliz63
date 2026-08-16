@@ -11,11 +11,12 @@ import dashboard_home_app as home
 import dashboard_market_app as market
 import dashboard_marketcoinux_app as marketcoin
 import dashboard_roleboundary_app as roleux
+import dashboard_runtimefix_app as runtimefix
 import dashboard_sitewideux_app as sitewide
 
 
 class DashboardProductContractTests(unittest.TestCase):
-    """Aktif ürün runtime'ının V3.32 sağlam sınırlarında kalmasını korur."""
+    """V3.32 ürün görünümünü ve V3.32.1 runtime onarımını birlikte korur."""
 
     def current_home_v332(self, *, premium_access: bool = True) -> str:
         body = home.home_dashboard_page(
@@ -28,8 +29,9 @@ class DashboardProductContractTests(unittest.TestCase):
         body = marketcoin.enhance_root_navigation(body, "nonce-contract", premium_access=premium_access)
         return body
 
-    def test_real_home_stops_at_v332_product_layers(self):
+    def test_real_home_keeps_v332_product_layers_and_runtime_repair(self):
         body = self.current_home_v332(premium_access=True)
+        body = runtimefix.enhance_runtime_repair(body, "nonce-contract")
         self.assertIn('id="homeSmartMetrics"', body)
         self.assertIn('id="v324SignalGuide"', body)
         self.assertIn('id="v326DataHealth"', body)
@@ -37,6 +39,7 @@ class DashboardProductContractTests(unittest.TestCase):
         self.assertIn('id="v329-flow-script"', body)
         self.assertIn('id="v331-role-script"', body)
         self.assertIn('id="v332-marketcoin-script"', body)
+        self.assertIn('id="v3321-runtime-repair-script"', body)
         self.assertIn('id="page-signals"', body)
         self.assertIn('id="page-trades"', body)
         self.assertIn('id="page-results"', body)
@@ -49,7 +52,6 @@ class DashboardProductContractTests(unittest.TestCase):
         base = market.market_center_page("nonce-contract")
         free_body = marketcoin.enhance_market_page(base, "nonce-contract", premium_access=False)
         premium_body = marketcoin.enhance_market_page(base, "nonce-contract", premium_access=True)
-
         self.assertIn("/api/market/overview", free_body)
         self.assertIn("/api/market/candles", free_body)
         self.assertIn("new URLSearchParams(location.search).get('symbol')", free_body)
@@ -71,33 +73,33 @@ class DashboardProductContractTests(unittest.TestCase):
         self.assertIn("Analiz ayrıntılarını göster", body)
         self.assertIn("Önce karar bilgisi", body)
 
-    def test_stable_entrypoint_is_intentional_v332_rollback(self):
-        self.assertEqual(app.ACTIVE_MODULE, "dashboard_marketcoinux_app")
-        self.assertEqual(app.VERSION, marketcoin.VERSION)
-        self.assertIs(app.make_handler, marketcoin.make_v332_handler)
-
+    def test_stable_entrypoint_is_v3321_runtime_repair(self):
+        self.assertEqual(app.ACTIVE_MODULE, "dashboard_runtimefix_app")
+        self.assertEqual(app.VERSION, runtimefix.VERSION)
+        self.assertIs(app.make_handler, runtimefix.make_v3321_handler)
         dockerfile = Path("Dockerfile.dashboard").read_text(encoding="utf-8")
         dockerignore = Path(".dockerignore").read_text(encoding="utf-8")
         self.assertIn("dashboard_app.py", dockerfile)
         self.assertIn("dashboard_marketcoinux_app.py", dockerfile)
+        self.assertIn("dashboard_runtimefix_app.py", dockerfile)
         self.assertIn('CMD ["python", "dashboard_app.py"', dockerfile)
         self.assertIn("!dashboard_app.py", dockerignore)
         self.assertIn("!dashboard_marketcoinux_app.py", dockerignore)
+        self.assertIn("!dashboard_runtimefix_app.py", dockerignore)
 
-    def test_v332_runtime_preserves_role_and_core_boundaries(self):
+    def test_v332_role_boundaries_remain_under_repair(self):
         source = inspect.getsource(marketcoin)
-        self.assertNotIn("def do_POST", source)
+        repair_source = inspect.getsource(runtimefix)
         self.assertIn("roleux.make_v331_handler", source)
         self.assertIn("premium_access = bool(self._is_premium(session))", source)
         self.assertIn('path == "/coin-center" and premium_access', source)
-        self.assertIn('"free_market_access": "preserved"', source)
-        self.assertIn('"coin_center_premium_guard": "preserved"', source)
-        self.assertIn('"role_boundary": "preserved"', source)
-        self.assertIn('"account_ux": "preserved"', source)
-        self.assertIn('"signal_engine": "unchanged"', source)
-        self.assertIn('"telegram": "unchanged"', source)
-        self.assertIn('"trade_management": "unchanged"', source)
-        self.assertIn('"ledger_write": "unchanged"', source)
+        self.assertIn("session and self._is_premium(session)", repair_source)
+        self.assertNotIn("def do_POST", repair_source)
+        self.assertIn('"free_runtime":"separate_preserved"', repair_source)
+        self.assertIn('"signal_engine":"unchanged"', repair_source)
+        self.assertIn('"telegram":"unchanged"', repair_source)
+        self.assertIn('"trade_management":"unchanged"', repair_source)
+        self.assertIn('"ledger_write":"unchanged"', repair_source)
 
 
 if __name__ == "__main__":
