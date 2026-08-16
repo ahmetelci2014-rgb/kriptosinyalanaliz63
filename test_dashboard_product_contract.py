@@ -14,6 +14,7 @@ import dashboard_mobileux_app as mobile
 import dashboard_roleboundary_app as roleux
 import dashboard_simplevoice_app as simplevoice
 import dashboard_sitewideux_app as sitewide
+import dashboard_touchguard_app as touch
 
 
 class DashboardProductContractTests(unittest.TestCase):
@@ -33,6 +34,7 @@ class DashboardProductContractTests(unittest.TestCase):
         body = marketcoin.enhance_root_navigation(body, "nonce-contract", premium_access=True)
         body = simplevoice.enhance_simple_voice_ui(body, "nonce-contract")
         body = mobile.enhance_mobile_ui(body, "nonce-contract")
+        body = touch.enhance_touch_guard(body, "nonce-contract")
 
         self.assertIn('id="homeSmartMetrics"', body)
         self.assertIn('id="v324SignalGuide"', body)
@@ -43,6 +45,7 @@ class DashboardProductContractTests(unittest.TestCase):
         self.assertIn('id="v332-marketcoin-script"', body)
         self.assertIn('id="v333-simplevoice-script"', body)
         self.assertIn('id="v334-mobile-script"', body)
+        self.assertIn('id="v335-touchguard-script"', body)
         self.assertIn('id="page-signals"', body)
         self.assertIn('id="page-trades"', body)
         self.assertIn('id="page-results"', body)
@@ -50,6 +53,7 @@ class DashboardProductContractTests(unittest.TestCase):
         self.assertIn("Sesli bildirim kapalı", body)
         self.assertIn("v333Status", body)
         self.assertIn('body .mobile-nav a[href="/market-center"]{display:flex!important}', body)
+        self.assertIn('.focus-overlay:not(.open),.notify-overlay:not(.open)', body)
 
     def test_real_market_template_keeps_free_access_and_symbol_deeplink(self):
         body = market.market_center_page("nonce-contract")
@@ -76,24 +80,27 @@ class DashboardProductContractTests(unittest.TestCase):
         self.assertIn("Önce karar bilgisi", body)
 
     def test_stable_entrypoint_points_to_current_safe_runtime(self):
-        self.assertEqual(app.ACTIVE_MODULE, "dashboard_mobileux_app")
-        self.assertEqual(app.VERSION, mobile.VERSION)
-        self.assertIs(app.make_handler, mobile.make_v334_handler)
+        self.assertEqual(app.ACTIVE_MODULE, "dashboard_touchguard_app")
+        self.assertEqual(app.VERSION, touch.VERSION)
+        self.assertIs(app.make_handler, touch.make_v335_handler)
 
         dockerfile = Path("Dockerfile.dashboard").read_text(encoding="utf-8")
         dockerignore = Path(".dockerignore").read_text(encoding="utf-8")
         self.assertIn("dashboard_app.py", dockerfile)
         self.assertIn("dashboard_simplevoice_app.py", dockerfile)
         self.assertIn("dashboard_mobileux_app.py", dockerfile)
+        self.assertIn("dashboard_touchguard_app.py", dockerfile)
         self.assertIn('CMD ["python", "dashboard_app.py"', dockerfile)
         self.assertIn("!dashboard_app.py", dockerignore)
         self.assertIn("!dashboard_simplevoice_app.py", dockerignore)
         self.assertIn("!dashboard_mobileux_app.py", dockerignore)
+        self.assertIn("!dashboard_touchguard_app.py", dockerignore)
 
     def test_latest_runtime_remains_presentation_only(self):
-        source = inspect.getsource(mobile)
+        source = inspect.getsource(touch)
         self.assertNotIn("def do_POST", source)
-        self.assertIn("voice.make_v333_handler", source)
+        self.assertIn("mobile.make_v334_handler", source)
+        self.assertIn('"mobile_repair": "preserved"', source)
         self.assertIn('"simple_voice": "preserved"', source)
         self.assertIn('"market_coin_ux": "preserved"', source)
         self.assertIn('"role_boundary": "preserved"', source)
