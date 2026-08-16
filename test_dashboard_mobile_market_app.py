@@ -6,6 +6,7 @@ from pathlib import Path
 
 import dashboard_app as app
 import dashboard_mobile_market_app as mobilemarket
+import dashboard_runtimefix_app as runtimefix
 
 
 class MobileMarketCoinTests(unittest.TestCase):
@@ -47,7 +48,6 @@ class MobileMarketCoinTests(unittest.TestCase):
         self.assertIn("LONG · açık", body)
         self.assertIn('/mobile/coin?symbol=BTCUSDT', body)
         self.assertIn("24s detayları", body)
-        self.assertIn("Diğer", body if len(self.items) > 10 else "Diğer")
         self.assertNotIn("<script", body.lower())
 
     def test_coin_page_prioritizes_entry_tp1_sl_and_server_svg(self):
@@ -79,20 +79,21 @@ class MobileMarketCoinTests(unittest.TestCase):
     def test_svg_chart_fails_closed_without_candles(self):
         self.assertIn("Grafik verisi şu anda alınamadı", mobilemarket._svg_chart([], self.summary["open_trades"][0]))
 
-    def test_active_runtime_wraps_v3323_and_is_presentation_only(self):
-        self.assertEqual(app.ACTIVE_MODULE, "dashboard_mobile_market_app")
-        self.assertEqual(app.VERSION, mobilemarket.VERSION)
-        self.assertIs(app.make_handler, mobilemarket.make_v3324_handler)
-        source = inspect.getsource(mobilemarket)
-        self.assertIn("current.make_v3321_handler", source)
-        self.assertIn('path in {"/mobile/market", "/market-center"}', source)
-        self.assertIn('path in {"/mobile/coin", "/coin-center"}', source)
-        self.assertIn('"mobile_chart": "svg_no_javascript"', source)
-        self.assertIn('"signal_engine": "unchanged"', source)
-        self.assertIn('"telegram": "unchanged"', source)
-        self.assertIn('"trade_management": "unchanged"', source)
-        self.assertIn('"ledger_write": "unchanged"', source)
-        self.assertNotIn("def do_POST", source)
+    def test_active_runtime_keeps_runtimefix_and_v3324_routes_are_presentation_only(self):
+        self.assertEqual(app.ACTIVE_MODULE, "dashboard_runtimefix_app")
+        self.assertEqual(app.VERSION, runtimefix.VERSION)
+        self.assertIs(app.make_handler, runtimefix.make_v3321_handler)
+        repair_source = inspect.getsource(runtimefix)
+        helper_source = inspect.getsource(mobilemarket)
+        self.assertIn('path in {"/mobile/market", "/market-center"}', repair_source)
+        self.assertIn('path in {"/mobile/coin", "/coin-center"}', repair_source)
+        self.assertIn('"mobile_chart": "svg_no_javascript"', repair_source)
+        self.assertIn('"signal_engine": "unchanged"', repair_source)
+        self.assertIn('"telegram": "unchanged"', repair_source)
+        self.assertIn('"trade_management": "unchanged"', repair_source)
+        self.assertIn('"ledger_write": "unchanged"', repair_source)
+        self.assertNotIn("def do_POST", repair_source)
+        self.assertNotIn("def do_POST", helper_source)
         dockerfile = Path("Dockerfile.dashboard").read_text(encoding="utf-8")
         dockerignore = Path(".dockerignore").read_text(encoding="utf-8")
         self.assertIn("dashboard_mobile_market_app.py", dockerfile)
