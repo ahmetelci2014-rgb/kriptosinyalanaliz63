@@ -126,6 +126,7 @@ class MobileServerTests(unittest.TestCase):
         self.assertNotIn("BTCUSDT", body)
         self.assertNotIn("ETHUSDT", body)
         self.assertNotIn('/mobile?view=signals', body)
+        self.assertNotIn('href="/coin-center', body)
         self.assertNotIn("<script", body.lower())
 
     def test_free_and_premium_outputs_are_materially_different(self):
@@ -134,8 +135,8 @@ class MobileServerTests(unittest.TestCase):
         self.assertNotEqual(free, premium)
         self.assertNotIn("Giriş</small>", free)
         self.assertIn("Giriş</small>", premium)
-        self.assertNotIn("Coin Merkezi", free)
-        self.assertIn("Coin Merkezi", premium)
+        self.assertNotIn('href="/coin-center', free)
+        self.assertIn('href="/coin-center', premium)
 
     def test_admin_has_management_link(self):
         body = mobile.mobile_page(self.session, self.data, plan="ADMIN", plan_label="Yönetici", view="home", is_admin=True)
