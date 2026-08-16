@@ -3,7 +3,8 @@ name: Momentum Shadow v1
 on:
   workflow_dispatch:
   schedule:
-    - cron: "3-58/5 * * * *"
+    # Maliyet kontrollü gölge örnekleme: 6 saatte bir.
+    - cron: "43 1,7,13,19 * * *"
 
 permissions:
   contents: write
