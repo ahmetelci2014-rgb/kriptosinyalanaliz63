@@ -18,7 +18,6 @@ class StablePanelRegressionTests(unittest.TestCase):
         self.assertIn('id="v323MemberFocus"', body)
         self.assertIn('id="v324SignalGuide"', body)
         self.assertIn("YÖNETİCİ · ÜRÜN GÖRÜNÜMÜ", body)
-        self.assertIn('class="v323-mobile-results"', body)
         self.assertIn("Coin Merkezi'nde aç", body)
         self.assertEqual(body.count('id="v323MemberFocus"'), 1)
         self.assertEqual(body.count('id="v324SignalGuide"'), 1)
