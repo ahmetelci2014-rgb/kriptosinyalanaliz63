@@ -5,6 +5,7 @@ import time
 import unittest
 from pathlib import Path
 
+import dashboard_accountflow_runtime_app as account_runtime
 import dashboard_app as app
 import dashboard_commercial_app as commercial
 import dashboard_mobile_account_app as mobileaccount
@@ -113,23 +114,33 @@ class MobileAccountTests(unittest.TestCase):
         self.assertIn("Premium üyeliğin aktif", body)
         self.assertNotIn('action="/payment/notify"', body)
 
-    def test_runtime_routes_mobile_account_without_defining_post(self):
-        self.assertEqual(app.ACTIVE_MODULE, "dashboard_runtimefix_app")
-        self.assertEqual(app.VERSION, runtimefix.VERSION)
-        self.assertIs(app.make_handler, runtimefix.make_v3321_handler)
-        source = inspect.getsource(runtimefix)
-        self.assertIn("_serve_mobile_account", source)
-        self.assertIn("_serve_mobile_premium", source)
-        self.assertIn('path in {"/mobile/account", "/account"}', source)
-        self.assertIn('path in {"/mobile/premium", "/premium"}', source)
-        self.assertIn('"mobile_account": "server_rendered_no_javascript"', source)
-        self.assertIn('"membership_backend": "unchanged"', source)
-        self.assertIn('"payment_backend": "unchanged"', source)
-        self.assertNotIn("def do_POST", source)
+    def test_runtime_routes_mobile_account_and_keeps_v3326_presentation_boundary(self):
+        self.assertEqual(app.ACTIVE_MODULE, "dashboard_accountflow_runtime_app")
+        self.assertEqual(app.VERSION, account_runtime.VERSION)
+        self.assertIs(app.make_handler, account_runtime.make_v3321_handler)
+        self.assertIn("V3_32_7_ACCOUNT_FLOW", account_runtime.VERSION)
+        self.assertIn("V3_32_6_SURFACE_PARITY", runtimefix.VERSION)
+        repair_source = inspect.getsource(runtimefix)
+        account_source = inspect.getsource(account_runtime)
+        mobile_source = inspect.getsource(mobileaccount)
+        self.assertIn("_serve_mobile_account", repair_source)
+        self.assertIn("_serve_mobile_premium", repair_source)
+        self.assertIn('path in {"/mobile/account", "/account"}', repair_source)
+        self.assertIn('path in {"/mobile/premium", "/premium"}', repair_source)
+        self.assertIn('"mobile_account": "server_rendered_no_javascript"', repair_source)
+        self.assertIn('"membership_backend": "unchanged"', repair_source)
+        self.assertIn('"payment_backend": "unchanged"', repair_source)
+        self.assertNotIn("def do_POST", repair_source)
+        self.assertNotIn("def do_POST", mobile_source)
+        self.assertIn("def do_POST", account_source)
+        self.assertIn('path == "/account/password"', account_source)
+        self.assertIn('path == "/payment/notify"', account_source)
         dockerfile = Path("Dockerfile.dashboard").read_text(encoding="utf-8")
         dockerignore = Path(".dockerignore").read_text(encoding="utf-8")
         self.assertIn("dashboard_mobile_account_app.py", dockerfile)
+        self.assertIn("dashboard_accountflow_runtime_app.py", dockerfile)
         self.assertIn("!dashboard_mobile_account_app.py", dockerignore)
+        self.assertIn("!dashboard_accountflow_runtime_app.py", dockerignore)
 
 
 if __name__ == "__main__":
