@@ -3,7 +3,8 @@ name: Ana Trend Pozisyon Shadow
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 * * * *"
+    # Maliyet kontrollü gölge örnekleme: 6 saatte bir.
+    - cron: "3 2,8,14,20 * * *"
 
 permissions:
   contents: write
