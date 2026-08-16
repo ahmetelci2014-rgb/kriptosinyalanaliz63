@@ -74,12 +74,14 @@ class DashboardProductContractTests(unittest.TestCase):
         self.assertIn("Analiz ayrıntılarını göster", body)
         self.assertIn("Önce karar bilgisi", body)
 
-    def test_stable_entrypoint_is_v3324_mobile_wrapper_over_v3321_repair(self):
-        self.assertEqual(app.ACTIVE_MODULE, "dashboard_mobile_market_app")
-        self.assertEqual(app.VERSION, mobilemarket.VERSION)
-        self.assertIs(app.make_handler, mobilemarket.make_v3324_handler)
-        mobile_source = inspect.getsource(mobilemarket)
-        self.assertIn("current.make_v3321_handler", mobile_source)
+    def test_stable_entrypoint_remains_runtimefix_with_v3324_mobile_routes(self):
+        self.assertEqual(app.ACTIVE_MODULE, "dashboard_runtimefix_app")
+        self.assertEqual(app.VERSION, runtimefix.VERSION)
+        self.assertIs(app.make_handler, runtimefix.make_v3321_handler)
+        repair_source = inspect.getsource(runtimefix)
+        self.assertIn('_serve_mobile_market', repair_source)
+        self.assertIn('_serve_mobile_coin', repair_source)
+        self.assertIn('"mobile_chart": "svg_no_javascript"', repair_source)
         dockerfile = Path("Dockerfile.dashboard").read_text(encoding="utf-8")
         dockerignore = Path(".dockerignore").read_text(encoding="utf-8")
         self.assertIn("dashboard_app.py", dockerfile)
@@ -92,7 +94,7 @@ class DashboardProductContractTests(unittest.TestCase):
         self.assertIn("!dashboard_runtimefix_app.py", dockerignore)
         self.assertIn("!dashboard_mobile_market_app.py", dockerignore)
 
-    def test_v332_role_boundaries_remain_under_repair_and_mobile_wrapper(self):
+    def test_v332_role_boundaries_remain_under_repair_and_mobile_helpers(self):
         source = inspect.getsource(marketcoin)
         repair_source = inspect.getsource(runtimefix)
         mobile_source = inspect.getsource(mobilemarket)
@@ -103,14 +105,12 @@ class DashboardProductContractTests(unittest.TestCase):
         self.assertNotIn("def do_POST", repair_source)
         self.assertNotIn("def do_POST", mobile_source)
         self.assertIn('"free_runtime":"separate_preserved"', repair_source)
-        self.assertIn('"signal_engine":"unchanged"', repair_source)
-        self.assertIn('"telegram":"unchanged"', repair_source)
-        self.assertIn('"trade_management":"unchanged"', repair_source)
-        self.assertIn('"ledger_write":"unchanged"', repair_source)
-        self.assertIn('"signal_engine": "unchanged"', mobile_source)
-        self.assertIn('"telegram": "unchanged"', mobile_source)
-        self.assertIn('"trade_management": "unchanged"', mobile_source)
-        self.assertIn('"ledger_write": "unchanged"', mobile_source)
+        self.assertIn('"signal_engine": "unchanged"', repair_source)
+        self.assertIn('"telegram": "unchanged"', repair_source)
+        self.assertIn('"trade_management": "unchanged"', repair_source)
+        self.assertIn('"ledger_write": "unchanged"', repair_source)
+        self.assertIn("render_market_page", mobile_source)
+        self.assertIn("render_coin_page", mobile_source)
 
 
 if __name__ == "__main__":
