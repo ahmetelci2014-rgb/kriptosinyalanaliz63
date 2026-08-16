@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 import inspect
+import shutil
+import subprocess
+import tempfile
 import unittest
+from pathlib import Path
 
 import dashboard_alert_app as alert
 import dashboard_simplevoice_app as simplevoice
@@ -29,6 +33,27 @@ class SimpleVoiceUxTests(unittest.TestCase):
         self.assertIn('nonce="nonce-voice"', enhanced)
         self.assertIn('id="soundToggle"', enhanced)
         self.assertIn('id="notifyDrawer"', enhanced)
+
+    def test_browser_script_has_valid_javascript_syntax_when_node_is_available(self):
+        node = shutil.which("node")
+        if not node:
+            self.skipTest("node is not available")
+        script = simplevoice.SCRIPT
+        js = script.split("\n", 1)[1].rsplit("\n</script>", 1)[0]
+        with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8", delete=False) as handle:
+            handle.write(js)
+            path = Path(handle.name)
+        try:
+            result = subprocess.run(
+                [node, "--check", str(path)],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
+        finally:
+            path.unlink(missing_ok=True)
 
     def test_first_load_is_silent_and_only_new_events_are_announced(self):
         source = inspect.getsource(simplevoice)
