@@ -1,8 +1,8 @@
 """Kripto Kontrol Merkezi - sabit uygulama giriş noktası.
 
-Aktif ürün görünümü V3.32 olarak korunur. V3.32.1 yalnız klasik Premium/Admin
-panelde kırılan istemci runtime'ı için bağımsız navigasyon ve veri yükleme onarımı
-ekler; FREE/PREMIUM sınırları ve canlı işlem çekirdeği değiştirilmez.
+Aktif ürün görünümü V3.32 tabanında kalır. Runtimefix katmanı masaüstünde mevcut
+çalışan klasik paneli korur; mobilde plan-aware sunucu görünümünü devreye alır.
+FREE/PREMIUM/ADMIN sınırları ve canlı işlem çekirdeği değiştirilmez.
 """
 from __future__ import annotations
 
