@@ -11,15 +11,15 @@ import dashboard_runtimefix_app as runtimefix
 
 
 class DashboardV332RollbackTests(unittest.TestCase):
-    def test_active_runtime_keeps_v332_under_repair_and_mobile_wrapper(self):
-        self.assertEqual(app.ACTIVE_MODULE, "dashboard_mobile_market_app")
-        self.assertEqual(app.VERSION, mobilemarket.VERSION)
-        self.assertIs(app.make_handler, mobilemarket.make_v3324_handler)
+    def test_active_runtime_keeps_v332_under_repair_with_v3324_mobile_routes(self):
+        self.assertEqual(app.ACTIVE_MODULE, "dashboard_runtimefix_app")
+        self.assertEqual(app.VERSION, runtimefix.VERSION)
+        self.assertIs(app.make_handler, runtimefix.make_v3321_handler)
         repair_source = inspect.getsource(runtimefix)
-        mobile_source = inspect.getsource(mobilemarket)
         self.assertIn("v332.make_v332_handler", repair_source)
         self.assertIn("session and self._is_premium(session)", repair_source)
-        self.assertIn("current.make_v3321_handler", mobile_source)
+        self.assertIn("_serve_mobile_market", repair_source)
+        self.assertIn("_serve_mobile_coin", repair_source)
 
     def test_free_and_premium_market_layers_are_different(self):
         base = market.market_center_page("nonce")
@@ -29,7 +29,7 @@ class DashboardV332RollbackTests(unittest.TestCase):
         self.assertIn("const PREMIUM=true", premium_body)
         self.assertNotEqual(free_body, premium_body)
 
-    def test_v332_repair_and_mobile_wrapper_do_not_write_core_or_membership_data(self):
+    def test_v332_repair_and_mobile_helpers_do_not_write_core_or_membership_data(self):
         source = inspect.getsource(v332)
         repair_source = inspect.getsource(runtimefix)
         mobile_source = inspect.getsource(mobilemarket)
@@ -44,10 +44,8 @@ class DashboardV332RollbackTests(unittest.TestCase):
         self.assertIn('"telegram":"unchanged"', repair_source)
         self.assertIn('"trade_management":"unchanged"', repair_source)
         self.assertIn('"ledger_write":"unchanged"', repair_source)
-        self.assertIn('"signal_engine": "unchanged"', mobile_source)
-        self.assertIn('"telegram": "unchanged"', mobile_source)
-        self.assertIn('"trade_management": "unchanged"', mobile_source)
-        self.assertIn('"ledger_write": "unchanged"', mobile_source)
+        self.assertIn("render_market_page", mobile_source)
+        self.assertIn("render_coin_page", mobile_source)
 
 
 if __name__ == "__main__":
