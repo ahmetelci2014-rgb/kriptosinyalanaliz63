@@ -7,12 +7,12 @@ satırı ilerletilir; canlı sinyal motoruna dokunulmaz.
 """
 from __future__ import annotations
 
-from dashboard_mobile_recovery_app import VERSION as ACTIVE_VERSION
-from dashboard_mobile_recovery_app import main as _active_main
-from dashboard_mobile_recovery_app import make_v336_handler as make_handler
+from dashboard_mobile_safe_app import VERSION as ACTIVE_VERSION
+from dashboard_mobile_safe_app import main as _active_main
+from dashboard_mobile_safe_app import make_v337_handler as make_handler
 
 VERSION = ACTIVE_VERSION
-ACTIVE_MODULE = "dashboard_mobile_recovery_app"
+ACTIVE_MODULE = "dashboard_mobile_safe_app"
 
 
 def main() -> None:
