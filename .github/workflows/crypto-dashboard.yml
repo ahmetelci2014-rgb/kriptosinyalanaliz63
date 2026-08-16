@@ -39,6 +39,62 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: CANLI Render V3.32.7 hesap ve parite akışını doğrula
+        run: |
+          URL="https://kripto-kontrol-paneli.onrender.com/healthz"
+          for attempt in $(seq 1 24); do
+            BODY="$(curl -fsS --max-time 20 "$URL" || true)"
+            echo "Canlı Render kontrolü: deneme ${attempt}/24"
+            if LIVE_BODY="$BODY" python - <<'PY'
+          import json
+          import os
+          import sys
+
+          raw = os.environ.get("LIVE_BODY", "")
+          try:
+              data = json.loads(raw)
+          except Exception:
+              print("Canlı health henüz geçerli JSON vermedi")
+              raise SystemExit(1)
+
+          expected = {
+              "status": "ok",
+              "version": "KRIPTO_KONTROL_MERKEZI_V3_32_7_ACCOUNT_FLOW_2026_08_16",
+              "surface_audit": "desktop_mobile_unauth_free_premium_admin",
+              "journey_audit": "visitor_register_free_upgrade_premium_renew_admin",
+              "mobile_runtime": "server_rendered_no_javascript",
+              "mobile_navigation": "consistent_core",
+              "mobile_filters": "server_rendered",
+              "mobile_watchlist": "server_rendered_cookie_preference",
+              "mobile_opportunities": "server_rendered_existing_analysis",
+              "mobile_free_premium_separated": True,
+              "account_password_change": "current_password_required_all_sessions_revoked",
+              "password_recovery": "not_enabled_without_verified_identity",
+              "payment_feedback": "user_visible_fixed_codes",
+              "membership_backend": "unchanged",
+              "payment_backend": "unchanged",
+              "free_runtime": "separate_preserved",
+              "premium_dashboard_api": "preserved",
+              "signal_engine": "unchanged",
+              "telegram": "unchanged",
+              "trade_management": "unchanged",
+              "ledger_write": "unchanged",
+          }
+          mismatches = [(key, value, data.get(key)) for key, value in expected.items() if data.get(key) != value]
+          if mismatches:
+              print("Canlı sürüm/kontrat henüz eşleşmiyor:")
+              for key, wanted, got in mismatches:
+                  print(f"- {key}: beklenen={wanted!r} gelen={got!r}")
+              raise SystemExit(1)
+          print("CANLI_RENDER_OK", data["version"])
+          PY
+            then
+              exit 0
+            fi
+            sleep 8
+          done
+          echo "V3.32.7 canlı Render doğrulaması zaman penceresinde tamamlanamadı."
+          exit 1
       - name: Panel Python dosyalarını derle
         run: python -m py_compile dashboard_*.py test_dashboard_*.py
       - name: Statik ve canlı panel testlerini çalıştır
