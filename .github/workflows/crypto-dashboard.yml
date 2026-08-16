@@ -39,6 +39,35 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: CANLI Render V3.32.4 sürümünü doğrula
+        run: |
+          python - <<'PY'
+          import json
+          import urllib.request
+
+          url = "https://kripto-kontrol-paneli.onrender.com/healthz"
+          expected = "KRIPTO_KONTROL_MERKEZI_V3_32_4_MOBILE_MARKET_COIN_2026_08_16"
+          request = urllib.request.Request(url, headers={"User-Agent": "KriptoPanel-Live-Smoke/1.0", "Accept": "application/json"})
+          with urllib.request.urlopen(request, timeout=45) as response:
+              body = response.read().decode("utf-8", "replace")
+              print("HTTP", response.status)
+              print("BODY", body)
+          payload = json.loads(body)
+          assert payload.get("status") == "ok", payload
+          assert payload.get("version") == expected, (payload.get("version"), expected)
+          assert payload.get("desktop_runtime") == "V3.32.1 preserved", payload
+          assert payload.get("mobile_runtime") == "server_rendered_no_javascript", payload
+          assert payload.get("mobile_main") == "V3.32.3 preserved", payload
+          assert payload.get("mobile_market") == "server_rendered_public_okx", payload
+          assert payload.get("mobile_coin") == "server_rendered_premium_svg", payload
+          assert payload.get("mobile_chart") == "svg_no_javascript", payload
+          assert payload.get("mobile_free_premium_separated") is True, payload
+          assert payload.get("signal_engine") == "unchanged", payload
+          assert payload.get("telegram") == "unchanged", payload
+          assert payload.get("trade_management") == "unchanged", payload
+          assert payload.get("ledger_write") == "unchanged", payload
+          print("CANLI_RENDER_V3324_OK", payload.get("version"))
+          PY
       - name: Panel Python dosyalarını derle
         run: python -m py_compile dashboard_*.py test_dashboard_*.py
       - name: Statik ve canlı panel testlerini çalıştır
