@@ -1,8 +1,9 @@
 """Kripto Kontrol Merkezi - sabit uygulama giriş noktası.
 
-Aktif ürün görünümü V3.32 tabanında kalır. Runtimefix katmanı masaüstünde V3.32.1'i,
-mobil ana panelde V3.32.3'ü ve mobil Piyasa/Coin'de V3.32.4 sunucu görünümünü korur.
-FREE/PREMIUM/ADMIN sınırları ve canlı işlem çekirdeği değiştirilmez.
+Aktif ürün görünümü V3.32 tabanında kalır. Runtimefix masaüstünde V3.32.1'i, mobil
+ana panelde V3.32.3'ü, Piyasa/Coin'de V3.32.4'ü ve Hesap/Premium'da V3.32.5'i
+korur. V3.32.6 yalnız denetimde doğrulanan masaüstü/mobil/plan parite açıklarını
+kapatır. FREE/PREMIUM/ADMIN sınırları ve canlı işlem çekirdeği değiştirilmez.
 """
 from __future__ import annotations
 
