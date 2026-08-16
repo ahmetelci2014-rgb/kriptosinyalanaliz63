@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import html
 import json
+import re
 import time
 from typing import Any
 
@@ -20,6 +21,7 @@ PREF_KEY = "watchlist"
 
 
 def normalize_symbol(value: Any) -> str:
+    """Sunucu tarafında mevcut OKX sembol doğrulamasını aynen kullanır."""
     try:
         return OKXMarketDataClient.normalize_symbol(str(value or ""))
     except ValueError:
@@ -109,6 +111,52 @@ def enhance_mobile_watchlist_notice(body: str, *, managed: bool) -> str:
     old = "Liste yalnız bu tarayıcıda tercih çereziyle saklanır. Teknik özet işlem sinyali veya başarı olasılığı değildir."
     new = html.escape(text) + " Teknik özet işlem sinyali veya başarı olasılığı değildir."
     return body.replace(old, new)
+
+
+def enhance_mobile_watchlist_forms(body: str, *, csrf: str) -> str:
+    """Yönetilen mobil listede ekle/kaldır yazmalarını GET'ten CSRF korumalı POST'a taşır."""
+    if 'id="v3328-mobile-watch-forms"' in body:
+        return body
+    csrf_attr = html.escape(str(csrf or ""), quote=True)
+
+    search_old = '<form class="search" method="get" action="/mobile/watchlist"><input name="add"'
+    search_new = (
+        '<form id="v3328-mobile-watch-forms" class="search" method="post" action="/mobile/watchlist/update">'
+        f'<input type="hidden" name="csrf" value="{csrf_attr}"><input name="add"'
+    )
+    body = body.replace(search_old, search_new, 1)
+
+    def add_form(match: re.Match[str]) -> str:
+        symbol = html.escape(match.group(1), quote=True)
+        label = html.escape(match.group(2))
+        return (
+            '<form method="post" action="/mobile/watchlist/update" style="flex:1;margin:0">'
+            f'<input type="hidden" name="csrf" value="{csrf_attr}">'
+            f'<input type="hidden" name="add" value="{symbol}">'
+            f'<button type="submit" style="width:100%">{label}</button></form>'
+        )
+
+    body = re.sub(
+        r'<a href="/mobile/watchlist\?add=([^\"]+)">([^<]+)</a>',
+        add_form,
+        body,
+    )
+
+    def remove_form(match: re.Match[str]) -> str:
+        symbol = html.escape(match.group(1), quote=True)
+        return (
+            '<form method="post" action="/mobile/watchlist/update" style="flex:1;margin:0">'
+            f'<input type="hidden" name="csrf" value="{csrf_attr}">'
+            f'<input type="hidden" name="remove" value="{symbol}">'
+            '<button type="submit" style="width:100%">Kaldır</button></form>'
+        )
+
+    body = re.sub(
+        r'<a href="/mobile/watchlist\?remove=([^\"]+)">Kaldır</a>',
+        remove_form,
+        body,
+    )
+    return body
 
 
 def desktop_sync_script(*, csrf: str, nonce: str | None) -> str:
