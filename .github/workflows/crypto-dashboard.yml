@@ -39,6 +39,51 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: CANLI Render V3.32.5 sürümünü doğrula
+        run: |
+          python - <<'PY'
+          import json
+          import time
+          import urllib.request
+
+          url = "https://kripto-kontrol-paneli.onrender.com/healthz"
+          expected_version = "KRIPTO_KONTROL_MERKEZI_V3_32_5_MOBILE_ACCOUNT_2026_08_16"
+          required = {
+              "desktop_runtime": "V3.32.1 preserved",
+              "mobile_main": "V3.32.3 preserved",
+              "mobile_market": "server_rendered_public_okx",
+              "mobile_coin": "server_rendered_premium_svg",
+              "mobile_chart": "svg_no_javascript",
+              "mobile_account": "server_rendered_no_javascript",
+              "mobile_premium": "server_rendered_existing_billing_backend",
+              "mobile_renewal": "existing_7_3_1_day_rules",
+              "membership_backend": "unchanged",
+              "payment_backend": "unchanged",
+              "signal_engine": "unchanged",
+              "telegram": "unchanged",
+              "trade_management": "unchanged",
+              "ledger_write": "unchanged",
+          }
+          last = None
+          for attempt in range(15):
+              try:
+                  request = urllib.request.Request(url, headers={"Accept": "application/json", "User-Agent": "Kripto-Panel-Live-Smoke/3.32.5"})
+                  with urllib.request.urlopen(request, timeout=20) as response:
+                      last = json.loads(response.read().decode("utf-8"))
+                  if last.get("version") == expected_version:
+                      break
+              except Exception as exc:
+                  last = {"error": repr(exc)}
+              print(f"Deneme {attempt + 1}: {last}")
+              time.sleep(5)
+          else:
+              raise SystemExit(f"Canlı Render beklenen sürümde değil: {last!r}")
+
+          for key, value in required.items():
+              if last.get(key) != value:
+                  raise SystemExit(f"{key}: beklenen={value!r} gerçek={last.get(key)!r}")
+          print(json.dumps(last, ensure_ascii=False, indent=2))
+          PY
       - name: Panel Python dosyalarını derle
         run: python -m py_compile dashboard_*.py test_dashboard_*.py
       - name: Statik ve canlı panel testlerini çalıştır
