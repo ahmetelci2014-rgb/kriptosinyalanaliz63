@@ -12,15 +12,18 @@ import dashboard_runtimefix_app as runtimefix
 
 
 class DashboardV332RollbackTests(unittest.TestCase):
-    def test_active_runtime_keeps_v332_under_v3326_repair_and_v3327_account_flow(self):
+    def test_active_runtime_keeps_v332_under_v3326_repair_and_v3328_account_flow(self):
         self.assertEqual(app.ACTIVE_MODULE, "dashboard_accountflow_runtime_app")
         self.assertEqual(app.VERSION, account_runtime.VERSION)
         self.assertIs(app.make_handler, account_runtime.make_v3321_handler)
-        self.assertIn("V3_32_7_ACCOUNT_FLOW", account_runtime.VERSION)
+        self.assertIn("V3_32_8_WATCHLIST_SYNC", account_runtime.VERSION)
         self.assertIn("V3_32_6_SURFACE_PARITY", runtimefix.VERSION)
         account_source = inspect.getsource(account_runtime)
         repair_source = inspect.getsource(runtimefix)
         self.assertIn("runtimefix.make_v3321_handler", account_source)
+        self.assertIn('path == "/account/password"', account_source)
+        self.assertIn('path == "/payment/notify"', account_source)
+        self.assertIn('"watchlist_sync": "managed_account_cross_device"', account_source)
         self.assertIn("v332.make_v332_handler", repair_source)
         self.assertIn("session and self._is_premium(session)", repair_source)
         self.assertIn("_serve_mobile_market", repair_source)
@@ -45,6 +48,8 @@ class DashboardV332RollbackTests(unittest.TestCase):
         self.assertIn("def do_POST", account_source)
         self.assertIn('path == "/account/password"', account_source)
         self.assertIn('path == "/payment/notify"', account_source)
+        self.assertIn('path == "/api/account/watchlist"', account_source)
+        self.assertIn('"/mobile/watchlist/update"', account_source)
         self.assertIn('"signal_engine": "unchanged"', source)
         self.assertIn('"telegram": "unchanged"', source)
         self.assertIn('"trade_management": "unchanged"', source)
