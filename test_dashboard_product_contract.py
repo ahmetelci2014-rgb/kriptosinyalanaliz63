@@ -10,13 +10,14 @@ import dashboard_flowux_app as flowux
 import dashboard_home_app as home
 import dashboard_market_app as market
 import dashboard_marketcoinux_app as marketcoin
+import dashboard_mobile_market_app as mobilemarket
 import dashboard_roleboundary_app as roleux
 import dashboard_runtimefix_app as runtimefix
 import dashboard_sitewideux_app as sitewide
 
 
 class DashboardProductContractTests(unittest.TestCase):
-    """V3.32 ürün görünümünü ve V3.32.1 runtime onarımını birlikte korur."""
+    """V3.32 ürün görünümünü, V3.32.1 masaüstü ve V3.32.4 mobil katmanını birlikte korur."""
 
     def current_home_v332(self, *, premium_access: bool = True) -> str:
         body = home.home_dashboard_page(
@@ -73,33 +74,43 @@ class DashboardProductContractTests(unittest.TestCase):
         self.assertIn("Analiz ayrıntılarını göster", body)
         self.assertIn("Önce karar bilgisi", body)
 
-    def test_stable_entrypoint_is_v3321_runtime_repair(self):
-        self.assertEqual(app.ACTIVE_MODULE, "dashboard_runtimefix_app")
-        self.assertEqual(app.VERSION, runtimefix.VERSION)
-        self.assertIs(app.make_handler, runtimefix.make_v3321_handler)
+    def test_stable_entrypoint_is_v3324_mobile_wrapper_over_v3321_repair(self):
+        self.assertEqual(app.ACTIVE_MODULE, "dashboard_mobile_market_app")
+        self.assertEqual(app.VERSION, mobilemarket.VERSION)
+        self.assertIs(app.make_handler, mobilemarket.make_v3324_handler)
+        mobile_source = inspect.getsource(mobilemarket)
+        self.assertIn("current.make_v3321_handler", mobile_source)
         dockerfile = Path("Dockerfile.dashboard").read_text(encoding="utf-8")
         dockerignore = Path(".dockerignore").read_text(encoding="utf-8")
         self.assertIn("dashboard_app.py", dockerfile)
         self.assertIn("dashboard_marketcoinux_app.py", dockerfile)
         self.assertIn("dashboard_runtimefix_app.py", dockerfile)
+        self.assertIn("dashboard_mobile_market_app.py", dockerfile)
         self.assertIn('CMD ["python", "dashboard_app.py"', dockerfile)
         self.assertIn("!dashboard_app.py", dockerignore)
         self.assertIn("!dashboard_marketcoinux_app.py", dockerignore)
         self.assertIn("!dashboard_runtimefix_app.py", dockerignore)
+        self.assertIn("!dashboard_mobile_market_app.py", dockerignore)
 
-    def test_v332_role_boundaries_remain_under_repair(self):
+    def test_v332_role_boundaries_remain_under_repair_and_mobile_wrapper(self):
         source = inspect.getsource(marketcoin)
         repair_source = inspect.getsource(runtimefix)
+        mobile_source = inspect.getsource(mobilemarket)
         self.assertIn("roleux.make_v331_handler", source)
         self.assertIn("premium_access = bool(self._is_premium(session))", source)
         self.assertIn('path == "/coin-center" and premium_access', source)
         self.assertIn("session and self._is_premium(session)", repair_source)
         self.assertNotIn("def do_POST", repair_source)
+        self.assertNotIn("def do_POST", mobile_source)
         self.assertIn('"free_runtime":"separate_preserved"', repair_source)
         self.assertIn('"signal_engine":"unchanged"', repair_source)
         self.assertIn('"telegram":"unchanged"', repair_source)
         self.assertIn('"trade_management":"unchanged"', repair_source)
         self.assertIn('"ledger_write":"unchanged"', repair_source)
+        self.assertIn('"signal_engine": "unchanged"', mobile_source)
+        self.assertIn('"telegram": "unchanged"', mobile_source)
+        self.assertIn('"trade_management": "unchanged"', mobile_source)
+        self.assertIn('"ledger_write": "unchanged"', mobile_source)
 
 
 if __name__ == "__main__":
