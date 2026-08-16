@@ -3,8 +3,8 @@ name: All Market Shadow Radar
 on:
   workflow_dispatch:
   schedule:
-    # Premium ana botla aynı dakikaya yığılmaması için 15 dakikada bir kaydırmalı çalışır.
-    - cron: "3,18,33,48 * * * *"
+    # Maliyet kontrollü gölge örnekleme: 6 saatte bir.
+    - cron: "33 1,7,13,19 * * *"
 
 permissions:
   contents: write
