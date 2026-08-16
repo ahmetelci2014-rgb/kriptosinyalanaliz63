@@ -30,10 +30,9 @@ def _esc(value: Any) -> str:
 
 def _num(value: Any) -> float | None:
     try:
-        number = float(value)
+        return float(value)
     except (TypeError, ValueError):
         return None
-    return number
 
 
 def _symbol(value: Any) -> str:
@@ -53,8 +52,7 @@ def premium_plan(plan: str) -> bool:
 
 def mobile_nav(plan: str, active: str) -> str:
     """Bütün JS'siz mobil sayfalarda aynı çekirdek navigasyonu üretir."""
-    premium = premium_plan(plan)
-    if not premium:
+    if not premium_plan(plan):
         items = [
             ("home", "/mobile", "⌂", "Ana"),
             ("market", "/mobile/market", "⌁", "Piyasa"),
@@ -79,8 +77,10 @@ def mobile_nav(plan: str, active: str) -> str:
 
 
 def replace_mobile_nav(body: str, *, plan: str, active: str) -> str:
-    nav = mobile_nav(plan, active)
-    return re.sub(r'<nav class="bottomnav[^\"]*">.*?</nav>', nav, body, count=1, flags=re.S)
+    return re.sub(
+        r'<nav class="bottomnav[^\"]*">.*?</nav>',
+        mobile_nav(plan, active), body, count=1, flags=re.S,
+    )
 
 
 def correct_product_copy(body: str) -> str:
@@ -181,6 +181,19 @@ def filter_form(view: str, query: dict[str, list[str]]) -> str:
     )
 
 
+def _insert_after_mobile_hero(body: str, fragment: str) -> str:
+    """Mobil sunucu şablonunda hero/user kapanışından sonra içerik ekler."""
+    marker = "</form></div></div></div>"
+    pos = body.find(marker)
+    if pos >= 0:
+        end = pos + len(marker)
+        return body[:end] + fragment + body[end:]
+    nav = re.search(r'<nav class="bottomnav', body)
+    if nav:
+        return body[:nav.start()] + fragment + body[nav.start():]
+    return body + fragment
+
+
 def enhance_mobile_core(body: str, *, plan: str, active: str, query: dict[str, list[str]] | None = None) -> str:
     body = replace_mobile_nav(body, plan=plan, active=active)
     body = body.replace("Öne çıkan sinyaller", "Güncel sinyaller")
@@ -189,9 +202,8 @@ def enhance_mobile_core(body: str, *, plan: str, active: str, query: dict[str, l
         body = body.replace("</style>", css + "\n</style>", 1)
     if premium_plan(plan) and active in {"signals", "trades", "results"} and query is not None:
         form = filter_form(active, query)
-        marker = re.search(r'<nav class="bottomnav', body)
-        if marker and form not in body:
-            body = body[:marker.start()] + form + body[marker.start():]
+        if '<form class="v3326-filter"' not in body:
+            body = _insert_after_mobile_hero(body, form)
     return body
 
 
@@ -202,9 +214,14 @@ def enhance_mobile_market(body: str, *, plan: str, active: str = "market") -> st
         body = body.replace("</style>", css + "\n</style>", 1)
     if premium_plan(plan) and active == "market" and "v3326-tools" not in body:
         tools = '<div class="v3326-tools"><a class="primary" href="/mobile/watchlist">İzleme Listesi</a><a href="/mobile/opportunities">Fırsat Merkezi</a></div>'
-        marker = re.search(r'<nav class="bottomnav', body)
-        if marker:
-            body = body[:marker.start()] + tools + body[marker.start():]
+        search_end = body.find("</form>")
+        if search_end >= 0:
+            end = search_end + len("</form>")
+            body = body[:end] + tools + body[end:]
+        else:
+            nav = re.search(r'<nav class="bottomnav', body)
+            if nav:
+                body = body[:nav.start()] + tools + body[nav.start():]
     return body
 
 
@@ -373,9 +390,9 @@ def render_opportunities_page(session: dict[str, Any], *, plan: str, plan_label:
         symbol = str(row.get("symbol") or "—")
         change, cls = _change(row.get("change_24h_pct"))
         analysis = row.get("analysis") if isinstance(row.get("analysis"), dict) else {}
-        score = analysis.get("score")
-        direction = analysis.get("direction")
-        score_chip = f'<span class="context recent">{_esc(score)}/100 · {_esc(direction)}</span>' if score not in (None, "") else ""
+        score_value = analysis.get("score")
+        score_direction = analysis.get("direction")
+        score_chip = f'<span class="context recent">{_esc(score_value)}/100 · {_esc(score_direction)}</span>' if score_value not in (None, "") else ""
         system_dir = str(row.get("direction") or "").upper()
         active_chip = f'<span class="context {"long" if system_dir == "LONG" else "short"}">{_esc(system_dir)} · açık</span>' if str(row.get("kind") or "") == "OPEN" else ""
         cards.append(
@@ -390,5 +407,4 @@ def render_opportunities_page(session: dict[str, Any], *, plan: str, plan_label:
         + '<div class="notice">Fırsat grupları ve İnceleme Skoru teknik önceliklendirmedir; yeni işlem sinyali veya başarı ihtimali değildir.</div>'
     )
     page = mobilemarket._shell(title="Fırsat Merkezi", subtitle="Mevcut masaüstü keşif araçlarının JS'siz mobil karşılığı", plan_label=plan_label, username=str(session.get("username") or "üye"), body=body, nav=mobile_nav(plan, ""), top_link="/mobile/market", top_text="Piyasa")
-    css = _filter_css()
-    return page.replace("</style>", css + "\n</style>", 1)
+    return page.replace("</style>", _filter_css() + "\n</style>", 1)
