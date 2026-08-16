@@ -1,9 +1,9 @@
 """Kripto Kontrol Merkezi - sabit uygulama giriş noktası.
 
 Aktif ürün görünümü V3.32 tabanında kalır. V3.32.6 masaüstü/mobil/plan
-paritesini korur; V3.32.7 yalnız doğrulanan hesap akışı açıklarını kapatır:
-oturum içinden mevcut şifreyle güvenli şifre değiştirme ve ödeme bildirimi
-geri bildirimi. FREE/PREMIUM/ADMIN sınırları ve canlı işlem çekirdeği değişmez.
+paritesini, V3.32.7 hesap güvenliği/ödeme geri bildirimini ve V3.32.8 hesaba bağlı
+İzleme Listesi senkronunu tek aktif runtime içinde korur. FREE/PREMIUM/ADMIN
+sınırları ve canlı işlem çekirdeği değişmez.
 """
 from __future__ import annotations
 

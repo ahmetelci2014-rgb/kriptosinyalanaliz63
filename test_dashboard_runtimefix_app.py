@@ -185,10 +185,13 @@ global.fetch = async (url) => {
         self.assertEqual(app.ACTIVE_MODULE, "dashboard_accountflow_runtime_app")
         self.assertEqual(app.VERSION, account_runtime.VERSION)
         self.assertIs(app.make_handler, account_runtime.make_v3321_handler)
-        self.assertIn("V3_32_7_ACCOUNT_FLOW", account_runtime.VERSION)
+        self.assertIn("V3_32_8_WATCHLIST_SYNC", account_runtime.VERSION)
         self.assertIn("V3_32_6_SURFACE_PARITY", fix.VERSION)
         account_source = Path("dashboard_accountflow_runtime_app.py").read_text(encoding="utf-8")
         self.assertIn("runtimefix.make_v3321_handler", account_source)
+        self.assertIn('path == "/account/password"', account_source)
+        self.assertIn('path == "/payment/notify"', account_source)
+        self.assertIn('"watchlist_sync": "managed_account_cross_device"', account_source)
 
     def test_runtime_repair_is_presentation_only(self):
         source = Path("dashboard_runtimefix_app.py").read_text(encoding="utf-8")
