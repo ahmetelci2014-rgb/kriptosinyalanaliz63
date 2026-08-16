@@ -39,6 +39,28 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: CANLI Render healthz sürümünü doğrula
+        run: |
+          python - <<'PY'
+          import json
+          import urllib.request
+
+          url = "https://kripto-kontrol-paneli.onrender.com/healthz"
+          expected = "KRIPTO_KONTROL_MERKEZI_V3_32_1_RUNTIME_REPAIR_2026_08_16"
+          request = urllib.request.Request(url, headers={"User-Agent": "KriptoPanel-Live-Smoke/1.0", "Accept": "application/json"})
+          with urllib.request.urlopen(request, timeout=45) as response:
+              body = response.read().decode("utf-8", "replace")
+              print("HTTP", response.status)
+              print("BODY", body)
+          payload = json.loads(body)
+          if payload.get("status") != "ok":
+              raise SystemExit(f"Canlı healthz status beklenmedik: {payload!r}")
+          if payload.get("version") != expected:
+              raise SystemExit(f"Canlı sürüm eski/farklı: {payload.get('version')!r}; beklenen {expected!r}")
+          if payload.get("classic_runtime_repair") is not True:
+              raise SystemExit(f"Runtime repair canlı healthz'de aktif görünmüyor: {payload!r}")
+          print("CANLI_RENDER_OK", payload.get("version"))
+          PY
       - name: Panel Python dosyalarını derle
         run: python -m py_compile dashboard_*.py test_dashboard_*.py
       - name: Statik ve canlı panel testlerini çalıştır
