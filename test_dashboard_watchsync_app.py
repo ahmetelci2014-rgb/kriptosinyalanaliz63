@@ -8,10 +8,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import dashboard_accountflow_runtime_app as runtime
 import dashboard_app as app
 import dashboard_commercial_app as commercial
 import dashboard_watchsync_app as sync
-import dashboard_watchsync_runtime_app as runtime
 
 
 class MemoryCommercialStore(commercial.CommercialAccountStore):
@@ -36,13 +36,13 @@ class WatchlistSyncTests(unittest.TestCase):
         store.create_free_user("uye01", "member-secret-123", actor="test")
         return store
 
-    def test_first_sync_preserves_existing_browser_favorites_once(self):
+    def test_first_sync_preserves_existing_normalized_browser_favorites_once(self):
         store = self.make_store()
         first = sync.account_watchlist_snapshot(store, "uye01")
         self.assertTrue(first["managed"])
         self.assertFalse(first["initialized"])
-        merged = sync.first_sync_list([], ["btc", "ETHUSDT", "btc", "bad!"])
-        self.assertEqual(merged, ["BTCUSDT", "ETHUSDT", "BADUSDT"])
+        merged = sync.first_sync_list([], ["BTCUSDT", "ETHUSDT", "BTCUSDT", "bad!"])
+        self.assertEqual(merged, ["BTCUSDT", "ETHUSDT"])
         saved = sync.save_account_watchlist(store, "uye01", merged, actor="uye01")
         self.assertEqual(saved, merged)
         current = sync.account_watchlist_snapshot(store, "uye01")
@@ -69,12 +69,13 @@ class WatchlistSyncTests(unittest.TestCase):
             sync.save_account_watchlist(store, "kurucu-env", ["BTCUSDT"])
         self.assertEqual(store.document, before)
 
-    def test_watchlist_is_bounded_deduplicated_and_normalized(self):
-        values = ["btc", "BTCUSDT", "eth", *[f"X{i}USDT" for i in range(30)]]
+    def test_watchlist_is_bounded_deduplicated_and_strictly_validated(self):
+        values = ["BTCUSDT", "BTCUSDT", "ETHUSDT", "bad!", *[f"X{i}USDT" for i in range(30)]]
         result = sync.normalize_watchlist(values)
         self.assertEqual(result[:2], ["BTCUSDT", "ETHUSDT"])
         self.assertLessEqual(len(result), sync.MAX_WATCH)
         self.assertEqual(len(result), len(set(result)))
+        self.assertNotIn("bad!", result)
 
     def test_mobile_copy_distinguishes_account_sync_and_device_fallback(self):
         raw = "<div>Liste yalnız bu tarayıcıda tercih çereziyle saklanır. Teknik özet işlem sinyali veya başarı olasılığı değildir.</div>"
@@ -82,6 +83,19 @@ class WatchlistSyncTests(unittest.TestCase):
         fallback = sync.enhance_mobile_watchlist_notice(raw, managed=False)
         self.assertIn("telefon ve masaüstünde aynı liste", managed)
         self.assertIn("yalnız bu cihazda", fallback)
+
+    def test_managed_mobile_forms_use_post_and_csrf(self):
+        raw = (
+            '<form class="search" method="get" action="/mobile/watchlist"><input name="add" placeholder="Coin ekle: BTCUSDT"><button type="submit">Ekle</button></form>'
+            '<div class="v3326-tools"><a href="/mobile/watchlist?add=BTCUSDT">BTC</a></div>'
+            '<div class="v3326-tools"><a href="/mobile/coin?symbol=BTCUSDT">Coin Merkezi</a><a href="/mobile/watchlist?remove=BTCUSDT">Kaldır</a></div>'
+        )
+        body = sync.enhance_mobile_watchlist_forms(raw, csrf="csrf-mobile")
+        self.assertIn('id="v3328-mobile-watch-forms"', body)
+        self.assertNotIn('method="get" action="/mobile/watchlist"', body)
+        self.assertEqual(body.count('action="/mobile/watchlist/update"'), 3)
+        self.assertGreaterEqual(body.count('name="csrf" value="csrf-mobile"'), 3)
+        self.assertNotIn('/mobile/watchlist?remove=', body)
 
     def test_desktop_sync_is_only_added_to_real_watchlist_surface(self):
         page = '<html><body><section id="page-watchlist"></section><div>RSI, EMA ve hacim yalnız OKX public 15m mumlarından hesaplanır. Bu ekran emir açmaz ve sinyal üretmez.</div></body></html>'
@@ -104,27 +118,29 @@ class WatchlistSyncTests(unittest.TestCase):
             result = subprocess.run(["node", "--check", str(path)], capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_runtime_wraps_v3327_and_exposes_only_panel_preference_sync(self):
+    def test_runtime_keeps_single_active_module_and_exposes_preference_sync(self):
         source = inspect.getsource(runtime)
         helper = inspect.getsource(sync)
-        self.assertEqual(app.ACTIVE_MODULE, "dashboard_watchsync_runtime_app")
+        self.assertEqual(app.ACTIVE_MODULE, "dashboard_accountflow_runtime_app")
         self.assertEqual(app.VERSION, runtime.VERSION)
         self.assertIn("V3_32_8_WATCHLIST_SYNC", runtime.VERSION)
-        self.assertIn("previous.make_v3321_handler", source)
+        self.assertIn("runtimefix.make_v3321_handler", source)
         self.assertIn('"watchlist_sync": "managed_account_cross_device"', source)
+        self.assertIn('"watchlist_mobile_write": "csrf_post"', source)
         self.assertIn('path == "/api/account/watchlist"', source)
         self.assertIn('path == "/mobile/watchlist"', source)
+        self.assertIn('"/mobile/watchlist/update"', source)
         for forbidden in ("strategy.py", "config.py", "trade_ledger.json", "open_signals.json"):
             self.assertNotIn(forbidden, source)
             self.assertNotIn(forbidden, helper)
 
-    def test_docker_includes_watchsync_modules(self):
+    def test_docker_includes_only_watchsync_helper_not_an_extra_runtime_layer(self):
         docker = Path("Dockerfile.dashboard").read_text(encoding="utf-8")
         ignore = Path(".dockerignore").read_text(encoding="utf-8")
         self.assertIn("dashboard_watchsync_app.py", docker)
-        self.assertIn("dashboard_watchsync_runtime_app.py", docker)
         self.assertIn("!dashboard_watchsync_app.py", ignore)
-        self.assertIn("!dashboard_watchsync_runtime_app.py", ignore)
+        self.assertNotIn("dashboard_watchsync_runtime_app.py", docker)
+        self.assertNotIn("!dashboard_watchsync_runtime_app.py", ignore)
 
 
 if __name__ == "__main__":
