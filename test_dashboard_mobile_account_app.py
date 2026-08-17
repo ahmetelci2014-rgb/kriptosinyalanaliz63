@@ -10,6 +10,7 @@ import dashboard_app as app
 import dashboard_commercial_app as commercial
 import dashboard_mobile_account_app as mobileaccount
 import dashboard_runtimefix_app as runtimefix
+import dashboard_share_runtime_app as share_runtime
 
 
 class FakeStore:
@@ -23,22 +24,10 @@ class FakeStore:
 class MobileAccountTests(unittest.TestCase):
     def setUp(self):
         self.session = {"username": "uye", "csrf": "csrf-mobile"}
-        self.settings = {
-            "days": 30,
-            "package_name": "Premium 30 Gün",
-            "price_label": "₺999",
-            "package_code": "PREMIUM_30D",
-            "instructions": "FAST/Havale sonrası bildirim gönder.",
-        }
+        self.settings = {"days": 30, "package_name": "Premium 30 Gün", "price_label": "₺999", "package_code": "PREMIUM_30D", "instructions": "FAST/Havale sonrası bildirim gönder."}
 
     def test_free_account_is_simple_and_javascript_free(self):
-        body = mobileaccount.render_account_page(
-            self.session,
-            {"plan": commercial.PLAN_FREE, "expires_at": None},
-            plan=commercial.PLAN_FREE,
-            plan_label="Ücretsiz",
-            store=FakeStore(),
-        )
+        body = mobileaccount.render_account_page(self.session, {"plan": commercial.PLAN_FREE, "expires_at": None}, plan=commercial.PLAN_FREE, plan_label="Ücretsiz", store=FakeStore())
         self.assertIn("Hesabım", body)
         self.assertIn("FREE plan aktiftir", body)
         self.assertIn("Üyelik merkezi", body)
@@ -46,15 +35,7 @@ class MobileAccountTests(unittest.TestCase):
         self.assertNotIn("<script", body.lower())
 
     def test_free_premium_page_uses_existing_payment_notify_form(self):
-        body = mobileaccount.render_premium_page(
-            self.session,
-            {"plan": commercial.PLAN_FREE, "expires_at": None},
-            plan=commercial.PLAN_FREE,
-            plan_label="Ücretsiz",
-            store=FakeStore(),
-            settings=self.settings,
-            crypto_enabled=False,
-        )
+        body = mobileaccount.render_premium_page(self.session, {"plan": commercial.PLAN_FREE, "expires_at": None}, plan=commercial.PLAN_FREE, plan_label="Ücretsiz", store=FakeStore(), settings=self.settings, crypto_enabled=False)
         self.assertIn('action="/payment/notify"', body)
         self.assertIn('name="csrf" value="csrf-mobile"', body)
         self.assertIn('name="package" value="PREMIUM_30D"', body)
@@ -64,37 +45,15 @@ class MobileAccountTests(unittest.TestCase):
         self.assertNotIn("<script", body.lower())
 
     def test_pending_payment_hides_duplicate_form(self):
-        payments = [{
-            "username": "uye",
-            "status": commercial.PAYMENT_PENDING,
-            "package": "Premium 30 Gün",
-            "method": "BANK_TRANSFER",
-            "created_at": int(time.time()),
-        }]
-        body = mobileaccount.render_premium_page(
-            self.session,
-            {"plan": commercial.PLAN_FREE},
-            plan=commercial.PLAN_FREE,
-            plan_label="Ücretsiz",
-            store=FakeStore(payments),
-            settings=self.settings,
-            crypto_enabled=False,
-        )
+        payments = [{"username": "uye", "status": commercial.PAYMENT_PENDING, "package": "Premium 30 Gün", "method": "BANK_TRANSFER", "created_at": int(time.time())}]
+        body = mobileaccount.render_premium_page(self.session, {"plan": commercial.PLAN_FREE}, plan=commercial.PLAN_FREE, plan_label="Ücretsiz", store=FakeStore(payments), settings=self.settings, crypto_enabled=False)
         self.assertIn("yönetici onayı bekliyor", body)
         self.assertNotIn('action="/payment/notify"', body)
         self.assertIn("Onay bekliyor", body)
 
     def test_premium_last_seven_days_gets_renewal_form(self):
         expiry = int(time.time()) + 2 * 86400
-        body = mobileaccount.render_premium_page(
-            self.session,
-            {"plan": commercial.PLAN_PREMIUM, "expires_at": expiry},
-            plan=commercial.PLAN_PREMIUM,
-            plan_label="Premium",
-            store=FakeStore(),
-            settings=self.settings,
-            crypto_enabled=True,
-        )
+        body = mobileaccount.render_premium_page(self.session, {"plan": commercial.PLAN_PREMIUM, "expires_at": expiry}, plan=commercial.PLAN_PREMIUM, plan_label="Premium", store=FakeStore(), settings=self.settings, crypto_enabled=True)
         self.assertIn("bitmesine 2 gün kaldı", body)
         self.assertIn("Yenileme ödemesi yaptım · Onaya gönder", body)
         self.assertIn('action="/payment/notify"', body)
@@ -102,27 +61,22 @@ class MobileAccountTests(unittest.TestCase):
 
     def test_active_premium_does_not_show_payment_form_outside_renewal_window(self):
         expiry = int(time.time()) + 20 * 86400
-        body = mobileaccount.render_premium_page(
-            self.session,
-            {"plan": commercial.PLAN_PREMIUM, "expires_at": expiry},
-            plan=commercial.PLAN_PREMIUM,
-            plan_label="Premium",
-            store=FakeStore(),
-            settings=self.settings,
-            crypto_enabled=False,
-        )
+        body = mobileaccount.render_premium_page(self.session, {"plan": commercial.PLAN_PREMIUM, "expires_at": expiry}, plan=commercial.PLAN_PREMIUM, plan_label="Premium", store=FakeStore(), settings=self.settings, crypto_enabled=False)
         self.assertIn("Premium üyeliğin aktif", body)
         self.assertNotIn('action="/payment/notify"', body)
 
     def test_runtime_routes_mobile_account_and_keeps_v3326_presentation_boundary(self):
-        self.assertEqual(app.ACTIVE_MODULE, "dashboard_accountflow_runtime_app")
-        self.assertEqual(app.VERSION, account_runtime.VERSION)
-        self.assertIs(app.make_handler, account_runtime.make_v3321_handler)
+        self.assertEqual(app.ACTIVE_MODULE, "dashboard_share_runtime_app")
+        self.assertEqual(app.VERSION, share_runtime.VERSION)
+        self.assertIs(app.make_handler, share_runtime.make_v3321_handler)
+        self.assertIn("V3_32_9_SHARE_CARDS", share_runtime.VERSION)
         self.assertIn("V3_32_8_WATCHLIST_SYNC", account_runtime.VERSION)
         self.assertIn("V3_32_6_SURFACE_PARITY", runtimefix.VERSION)
         repair_source = inspect.getsource(runtimefix)
         account_source = inspect.getsource(account_runtime)
+        share_source = inspect.getsource(share_runtime)
         mobile_source = inspect.getsource(mobileaccount)
+        self.assertIn("base.make_v3321_handler", share_source)
         self.assertIn("_serve_mobile_account", repair_source)
         self.assertIn("_serve_mobile_premium", repair_source)
         self.assertIn('path in {"/mobile/account", "/account"}', repair_source)
@@ -138,10 +92,9 @@ class MobileAccountTests(unittest.TestCase):
         self.assertIn('"watchlist_sync": "managed_account_cross_device"', account_source)
         dockerfile = Path("Dockerfile.dashboard").read_text(encoding="utf-8")
         dockerignore = Path(".dockerignore").read_text(encoding="utf-8")
-        self.assertIn("dashboard_mobile_account_app.py", dockerfile)
-        self.assertIn("dashboard_accountflow_runtime_app.py", dockerfile)
-        self.assertIn("!dashboard_mobile_account_app.py", dockerignore)
-        self.assertIn("!dashboard_accountflow_runtime_app.py", dockerignore)
+        for name in ("dashboard_mobile_account_app.py", "dashboard_accountflow_runtime_app.py", "dashboard_share_runtime_app.py"):
+            self.assertIn(name, dockerfile)
+            self.assertIn("!" + name, dockerignore)
 
 
 if __name__ == "__main__":
