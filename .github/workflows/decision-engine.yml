@@ -29,15 +29,18 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Karar ve reçete motorlarını doğrula
+      - name: Karar, reçete ve kalite motorlarını doğrula
         run: |
           python -m py_compile \
             decision_engine.py \
             test_decision_engine.py \
             prescription_engine.py \
-            test_prescription_engine.py
+            test_prescription_engine.py \
+            signal_quality_audit.py \
+            test_signal_quality_audit.py
           python test_decision_engine.py -v
           python test_prescription_engine.py -v
+          python test_signal_quality_audit.py -v
 
       - name: Karar raporunu üret
         run: |
@@ -47,14 +50,18 @@ jobs:
         run: |
           python prescription_engine.py --output prescription_report.json
 
-      - name: Karar ve reçete raporlarını kaydet
+      - name: Sinyal kalite raporunu üret
+        run: |
+          python signal_quality_audit.py --output signal_quality_audit.json
+
+      - name: Karar, reçete ve kalite raporlarını kaydet
         run: |
           set -e
 
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          for file in decision_report.json prescription_report.json
+          for file in decision_report.json prescription_report.json signal_quality_audit.json
           do
             if [ ! -f "$file" ]; then
               echo "$file oluşmadı."
@@ -64,11 +71,11 @@ jobs:
           done
 
           if git diff --cached --quiet; then
-            echo "Karar/reçete raporunda yeni değişiklik yok."
+            echo "Karar/reçete/kalite raporunda yeni değişiklik yok."
             exit 0
           fi
 
-          git commit -m "Update daily decision and prescription reports"
+          git commit -m "Update daily decision prescription and signal quality reports"
 
           for attempt in 1 2 3
           do
@@ -76,7 +83,7 @@ jobs:
             git pull --rebase --autostash origin main
 
             if git push origin HEAD:main; then
-              echo "Karar ve reçete raporları kaydedildi."
+              echo "Karar, reçete ve kalite raporları kaydedildi."
               exit 0
             fi
 
