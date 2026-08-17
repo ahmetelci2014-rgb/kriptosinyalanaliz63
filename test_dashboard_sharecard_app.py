@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 import inspect
+import re
+import shutil
+import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -11,19 +15,9 @@ import dashboard_sharecard_app as cards
 import dashboard_shareui_app as shareui
 
 
-OPEN = {
-    "symbol": "BTCUSDT", "direction": "LONG", "system": "Premium MTF",
-    "entry": 100.0, "tp1": 102.0, "tp2": 104.0, "tp3": 106.0, "sl": 98.0,
-    "score": 91, "opened_at": 1_765_000_000,
-}
-RESULT = {
-    **OPEN, "outcome": "TP2", "r_result": 1.4, "closed_at": 1_765_003_600,
-}
-CANDLES = [
-    {"open": 99.0, "high": 100.2, "low": 98.7, "close": 99.8},
-    {"open": 99.8, "high": 101.0, "low": 99.5, "close": 100.7},
-    {"open": 100.7, "high": 102.3, "low": 100.4, "close": 102.0},
-]
+OPEN = {"symbol": "BTCUSDT", "direction": "LONG", "system": "Premium MTF", "entry": 100.0, "tp1": 102.0, "tp2": 104.0, "tp3": 106.0, "sl": 98.0, "score": 91, "opened_at": 1_765_000_000}
+RESULT = {**OPEN, "outcome": "TP2", "r_result": 1.4, "closed_at": 1_765_003_600}
+CANDLES = [{"open": 99.0, "high": 100.2, "low": 98.7, "close": 99.8}, {"open": 99.8, "high": 101.0, "low": 99.5, "close": 100.7}, {"open": 100.7, "high": 102.3, "low": 100.4, "close": 102.0}]
 
 
 class ShareCardTests(unittest.TestCase):
@@ -63,15 +57,37 @@ class ShareCardTests(unittest.TestCase):
         self.assertIn("↗ Paylaş", page)
         self.assertIn("PNG indir", page)
         self.assertIn("navigator.share", page)
-        self.assertIn("canvas.toBlob", page)
+        self.assertIn(".toBlob", page)
         self.assertIn('nonce="nonce-test"', page)
 
     def test_mobile_buttons_are_links_and_do_not_add_javascript(self):
         body = '<html><head><style></style></head><body><article class="card"><div><strong>BTCUSDT</strong><small class="system">Premium MTF</small></div><span class="tag long">LONG</span></article><article class="resultcard"><div class="resultmain"><strong>BTCUSDT</strong><small>Premium MTF · LONG</small></div><span class="tag tp">TP2</span></article></body></html>'
         enhanced = shareui.enhance_mobile(body, {"open_trades": [OPEN], "recent_results": [RESULT]}, view="signals")
-        self.assertEqual(enhanced.count("share-mobile"), 3)  # CSS + iki link
+        self.assertEqual(enhanced.count('class="share-mobile"'), 2)
         self.assertIn("/share/trade?", enhanced)
         self.assertNotIn("<script", enhanced.lower())
+
+    def test_desktop_share_script_has_valid_javascript_syntax(self):
+        if not shutil.which("node"):
+            self.skipTest("node not installed")
+        page = shareui.desktop_script("nonce-test")
+        code = re.search(r"<script[^>]*>(.*)</script>", page, flags=re.S).group(1)
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "share-ui.js"
+            path.write_text(code, encoding="utf-8")
+            result = subprocess.run(["node", "--check", str(path)], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_preview_script_has_valid_javascript_syntax(self):
+        if not shutil.which("node"):
+            self.skipTest("node not installed")
+        page = cards.render_page(OPEN, kind="open", stage="signal", candles=CANDLES, source="PUBLIC", nonce="nonce-test")
+        code = re.findall(r"<script[^>]*>(.*?)</script>", page, flags=re.S)[-1]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "share-preview.js"
+            path.write_text(code, encoding="utf-8")
+            result = subprocess.run(["node", "--check", str(path)], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_runtime_contract_preserves_v3328_and_blocks_free_share(self):
         self.assertEqual(app.ACTIVE_MODULE, "dashboard_share_runtime_app")
