@@ -27068,9 +27068,9 @@
       "radar": 0,
       "tp1": 8,
       "tp2": 9,
-      "tp3": 7,
-      "sl": 0,
-      "be": 2,
+      "tp3": 8,
+      "sl": 2,
+      "be": 3,
       "expired": 0,
       "long": 0,
       "short": 10,
@@ -27172,7 +27172,7 @@
           "radar": 0,
           "tp1": 1,
           "tp2": 1,
-          "tp3": 0,
+          "tp3": 1,
           "sl": 0,
           "be": 0,
           "expired": 0
@@ -27193,7 +27193,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -27204,7 +27204,7 @@
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
-          "be": 0,
+          "be": 1,
           "expired": 0
         },
         "AAVEUSDT": {
@@ -27213,13 +27213,18 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         }
       },
-      "direction_stops": {},
-      "stop_times": {},
+      "direction_stops": {
+        "SHORT": 2
+      },
+      "stop_times": {
+        "JUPUSDT": 1786929368,
+        "AAVEUSDT": 1786929373
+      },
       "closed_times": {
         "ZRXUSDT": 1786914966,
         "SPACEUSDT": 1786914967,
@@ -27229,7 +27234,9 @@
         "LAUSDT": 1786916527,
         "SUIUSDT": 1786916534,
         "OPUSDT": 1786916546,
-        "ALGOUSDT": 1786922166
+        "ALGOUSDT": 1786922166,
+        "OFCUSDT": 1786929365,
+        "UNIUSDT": 1786929370
       },
       "closed_results": {
         "ZRXUSDT": "TP3",
@@ -27240,7 +27247,9 @@
         "LAUSDT": "TP3",
         "SUIUSDT": "TP3",
         "OPUSDT": "TP3",
-        "ALGOUSDT": "BE"
+        "ALGOUSDT": "BE",
+        "OFCUSDT": "TP3",
+        "UNIUSDT": "BE"
       },
       "closed_history": [
         {
@@ -27502,6 +27511,46 @@
           "exit": 0.0078757299,
           "source": "15M_ENTRY",
           "score": 93
+        },
+        {
+          "time": "04:16:05",
+          "symbol": "OFCUSDT",
+          "direction": "SHORT",
+          "result": "TP3",
+          "entry": 0.008015,
+          "exit": 0.0078027788,
+          "source": "15M_ENTRY",
+          "score": 93
+        },
+        {
+          "time": "04:16:08",
+          "symbol": "JUPUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.1662,
+          "exit": 0.1684,
+          "source": "15M_ENTRY",
+          "score": 91
+        },
+        {
+          "time": "04:16:10",
+          "symbol": "UNIUSDT",
+          "direction": "SHORT",
+          "result": "BE",
+          "entry": 3.28,
+          "exit": 3.28,
+          "source": "15M_ENTRY",
+          "score": 98
+        },
+        {
+          "time": "04:16:13",
+          "symbol": "AAVEUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 85.82,
+          "exit": 86.52,
+          "source": "15M_ENTRY",
+          "score": 100
         }
       ],
       "sl_after_tp1": 0,
@@ -27509,9 +27558,9 @@
       "sl_after_no_return": 2
     }
   },
-  "last_update": 1786928484,
+  "last_update": 1786929373,
   "last_open_summary": 1786926500,
-  "last_status_message": 1786916810,
+  "last_status_message": 1786929661,
   "last_daily_report": "2026-08-16",
   "sl_after_follow": {
     "WLDUSDT_LONG_1786911914": {
@@ -27569,6 +27618,46 @@
       "resolved": true,
       "no_return_counted": true,
       "no_return_counted_day": "2026-08-17"
+    },
+    "JUPUSDT_SHORT_1786929368": {
+      "trade_id": "JUPUSDT_SHORT_15M_ENTRY_1786919726",
+      "symbol": "JUPUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.1662,
+      "tp1": 0.1648477458,
+      "tp2": 0.1636184238,
+      "tp3": 0.1622661696,
+      "sl": 0.168658644,
+      "score": 91,
+      "risk_percent": 1.479,
+      "stopped_at": 1786929368,
+      "stop_exit": 0.1684,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "AAVEUSDT_SHORT_1786929373": {
+      "trade_id": "AAVEUSDT_SHORT_15M_ENTRY_1786926746",
+      "symbol": "AAVEUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 85.82,
+      "tp1": 85.438111221,
+      "tp2": 85.0909396038,
+      "tp3": 84.7090508248,
+      "sl": 86.5143432345,
+      "score": 100,
+      "risk_percent": 0.809,
+      "stopped_at": 1786929373,
+      "stop_exit": 86.52,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
     }
   },
   "telegram_result_guard": {
