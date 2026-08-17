@@ -11,6 +11,7 @@ from pathlib import Path
 import dashboard_accountflow_runtime_app as runtime
 import dashboard_app as app
 import dashboard_commercial_app as commercial
+import dashboard_share_runtime_app as share_runtime
 import dashboard_watchsync_app as sync
 
 
@@ -85,11 +86,7 @@ class WatchlistSyncTests(unittest.TestCase):
         self.assertIn("yalnız bu cihazda", fallback)
 
     def test_managed_mobile_forms_use_post_and_csrf(self):
-        raw = (
-            '<form class="search" method="get" action="/mobile/watchlist"><input name="add" placeholder="Coin ekle: BTCUSDT"><button type="submit">Ekle</button></form>'
-            '<div class="v3326-tools"><a href="/mobile/watchlist?add=BTCUSDT">BTC</a></div>'
-            '<div class="v3326-tools"><a href="/mobile/coin?symbol=BTCUSDT">Coin Merkezi</a><a href="/mobile/watchlist?remove=BTCUSDT">Kaldır</a></div>'
-        )
+        raw = '<form class="search" method="get" action="/mobile/watchlist"><input name="add" placeholder="Coin ekle: BTCUSDT"><button type="submit">Ekle</button></form><div class="v3326-tools"><a href="/mobile/watchlist?add=BTCUSDT">BTC</a></div><div class="v3326-tools"><a href="/mobile/coin?symbol=BTCUSDT">Coin Merkezi</a><a href="/mobile/watchlist?remove=BTCUSDT">Kaldır</a></div>'
         body = sync.enhance_mobile_watchlist_forms(raw, csrf="csrf-mobile")
         self.assertIn('id="v3328-mobile-watch-forms"', body)
         self.assertNotIn('method="get" action="/mobile/watchlist"', body)
@@ -110,20 +107,23 @@ class WatchlistSyncTests(unittest.TestCase):
     def test_desktop_sync_javascript_has_valid_syntax_when_node_exists(self):
         if not shutil.which("node"):
             self.skipTest("node not installed")
-        html = sync.desktop_sync_script(csrf="csrf-test", nonce="nonce-test")
-        code = html.split(">", 1)[1].rsplit("</script>", 1)[0]
+        page = sync.desktop_sync_script(csrf="csrf-test", nonce="nonce-test")
+        code = page.split(">", 1)[1].rsplit("</script>", 1)[0]
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "watchsync.js"
             path.write_text(code, encoding="utf-8")
             result = subprocess.run(["node", "--check", str(path)], capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_runtime_keeps_single_active_module_and_exposes_preference_sync(self):
+    def test_runtime_keeps_v3328_preference_sync_under_v3329(self):
         source = inspect.getsource(runtime)
+        share_source = inspect.getsource(share_runtime)
         helper = inspect.getsource(sync)
-        self.assertEqual(app.ACTIVE_MODULE, "dashboard_accountflow_runtime_app")
-        self.assertEqual(app.VERSION, runtime.VERSION)
+        self.assertEqual(app.ACTIVE_MODULE, "dashboard_share_runtime_app")
+        self.assertEqual(app.VERSION, share_runtime.VERSION)
+        self.assertIn("V3_32_9_SHARE_CARDS", share_runtime.VERSION)
         self.assertIn("V3_32_8_WATCHLIST_SYNC", runtime.VERSION)
+        self.assertIn("base.make_v3321_handler", share_source)
         self.assertIn("runtimefix.make_v3321_handler", source)
         self.assertIn('"watchlist_sync": "managed_account_cross_device"', source)
         self.assertIn('"watchlist_mobile_write": "csrf_post"', source)
@@ -133,14 +133,16 @@ class WatchlistSyncTests(unittest.TestCase):
         for forbidden in ("strategy.py", "config.py", "trade_ledger.json", "open_signals.json"):
             self.assertNotIn(forbidden, source)
             self.assertNotIn(forbidden, helper)
+            self.assertNotIn(forbidden, share_source)
 
-    def test_docker_includes_only_watchsync_helper_not_an_extra_runtime_layer(self):
+    def test_docker_includes_watchsync_and_share_runtime_without_replacing_helper(self):
         docker = Path("Dockerfile.dashboard").read_text(encoding="utf-8")
         ignore = Path(".dockerignore").read_text(encoding="utf-8")
         self.assertIn("dashboard_watchsync_app.py", docker)
         self.assertIn("!dashboard_watchsync_app.py", ignore)
         self.assertNotIn("dashboard_watchsync_runtime_app.py", docker)
-        self.assertNotIn("!dashboard_watchsync_runtime_app.py", ignore)
+        self.assertIn("dashboard_share_runtime_app.py", docker)
+        self.assertIn("!dashboard_share_runtime_app.py", ignore)
 
 
 if __name__ == "__main__":

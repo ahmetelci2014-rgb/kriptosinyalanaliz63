@@ -1,18 +1,17 @@
 """Kripto Kontrol Merkezi - sabit uygulama giriş noktası.
 
-Aktif ürün görünümü V3.32 tabanında kalır. V3.32.6 masaüstü/mobil/plan
-paritesini, V3.32.7 hesap güvenliği/ödeme geri bildirimini ve V3.32.8 hesaba bağlı
-İzleme Listesi senkronunu tek aktif runtime içinde korur. FREE/PREMIUM/ADMIN
-sınırları ve canlı işlem çekirdeği değişmez.
+Aktif ürün görünümü V3.32 tabanında kalır. V3.32.6 yüzey paritesi, V3.32.7 hesap
+akışı, V3.32.8 hesaba bağlı İzleme Listesi ve V3.32.9 paylaşılabilir gerçek işlem
+kartları tek zincirde korunur. FREE/PREMIUM/ADMIN sınırları ve canlı işlem çekirdeği değişmez.
 """
 from __future__ import annotations
 
-from dashboard_accountflow_runtime_app import VERSION as ACTIVE_VERSION
-from dashboard_accountflow_runtime_app import main as _active_main
-from dashboard_accountflow_runtime_app import make_v3321_handler as make_handler
+from dashboard_share_runtime_app import VERSION as ACTIVE_VERSION
+from dashboard_share_runtime_app import main as _active_main
+from dashboard_share_runtime_app import make_v3321_handler as make_handler
 
 VERSION = ACTIVE_VERSION
-ACTIVE_MODULE = "dashboard_accountflow_runtime_app"
+ACTIVE_MODULE = "dashboard_share_runtime_app"
 
 
 def main() -> None:

@@ -9,17 +9,21 @@ import dashboard_market_app as market
 import dashboard_marketcoinux_app as v332
 import dashboard_mobile_market_app as mobilemarket
 import dashboard_runtimefix_app as runtimefix
+import dashboard_share_runtime_app as share_runtime
 
 
 class DashboardV332RollbackTests(unittest.TestCase):
-    def test_active_runtime_keeps_v332_under_v3326_repair_and_v3328_account_flow(self):
-        self.assertEqual(app.ACTIVE_MODULE, "dashboard_accountflow_runtime_app")
-        self.assertEqual(app.VERSION, account_runtime.VERSION)
-        self.assertIs(app.make_handler, account_runtime.make_v3321_handler)
+    def test_active_runtime_keeps_v332_under_v3329_share_layer(self):
+        self.assertEqual(app.ACTIVE_MODULE, "dashboard_share_runtime_app")
+        self.assertEqual(app.VERSION, share_runtime.VERSION)
+        self.assertIs(app.make_handler, share_runtime.make_v3321_handler)
+        self.assertIn("V3_32_9_SHARE_CARDS", share_runtime.VERSION)
         self.assertIn("V3_32_8_WATCHLIST_SYNC", account_runtime.VERSION)
         self.assertIn("V3_32_6_SURFACE_PARITY", runtimefix.VERSION)
         account_source = inspect.getsource(account_runtime)
+        share_source = inspect.getsource(share_runtime)
         repair_source = inspect.getsource(runtimefix)
+        self.assertIn("base.make_v3321_handler", share_source)
         self.assertIn("runtimefix.make_v3321_handler", account_source)
         self.assertIn('path == "/account/password"', account_source)
         self.assertIn('path == "/payment/notify"', account_source)
@@ -42,26 +46,18 @@ class DashboardV332RollbackTests(unittest.TestCase):
         repair_source = inspect.getsource(runtimefix)
         mobile_source = inspect.getsource(mobilemarket)
         account_source = inspect.getsource(account_runtime)
+        share_source = inspect.getsource(share_runtime)
         self.assertNotIn("def do_POST", source)
         self.assertNotIn("def do_POST", repair_source)
         self.assertNotIn("def do_POST", mobile_source)
         self.assertIn("def do_POST", account_source)
+        self.assertNotIn("def do_POST", share_source)
         self.assertIn('path == "/account/password"', account_source)
         self.assertIn('path == "/payment/notify"', account_source)
         self.assertIn('path == "/api/account/watchlist"', account_source)
         self.assertIn('"/mobile/watchlist/update"', account_source)
-        self.assertIn('"signal_engine": "unchanged"', source)
-        self.assertIn('"telegram": "unchanged"', source)
-        self.assertIn('"trade_management": "unchanged"', source)
-        self.assertIn('"ledger_write": "unchanged"', source)
-        self.assertIn('"signal_engine":"unchanged"', repair_source)
-        self.assertIn('"telegram":"unchanged"', repair_source)
-        self.assertIn('"trade_management":"unchanged"', repair_source)
-        self.assertIn('"ledger_write":"unchanged"', repair_source)
-        self.assertIn('"signal_engine": "unchanged"', account_source)
-        self.assertIn('"telegram": "unchanged"', account_source)
-        self.assertIn('"trade_management": "unchanged"', account_source)
-        self.assertIn('"ledger_write": "unchanged"', account_source)
+        for contract_source in (source, repair_source, account_source, share_source):
+            self.assertIn('"signal_engine": "unchanged"' if contract_source in (source, account_source, share_source) else '"signal_engine":"unchanged"', contract_source)
         self.assertIn("render_market_page", mobile_source)
         self.assertIn("render_coin_page", mobile_source)
 
