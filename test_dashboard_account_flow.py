@@ -10,6 +10,7 @@ import dashboard_accountflow_runtime_app as runtime
 import dashboard_accounts_app as accounts
 import dashboard_app as app
 import dashboard_runtimefix_app as runtimefix
+import dashboard_share_runtime_app as share_runtime
 
 
 class MemoryAccountStore(accounts.GitHubAccountStore):
@@ -31,25 +32,13 @@ class MemoryAccountStore(accounts.GitHubAccountStore):
 class DashboardAccountFlowTests(unittest.TestCase):
     def _store(self) -> MemoryAccountStore:
         store = MemoryAccountStore()
-        store.create_user(
-            "uye01",
-            "member-secret-123",
-            role=accounts.ROLE_MEMBER,
-            expiry_days="",
-            actor="admin",
-        )
+        store.create_user("uye01", "member-secret-123", role=accounts.ROLE_MEMBER, expiry_days="", actor="admin")
         return store
 
     def test_managed_password_change_requires_current_password_and_replaces_hash(self):
         store = self._store()
         self.assertTrue(flow.managed_account(store, "UYE01"))
-        flow.change_managed_password(
-            store,
-            "uye01",
-            "member-secret-123",
-            "new-member-secret-456",
-            "new-member-secret-456",
-        )
+        flow.change_managed_password(store, "uye01", "member-secret-123", "new-member-secret-456", "new-member-secret-456")
         self.assertIsNone(store.authenticate("uye01", "member-secret-123"))
         self.assertIsNotNone(store.authenticate("uye01", "new-member-secret-456"))
         self.assertEqual(store.actions[-1][1], "self-password-change uye01")
@@ -57,30 +46,18 @@ class DashboardAccountFlowTests(unittest.TestCase):
     def test_wrong_current_password_does_not_change_password(self):
         store = self._store()
         with self.assertRaisesRegex(ValueError, "Mevcut şifre doğru değil"):
-            flow.change_managed_password(
-                store,
-                "uye01",
-                "wrong-current-password",
-                "new-member-secret-456",
-                "new-member-secret-456",
-            )
+            flow.change_managed_password(store, "uye01", "wrong-current-password", "new-member-secret-456", "new-member-secret-456")
         self.assertIsNotNone(store.authenticate("uye01", "member-secret-123"))
         self.assertIsNone(store.authenticate("uye01", "new-member-secret-456"))
 
     def test_password_change_rejects_mismatch_same_and_short_password(self):
         store = self._store()
         with self.assertRaisesRegex(ValueError, "eşleşmiyor"):
-            flow.change_managed_password(
-                store, "uye01", "member-secret-123", "new-member-secret-456", "other-member-secret-456"
-            )
+            flow.change_managed_password(store, "uye01", "member-secret-123", "new-member-secret-456", "other-member-secret-456")
         with self.assertRaisesRegex(ValueError, "aynı olmamalıdır"):
-            flow.change_managed_password(
-                store, "uye01", "member-secret-123", "member-secret-123", "member-secret-123"
-            )
+            flow.change_managed_password(store, "uye01", "member-secret-123", "member-secret-123", "member-secret-123")
         with self.assertRaises(ValueError):
-            flow.change_managed_password(
-                store, "uye01", "member-secret-123", "short", "short"
-            )
+            flow.change_managed_password(store, "uye01", "member-secret-123", "short", "short")
 
     def test_security_page_is_server_rendered_and_explains_unmanaged_account(self):
         session = {"username": "uye01", "csrf": "csrf-value"}
@@ -112,12 +89,16 @@ class DashboardAccountFlowTests(unittest.TestCase):
         self.assertNotIn("v3327PaymentFeedback", unknown)
         self.assertNotIn("onerror", unknown)
 
-    def test_runtime_contract_preserves_v3327_account_flow_under_v3328(self):
+    def test_runtime_contract_preserves_account_flow_under_v3329(self):
         source = inspect.getsource(runtime)
+        share_source = inspect.getsource(share_runtime)
         helper = inspect.getsource(flow)
-        self.assertEqual(app.ACTIVE_MODULE, "dashboard_accountflow_runtime_app")
-        self.assertEqual(app.VERSION, runtime.VERSION)
+        self.assertEqual(app.ACTIVE_MODULE, "dashboard_share_runtime_app")
+        self.assertEqual(app.VERSION, share_runtime.VERSION)
+        self.assertIs(app.make_handler, share_runtime.make_v3321_handler)
+        self.assertIn("V3_32_9_SHARE_CARDS", share_runtime.VERSION)
         self.assertIn("V3_32_8_WATCHLIST_SYNC", runtime.VERSION)
+        self.assertIn("base.make_v3321_handler", share_source)
         self.assertIn("runtimefix.make_v3321_handler", source)
         self.assertIn("/account/password", source)
         self.assertIn("/payment/notify", source)
@@ -127,6 +108,7 @@ class DashboardAccountFlowTests(unittest.TestCase):
         for forbidden in ("trade_ledger.json", "open_signals.json", "strategy.py", "config.py"):
             self.assertNotIn(forbidden, helper)
             self.assertNotIn(forbidden, source)
+            self.assertNotIn(forbidden, share_source)
 
     def test_docker_and_journey_audit_include_account_flow_modules(self):
         docker = Path("Dockerfile.dashboard").read_text(encoding="utf-8")
