@@ -1,0 +1,407 @@
+{
+  "version": "TP_CAPACITY_SHADOW_V1_2026_08_17",
+  "mode": "SHADOW_ONLY_NO_LIVE_TP_SL_CHANGE_NO_ORDERS",
+  "generated_at": 1787001512,
+  "auto_apply": false,
+  "current_structure": {
+    "tp1_r": 0.55,
+    "tp2_r": 1.05,
+    "tp3_r": 1.6,
+    "tp1_partial_fraction": 0.5,
+    "realized_r_if_tp1_then_tp3": 1.075,
+    "note": "Mevcut Net R hesabında TP1'de pozisyonun yarısı alınır; kalan yarı TP3'e ulaşırsa toplam yaklaşık 1.075R olur."
+  },
+  "all_history": {
+    "closed": 711,
+    "pre_close": {
+      "sample": 669,
+      "coverage_percent": 94.09,
+      "reach": {
+        "1.60R": {
+          "reached": 149,
+          "rate_percent": 22.27
+        },
+        "2.00R": {
+          "reached": 32,
+          "rate_percent": 4.78
+        },
+        "2.50R": {
+          "reached": 8,
+          "rate_percent": 1.2
+        },
+        "3.00R": {
+          "reached": 1,
+          "rate_percent": 0.15
+        },
+        "4.00R": {
+          "reached": 1,
+          "rate_percent": 0.15
+        }
+      },
+      "note": "İşlem kapanmadan önce ledger'a kaydedilmiş best_favorable_r kullanılır. Bu oran, mevcut yönetim altında hedef seviyesinin kapanıştan önce görülüp görülmediğini ölçer. TP3'te kapanan işlemler için TP3 sonrası devamı içermez."
+    },
+    "post_close_supplement": {
+      "sample": 130,
+      "tp3_sample": 45,
+      "upper_bound_reach": {
+        "1.60R": {
+          "reached": 63,
+          "rate_percent": 48.46
+        },
+        "2.00R": {
+          "reached": 49,
+          "rate_percent": 37.69
+        },
+        "2.50R": {
+          "reached": 33,
+          "rate_percent": 25.38
+        },
+        "3.00R": {
+          "reached": 22,
+          "rate_percent": 16.92
+        },
+        "4.00R": {
+          "reached": 10,
+          "rate_percent": 7.69
+        }
+      },
+      "tp3_extension": {
+        "+0.50R": {
+          "reached": 29,
+          "rate_percent": 64.44
+        },
+        "+1.00R": {
+          "reached": 19,
+          "rate_percent": 42.22
+        },
+        "+1.50R": {
+          "reached": 15,
+          "rate_percent": 33.33
+        },
+        "+2.00R": {
+          "reached": 10,
+          "rate_percent": 22.22
+        }
+      },
+      "note": "Bu bölüm TP1/TP2-BE ve TP3 sonrası 240 dakikalık gölge takibi kullanır. Yeni bir canlı stratejinin kesin hit-rate'i değildir; daha uzun hedeflerin potansiyel üst sınırını gösterir. SL işlemleri bu post-close örneğe girmez."
+    },
+    "by_source_pre_close": {
+      "15M_ENTRY": {
+        "sample": 569,
+        "coverage_percent": 93.28,
+        "reach": {
+          "1.60R": {
+            "reached": 126,
+            "rate_percent": 22.14
+          },
+          "2.00R": {
+            "reached": 25,
+            "rate_percent": 4.39
+          },
+          "2.50R": {
+            "reached": 6,
+            "rate_percent": 1.05
+          },
+          "3.00R": {
+            "reached": 1,
+            "rate_percent": 0.18
+          },
+          "4.00R": {
+            "reached": 1,
+            "rate_percent": 0.18
+          }
+        },
+        "note": "İşlem kapanmadan önce ledger'a kaydedilmiş best_favorable_r kullanılır. Bu oran, mevcut yönetim altında hedef seviyesinin kapanıştan önce görülüp görülmediğini ölçer. TP3'te kapanan işlemler için TP3 sonrası devamı içermez."
+      },
+      "5M_RADAR": {
+        "sample": 100,
+        "coverage_percent": 99.01,
+        "reach": {
+          "1.60R": {
+            "reached": 23,
+            "rate_percent": 23.0
+          },
+          "2.00R": {
+            "reached": 7,
+            "rate_percent": 7.0
+          },
+          "2.50R": {
+            "reached": 2,
+            "rate_percent": 2.0
+          },
+          "3.00R": {
+            "reached": 0,
+            "rate_percent": 0.0
+          },
+          "4.00R": {
+            "reached": 0,
+            "rate_percent": 0.0
+          }
+        },
+        "note": "İşlem kapanmadan önce ledger'a kaydedilmiş best_favorable_r kullanılır. Bu oran, mevcut yönetim altında hedef seviyesinin kapanıştan önce görülüp görülmediğini ölçer. TP3'te kapanan işlemler için TP3 sonrası devamı içermez."
+      }
+    },
+    "by_direction_pre_close": {
+      "LONG": {
+        "sample": 262,
+        "coverage_percent": 97.4,
+        "reach": {
+          "1.60R": {
+            "reached": 56,
+            "rate_percent": 21.37
+          },
+          "2.00R": {
+            "reached": 8,
+            "rate_percent": 3.05
+          },
+          "2.50R": {
+            "reached": 3,
+            "rate_percent": 1.15
+          },
+          "3.00R": {
+            "reached": 1,
+            "rate_percent": 0.38
+          },
+          "4.00R": {
+            "reached": 1,
+            "rate_percent": 0.38
+          }
+        },
+        "note": "İşlem kapanmadan önce ledger'a kaydedilmiş best_favorable_r kullanılır. Bu oran, mevcut yönetim altında hedef seviyesinin kapanıştan önce görülüp görülmediğini ölçer. TP3'te kapanan işlemler için TP3 sonrası devamı içermez."
+      },
+      "SHORT": {
+        "sample": 407,
+        "coverage_percent": 92.08,
+        "reach": {
+          "1.60R": {
+            "reached": 93,
+            "rate_percent": 22.85
+          },
+          "2.00R": {
+            "reached": 24,
+            "rate_percent": 5.9
+          },
+          "2.50R": {
+            "reached": 5,
+            "rate_percent": 1.23
+          },
+          "3.00R": {
+            "reached": 0,
+            "rate_percent": 0.0
+          },
+          "4.00R": {
+            "reached": 0,
+            "rate_percent": 0.0
+          }
+        },
+        "note": "İşlem kapanmadan önce ledger'a kaydedilmiş best_favorable_r kullanılır. Bu oran, mevcut yönetim altında hedef seviyesinin kapanıştan önce görülüp görülmediğini ölçer. TP3'te kapanan işlemler için TP3 sonrası devamı içermez."
+      }
+    }
+  },
+  "recent_14d": {
+    "closed": 332,
+    "pre_close": {
+      "sample": 332,
+      "coverage_percent": 100.0,
+      "reach": {
+        "1.60R": {
+          "reached": 74,
+          "rate_percent": 22.29
+        },
+        "2.00R": {
+          "reached": 15,
+          "rate_percent": 4.52
+        },
+        "2.50R": {
+          "reached": 4,
+          "rate_percent": 1.2
+        },
+        "3.00R": {
+          "reached": 1,
+          "rate_percent": 0.3
+        },
+        "4.00R": {
+          "reached": 1,
+          "rate_percent": 0.3
+        }
+      },
+      "note": "İşlem kapanmadan önce ledger'a kaydedilmiş best_favorable_r kullanılır. Bu oran, mevcut yönetim altında hedef seviyesinin kapanıştan önce görülüp görülmediğini ölçer. TP3'te kapanan işlemler için TP3 sonrası devamı içermez."
+    },
+    "post_close_supplement": {
+      "sample": 130,
+      "tp3_sample": 45,
+      "upper_bound_reach": {
+        "1.60R": {
+          "reached": 63,
+          "rate_percent": 48.46
+        },
+        "2.00R": {
+          "reached": 49,
+          "rate_percent": 37.69
+        },
+        "2.50R": {
+          "reached": 33,
+          "rate_percent": 25.38
+        },
+        "3.00R": {
+          "reached": 22,
+          "rate_percent": 16.92
+        },
+        "4.00R": {
+          "reached": 10,
+          "rate_percent": 7.69
+        }
+      },
+      "tp3_extension": {
+        "+0.50R": {
+          "reached": 29,
+          "rate_percent": 64.44
+        },
+        "+1.00R": {
+          "reached": 19,
+          "rate_percent": 42.22
+        },
+        "+1.50R": {
+          "reached": 15,
+          "rate_percent": 33.33
+        },
+        "+2.00R": {
+          "reached": 10,
+          "rate_percent": 22.22
+        }
+      },
+      "note": "Bu bölüm TP1/TP2-BE ve TP3 sonrası 240 dakikalık gölge takibi kullanır. Yeni bir canlı stratejinin kesin hit-rate'i değildir; daha uzun hedeflerin potansiyel üst sınırını gösterir. SL işlemleri bu post-close örneğe girmez."
+    },
+    "by_source_pre_close": {
+      "15M_ENTRY": {
+        "sample": 280,
+        "coverage_percent": 100.0,
+        "reach": {
+          "1.60R": {
+            "reached": 60,
+            "rate_percent": 21.43
+          },
+          "2.00R": {
+            "reached": 9,
+            "rate_percent": 3.21
+          },
+          "2.50R": {
+            "reached": 2,
+            "rate_percent": 0.71
+          },
+          "3.00R": {
+            "reached": 1,
+            "rate_percent": 0.36
+          },
+          "4.00R": {
+            "reached": 1,
+            "rate_percent": 0.36
+          }
+        },
+        "note": "İşlem kapanmadan önce ledger'a kaydedilmiş best_favorable_r kullanılır. Bu oran, mevcut yönetim altında hedef seviyesinin kapanıştan önce görülüp görülmediğini ölçer. TP3'te kapanan işlemler için TP3 sonrası devamı içermez."
+      },
+      "5M_RADAR": {
+        "sample": 52,
+        "coverage_percent": 100.0,
+        "reach": {
+          "1.60R": {
+            "reached": 14,
+            "rate_percent": 26.92
+          },
+          "2.00R": {
+            "reached": 6,
+            "rate_percent": 11.54
+          },
+          "2.50R": {
+            "reached": 2,
+            "rate_percent": 3.85
+          },
+          "3.00R": {
+            "reached": 0,
+            "rate_percent": 0.0
+          },
+          "4.00R": {
+            "reached": 0,
+            "rate_percent": 0.0
+          }
+        },
+        "note": "İşlem kapanmadan önce ledger'a kaydedilmiş best_favorable_r kullanılır. Bu oran, mevcut yönetim altında hedef seviyesinin kapanıştan önce görülüp görülmediğini ölçer. TP3'te kapanan işlemler için TP3 sonrası devamı içermez."
+      }
+    },
+    "by_direction_pre_close": {
+      "LONG": {
+        "sample": 192,
+        "coverage_percent": 100.0,
+        "reach": {
+          "1.60R": {
+            "reached": 43,
+            "rate_percent": 22.4
+          },
+          "2.00R": {
+            "reached": 6,
+            "rate_percent": 3.12
+          },
+          "2.50R": {
+            "reached": 3,
+            "rate_percent": 1.56
+          },
+          "3.00R": {
+            "reached": 1,
+            "rate_percent": 0.52
+          },
+          "4.00R": {
+            "reached": 1,
+            "rate_percent": 0.52
+          }
+        },
+        "note": "İşlem kapanmadan önce ledger'a kaydedilmiş best_favorable_r kullanılır. Bu oran, mevcut yönetim altında hedef seviyesinin kapanıştan önce görülüp görülmediğini ölçer. TP3'te kapanan işlemler için TP3 sonrası devamı içermez."
+      },
+      "SHORT": {
+        "sample": 140,
+        "coverage_percent": 100.0,
+        "reach": {
+          "1.60R": {
+            "reached": 31,
+            "rate_percent": 22.14
+          },
+          "2.00R": {
+            "reached": 9,
+            "rate_percent": 6.43
+          },
+          "2.50R": {
+            "reached": 1,
+            "rate_percent": 0.71
+          },
+          "3.00R": {
+            "reached": 0,
+            "rate_percent": 0.0
+          },
+          "4.00R": {
+            "reached": 0,
+            "rate_percent": 0.0
+          }
+        },
+        "note": "İşlem kapanmadan önce ledger'a kaydedilmiş best_favorable_r kullanılır. Bu oran, mevcut yönetim altında hedef seviyesinin kapanıştan önce görülüp görülmediğini ölçer. TP3'te kapanan işlemler için TP3 sonrası devamı içermez."
+      }
+    }
+  },
+  "existing_runner_evidence": {
+    "model": "TP3_RUNNER_TRAIL_0_5R",
+    "sample": 45,
+    "net_incremental_r": 5.0231,
+    "average_incremental_r": 0.1116,
+    "positive_rate": 20.0,
+    "zero_rate": 80.0,
+    "negative_rate": 0.0
+  },
+  "decision": {
+    "status": "MEASURE_ONLY",
+    "next_live_change": "NONE_AUTOMATIC",
+    "candidate_order": [
+      "KEEP_CURRENT_TP1_TP2_TP3_BASELINE",
+      "VALIDATE_TP3_SMALL_RUNNER",
+      "COMPARE_2R_2_5R_3R_4R_CAPACITY",
+      "ONLY_THEN_CONSIDER_LONG_TREND_MODE"
+    ]
+  }
+}

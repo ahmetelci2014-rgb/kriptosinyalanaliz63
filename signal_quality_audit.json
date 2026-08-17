@@ -1,0 +1,789 @@
+{
+  "version": "SIGNAL_QUALITY_AUDIT_V1_2026_08_17",
+  "mode": "ANALYSIS_ONLY_NO_SIGNAL_CHANGE_NO_TP_SL_CHANGE_NO_ORDERS",
+  "generated_at": 1787001512,
+  "auto_apply": false,
+  "methodology": {
+    "recent_window_days": 14,
+    "entry_distance_buckets_percent": [
+      0.1,
+      0.25,
+      0.35
+    ],
+    "tp1_progress_buckets_percent": [
+      0,
+      20,
+      45
+    ],
+    "target_r_levels": [
+      1.6,
+      2.0,
+      2.5,
+      3.0,
+      4.0
+    ],
+    "stop_cause_rule": "Yalnız provisional=false stop_root_cause kayıtları kesin kök neden dağılımına girer.",
+    "target_capacity_rule": "TP1/TP2-BE ve TP3 işlemlerindeki tamamlanmış post_result_shadow verileriyle maksimum gözlenen R hesaplanır; SL işlemleri hedef kapasitesi örneğine girmez."
+  },
+  "data_quality": {
+    "ledger_closed_trades": 711,
+    "recent_closed_trades": 332,
+    "post_v2_available": true,
+    "post_v3_available": true
+  },
+  "all_history": {
+    "outcomes": {
+      "sample": 711,
+      "outcomes": {
+        "EXPIRED": 11,
+        "SL": 238,
+        "TP1_SONRASI_BE": 226,
+        "TP2_SONRASI_BE": 82,
+        "TP3": 154
+      },
+      "tp3_rate_percent": 21.66,
+      "stop_rate_percent": 33.47,
+      "positive_close_rate_percent": 66.1,
+      "negative_close_rate_percent": 33.9,
+      "neutral_close_rate_percent": 0.0,
+      "r_records": 711,
+      "net_r": 13.7979,
+      "avg_r": 0.0194
+    },
+    "stop_root_causes": {
+      "finalized": 222,
+      "provisional": 16,
+      "missing": 0,
+      "primary_counts": {
+        "ERKEN_GIRIS_VEYA_DAR_STOP": 9,
+        "FITIL_DAR_STOP": 49,
+        "GEC_UZAK_GIRIS": 35,
+        "KURULUM_DEVAM_ETMEDI": 44,
+        "MUHTEMEL_ERKEN_GIRIS": 5,
+        "MUHTEMEL_YANLIS_YON": 19,
+        "ONCE_LEHE_SONRA_TERS": 21,
+        "ZAYIF_TREND_HACIM": 40
+      },
+      "preliminary_counts": {
+        "MUHTEMEL_YANLIS_YON": 16
+      },
+      "post_stop_returned_to_target": 63,
+      "post_stop_no_tp1_return": 159,
+      "fitil_or_timing_count": 63,
+      "fitil_or_timing_share_percent": 28.38,
+      "wrong_direction_count": 19,
+      "wrong_direction_share_percent": 8.56,
+      "late_entry_count": 35,
+      "late_entry_share_percent": 15.77
+    },
+    "by_direction": {
+      "LONG": {
+        "sample": 269,
+        "outcomes": {
+          "EXPIRED": 1,
+          "SL": 84,
+          "TP1_SONRASI_BE": 95,
+          "TP2_SONRASI_BE": 31,
+          "TP3": 58
+        },
+        "tp3_rate_percent": 21.56,
+        "stop_rate_percent": 31.23,
+        "positive_close_rate_percent": 68.4,
+        "negative_close_rate_percent": 31.6,
+        "neutral_close_rate_percent": 0.0,
+        "r_records": 269,
+        "net_r": 12.1836,
+        "avg_r": 0.0453
+      },
+      "SHORT": {
+        "sample": 442,
+        "outcomes": {
+          "EXPIRED": 10,
+          "SL": 154,
+          "TP1_SONRASI_BE": 131,
+          "TP2_SONRASI_BE": 51,
+          "TP3": 96
+        },
+        "tp3_rate_percent": 21.72,
+        "stop_rate_percent": 34.84,
+        "positive_close_rate_percent": 64.71,
+        "negative_close_rate_percent": 35.29,
+        "neutral_close_rate_percent": 0.0,
+        "r_records": 442,
+        "net_r": 1.6143,
+        "avg_r": 0.0037
+      }
+    },
+    "by_source": {
+      "15M_ENTRY": {
+        "sample": 610,
+        "outcomes": {
+          "EXPIRED": 11,
+          "SL": 203,
+          "TP1_SONRASI_BE": 194,
+          "TP2_SONRASI_BE": 71,
+          "TP3": 131
+        },
+        "tp3_rate_percent": 21.48,
+        "stop_rate_percent": 33.28,
+        "positive_close_rate_percent": 66.23,
+        "negative_close_rate_percent": 33.77,
+        "neutral_close_rate_percent": 0.0,
+        "r_records": 610,
+        "net_r": 12.2473,
+        "avg_r": 0.0201
+      },
+      "5M_RADAR": {
+        "sample": 101,
+        "outcomes": {
+          "SL": 35,
+          "TP1_SONRASI_BE": 32,
+          "TP2_SONRASI_BE": 11,
+          "TP3": 23
+        },
+        "tp3_rate_percent": 22.77,
+        "stop_rate_percent": 34.65,
+        "positive_close_rate_percent": 65.35,
+        "negative_close_rate_percent": 34.65,
+        "neutral_close_rate_percent": 0.0,
+        "r_records": 101,
+        "net_r": 1.5506,
+        "avg_r": 0.0154
+      }
+    }
+  },
+  "recent_14d": {
+    "outcomes": {
+      "sample": 332,
+      "outcomes": {
+        "EXPIRED": 7,
+        "SL": 100,
+        "TP1_SONRASI_BE": 115,
+        "TP2_SONRASI_BE": 36,
+        "TP3": 74
+      },
+      "tp3_rate_percent": 22.29,
+      "stop_rate_percent": 30.12,
+      "positive_close_rate_percent": 69.28,
+      "negative_close_rate_percent": 30.72,
+      "neutral_close_rate_percent": 0.0,
+      "r_records": 332,
+      "net_r": 21.316,
+      "avg_r": 0.0642
+    },
+    "stop_root_causes": {
+      "finalized": 100,
+      "provisional": 0,
+      "missing": 0,
+      "primary_counts": {
+        "ERKEN_GIRIS_VEYA_DAR_STOP": 4,
+        "FITIL_DAR_STOP": 20,
+        "GEC_UZAK_GIRIS": 20,
+        "KURULUM_DEVAM_ETMEDI": 21,
+        "MUHTEMEL_ERKEN_GIRIS": 1,
+        "MUHTEMEL_YANLIS_YON": 11,
+        "ONCE_LEHE_SONRA_TERS": 6,
+        "ZAYIF_TREND_HACIM": 17
+      },
+      "preliminary_counts": {},
+      "post_stop_returned_to_target": 25,
+      "post_stop_no_tp1_return": 75,
+      "fitil_or_timing_count": 25,
+      "fitil_or_timing_share_percent": 25.0,
+      "wrong_direction_count": 11,
+      "wrong_direction_share_percent": 11.0,
+      "late_entry_count": 20,
+      "late_entry_share_percent": 20.0
+    },
+    "timing": {
+      "entry_distance_coverage_percent": 100.0,
+      "tp1_progress_coverage_percent": 100.0,
+      "zone_distance_coverage_percent": 100.0,
+      "by_entry_distance_at_send": {
+        "GOOD_0_10_0_25": {
+          "sample": 79,
+          "outcomes": {
+            "EXPIRED": 1,
+            "SL": 18,
+            "TP1_SONRASI_BE": 27,
+            "TP2_SONRASI_BE": 9,
+            "TP3": 24
+          },
+          "tp3_rate_percent": 30.38,
+          "stop_rate_percent": 22.78,
+          "positive_close_rate_percent": 77.22,
+          "negative_close_rate_percent": 22.78,
+          "neutral_close_rate_percent": 0.0,
+          "r_records": 79,
+          "net_r": 18.315,
+          "avg_r": 0.2318
+        },
+        "LIMIT_0_25_0_35": {
+          "sample": 10,
+          "outcomes": {
+            "SL": 4,
+            "TP1_SONRASI_BE": 4,
+            "TP2_SONRASI_BE": 1,
+            "TP3": 1
+          },
+          "tp3_rate_percent": 10.0,
+          "stop_rate_percent": 40.0,
+          "positive_close_rate_percent": 60.0,
+          "negative_close_rate_percent": 40.0,
+          "neutral_close_rate_percent": 0.0,
+          "r_records": 10,
+          "net_r": -1.55,
+          "avg_r": -0.155
+        },
+        "VERY_CLOSE_0_10": {
+          "sample": 243,
+          "outcomes": {
+            "EXPIRED": 6,
+            "SL": 78,
+            "TP1_SONRASI_BE": 84,
+            "TP2_SONRASI_BE": 26,
+            "TP3": 49
+          },
+          "tp3_rate_percent": 20.16,
+          "stop_rate_percent": 32.1,
+          "positive_close_rate_percent": 67.08,
+          "negative_close_rate_percent": 32.92,
+          "neutral_close_rate_percent": 0.0,
+          "r_records": 243,
+          "net_r": 4.551,
+          "avg_r": 0.0187
+        }
+      },
+      "by_tp1_progress_at_send": {
+        "BEFORE_ENTRY_OR_PULLBACK": {
+          "sample": 237,
+          "outcomes": {
+            "EXPIRED": 7,
+            "SL": 79,
+            "TP1_SONRASI_BE": 80,
+            "TP2_SONRASI_BE": 22,
+            "TP3": 49
+          },
+          "tp3_rate_percent": 20.68,
+          "stop_rate_percent": 33.33,
+          "positive_close_rate_percent": 65.82,
+          "negative_close_rate_percent": 34.18,
+          "neutral_close_rate_percent": 0.0,
+          "r_records": 237,
+          "net_r": 1.9662,
+          "avg_r": 0.0083
+        },
+        "EARLY_PATH_0_20": {
+          "sample": 66,
+          "outcomes": {
+            "SL": 15,
+            "TP1_SONRASI_BE": 25,
+            "TP2_SONRASI_BE": 11,
+            "TP3": 15
+          },
+          "tp3_rate_percent": 22.73,
+          "stop_rate_percent": 22.73,
+          "positive_close_rate_percent": 77.27,
+          "negative_close_rate_percent": 22.73,
+          "neutral_close_rate_percent": 0.0,
+          "r_records": 66,
+          "net_r": 11.025,
+          "avg_r": 0.167
+        },
+        "LATE_BUT_ALLOWED_20_45": {
+          "sample": 29,
+          "outcomes": {
+            "SL": 6,
+            "TP1_SONRASI_BE": 10,
+            "TP2_SONRASI_BE": 3,
+            "TP3": 10
+          },
+          "tp3_rate_percent": 34.48,
+          "stop_rate_percent": 20.69,
+          "positive_close_rate_percent": 79.31,
+          "negative_close_rate_percent": 20.69,
+          "neutral_close_rate_percent": 0.0,
+          "r_records": 29,
+          "net_r": 8.3248,
+          "avg_r": 0.2871
+        }
+      },
+      "by_zone_distance": {
+        "FAR_OVER_0_35": {
+          "sample": 2,
+          "outcomes": {
+            "TP1_SONRASI_BE": 1,
+            "TP3": 1
+          },
+          "tp3_rate_percent": 50.0,
+          "stop_rate_percent": 0.0,
+          "positive_close_rate_percent": 100.0,
+          "negative_close_rate_percent": 0.0,
+          "neutral_close_rate_percent": 0.0,
+          "r_records": 2,
+          "net_r": 1.35,
+          "avg_r": 0.675
+        },
+        "GOOD_0_10_0_25": {
+          "sample": 139,
+          "outcomes": {
+            "SL": 40,
+            "TP1_SONRASI_BE": 47,
+            "TP2_SONRASI_BE": 21,
+            "TP3": 31
+          },
+          "tp3_rate_percent": 22.3,
+          "stop_rate_percent": 28.78,
+          "positive_close_rate_percent": 71.22,
+          "negative_close_rate_percent": 28.78,
+          "neutral_close_rate_percent": 0.0,
+          "r_records": 139,
+          "net_r": 12.0248,
+          "avg_r": 0.0865
+        },
+        "LIMIT_0_25_0_35": {
+          "sample": 59,
+          "outcomes": {
+            "EXPIRED": 3,
+            "SL": 20,
+            "TP1_SONRASI_BE": 21,
+            "TP2_SONRASI_BE": 3,
+            "TP3": 12
+          },
+          "tp3_rate_percent": 20.34,
+          "stop_rate_percent": 33.9,
+          "positive_close_rate_percent": 64.41,
+          "negative_close_rate_percent": 35.59,
+          "neutral_close_rate_percent": 0.0,
+          "r_records": 59,
+          "net_r": 0.1591,
+          "avg_r": 0.0027
+        },
+        "VERY_CLOSE_0_10": {
+          "sample": 132,
+          "outcomes": {
+            "EXPIRED": 4,
+            "SL": 40,
+            "TP1_SONRASI_BE": 46,
+            "TP2_SONRASI_BE": 12,
+            "TP3": 30
+          },
+          "tp3_rate_percent": 22.73,
+          "stop_rate_percent": 30.3,
+          "positive_close_rate_percent": 68.94,
+          "negative_close_rate_percent": 31.06,
+          "neutral_close_rate_percent": 0.0,
+          "r_records": 132,
+          "net_r": 7.7821,
+          "avg_r": 0.059
+        }
+      }
+    },
+    "by_direction": {
+      "LONG": {
+        "sample": 192,
+        "outcomes": {
+          "EXPIRED": 1,
+          "SL": 56,
+          "TP1_SONRASI_BE": 71,
+          "TP2_SONRASI_BE": 21,
+          "TP3": 43
+        },
+        "tp3_rate_percent": 22.4,
+        "stop_rate_percent": 29.17,
+        "positive_close_rate_percent": 70.31,
+        "negative_close_rate_percent": 29.69,
+        "neutral_close_rate_percent": 0.0,
+        "r_records": 192,
+        "net_r": 14.7092,
+        "avg_r": 0.0766
+      },
+      "SHORT": {
+        "sample": 140,
+        "outcomes": {
+          "EXPIRED": 6,
+          "SL": 44,
+          "TP1_SONRASI_BE": 44,
+          "TP2_SONRASI_BE": 15,
+          "TP3": 31
+        },
+        "tp3_rate_percent": 22.14,
+        "stop_rate_percent": 31.43,
+        "positive_close_rate_percent": 67.86,
+        "negative_close_rate_percent": 32.14,
+        "neutral_close_rate_percent": 0.0,
+        "r_records": 140,
+        "net_r": 6.6068,
+        "avg_r": 0.0472
+      }
+    },
+    "by_source": {
+      "15M_ENTRY": {
+        "sample": 280,
+        "outcomes": {
+          "EXPIRED": 7,
+          "SL": 87,
+          "TP1_SONRASI_BE": 94,
+          "TP2_SONRASI_BE": 32,
+          "TP3": 60
+        },
+        "tp3_rate_percent": 21.43,
+        "stop_rate_percent": 31.07,
+        "positive_close_rate_percent": 68.21,
+        "negative_close_rate_percent": 31.79,
+        "neutral_close_rate_percent": 0.0,
+        "r_records": 280,
+        "net_r": 12.3904,
+        "avg_r": 0.0443
+      },
+      "5M_RADAR": {
+        "sample": 52,
+        "outcomes": {
+          "SL": 13,
+          "TP1_SONRASI_BE": 21,
+          "TP2_SONRASI_BE": 4,
+          "TP3": 14
+        },
+        "tp3_rate_percent": 26.92,
+        "stop_rate_percent": 25.0,
+        "positive_close_rate_percent": 75.0,
+        "negative_close_rate_percent": 25.0,
+        "neutral_close_rate_percent": 0.0,
+        "r_records": 52,
+        "net_r": 8.9256,
+        "avg_r": 0.1716
+      }
+    },
+    "by_version": {
+      "MAIN_MTF_DIAGNOSTIC_V6_2026_07_27 | PREMIUM_MTF_TP_ODAKLI_V2 | CONFIG_2026_07_27": {
+        "sample": 183,
+        "outcomes": {
+          "EXPIRED": 1,
+          "SL": 55,
+          "TP1_SONRASI_BE": 71,
+          "TP2_SONRASI_BE": 19,
+          "TP3": 37
+        },
+        "tp3_rate_percent": 20.22,
+        "stop_rate_percent": 30.05,
+        "positive_close_rate_percent": 69.95,
+        "negative_close_rate_percent": 30.05,
+        "neutral_close_rate_percent": 0.0,
+        "r_records": 183,
+        "net_r": 10.4692,
+        "avg_r": 0.0572
+      },
+      "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11 | PREMIUM_MTF_TP_ODAKLI_V2 | CONFIG_2026_07_27": {
+        "sample": 149,
+        "outcomes": {
+          "EXPIRED": 6,
+          "SL": 45,
+          "TP1_SONRASI_BE": 44,
+          "TP2_SONRASI_BE": 17,
+          "TP3": 37
+        },
+        "tp3_rate_percent": 24.83,
+        "stop_rate_percent": 30.2,
+        "positive_close_rate_percent": 68.46,
+        "negative_close_rate_percent": 31.54,
+        "neutral_close_rate_percent": 0.0,
+        "r_records": 149,
+        "net_r": 10.8468,
+        "avg_r": 0.0728
+      }
+    }
+  },
+  "target_capacity": {
+    "sample": 130,
+    "tp3_sample": 45,
+    "population_note": "Yalnız TP1/TP2 sonrası BE veya TP3 ile kapanmış ve 240 dakikalık post-result gölge takibi tamamlanmış işlemler.",
+    "absolute_target_reach": {
+      "1.60R": {
+        "reached": 63,
+        "rate_percent": 48.46
+      },
+      "2.00R": {
+        "reached": 49,
+        "rate_percent": 37.69
+      },
+      "2.50R": {
+        "reached": 33,
+        "rate_percent": 25.38
+      },
+      "3.00R": {
+        "reached": 22,
+        "rate_percent": 16.92
+      },
+      "4.00R": {
+        "reached": 10,
+        "rate_percent": 7.69
+      }
+    },
+    "tp3_after_close_extension": {
+      "+0.50R": {
+        "reached": 29,
+        "rate_percent": 64.44
+      },
+      "+1.00R": {
+        "reached": 19,
+        "rate_percent": 42.22
+      },
+      "+1.50R": {
+        "reached": 15,
+        "rate_percent": 33.33
+      },
+      "+2.00R": {
+        "reached": 10,
+        "rate_percent": 22.22
+      }
+    }
+  },
+  "existing_post_result_v2": {
+    "version": "POST_RESULT_SHADOW_V2_2026_08_14",
+    "shadow_only": true,
+    "changes_live_rules": false,
+    "generated_at": 1787000649,
+    "minimum_sample": 20,
+    "data_quality": {
+      "ledger_trades": 717,
+      "completed_post_result_samples": 130,
+      "tracking_samples_excluded": 1
+    },
+    "overall": {
+      "sample": 130,
+      "complete": 130,
+      "evidence_gate": "ENOUGH_SAMPLE",
+      "average_mfe_r": 1.2534,
+      "average_mae_r": 1.6621,
+      "extension_0_5r_rate": 65.38,
+      "extension_1r_rate": 40.77,
+      "adverse_0_5r_rate": 75.38,
+      "checkpoint_positive_rate": {
+        "15": 46.92,
+        "30": 48.46,
+        "60": 43.08,
+        "120": 39.23,
+        "240": 40.77
+      }
+    },
+    "by_final_result": {
+      "TP1_SONRASI_BE": {
+        "sample": 65,
+        "complete": 65,
+        "evidence_gate": "ENOUGH_SAMPLE",
+        "average_mfe_r": 1.093,
+        "average_mae_r": 1.4709,
+        "extension_0_5r_rate": 64.62,
+        "extension_1r_rate": 35.38,
+        "adverse_0_5r_rate": 73.85,
+        "checkpoint_positive_rate": {
+          "15": 46.15,
+          "30": 50.77,
+          "60": 46.15,
+          "120": 43.08,
+          "240": 43.08
+        },
+        "tp2_recovery_rate": 33.85,
+        "tp3_recovery_rate": 18.46
+      },
+      "TP2_SONRASI_BE": {
+        "sample": 20,
+        "complete": 20,
+        "evidence_gate": "ENOUGH_SAMPLE",
+        "average_mfe_r": 1.3026,
+        "average_mae_r": 1.8744,
+        "extension_0_5r_rate": 70.0,
+        "extension_1r_rate": 55.0,
+        "adverse_0_5r_rate": 65.0,
+        "checkpoint_positive_rate": {
+          "15": 65.0,
+          "30": 60.0,
+          "60": 55.0,
+          "120": 45.0,
+          "240": 45.0
+        },
+        "tp3_recovery_rate": 30.0
+      },
+      "TP3": {
+        "sample": 45,
+        "complete": 45,
+        "evidence_gate": "ENOUGH_SAMPLE",
+        "average_mfe_r": 1.4633,
+        "average_mae_r": 1.844,
+        "extension_0_5r_rate": 64.44,
+        "extension_1r_rate": 42.22,
+        "adverse_0_5r_rate": 82.22,
+        "checkpoint_positive_rate": {
+          "15": 40.0,
+          "30": 40.0,
+          "60": 33.33,
+          "120": 31.11,
+          "240": 35.56
+        }
+      }
+    },
+    "by_source": {
+      "15M_ENTRY": {
+        "sample": 108,
+        "complete": 108,
+        "evidence_gate": "ENOUGH_SAMPLE",
+        "average_mfe_r": 1.0769,
+        "average_mae_r": 1.4247,
+        "extension_0_5r_rate": 63.89,
+        "extension_1r_rate": 36.11,
+        "adverse_0_5r_rate": 75.93,
+        "checkpoint_positive_rate": {
+          "15": 45.37,
+          "30": 50.0,
+          "60": 43.52,
+          "120": 37.96,
+          "240": 39.81
+        }
+      },
+      "5M_RADAR": {
+        "sample": 22,
+        "complete": 22,
+        "evidence_gate": "ENOUGH_SAMPLE",
+        "average_mfe_r": 2.1202,
+        "average_mae_r": 2.8279,
+        "extension_0_5r_rate": 72.73,
+        "extension_1r_rate": 63.64,
+        "adverse_0_5r_rate": 72.73,
+        "checkpoint_positive_rate": {
+          "15": 54.55,
+          "30": 40.91,
+          "60": 40.91,
+          "120": 45.45,
+          "240": 45.45
+        }
+      }
+    },
+    "by_direction": {
+      "LONG": {
+        "sample": 71,
+        "complete": 71,
+        "evidence_gate": "ENOUGH_SAMPLE",
+        "average_mfe_r": 1.4053,
+        "average_mae_r": 1.7032,
+        "extension_0_5r_rate": 67.61,
+        "extension_1r_rate": 43.66,
+        "adverse_0_5r_rate": 74.65,
+        "checkpoint_positive_rate": {
+          "15": 52.11,
+          "30": 46.48,
+          "60": 45.07,
+          "120": 33.8,
+          "240": 46.48
+        }
+      },
+      "SHORT": {
+        "sample": 59,
+        "complete": 59,
+        "evidence_gate": "ENOUGH_SAMPLE",
+        "average_mfe_r": 1.0707,
+        "average_mae_r": 1.6127,
+        "extension_0_5r_rate": 62.71,
+        "extension_1r_rate": 37.29,
+        "adverse_0_5r_rate": 76.27,
+        "checkpoint_positive_rate": {
+          "15": 40.68,
+          "30": 50.85,
+          "60": 40.68,
+          "120": 45.76,
+          "240": 33.9
+        }
+      }
+    },
+    "decision": {
+      "status": "SHADOW_OBSERVATION_ONLY",
+      "automatic_rule_change": false,
+      "note": "Bu rapor olcer; sinyal, TP, SL veya BE kuralini degistirmez."
+    }
+  },
+  "existing_post_result_v3": {
+    "version": "POST_RESULT_SHADOW_V3_2026_08_14",
+    "shadow_only": true,
+    "changes_live_rules": false,
+    "generated_at": 1787000649,
+    "minimum_sample": 20,
+    "modeled_trades": 130,
+    "baseline": {
+      "name": "CURRENT_RULE",
+      "incremental_r_after_close": 0.0
+    },
+    "models": {
+      "TP1_DELAY_BE_UNTIL_TP2": {
+        "sample": 65,
+        "evidence_gate": "ENOUGH_SAMPLE",
+        "average_incremental_r": -0.0793,
+        "net_incremental_r": -5.1564,
+        "positive_rate": 38.46,
+        "zero_rate": 4.62,
+        "negative_rate": 56.92
+      },
+      "TP1_SOFT_BE_MINUS_0_25R": {
+        "sample": 65,
+        "evidence_gate": "ENOUGH_SAMPLE",
+        "average_incremental_r": 0.0009,
+        "net_incremental_r": 0.059,
+        "positive_rate": 16.92,
+        "zero_rate": 0.0,
+        "negative_rate": 83.08
+      },
+      "TP2_SOFT_BE_MINUS_0_25R": {
+        "sample": 20,
+        "evidence_gate": "ENOUGH_SAMPLE",
+        "average_incremental_r": 0.1395,
+        "net_incremental_r": 2.7909,
+        "positive_rate": 30.0,
+        "zero_rate": 0.0,
+        "negative_rate": 70.0
+      },
+      "TP3_RUNNER_TRAIL_0_5R": {
+        "sample": 45,
+        "evidence_gate": "ENOUGH_SAMPLE",
+        "average_incremental_r": 0.1116,
+        "net_incremental_r": 5.0231,
+        "positive_rate": 20.0,
+        "zero_rate": 80.0,
+        "negative_rate": 0.0
+      },
+      "TP3_RUNNER_TRAIL_1_0R": {
+        "sample": 45,
+        "evidence_gate": "ENOUGH_SAMPLE",
+        "average_incremental_r": 0.0884,
+        "net_incremental_r": 3.9789,
+        "positive_rate": 13.33,
+        "zero_rate": 86.67,
+        "negative_rate": 0.0
+      }
+    },
+    "decision": {
+      "status": "COMPARE_ONLY",
+      "automatic_rule_change": false
+    }
+  },
+  "decision_flags": [
+    {
+      "priority": 1,
+      "code": "EXISTING_TP3_RUNNER_MODEL_POSITIVE",
+      "status": "KEEP_SHADOW",
+      "reason": "Mevcut TP3 +0.5R runner gölge modeli pozitif ek R üretiyor ve kayıtlı örnekte negatif fark göstermiyor.",
+      "next_action": "Örnek sayısını büyüt; yeterli ileri dönem doğrulaması olmadan canlı TP kuralını değiştirme."
+    },
+    {
+      "priority": 2,
+      "code": "TP3_EXTENSION_SHADOW_CANDIDATE",
+      "status": "SHADOW_TEST",
+      "reason": "TP3 sonrası tamamlanmış 45 örneğin %64.4'i en az +0.50R daha devam etti.",
+      "next_action": "Mevcut TP1/TP2/TP3 yapısını bozmadan TP3 sonrası küçük runner ve 2R–4R uzatma hedeflerini gölgede ölçmeye devam et."
+    },
+    {
+      "priority": 3,
+      "code": "LATE_ENTRY_REVIEW",
+      "status": "REVIEW",
+      "reason": "Kesinleşmiş stop kök nedenlerinin %20.0'i geç/uzak giriş.",
+      "next_action": "Entry-distance ve TP1-progress kovalarını son dönem Net R ile karşılaştır; canlı eşiği kanıt olmadan daraltma."
+    }
+  ]
+}
