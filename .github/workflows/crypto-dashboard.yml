@@ -39,6 +39,50 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: CANLI Render V3.32.9 paylaşım kartlarını doğrula
+        run: |
+          python - <<'PY'
+          import json
+          import time
+          import urllib.request
+
+          url = "https://kripto-kontrol-paneli.onrender.com/healthz"
+          expected = {
+              "status": "ok",
+              "version": "KRIPTO_KONTROL_MERKEZI_V3_32_9_SHARE_CARDS_2026_08_17",
+              "base_runtime": "V3.32.8 preserved",
+              "share_cards": "premium_admin_real_trade_data",
+              "share_buttons": "signals_trades_results_desktop_mobile",
+              "share_chart": "public_15m_candles_server_svg",
+              "share_png": "browser_export_web_share_download_fallback",
+              "share_results": "tp_sl_be_supported",
+              "share_free": "blocked",
+              "share_user_identity": "not_rendered",
+              "mobile_runtime": "server_rendered_core_preserved",
+              "membership_backend": "V3.32.8 preserved",
+              "payment_backend": "unchanged",
+              "signal_engine": "unchanged",
+              "telegram": "unchanged",
+              "trade_management": "unchanged",
+              "ledger_write": "unchanged",
+          }
+          last = None
+          for attempt in range(30):
+              try:
+                  req = urllib.request.Request(url, headers={"User-Agent": "github-v3329-live-check"})
+                  with urllib.request.urlopen(req, timeout=15) as resp:
+                      last = json.loads(resp.read().decode("utf-8"))
+                  bad = {k: (last.get(k), v) for k, v in expected.items() if last.get(k) != v}
+                  if not bad:
+                      print("CANLI_RENDER_V3329_OK", last["version"])
+                      break
+                  print(f"attempt={attempt+1} henüz beklenen sürüm değil: {bad}")
+              except Exception as exc:
+                  print(f"attempt={attempt+1} canlı kontrol hatası: {exc}")
+              time.sleep(8)
+          else:
+              raise SystemExit(f"Canlı Render V3.32.9 doğrulanamadı. Son yanıt: {last}")
+          PY
       - name: Panel Python dosyalarını derle
         run: python -m py_compile dashboard_*.py test_dashboard_*.py
       - name: Statik ve canlı panel testlerini çalıştır
