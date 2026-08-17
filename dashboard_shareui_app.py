@@ -1,4 +1,4 @@
-"""V3.32.9 paylaş UI dekoratörleri. Trading davranışına dokunmaz."""
+"""V3.32.10 paylaş UI dekoratörleri. Trading davranışına dokunmaz."""
 from __future__ import annotations
 
 import html
@@ -8,6 +8,15 @@ from typing import Any
 import dashboard_sharecard_app as cards
 
 CSS = '.share-action,.share-mobile{display:inline-flex;align-items:center;justify-content:center;border:1px solid #3b665d;border-radius:9px;padding:6px 9px;background:#0d2823;color:#2ce6bf!important;font-size:10px;font-weight:900;text-decoration:none;white-space:nowrap}.share-mobile{margin-top:8px;width:100%}.resultcard .share-mobile{width:auto;margin-left:8px}.row-card .share-action{margin-left:6px}.wide-card .share-action,.result-item .share-action{margin-left:auto}'
+
+
+def is_mobile_server_page(body: str) -> bool:
+    """Premium/Admin JS'siz mobil çekirdeğini metin kopyasına değil yapısına göre tanır."""
+    return (
+        '<meta name="viewport"' in body
+        and '<nav class="bottomnav ' in body
+        and 'href="/mobile?view=trades"' in body
+    )
 
 
 def _pick(rows: list[dict[str, Any]], symbol: str, system: str = "", direction: str = "", result: str = "") -> dict[str, Any] | None:
