@@ -1,4 +1,4 @@
-"""Kripto Kontrol Merkezi V3.32.10 - mobil Paylaş görünürlük düzeltmesi.
+"""Kripto Kontrol Merkezi V3.32.9 - mobil Paylaş görünürlük hotfix'i.
 
 V3.32.9 paylaşım kartı özelliğini korur. Mobil sunucu sayfasını eski metin kopyasına
 bağlamak yerine yapısal olarak tanır; böylece Sinyal/İşlem/Sonuç ekranlarında Paylaş
@@ -26,7 +26,7 @@ import dashboard_sharecard_app as cards
 import dashboard_shareui_app as shareui
 from dashboard_live_app import LoginRateLimiter, PanelConfig, build_service
 
-VERSION = "KRIPTO_KONTROL_MERKEZI_V3_32_10_MOBILE_SHARE_FIX_2026_08_17"
+VERSION = "KRIPTO_KONTROL_MERKEZI_V3_32_9_SHARE_CARDS_MOBILE_FIX_2026_08_17"
 CSS = base.CSS
 SCRIPT = base.SCRIPT
 
@@ -70,8 +70,8 @@ def make_v3321_handler(
         history_cache=history_cache,
     )
 
-    class V33210Handler(BaseHandler):
-        server_version = "KriptoPanel/3.32.10"
+    class V3329MobileFixHandler(BaseHandler):
+        server_version = "KriptoPanel/3.32.9-mobile-fix"
 
         def _send(self, status, body, content_type, *, cookies=None, nonce=None):
             if status == HTTPStatus.OK and isinstance(body, str) and content_type.startswith("text/html"):
@@ -174,11 +174,11 @@ def make_v3321_handler(
                 return
             return super().do_GET()
 
-    return V33210Handler
+    return V3329MobileFixHandler
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Kripto Kontrol Merkezi V3.32.10 mobil Paylaş görünürlük düzeltmesi")
+    parser = argparse.ArgumentParser(description="Kripto Kontrol Merkezi V3.32.9 mobil Paylaş görünürlük hotfix'i")
     parser.add_argument("--host", default=os.getenv("HOST", "127.0.0.1"))
     parser.add_argument("--port", type=int, default=int(os.getenv("PORT", "8080")))
     parser.add_argument("--root", default=".")
