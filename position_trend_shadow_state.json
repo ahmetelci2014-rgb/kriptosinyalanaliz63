@@ -36,7 +36,7 @@
       "created_at_text": "2026-08-14 18:10:32 UTC",
       "trade_id": "XRPUSDT_SHORT_1786731032",
       "opened_at": 1786731032,
-      "last_checked_candle_ts": 1786906800000,
+      "last_checked_candle_ts": 1786932000000,
       "active_stop": 1.013413586840171,
       "remaining_fraction": 1.0,
       "realized_price_r": 0.0,
@@ -81,14 +81,14 @@
       "created_at_text": "2026-08-15 01:53:06 UTC",
       "trade_id": "XLMUSDT_SHORT_1786758786",
       "opened_at": 1786758786,
-      "last_checked_candle_ts": 1786906800000,
+      "last_checked_candle_ts": 1786932000000,
       "active_stop": 0.16070261932938323,
       "remaining_fraction": 1.0,
       "realized_price_r": 0.0,
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "best_r": 0.4185485417251139,
+      "best_r": 0.6582013357773947,
       "worst_r": -0.6649521187084517,
       "closed": false
     },
@@ -126,7 +126,7 @@
       "created_at_text": "2026-08-16 08:35:48 UTC",
       "trade_id": "ETHFIUSDT_LONG_1786869348",
       "opened_at": 1786869348,
-      "last_checked_candle_ts": 1786906800000,
+      "last_checked_candle_ts": 1786932000000,
       "active_stop": 0.48623333087921,
       "remaining_fraction": 0.5,
       "realized_price_r": 1.125,
@@ -135,6 +135,51 @@
       "tp3_hit": false,
       "best_r": 3.5217405395846253,
       "worst_r": -0.505434984847797,
+      "closed": false
+    },
+    "FILUSDT_SHORT_1786935883": {
+      "version": "POSITION_TREND_SHADOW_V1_2026_08_11",
+      "symbol": "FILUSDT",
+      "direction": "SHORT",
+      "setup_type": "BREAKOUT_RETEST",
+      "score": 99,
+      "entry": 0.6688,
+      "stop": 0.6860957707497775,
+      "risk": 0.017295770749777506,
+      "risk_percent": 2.5860901240696035,
+      "tp1": 0.6428563438753336,
+      "tp2": 0.6169126877506674,
+      "tp3": 0.5823211462511124,
+      "market_regime": "SHORT",
+      "market_detail": {
+        "BTCUSDT": "SHORT",
+        "ETHUSDT": "NEUTRAL",
+        "SOLUSDT": "SHORT"
+      },
+      "funding_rate_entry": 8.91966914968e-05,
+      "funding_next_timestamp": 1786982400000,
+      "oi_usd_entry": 12426584.53392,
+      "d1_rsi": 38.85959433368265,
+      "d1_adx": 29.28567181278592,
+      "h4_rsi": 38.199435055643846,
+      "h4_adx": 24.245079748203068,
+      "h1_rsi": 36.614447321978176,
+      "h1_adx": 27.08474085611134,
+      "h1_volume_ratio": 3.0435284675596326,
+      "entry_candle_ts": 1786932000000,
+      "created_at": 1786935883,
+      "created_at_text": "2026-08-17 03:04:43 UTC",
+      "trade_id": "FILUSDT_SHORT_1786935883",
+      "opened_at": 1786935883,
+      "last_checked_candle_ts": 1786932000000,
+      "active_stop": 0.6860957707497775,
+      "remaining_fraction": 1.0,
+      "realized_price_r": 0.0,
+      "tp1_hit": false,
+      "tp2_hit": false,
+      "tp3_hit": false,
+      "best_r": 0.0,
+      "worst_r": 0.0,
       "closed": false
     }
   },
@@ -151,12 +196,12 @@
     "BOMEUSDT": 1786912113
   },
   "oi_snapshots": {},
-  "last_run": "2026-08-16 20:28:55 UTC",
+  "last_run": "2026-08-17 03:05:04 UTC",
   "last_universe": {
     "eligible_total": 430,
     "priority_active": 30,
-    "liquid_above_min": 69,
-    "selected": 81,
+    "liquid_above_min": 82,
+    "selected": 90,
     "top10": [
       "BTCUSDT",
       "ETHUSDT",
@@ -171,29 +216,30 @@
     ],
     "min_notional_usdt": 5000000.0,
     "market_regime": {
-      "regime": "NEUTRAL",
+      "regime": "SHORT",
       "long_votes": 0,
-      "short_votes": 1,
+      "short_votes": 2,
       "detail": {
         "BTCUSDT": "SHORT",
         "ETHUSDT": "NEUTRAL",
-        "SOLUSDT": "NEUTRAL"
+        "SOLUSDT": "SHORT"
       }
     }
   },
   "run_stats": {
-    "scanned": 81,
-    "candidate_count": 0,
-    "opened_this_run": 0,
-    "open_trades": 3,
+    "scanned": 90,
+    "candidate_count": 1,
+    "opened_this_run": 1,
+    "open_trades": 4,
     "reason_counts": {
+      "MARKET_REGIME_OPPOSITE": 5,
       "NO_D1_H4_ALIGNMENT": 14,
-      "NO_D1_HISTORY": 6,
+      "NO_D1_HISTORY": 7,
       "NO_D1_TREND": 32,
-      "NO_H1_ENTRY_SETUP": 18,
-      "SCORE_BELOW_MIN": 3,
-      "STRUCTURAL_RISK_OUT_OF_RANGE": 2,
-      "SYMBOL_COOLDOWN": 3
+      "NO_H1_ENTRY_SETUP": 24,
+      "SCORE_BELOW_MIN": 1,
+      "SYMBOL_COOLDOWN": 3,
+      "TRADE_SETUP": 1
     }
   }
 }
