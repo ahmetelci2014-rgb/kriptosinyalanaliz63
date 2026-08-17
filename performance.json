@@ -27918,8 +27918,8 @@
       "radar": 0,
       "tp1": 1,
       "tp2": 1,
-      "tp3": 0,
-      "sl": 0,
+      "tp3": 1,
+      "sl": 1,
       "be": 0,
       "expired": 0,
       "long": 0,
@@ -27932,16 +27932,34 @@
           "radar": 0,
           "tp1": 1,
           "tp2": 1,
-          "tp3": 0,
+          "tp3": 1,
           "sl": 0,
+          "be": 0,
+          "expired": 0
+        },
+        "UPUSDT": {
+          "opened": 0,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         }
       },
-      "direction_stops": {},
-      "stop_times": {},
-      "closed_times": {},
-      "closed_results": {},
+      "direction_stops": {
+        "LONG": 1
+      },
+      "stop_times": {
+        "UPUSDT": 1787004092
+      },
+      "closed_times": {
+        "SHELLUSDT": 1787004089
+      },
+      "closed_results": {
+        "SHELLUSDT": "TP3"
+      },
       "closed_history": [
         {
           "time": "00:46:24",
@@ -27962,6 +27980,26 @@
           "exit": 0.0215426459,
           "source": "15M_ENTRY",
           "score": 89
+        },
+        {
+          "time": "01:01:29",
+          "symbol": "SHELLUSDT",
+          "direction": "LONG",
+          "result": "TP3",
+          "entry": 0.02128,
+          "exit": 0.0216802224,
+          "source": "15M_ENTRY",
+          "score": 89
+        },
+        {
+          "time": "01:01:32",
+          "symbol": "UPUSDT",
+          "direction": "LONG",
+          "result": "SL",
+          "entry": 0.433,
+          "exit": 0.4308,
+          "source": "15M_ENTRY",
+          "score": 99
         }
       ],
       "sl_after_tp1": 0,
@@ -27969,11 +28007,32 @@
       "sl_after_no_return": 0
     }
   },
-  "last_update": 1787003478,
+  "last_update": 1787004092,
   "last_open_summary": 1786998998,
   "last_status_message": 1787003395,
   "last_daily_report": "2026-08-17",
-  "sl_after_follow": {},
+  "sl_after_follow": {
+    "UPUSDT_LONG_1787004092": {
+      "trade_id": "UPUSDT_LONG_15M_ENTRY_1786999841",
+      "symbol": "UPUSDT",
+      "direction": "LONG",
+      "source": "15M_ENTRY",
+      "entry": 0.433,
+      "tp1": 0.4344661435,
+      "tp2": 0.4357990013,
+      "tp3": 0.4372651448,
+      "sl": 0.4303342845,
+      "score": 99,
+      "risk_percent": 0.616,
+      "stopped_at": 1787004092,
+      "stop_exit": 0.4308,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    }
+  },
   "telegram_result_guard": {
     "dc48c6f2bc36af573d20eab458cf05251738c17135a933dc77b333bb7ea769ac": 1786185949,
     "5ded6b782edb86bab37329fb38ea1d25718e7bd51b77ead037e620cbbf64909c": 1786189550,
