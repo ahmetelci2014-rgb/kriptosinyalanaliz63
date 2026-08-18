@@ -7,6 +7,8 @@ on:
       - main
     paths:
       - "*.py"
+      - "!dashboard_*.py"
+      - "!test_dashboard_*.py"
       - "requirements.txt"
       - ".github/workflows/tests.yml"
   pull_request:
@@ -14,6 +16,8 @@ on:
       - main
     paths:
       - "*.py"
+      - "!dashboard_*.py"
+      - "!test_dashboard_*.py"
       - "requirements.txt"
       - ".github/workflows/tests.yml"
 
@@ -76,13 +80,19 @@ jobs:
             prescription_engine.py \
             system_control_center.py
 
-      - name: Tüm Python testlerini çalıştır
+      - name: Çekirdek ve gölge Python testlerini çalıştır
         env:
           TOKEN: ""
           CHAT_ID: ""
         run: |
           for test_file in test_*.py
           do
+            case "$test_file" in
+              test_dashboard_*.py)
+                echo "Panel testi ayrı Kripto Panel Kontrolü workflow'unda: ${test_file}"
+                continue
+                ;;
+            esac
             echo "Çalıştırılıyor: ${test_file}"
             python -m pytest -q "${test_file}"
           done
