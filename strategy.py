@@ -54,9 +54,15 @@ from config import (
 # YENİ GİRİŞ ZAMANLAMA AYARLARI
 # =========================================================
 
-# 15M dönüş sinyalinde fiyat ideal dönüş bölgesinden bundan fazla
-# uzaklaşmışsa sinyal artık geç kabul edilir.
-MAX_LATE_ENTRY_DISTANCE_PERCENT = 0.35
+# Son 14 günlük kalite raporunda %0.25-%0.35 ideal bölge uzaklığı
+# neredeyse sıfır ortalama R üretirken %0.10-%0.25 bölgesi daha güçlüydü.
+# 15M normal girişlerde geç/uzak kurulumu daha erken kes.
+MAX_LATE_ENTRY_DISTANCE_PERCENT = 0.25
+
+# Prescription Engine adx_15m < 19.89 grubunda negatif toplam R gösterdi.
+# Doğrudan 20 yapmak fazla kazanan sildiği için daha yumuşak, yalnız 15M
+# normal girişe uygulanan devamlılık tabanı kullanılır. 5M erken giriş korunur.
+NORMAL_ENTRY_MIN_ADX_15M = 18.0
 
 # 5M erken girişte fiyat EMA / yakın destek-direnç bölgesine
 # bundan daha yakın olmalıdır.
@@ -1108,7 +1114,7 @@ def analyze_mtf_trade(
             strict=True,
         )
         and volume_ratio >= MIN_VOLUME_RATIO_15M
-        and adx >= 15
+        and adx >= NORMAL_ENTRY_MIN_ADX_15M
         and score >= MIN_SCORE_TRADE
     )
 
