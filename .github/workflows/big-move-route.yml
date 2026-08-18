@@ -1,0 +1,97 @@
+name: Büyük Hareket Fiyat Rotası
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Büyük hareket için saatlik tarama yeterli; 5 dakikalık spam/Actions maliyeti yok.
+    - cron: "37 * * * *"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: big-move-price-route
+  cancel-in-progress: false
+
+jobs:
+  big-move-route:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Repo indir
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Bağımlılıkları kur
+        env:
+          PIP_DISABLE_PIP_VERSION_CHECK: "1"
+        run: |
+          python -m pip install --prefer-binary -r requirements.txt
+
+      - name: Büyük hareket motorunu doğrula
+        run: |
+          python -m py_compile \
+            big_move_route.py \
+            test_big_move_route.py \
+            position_trend_shadow.py \
+            telegram_delivery.py
+          python -m unittest -v test_big_move_route.py
+
+      - name: Tüm piyasa Büyük Hareket taramasını çalıştır
+        env:
+          TOKEN: ${{ secrets.TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: |
+          python big_move_route.py
+
+      - name: Büyük hareket state ve ledger kaydet
+        if: always()
+        run: |
+          set -e
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          for file in \
+            big_move_route_state.json \
+            big_move_route_ledger.json
+          do
+            if [ -f "$file" ]; then
+              git add "$file"
+            else
+              echo "$file henüz oluşmadı; atlandı."
+            fi
+          done
+
+          if git diff --cached --quiet; then
+            echo "Büyük hareket kayıtlarında yeni değişiklik yok."
+            exit 0
+          fi
+
+          git commit -m "Update Big Move Price Route state and ledger"
+
+          for attempt in 1 2 3
+          do
+            echo "Push denemesi: $attempt"
+            git pull --rebase --autostash origin main
+            if git push origin HEAD:main; then
+              echo "Büyük hareket state/ledger kaydedildi."
+              exit 0
+            fi
+            sleep 10
+          done
+
+          echo "Büyük hareket kayıtları kaydedilemedi."
+          exit 1
