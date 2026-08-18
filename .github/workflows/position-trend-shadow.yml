@@ -1,4 +1,4 @@
-name: Ana Trend Pozisyon Shadow
+name: Ana Trend Pozisyon Shadow V2
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: position-trend-shadow
+  group: position-trend-shadow-v2
   cancel-in-progress: false
 
 jobs:
@@ -37,13 +37,15 @@ jobs:
         run: |
           python -m pip install --prefer-binary -r requirements.txt
 
-      - name: Saf testleri çalıştır
+      - name: Saf testleri ve V2 guardı çalıştır
         run: |
+          python -m py_compile position_trend_shadow.py position_trend_shadow_v2_runner.py
           python -m unittest -v test_position_trend_shadow.py
+          python position_trend_shadow_v2_runner.py --self-test
 
-      - name: Ana Trend Pozisyon Shadow çalıştır
+      - name: Ana Trend Pozisyon Shadow V2 çalıştır
         run: |
-          python position_trend_shadow.py
+          python position_trend_shadow_v2_runner.py
 
       - name: State ve ledger kaydet
         if: always()
@@ -63,11 +65,11 @@ jobs:
           done
 
           if git diff --cached --quiet; then
-            echo "Kaydedilecek Ana Trend değişikliği yok."
+            echo "Kaydedilecek Ana Trend V2 değişikliği yok."
             exit 0
           fi
 
-          git commit -m "Update position trend shadow state and ledger"
+          git commit -m "Update Position Trend Shadow V2 state and ledger"
 
           for attempt in 1 2 3
           do
@@ -77,12 +79,12 @@ jobs:
 
             if git push origin HEAD:main
             then
-              echo "Ana Trend state ve ledger kaydedildi."
+              echo "Ana Trend V2 state ve ledger kaydedildi."
               exit 0
             fi
 
             sleep 10
           done
 
-          echo "Ana Trend kayıtları üç denemede de gönderilemedi."
+          echo "Ana Trend V2 kayıtları üç denemede de gönderilemedi."
           exit 1
