@@ -43,7 +43,23 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
-        run: python scalp_radar.py
+        run: |
+          # Kalite koruması: yalnız ATAK_SCALP yeni sinyallerinde daha güçlü
+          # mum kapanış teyidi ister. TEPKI_SCALP ve diğer sistemler değişmez.
+          python - <<'PY'
+          import scalp_radar as radar
+
+          radar.ATTACK_LONG_MIN_CLOSE_POWER = 70
+          radar.ATTACK_SHORT_MAX_CLOSE_POWER = 30
+          print(
+              "ATAK_SCALP quality guard active:",
+              "LONG close_power >=",
+              radar.ATTACK_LONG_MIN_CLOSE_POWER,
+              "SHORT close_power <=",
+              radar.ATTACK_SHORT_MAX_CLOSE_POWER,
+          )
+          radar.main()
+          PY
 
       - name: Scalp durum ve performans dosyalarını güvenli kaydet
         if: always()
