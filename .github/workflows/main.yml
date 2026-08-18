@@ -45,6 +45,17 @@ jobs:
           GITHUB_REF_NAME: ${{ github.ref_name }}
         run: python main.py
 
+      - name: Premium paper demo executor
+        if: always()
+        continue-on-error: true
+        env:
+          PAPER_MARGIN_USDT: "5"
+          PAPER_LEVERAGE: "2"
+          PAPER_MIN_SCORE: "91"
+          PAPER_MAX_SIGNAL_AGE_MINUTES: "30"
+          PAPER_MAX_ENTRY_DRIFT_PERCENT: "0.25"
+        run: python paper_demo_executor.py
+
       - name: TP/BE sonrası sessiz gölge takibi çalıştır
         if: always()
         run: python post_result_shadow.py
@@ -71,6 +82,7 @@ jobs:
             last_signals.json \
             trade_ledger.json \
             portfolio_risk_shadow_main_mtf.json \
+            paper_demo_state.json \
             post_result_shadow_v2_report.json \
             post_result_shadow_v3_report.json
           do
