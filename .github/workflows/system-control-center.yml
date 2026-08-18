@@ -28,6 +28,25 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: İzleme workflow bağlantılarını doğrula
+        run: |
+          set -e
+          for file in \
+            .github/workflows/main.yml \
+            .github/workflows/scalp-radar.yml \
+            .github/workflows/pump-radar.yml \
+            .github/workflows/swing-shadow-v4.yml \
+            .github/workflows/position-trend-shadow.yml \
+            .github/workflows/all-market-shadow.yml \
+            .github/workflows/momentum-shadow.yml \
+            .github/workflows/range-shadow.yml \
+            .github/workflows/portfolio-risk-outcomes.yml \
+            .github/workflows/new-listing-radar.yml \
+            .github/workflows/decision-engine.yml
+          do
+            test -f "$file"
+          done
+
       - name: Kontrol merkezi testleri
         run: |
           python -m unittest -v test_system_control_center.py
@@ -37,7 +56,33 @@ jobs:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
         run: |
-          python system_control_center.py
+          python - <<'PY'
+          import system_control_center as center
+
+          # Operasyonel sağlık eşikleri: canlı botlar 5 dakikalık çalıştığı için
+          # 6 saat beklemek yerine 90 dakikada veri kesintisini görünür yap.
+          for key in ("PREMIUM", "SCALP", "PUMP_DUMP", "POST_RESULT"):
+              center.COMPONENTS[key]["stale_hours"] = 1.5
+
+          # 6 saatlik gölgelerde iki periyottan uzun sessizlik uyarı üretmeli.
+          center.COMPONENTS["MOMENTUM_SHADOW"]["stale_hours"] = 12.0
+          center.COMPONENTS["PORTFOLIO_RISK"]["stale_hours"] = 12.0
+
+          # New Listing artık 10 dakikada bir çalışıyor; uzun sessizliği daha erken gör.
+          center.COMPONENTS["NEW_LISTING"]["stale_hours"] = 2.0
+
+          # Range araştırması arşivlendi ve yalnız manuel çalışıyor; bu nedenle
+          # otomatik schedule olmaması teknik arıza sayılmaz.
+          center.COMPONENTS["RANGE_SHADOW"]["stale_hours"] = 24.0 * 365.0
+
+          # System Control içinde workflow=None olan eski kör noktaları bağla.
+          center.COMPONENTS["MOMENTUM_SHADOW"]["workflow"] = ".github/workflows/momentum-shadow.yml"
+          center.COMPONENTS["RANGE_SHADOW"]["workflow"] = ".github/workflows/range-shadow.yml"
+          center.COMPONENTS["PORTFOLIO_RISK"]["workflow"] = ".github/workflows/portfolio-risk-outcomes.yml"
+          center.COMPONENTS["PRESCRIPTION_ENGINE"]["workflow"] = ".github/workflows/decision-engine.yml"
+
+          center.run()
+          PY
 
       - name: Yalnız kontrol merkezi raporlarını kaydet
         if: always()
