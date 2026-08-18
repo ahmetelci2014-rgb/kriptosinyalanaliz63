@@ -82,13 +82,17 @@ RISK_MODE_ALLOW_RADAR_TRADE = True
 # FİLTRELER
 # =========================
 
-# Eski TP akışını tamamen kesmemek için skor sınırı korunuyor.
-MIN_SCORE_TRADE = 72
+# Geçmiş 500 Premium işlemde score < 90.4 grubu toplam ve holdout'ta
+# negatif katkı verdi. Integer skor yapısında 91 altı adaylar elenir.
+# Kalite > miktar: yalnız daha güçlü Premium adaylar canlıya geçer.
+MIN_SCORE_TRADE = 91
 
 # Ana bot içi radar kapalı.
 MIN_SCORE_RADAR = 999
 
 # Çok zayıf 4H ve 1H trendlerini elemek için dengeli ADX sınırı.
+# Prescription Engine ADX'i daha fazla sıkmanın çok sayıda kazananı da
+# sildiğini gösterdiği için bu eşikler şimdilik korunuyor.
 MIN_ADX_4H = 15
 MIN_ADX_1H = 15
 
@@ -137,10 +141,13 @@ TP1_R_MULTIPLIER = 0.55
 TP2_R_MULTIPLIER = 1.05
 TP3_R_MULTIPLIER = 1.60
 
-# Girişten fazla uzaklaşmış sinyal gönderilmez.
-MAX_ENTRY_DISTANCE_PERCENT = 0.35
+# Son 14 günlük kalite raporunda %0.25-%0.35 giriş bölgesi negatif/zayıf,
+# %0.10-%0.25 bölgesi belirgin biçimde daha verimli çıktı.
+# Geç/uzak girişleri azaltmak için üst sınır %0.35 -> %0.25 sıkılaştırıldı.
+MAX_ENTRY_DISTANCE_PERCENT = 0.25
 
-# Fiyat TP1 yolunun %45'inden fazlasını gittiyse geç giriş kabul edilir.
+# TP1 yolunun %20-%45'i ilerlemiş ama hâlâ izinli sinyaller geçmiş veride
+# güçlü kaldığı için bu eşik bilerek korunuyor; giriş mesafesiyle karıştırılmaz.
 MAX_TP1_PROGRESS_PERCENT = 45
 
 # =========================
