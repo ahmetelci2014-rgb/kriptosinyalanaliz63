@@ -41,7 +41,7 @@ class BigMoveRouteTests(unittest.TestCase):
             h4,
             "LONG",
             entry=108.0,
-            stop=106.0,
+            stop=107.0,
         )
         self.assertIsNotNone(projection)
         self.assertGreaterEqual(projection["main_target_r"], 3.0)
