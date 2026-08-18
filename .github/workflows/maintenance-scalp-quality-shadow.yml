@@ -1,0 +1,535 @@
+name: One-time Scalp Quality Shadow Maintenance
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/maintenance-scalp-quality-shadow.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-time-scalp-quality-shadow-maintenance
+  cancel-in-progress: false
+
+jobs:
+  patch-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Repo indir
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: ATAK tek kaynak ve karşılaştırma gölgesini uygula
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: beklenen 1 eşleşme, bulunan {count}")
+              return text.replace(old, new, 1)
+
+          path = Path("scalp_radar.py")
+          text = path.read_text(encoding="utf-8")
+
+          text = replace_once(
+              text,
+              'PERFORMANCE_FILE = "scalp_performance_ledger.json"\n',
+              'PERFORMANCE_FILE = "scalp_performance_ledger.json"\n'
+              'ATTACK_GUARD_SHADOW_FILE = "scalp_attack_guard_shadow.json"\n',
+              "shadow file sabiti",
+          )
+
+          text = replace_once(
+              text,
+              'ATTACK_LONG_MIN_CLOSE_POWER = 62\n',
+              '# Eski 62 eşiği yalnız karşılaştırma gölgesi içindir.\n'
+              'ATTACK_LEGACY_LONG_MIN_CLOSE_POWER = 62\n'
+              '# Canlı ATAK kalite korumasının tek kaynak değeri.\n'
+              'ATTACK_LONG_MIN_CLOSE_POWER = 70\n',
+              "atak long tek kaynak",
+          )
+          text = replace_once(
+              text,
+              'ATTACK_SHORT_MAX_CLOSE_POWER = 38\n',
+              '# Eski 38 eşiği yalnız karşılaştırma gölgesi içindir.\n'
+              'ATTACK_LEGACY_SHORT_MAX_CLOSE_POWER = 38\n'
+              '# Canlı ATAK kalite korumasının tek kaynak değeri.\n'
+              'ATTACK_SHORT_MAX_CLOSE_POWER = 30\n\n'
+              'ATTACK_GUARD_SHADOW_KEEP_DAYS = 14\n'
+              'ATTACK_GUARD_SHADOW_MAX_RECORDS = 300\n'
+              'ATTACK_GUARD_SHADOW_MAX_TRACK_MINUTES = 180\n',
+              "atak short tek kaynak",
+          )
+
+          shadow_block = r'''
+
+# =========================================================
+# ATAK 70/30 KARŞILAŞTIRMA GÖLGESİ
+# =========================================================
+# Eski 62/38 kapanış gücü filtresine göre canlı aday olacakken yeni 70/30
+# koruması yüzünden elenen adayları sessizce izler. Telegram göndermez, gerçek
+# açık işlem sayısını/portföy limitini etkilemez ve otomatik kural uygulamaz.
+
+def empty_attack_guard_shadow():
+    return {
+        "version": "SCALP_ATTACK_GUARD_SHADOW_V1_2026_08_18",
+        "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_LIVE_SIGNAL_CHANGE",
+        "auto_apply": False,
+        "legacy_thresholds": {
+            "long_min_close_power": ATTACK_LEGACY_LONG_MIN_CLOSE_POWER,
+            "short_max_close_power": ATTACK_LEGACY_SHORT_MAX_CLOSE_POWER,
+        },
+        "live_thresholds": {
+            "long_min_close_power": ATTACK_LONG_MIN_CLOSE_POWER,
+            "short_max_close_power": ATTACK_SHORT_MAX_CLOSE_POWER,
+        },
+        "records": [],
+        "summary": {},
+    }
+
+
+def load_attack_guard_shadow():
+    try:
+        if not os.path.exists(ATTACK_GUARD_SHADOW_FILE):
+            return empty_attack_guard_shadow()
+        with open(ATTACK_GUARD_SHADOW_FILE, "r", encoding="utf-8") as handle:
+            data = json.load(handle)
+        if not isinstance(data, dict):
+            return empty_attack_guard_shadow()
+        data.setdefault("records", [])
+        data.setdefault("summary", {})
+        data["version"] = "SCALP_ATTACK_GUARD_SHADOW_V1_2026_08_18"
+        data["mode"] = "SHADOW_ONLY_NO_TELEGRAM_NO_LIVE_SIGNAL_CHANGE"
+        data["auto_apply"] = False
+        data["legacy_thresholds"] = {
+            "long_min_close_power": ATTACK_LEGACY_LONG_MIN_CLOSE_POWER,
+            "short_max_close_power": ATTACK_LEGACY_SHORT_MAX_CLOSE_POWER,
+        }
+        data["live_thresholds"] = {
+            "long_min_close_power": ATTACK_LONG_MIN_CLOSE_POWER,
+            "short_max_close_power": ATTACK_SHORT_MAX_CLOSE_POWER,
+        }
+        return data
+    except Exception as exc:
+        print("ATAK guard shadow okuma hatası:", exc)
+        return empty_attack_guard_shadow()
+
+
+def rebuild_attack_guard_shadow_summary(data):
+    records = [item for item in data.get("records", []) if isinstance(item, dict)]
+    resolved = [item for item in records if str(item.get("outcome", "OPEN")).upper() != "OPEN"]
+    tp1_count = sum(1 for item in resolved if item.get("tp1_hit"))
+    tp3_count = sum(1 for item in resolved if item.get("tp3_hit"))
+    stop_count = sum(1 for item in resolved if item.get("outcome") == "STOP_BEFORE_TP1")
+    tp1_only_count = sum(1 for item in resolved if item.get("outcome") == "TP1_ONLY")
+    expired_count = sum(1 for item in resolved if item.get("outcome") == "EXPIRED_NO_TP1")
+    sample = len(resolved)
+
+    def rate(value):
+        return round((value / sample) * 100.0, 2) if sample else 0.0
+
+    if sample < 30:
+        decision = "VERI_TOPLA"
+        next_action = "En az 30 sonuçlanmış legacy-only ATAK adayı biriktir; canlı filtreyi otomatik değiştirme."
+    elif rate(tp1_count) >= 60.0:
+        decision = "70_30_COK_SIKI_OLABILIR_GOLGE_INCELE"
+        next_action = "Yeni guardın kaçırdığı TP1/TP3 adayları yüksek; yalnız gölgede daha gevşek ara eşik test et."
+    elif rate(stop_count) >= 50.0 and rate(tp1_count) <= 40.0:
+        decision = "70_30_GUARD_DESTEKLENIYOR"
+        next_action = "Legacy-only adayların çoğu TP1 öncesi stop; 70/30 korumasını canlıda koru ve örneği büyüt."
+    else:
+        decision = "KARSILASTIR"
+        next_action = "TP1/TP3 ve TP1-öncesi stop dağılımını büyüt; canlı eşik değişikliği yapma."
+
+    by_direction = {}
+    for direction in ("LONG", "SHORT"):
+        subset = [item for item in resolved if str(item.get("direction", "")).upper() == direction]
+        by_direction[direction] = {
+            "sample": len(subset),
+            "tp1_before_stop": sum(1 for item in subset if item.get("tp1_hit")),
+            "tp3": sum(1 for item in subset if item.get("tp3_hit")),
+            "stop_before_tp1": sum(1 for item in subset if item.get("outcome") == "STOP_BEFORE_TP1"),
+        }
+
+    data["summary"] = {
+        "total_candidates": len(records),
+        "open": len(records) - sample,
+        "resolved": sample,
+        "tp1_before_stop": tp1_count,
+        "tp1_before_stop_rate_percent": rate(tp1_count),
+        "tp3": tp3_count,
+        "tp3_rate_percent": rate(tp3_count),
+        "stop_before_tp1": stop_count,
+        "stop_before_tp1_rate_percent": rate(stop_count),
+        "tp1_only": tp1_only_count,
+        "expired_no_tp1": expired_count,
+        "by_direction": by_direction,
+        "decision": decision,
+        "next_action": next_action,
+        "minimum_decision_sample": 30,
+        "auto_apply": False,
+        "method": "Eski 62/38'e göre uygun, yeni 70/30 yüzünden elenen ATAK adaylarında 1M mum sırasıyla TP1/TP3 ve TP1-öncesi SL izlenir.",
+    }
+    data["updated_at"] = now_ts()
+    data["updated_at_tr"] = tr_now_text()
+
+
+def save_attack_guard_shadow(data):
+    try:
+        rebuild_attack_guard_shadow_summary(data)
+        return atomic_save_json(ATTACK_GUARD_SHADOW_FILE, data)
+    except Exception as exc:
+        print("ATAK guard shadow kayıt hatası:", exc)
+        return False
+
+
+def record_attack_guard_shadow_candidate(item):
+    if not isinstance(item, dict) or not item.get("counterfactual_attack_guard"):
+        return None
+
+    data = load_attack_guard_shadow()
+    records = data.setdefault("records", [])
+    symbol = normalize_bot_symbol(item.get("symbol"))
+    direction = str(item.get("direction", "")).upper()
+    entry = safe_float(item.get("entry"))
+    sl = safe_float(item.get("sl"))
+    created_at = now_ts()
+
+    if not symbol or direction not in ("LONG", "SHORT") or entry <= 0 or sl <= 0:
+        return None
+
+    for existing in records:
+        if (
+            normalize_bot_symbol(existing.get("symbol")) == symbol
+            and str(existing.get("direction", "")).upper() == direction
+            and created_at - int(existing.get("created_at", 0)) < DUPLICATE_SECONDS
+        ):
+            return None
+
+    risk = entry - sl if direction == "LONG" else sl - entry
+    if risk <= 0:
+        return None
+
+    if direction == "LONG":
+        tp1 = entry + risk * TP1_R
+        tp2 = entry + risk * TP2_R
+        tp3 = entry + risk * TP3_R
+    else:
+        tp1 = entry - risk * TP1_R
+        tp2 = entry - risk * TP2_R
+        tp3 = entry - risk * TP3_R
+        if min(tp1, tp2, tp3) <= 0:
+            return None
+
+    record_id = f"{symbol}_{direction}_ATTACK_GUARD_{created_at}"
+    record = {
+        "id": record_id,
+        "symbol": symbol,
+        "direction": direction,
+        "source": "ATAK_SCALP",
+        "stage": "ATTACK_GUARD_SHADOW",
+        "created_at": created_at,
+        "created_at_tr": tr_now_text(),
+        "last_checked_at": created_at - 1,
+        "entry": entry,
+        "sl": sl,
+        "tp1": tp1,
+        "tp2": tp2,
+        "tp3": tp3,
+        "risk_percent": safe_float(item.get("risk_percent")),
+        "close_power": safe_float(item.get("close_power")),
+        "legacy_score": int(item.get("legacy_score", 0)),
+        "live_score": int(item.get("live_score", 0)),
+        "legacy_close_power_threshold": item.get("legacy_close_power_threshold"),
+        "live_close_power_threshold": item.get("live_close_power_threshold"),
+        "rsi1": safe_float(item.get("rsi1")),
+        "rsi5": safe_float(item.get("rsi5")),
+        "vol1": safe_float(item.get("vol1")),
+        "vol5": safe_float(item.get("vol5")),
+        "move1": safe_float(item.get("move1")),
+        "move5": safe_float(item.get("move5")),
+        "move15": safe_float(item.get("move15")),
+        "breakout": bool(item.get("breakout", False)),
+        "tp1_hit": False,
+        "tp2_hit": False,
+        "tp3_hit": False,
+        "outcome": "OPEN",
+        "resolution_note": "Legacy 62/38 uygun; canlı 70/30 kapanış gücü guardı nedeniyle elendi.",
+    }
+    records.append(record)
+
+    cutoff = created_at - ATTACK_GUARD_SHADOW_KEEP_DAYS * 24 * 60 * 60
+    records = [row for row in records if int(row.get("created_at", 0)) >= cutoff]
+    records.sort(key=lambda row: int(row.get("created_at", 0)))
+    data["records"] = records[-ATTACK_GUARD_SHADOW_MAX_RECORDS:]
+    save_attack_guard_shadow(data)
+    return record_id
+
+
+def update_attack_guard_shadow(exchange):
+    data = load_attack_guard_shadow()
+    records = data.setdefault("records", [])
+    open_records = [row for row in records if str(row.get("outcome", "OPEN")).upper() == "OPEN"]
+
+    if not open_records:
+        save_attack_guard_shadow(data)
+        print("ATAK guard shadow: açık sanal aday yok.")
+        return
+
+    resolved_now = 0
+    for record in open_records:
+        try:
+            symbol = normalize_bot_symbol(record.get("symbol"))
+            direction = str(record.get("direction", "")).upper()
+            entry = safe_float(record.get("entry"))
+            sl = safe_float(record.get("sl"))
+            tp1 = safe_float(record.get("tp1"))
+            tp2 = safe_float(record.get("tp2"))
+            tp3 = safe_float(record.get("tp3"))
+            created_at = int(record.get("created_at", now_ts()))
+            last_checked_at = int(record.get("last_checked_at", created_at - 1))
+
+            candles = fetch_candles_since(
+                exchange,
+                symbol,
+                TRACK_TIMEFRAME,
+                max(created_at, last_checked_at - 120),
+                TRACK_LIMIT,
+            )
+
+            for candle in candles:
+                candle_time = int(candle.get("time") or 0)
+                if candle_time <= last_checked_at:
+                    continue
+
+                high = safe_float(candle.get("high"))
+                low = safe_float(candle.get("low"))
+                close = safe_float(candle.get("close"))
+                just_hit_tp1 = False
+
+                if not record.get("tp1_hit"):
+                    if direction == "LONG":
+                        hit_sl = low <= sl
+                        hit_tp1 = high >= tp1
+                        if hit_sl and hit_tp1:
+                            if close >= entry:
+                                hit_sl = False
+                            else:
+                                hit_tp1 = False
+                    else:
+                        hit_sl = high >= sl
+                        hit_tp1 = low <= tp1
+                        if hit_sl and hit_tp1:
+                            if close <= entry:
+                                hit_sl = False
+                            else:
+                                hit_tp1 = False
+
+                    if hit_sl:
+                        record["outcome"] = "STOP_BEFORE_TP1"
+                        record["resolved_at"] = candle_time
+                        record["resolved_at_tr"] = tr_now_text()
+                        resolved_now += 1
+                        last_checked_at = candle_time
+                        break
+
+                    if hit_tp1:
+                        record["tp1_hit"] = True
+                        record["tp1_hit_at"] = candle_time
+                        just_hit_tp1 = True
+
+                if record.get("tp1_hit"):
+                    hit_tp2 = (high >= tp2) if direction == "LONG" else (low <= tp2)
+                    hit_tp3 = (high >= tp3) if direction == "LONG" else (low <= tp3)
+                    if hit_tp2 and not record.get("tp2_hit"):
+                        record["tp2_hit"] = True
+                        record["tp2_hit_at"] = candle_time
+                    if hit_tp3:
+                        record["tp3_hit"] = True
+                        record["tp3_hit_at"] = candle_time
+                        record["outcome"] = "TP3"
+                        record["resolved_at"] = candle_time
+                        record["resolved_at_tr"] = tr_now_text()
+                        resolved_now += 1
+                        last_checked_at = candle_time
+                        break
+
+                last_checked_at = max(last_checked_at, candle_time)
+
+            record["last_checked_at"] = last_checked_at
+
+            if str(record.get("outcome", "OPEN")).upper() == "OPEN":
+                age_minutes = max(0.0, (now_ts() - created_at) / 60.0)
+                if age_minutes >= ATTACK_GUARD_SHADOW_MAX_TRACK_MINUTES:
+                    record["outcome"] = "TP1_ONLY" if record.get("tp1_hit") else "EXPIRED_NO_TP1"
+                    record["resolved_at"] = now_ts()
+                    record["resolved_at_tr"] = tr_now_text()
+                    resolved_now += 1
+
+        except Exception as exc:
+            print(record.get("id"), "ATAK guard shadow takip hatası:", exc)
+
+    save_attack_guard_shadow(data)
+    print("ATAK guard shadow güncellendi | açık:", len(open_records), "| yeni sonuç:", resolved_now)
+'''
+
+          text = replace_once(
+              text,
+              '\n\ndef directional_move_percent(direction, current_price, reference_price):',
+              shadow_block + '\n\ndef directional_move_percent(direction, current_price, reference_price):',
+              "shadow fonksiyon bloğu",
+          )
+
+          long_old = '''            hard_ok = (\n                MIN_RISK_PERCENT\n                <= risk_percent\n                <= MAX_RISK_PERCENT\n                and move1 >= ATTACK_LONG_MIN_1M_MOVE\n                and (\n                    move5 >= ATTACK_LONG_MIN_5M_MOVE\n                    or breakout_long\n                )\n                and move15 >= ATTACK_LONG_MIN_15M_MOVE\n                and ATTACK_LONG_RSI_1M_MIN\n                <= rsi1\n                <= ATTACK_LONG_RSI_1M_MAX\n                and ATTACK_LONG_RSI_5M_MIN\n                <= rsi5\n                <= ATTACK_LONG_RSI_5M_MAX\n                and vol1 >= ATTACK_MIN_1M_VOLUME_RATIO\n                and vol5 >= ATTACK_MIN_5M_VOLUME_RATIO\n                and close_power >= ATTACK_LONG_MIN_CLOSE_POWER\n            )\n'''
+          long_new = '''            base_hard_ok = (\n                MIN_RISK_PERCENT\n                <= risk_percent\n                <= MAX_RISK_PERCENT\n                and move1 >= ATTACK_LONG_MIN_1M_MOVE\n                and (\n                    move5 >= ATTACK_LONG_MIN_5M_MOVE\n                    or breakout_long\n                )\n                and move15 >= ATTACK_LONG_MIN_15M_MOVE\n                and ATTACK_LONG_RSI_1M_MIN\n                <= rsi1\n                <= ATTACK_LONG_RSI_1M_MAX\n                and ATTACK_LONG_RSI_5M_MIN\n                <= rsi5\n                <= ATTACK_LONG_RSI_5M_MAX\n                and vol1 >= ATTACK_MIN_1M_VOLUME_RATIO\n                and vol5 >= ATTACK_MIN_5M_VOLUME_RATIO\n            )\n            live_close_ok = close_power >= ATTACK_LONG_MIN_CLOSE_POWER\n            legacy_close_ok = close_power >= ATTACK_LEGACY_LONG_MIN_CLOSE_POWER\n            hard_ok = base_hard_ok and live_close_ok\n            legacy_hard_ok = base_hard_ok and legacy_close_ok\n            legacy_ok_count = ok_count + (1 if legacy_close_ok and not live_close_ok else 0)\n            legacy_score = max(0, min(100, int(legacy_ok_count / max(1, total) * 100) + int(bonus)))\n'''
+          text = replace_once(text, long_old, long_new, "long hard ok")
+
+          short_old = '''        hard_ok = (\n            MIN_RISK_PERCENT\n            <= risk_percent\n            <= MAX_RISK_PERCENT\n            and move1 <= -ATTACK_SHORT_MIN_1M_MOVE\n            and (\n                move5 <= -ATTACK_SHORT_MIN_5M_MOVE\n                or breakdown_short\n            )\n            and move15 <= -ATTACK_SHORT_MIN_15M_MOVE\n            and ATTACK_SHORT_RSI_1M_MIN\n            <= rsi1\n            <= ATTACK_SHORT_RSI_1M_MAX\n            and ATTACK_SHORT_RSI_5M_MIN\n            <= rsi5\n            <= ATTACK_SHORT_RSI_5M_MAX\n            and vol1 >= ATTACK_MIN_1M_VOLUME_RATIO\n            and vol5 >= ATTACK_MIN_5M_VOLUME_RATIO\n            and close_power <= ATTACK_SHORT_MAX_CLOSE_POWER\n        )\n'''
+          short_new = '''        base_hard_ok = (\n            MIN_RISK_PERCENT\n            <= risk_percent\n            <= MAX_RISK_PERCENT\n            and move1 <= -ATTACK_SHORT_MIN_1M_MOVE\n            and (\n                move5 <= -ATTACK_SHORT_MIN_5M_MOVE\n                or breakdown_short\n            )\n            and move15 <= -ATTACK_SHORT_MIN_15M_MOVE\n            and ATTACK_SHORT_RSI_1M_MIN\n            <= rsi1\n            <= ATTACK_SHORT_RSI_1M_MAX\n            and ATTACK_SHORT_RSI_5M_MIN\n            <= rsi5\n            <= ATTACK_SHORT_RSI_5M_MAX\n            and vol1 >= ATTACK_MIN_1M_VOLUME_RATIO\n            and vol5 >= ATTACK_MIN_5M_VOLUME_RATIO\n        )\n        live_close_ok = close_power <= ATTACK_SHORT_MAX_CLOSE_POWER\n        legacy_close_ok = close_power <= ATTACK_LEGACY_SHORT_MAX_CLOSE_POWER\n        hard_ok = base_hard_ok and live_close_ok\n        legacy_hard_ok = base_hard_ok and legacy_close_ok\n        legacy_ok_count = ok_count + (1 if legacy_close_ok and not live_close_ok else 0)\n        legacy_score = max(0, min(100, int(legacy_ok_count / max(1, total) * 100) + int(bonus)))\n'''
+          text = replace_once(text, short_old, short_new, "short hard ok")
+
+          long_return_old = '''            return signal, build_debug(\n                symbol,\n                "LONG",\n                "Filtreli Atak Momentum LONG",\n                score,\n                ok_count,\n                total,\n                missing,\n                market_data,\n                risk_percent,\n            )\n'''
+          long_return_new = '''            debug = build_debug(\n                symbol,\n                "LONG",\n                "Filtreli Atak Momentum LONG",\n                score,\n                ok_count,\n                total,\n                missing,\n                market_data,\n                risk_percent,\n            )\n            debug.update({\n                "source": "ATAK_SCALP",\n                "entry": entry,\n                "sl": sl,\n                "breakout": breakout_long,\n                "legacy_score": legacy_score,\n                "live_score": score,\n                "legacy_close_power_threshold": ATTACK_LEGACY_LONG_MIN_CLOSE_POWER,\n                "live_close_power_threshold": ATTACK_LONG_MIN_CLOSE_POWER,\n                "legacy_hard_ok": legacy_hard_ok,\n                "live_hard_ok": hard_ok,\n                "counterfactual_attack_guard": bool(\n                    legacy_hard_ok\n                    and legacy_score >= MIN_SCORE\n                    and not (hard_ok and score >= MIN_SCORE)\n                ),\n                "counterfactual_reason": "LIVE_CLOSE_POWER_GUARD",\n            })\n            return signal, debug\n'''
+          text = replace_once(text, long_return_old, long_return_new, "long debug counterfactual")
+
+          short_return_old = '''        return signal, build_debug(\n            symbol,\n            "SHORT",\n            "Filtreli Atak Momentum SHORT",\n            score,\n            ok_count,\n            total,\n            missing,\n            market_data,\n            risk_percent,\n        )\n'''
+          short_return_new = '''        debug = build_debug(\n            symbol,\n            "SHORT",\n            "Filtreli Atak Momentum SHORT",\n            score,\n            ok_count,\n            total,\n            missing,\n            market_data,\n            risk_percent,\n        )\n        debug.update({\n            "source": "ATAK_SCALP",\n            "entry": entry,\n            "sl": sl,\n            "breakout": breakdown_short,\n            "legacy_score": legacy_score,\n            "live_score": score,\n            "legacy_close_power_threshold": ATTACK_LEGACY_SHORT_MAX_CLOSE_POWER,\n            "live_close_power_threshold": ATTACK_SHORT_MAX_CLOSE_POWER,\n            "legacy_hard_ok": legacy_hard_ok,\n            "live_hard_ok": hard_ok,\n            "counterfactual_attack_guard": bool(\n                legacy_hard_ok\n                and legacy_score >= MIN_SCORE\n                and not (hard_ok and score >= MIN_SCORE)\n            ),\n            "counterfactual_reason": "LIVE_CLOSE_POWER_GUARD",\n        })\n        return signal, debug\n'''
+          text = replace_once(text, short_return_old, short_return_new, "short debug counterfactual")
+
+          text = replace_once(
+              text,
+              '    update_scalp_performance(exchange)\n\n    check_open_signals(exchange, state)\n',
+              '    update_scalp_performance(exchange)\n    update_attack_guard_shadow(exchange)\n\n    check_open_signals(exchange, state)\n',
+              "shadow takip çağrısı",
+          )
+
+          text = replace_once(
+              text,
+              '    top_candidates = []\n    scanned = 0\n',
+              '    top_candidates = []\n    attack_guard_shadow_candidates = []\n    scanned = 0\n',
+              "shadow aday listesi",
+          )
+
+          text = replace_once(
+              text,
+              '                top_candidates.append(debug)\n\n            for prewatch_alert in prewatch_items:\n',
+              '                top_candidates.append(debug)\n                if debug.get("counterfactual_attack_guard"):\n                    attack_guard_shadow_candidates.append(debug)\n\n            for prewatch_alert in prewatch_items:\n',
+              "shadow aday toplama",
+          )
+
+          text = replace_once(
+              text,
+              '    all_signals.sort(\n',
+              '    shadow_recorded = 0\n    for shadow_candidate in attack_guard_shadow_candidates:\n        if record_attack_guard_shadow_candidate(shadow_candidate):\n            shadow_recorded += 1\n    print("ATAK guard shadow legacy-only aday:", len(attack_guard_shadow_candidates), "| yeni kayıt:", shadow_recorded)\n\n    all_signals.sort(\n',
+              "shadow kayıt aşaması",
+          )
+
+          path.write_text(text, encoding="utf-8")
+
+          workflow_path = Path(".github/workflows/scalp-radar.yml")
+          workflow = workflow_path.read_text(encoding="utf-8")
+          start = workflow.index("      - name: Hızlı scalp radar çalıştır\n")
+          end = workflow.index("\n      - name: Scalp durum ve performans dosyalarını güvenli kaydet", start)
+          direct_step = '''      - name: Hızlı scalp radar çalıştır\n        env:\n          TOKEN: ${{ secrets.TOKEN }}\n          CHAT_ID: ${{ secrets.CHAT_ID }}\n          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}\n          GITHUB_REPOSITORY: ${{ github.repository }}\n          GITHUB_REF_NAME: ${{ github.ref_name }}\n        run: python scalp_radar.py\n'''
+          workflow = workflow[:start] + direct_step + workflow[end:]
+          workflow = replace_once(
+              workflow,
+              '            scalp_performance_ledger.json \\\n            portfolio_risk_shadow_scalp.json\n',
+              '            scalp_performance_ledger.json \\\n            scalp_attack_guard_shadow.json \\\n            portfolio_risk_shadow_scalp.json\n',
+              "shadow json workflow kaydı",
+          )
+          workflow_path.write_text(workflow, encoding="utf-8")
+          PY
+
+      - name: Sentetik karşılaştırma gölge testi
+        run: |
+          python -m py_compile scalp_radar.py
+          python - <<'PY'
+          import os
+          import tempfile
+          import scalp_radar as radar
+
+          assert radar.ATTACK_LONG_MIN_CLOSE_POWER == 70
+          assert radar.ATTACK_SHORT_MAX_CLOSE_POWER == 30
+          assert radar.ATTACK_LEGACY_LONG_MIN_CLOSE_POWER == 62
+          assert radar.ATTACK_LEGACY_SHORT_MAX_CLOSE_POWER == 38
+
+          with tempfile.TemporaryDirectory() as tmp:
+              radar.ATTACK_GUARD_SHADOW_FILE = os.path.join(tmp, "shadow.json")
+              candidate = {
+                  "counterfactual_attack_guard": True,
+                  "symbol": "TESTUSDT",
+                  "direction": "LONG",
+                  "entry": 100.0,
+                  "sl": 99.0,
+                  "risk_percent": 1.0,
+                  "close_power": 65.0,
+                  "legacy_score": 90,
+                  "live_score": 80,
+                  "legacy_close_power_threshold": 62,
+                  "live_close_power_threshold": 70,
+                  "rsi1": 60,
+                  "rsi5": 58,
+                  "vol1": 2.0,
+                  "vol5": 1.5,
+                  "move1": 0.2,
+                  "move5": 0.5,
+                  "move15": 0.3,
+                  "breakout": True,
+              }
+              record_id = radar.record_attack_guard_shadow_candidate(candidate)
+              assert record_id
+              data = radar.load_attack_guard_shadow()
+              record = data["records"][0]
+              base = int(record["created_at"])
+
+              def fake_candles(*args, **kwargs):
+                  return [
+                      {"time": base + 60, "open": 100.0, "high": 100.8, "low": 99.8, "close": 100.5, "volume": 1.0},
+                      {"time": base + 120, "open": 100.5, "high": 101.8, "low": 100.2, "close": 101.7, "volume": 1.0},
+                  ]
+
+              radar.fetch_candles_since = fake_candles
+              radar.update_attack_guard_shadow(object())
+              data = radar.load_attack_guard_shadow()
+              record = data["records"][0]
+              assert record["tp1_hit"] is True
+              assert record["tp3_hit"] is True
+              assert record["outcome"] == "TP3"
+              assert data["summary"]["auto_apply"] is False
+          print("ATAK guard shadow sentetik test: OK")
+          PY
+
+      - name: Tek seferlik bakım workflowunu kaldır ve değişiklikleri kaydet
+        shell: bash
+        run: |
+          set -e
+          rm -f .github/workflows/maintenance-scalp-quality-shadow.yml
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add scalp_radar.py .github/workflows/scalp-radar.yml .github/workflows/maintenance-scalp-quality-shadow.yml
+          git commit -m "Add scalp attack guard counterfactual shadow"
+
+          for attempt in 1 2 3
+          do
+            git pull --rebase --autostash origin main
+            if git push origin HEAD:main; then
+              echo "Scalp kalite bakım paketi kaydedildi."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Scalp kalite bakım paketi push edilemedi."
+          exit 1
