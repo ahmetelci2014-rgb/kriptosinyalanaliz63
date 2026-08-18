@@ -1,4 +1,4 @@
-name: Momentum Shadow v1
+name: Momentum Shadow v2
 
 on:
   workflow_dispatch:
@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: momentum-shadow-v1
+  group: momentum-shadow-v2
   cancel-in-progress: false
 
 jobs:
@@ -37,14 +37,15 @@ jobs:
         run: |
           python -m pip install --prefer-binary -r requirements.txt
 
-      - name: Momentum motorunu doğrula
+      - name: Momentum V2 motorunu doğrula
         run: |
-          python -m py_compile momentum_shadow.py test_momentum_shadow.py
+          python -m py_compile momentum_shadow.py momentum_shadow_v2_runner.py test_momentum_shadow.py
           python momentum_shadow.py --self-test
           python test_momentum_shadow.py -v
+          python momentum_shadow_v2_runner.py --self-test
 
-      - name: Momentum gölge analizini çalıştır
-        run: python momentum_shadow.py
+      - name: Momentum V2 gölge analizini çalıştır
+        run: python momentum_shadow_v2_runner.py
 
       - name: Momentum gölge ledgerını kaydet
         if: always()
@@ -66,7 +67,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update momentum shadow ledger"
+          git commit -m "Update Momentum Shadow V2 ledger"
 
           for attempt in 1 2 3
           do
@@ -74,12 +75,12 @@ jobs:
             git pull --rebase --autostash origin main
 
             if git push origin HEAD:main; then
-              echo "Momentum gölge ledgerı kaydedildi."
+              echo "Momentum V2 gölge ledgerı kaydedildi."
               exit 0
             fi
 
             sleep 10
           done
 
-          echo "Momentum gölge ledgerı üç denemede de kaydedilemedi."
+          echo "Momentum V2 gölge ledgerı üç denemede de kaydedilemedi."
           exit 1
