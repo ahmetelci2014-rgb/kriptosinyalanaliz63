@@ -92566,9 +92566,9 @@
       "worst_adverse_r": 0.193,
       "best_favorable_price": 0.1826,
       "worst_adverse_price": 0.186,
-      "last_market_price": 0.1838,
+      "last_market_price": 0.1836,
       "tp1_hit_at": 1787017800,
-      "last_tracking_at": 1787052480
+      "last_tracking_at": 1787053560
     },
     "AIUSDT_SHORT_5M_RADAR_1787017824": {
       "trade_id": "AIUSDT_SHORT_5M_RADAR_1787017824",
@@ -93772,9 +93772,9 @@
       "worst_adverse_r": 0.9939,
       "best_favorable_price": 0.0007589,
       "worst_adverse_price": 0.0007725,
-      "last_market_price": 0.0007707,
+      "last_market_price": 0.0007705,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1787052480
+      "last_tracking_at": 1787053560
     },
     "CLUSDT_LONG_5M_RADAR_1787033179": {
       "trade_id": "CLUSDT_LONG_5M_RADAR_1787033179",
@@ -94055,25 +94055,26 @@
         "confidence": "ORTA",
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
-          "15M hacim kendi ortalamasinin altinda veya sinirdaydi."
+          "15M hacim kendi ortalamasinin altinda veya sinirdaydi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 55,
         "best_favorable_r": 0.2619,
         "worst_adverse_r": 1.2604,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ZAYIF_TREND_HACIM",
-        "preliminary_label": "Zayıf trend/hacim",
+        "primary": "ZAYIF_TREND_HACIM",
+        "label": "Zayıf trend/hacim",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
           "15M hacim oranı sınırın altındaydı."
         ],
         "metrics": {
@@ -94081,9 +94082,15 @@
           "mfe_r": 0.2619,
           "mae_r": 1.2604,
           "risk_percent": 0.833,
-          "return_minutes": null
+          "return_minutes": 240.0
         },
-        "updated_at": 1787039165
+        "updated_at": 1787053571
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 240,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1787053571
       }
     },
     "PNUTUSDT_LONG_15M_ENTRY_1787039429": {
@@ -94282,9 +94289,9 @@
       "worst_adverse_r": 0.7209,
       "best_favorable_price": 0.06973,
       "worst_adverse_price": 0.07,
-      "last_market_price": 0.06996,
+      "last_market_price": 0.06995,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1787052480
+      "last_tracking_at": 1787053560
     },
     "HUMAUSDT_LONG_15M_ENTRY_1787043039": {
       "trade_id": "HUMAUSDT_LONG_15M_ENTRY_1787043039",
@@ -94440,9 +94447,9 @@
         "max_adverse_r": 0.1775,
         "best_price": 0.02109,
         "worst_price": 0.02077,
-        "last_checked_at": 1787052753,
+        "last_checked_at": 1787053849,
         "completed_at": 0,
-        "last_price": 0.02084
+        "last_price": 0.02078
       }
     },
     "SAPIENUSDT_SHORT_15M_ENTRY_1787051061": {
@@ -94553,12 +94560,21 @@
         "started_at": 1787052501,
         "tp3_price": 0.0752340447,
         "timeframe": "1m",
-        "checkpoints": {},
+        "checkpoints": {
+          "15": {
+            "target_at": 1787053401,
+            "candle_time": 1787053320,
+            "close_price": 0.07564,
+            "directional_return_percent": -0.5396,
+            "max_favorable_percent": 0.0,
+            "max_adverse_percent": 0.5396
+          }
+        },
         "max_favorable_percent": 0.0,
-        "max_adverse_percent": 0.0,
+        "max_adverse_percent": 0.5662,
         "best_price": 0.0752340447,
-        "worst_price": 0.0752340447,
-        "last_checked_at": 0,
+        "worst_price": 0.07566,
+        "last_checked_at": 1787053571,
         "completed_at": 0,
         "shadow_only": true
       },
@@ -94572,20 +94588,30 @@
         "reference_label": "TP3",
         "reference_price": 0.0752340447,
         "timeframe": "1m",
-        "checkpoints": {},
+        "checkpoints": {
+          "15": {
+            "target_at": 1787053401,
+            "candle_time": 1787053320,
+            "close_price": 0.07564,
+            "directional_return_percent": -0.5396,
+            "max_favorable_percent": 0.0,
+            "max_adverse_percent": 0.5396,
+            "directional_r_from_reference": -1.394
+          }
+        },
         "watched_levels": {},
         "reached_levels": {},
         "max_favorable_percent": 0.0,
-        "max_adverse_percent": 0.0611,
+        "max_adverse_percent": 0.6725,
         "max_favorable_r": 0.0,
-        "max_adverse_r": 0.1578,
+        "max_adverse_r": 1.7374,
         "best_price": 0.0752340447,
-        "worst_price": 0.07528,
-        "last_checked_at": 1787052753,
+        "worst_price": 0.07574,
+        "last_checked_at": 1787053849,
         "completed_at": 0,
-        "last_price": 0.07528
+        "last_price": 0.07558
       }
     }
   },
-  "last_update": 1787052755
+  "last_update": 1787053851
 }
