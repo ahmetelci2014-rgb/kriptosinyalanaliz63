@@ -47,11 +47,31 @@ jobs:
 
       - name: Karar raporunu üret
         run: |
-          python decision_engine.py --output decision_report.json
+          python - <<'PY'
+          import os
+          import sys
+          import decision_engine as engine
+
+          # Range V3 arşiv kalır. V4 ledger oluşunca karar motoru yalnız yeni
+          # tasarımın temiz örneklemini değerlendirir.
+          if os.path.exists("range_shadow_v4.json"):
+              engine.FILES["range_shadow"] = "range_shadow_v4.json"
+          sys.argv = ["decision_engine.py", "--output", "decision_report.json"]
+          engine.main()
+          PY
 
       - name: Reçete raporunu üret
         run: |
-          python prescription_engine.py --output prescription_report.json
+          python - <<'PY'
+          import os
+          import sys
+          import prescription_engine as engine
+
+          if os.path.exists("range_shadow_v4.json"):
+              engine.FILES["range"] = "range_shadow_v4.json"
+          sys.argv = ["prescription_engine.py", "--output", "prescription_report.json"]
+          engine.main()
+          PY
 
       - name: Sinyal kalite raporunu üret
         run: |
