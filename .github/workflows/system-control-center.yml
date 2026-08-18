@@ -35,6 +35,7 @@ jobs:
             .github/workflows/main.yml \
             .github/workflows/scalp-radar.yml \
             .github/workflows/pump-radar.yml \
+            .github/workflows/big-move-route.yml \
             .github/workflows/swing-shadow-v4.yml \
             .github/workflows/position-trend-shadow.yml \
             .github/workflows/all-market-shadow.yml \
@@ -64,6 +65,16 @@ jobs:
           # 6 saat beklemek yerine 90 dakikada veri kesintisini görünür yap.
           for key in ("PREMIUM", "SCALP", "PUMP_DUMP", "POST_RESULT"):
               center.COMPONENTS[key]["stale_hours"] = 1.5
+
+          # Büyük Hareket saatlik çalışır; sinyal çıkmasa bile state/ledger güncelliği izlenir.
+          center.COMPONENTS["BIG_MOVE_ROUTE"] = {
+              "label": "Büyük Hareket Fiyat Rotası",
+              "kind": "LIVE_SIGNAL",
+              "files": ["big_move_route_state.json", "big_move_route_ledger.json"],
+              "workflow": ".github/workflows/big-move-route.yml",
+              "stale_hours": 3.0,
+              "open_paths": [("big_move_route_state.json", "open_routes")],
+          }
 
           # Revize gölge adlarını kontrol merkezinde görünür tut.
           center.COMPONENTS["SWING_V4_SHADOW"]["label"] = "Swing Shadow V5"
