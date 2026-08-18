@@ -3,7 +3,9 @@ name: New Listing Opportunity Radar
 on:
   workflow_dispatch:
   schedule:
-    - cron: "1-56/5 * * * *"
+    # Actions tasarrufu: 5 dk/4 tur yerine 10 dk/2 tur.
+    # Yeni liste radarı korunur; canlı Premium/Scalp/Pump davranışı değişmez.
+    - cron: "1-51/10 * * * *"
 
 permissions:
   contents: write
@@ -52,7 +54,7 @@ jobs:
           if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
             ROUNDS=1
           else
-            ROUNDS=4
+            ROUNDS=2
           fi
 
           START_TS=$(date +%s)
