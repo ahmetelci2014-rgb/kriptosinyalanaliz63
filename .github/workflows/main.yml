@@ -45,9 +45,6 @@ jobs:
           GITHUB_REF_NAME: ${{ github.ref_name }}
         run: python main.py
 
-      - name: TP1 öncesi giriş yolunu sessiz ölç
-        run: python entry_sequence_shadow.py
-
       - name: TP/BE sonrası sessiz gölge takibi çalıştır
         if: always()
         run: python post_result_shadow.py
@@ -73,7 +70,6 @@ jobs:
             performance.json \
             last_signals.json \
             trade_ledger.json \
-            entry_sequence_shadow.json \
             portfolio_risk_shadow_main_mtf.json \
             post_result_shadow_v2_report.json \
             post_result_shadow_v3_report.json
