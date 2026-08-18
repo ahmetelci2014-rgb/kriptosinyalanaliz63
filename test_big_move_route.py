@@ -6,9 +6,16 @@ import unittest
 import pandas as pd
 
 import big_move_route as route
+import big_move_route_runner as route_runner
 
 
 class BigMoveRouteTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Workflow gerçekte runner üzerinden çalışır; test de aynı hedef sıralama
+        # korumasını kullanmalı.
+        route_runner.apply_target_order_guard()
+
     def _frame(self, count: int = 120) -> pd.DataFrame:
         rows = []
         for i in range(count):
@@ -37,16 +44,30 @@ class BigMoveRouteTests(unittest.TestCase):
 
     def test_route_projection_has_big_target(self):
         h4 = self._frame(120)
+        # Sentetik giriş, yakın 4H engel filtresini yanlışlıkla tetiklemeyecek
+        # şekilde kurulmuştur. Amaç burada strateji filtresini değil, runtime
+        # hedef sıralamasını doğrulamaktır.
         projection = route.build_route_projection(
+            h4,
+            "LONG",
+            entry=100.0,
+            stop=99.8,
+        )
+        self.assertIsNotNone(projection)
+        self.assertGreaterEqual(projection["main_target_r"], 3.0)
+        self.assertGreater(projection["tp2"], 100.0)
+        self.assertLess(projection["tp1"], projection["tp2"])
+        self.assertGreater(projection["tp3"], projection["tp2"])
+
+    def test_nearby_h4_obstacle_is_rejected(self):
+        h4 = self._frame(120)
+        projection = route_runner.base.build_route_projection(
             h4,
             "LONG",
             entry=108.0,
             stop=107.0,
         )
-        self.assertIsNotNone(projection)
-        self.assertGreaterEqual(projection["main_target_r"], 3.0)
-        self.assertGreater(projection["tp2"], 108.0)
-        self.assertGreater(projection["tp3"], projection["tp2"])
+        self.assertIsNone(projection)
 
     def test_entry_zone_contains_entry(self):
         low, high = route.build_entry_zone(100.0, 2.0)
