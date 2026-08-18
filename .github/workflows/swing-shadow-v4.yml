@@ -1,20 +1,20 @@
-name: Swing Shadow V4
+name: Swing Shadow V5
 
 on:
   workflow_dispatch:
   schedule:
-    # Maliyet kontrollü gölge örnekleme: 6 saatte bir.
-    - cron: "13 2,8,14,20 * * *"
+    # Çekirdek filtreler aynı; düşük örneklemi büyütmek için 3 saatte bir.
+    - cron: "13 0,3,6,9,12,15,18,21 * * *"
 
 permissions:
   contents: write
 
 concurrency:
-  group: swing-shadow-v4
+  group: swing-shadow-v5
   cancel-in-progress: false
 
 jobs:
-  swing-shadow-v4:
+  swing-shadow-v5:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -36,10 +36,15 @@ jobs:
           PIP_DISABLE_PIP_VERSION_CHECK: "1"
         run: python -m pip install --prefer-binary -r requirements.txt
 
-      - name: Swing Shadow V4 çalıştır
-        run: python swing_shadow_v4.py
+      - name: Swing Shadow V5 doğrula
+        run: |
+          python -m py_compile swing_shadow_v4.py swing_shadow_v5_runner.py
+          python swing_shadow_v5_runner.py --self-test
 
-      - name: Swing V4 gölge ledger kaydet
+      - name: Swing Shadow V5 çalıştır
+        run: python swing_shadow_v5_runner.py
+
+      - name: Swing V5 gölge ledger kaydet
         if: always()
         run: |
           set -e
@@ -47,10 +52,10 @@ jobs:
           git config user.email "github-actions@github.com"
           git add swing_shadow_v4_ledger.json
           if git diff --cached --quiet; then
-            echo "Swing V4 için yeni veri yok."
+            echo "Swing V5 için yeni veri yok."
             exit 0
           fi
-          git commit -m "Update Swing Shadow V4 ledger"
+          git commit -m "Update Swing Shadow V5 ledger"
           for attempt in 1 2 3
           do
             git pull --rebase --autostash origin main
