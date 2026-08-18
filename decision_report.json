@@ -1,8 +1,8 @@
 {
   "version": "DECISION_ENGINE_V3_LEGACY_SWING_REMOVED_2026_08_14",
   "mode": "ANALYSIS_ONLY_NO_SIGNAL_CHANGE_NO_TELEGRAM_NO_ORDERS",
-  "generated_at": 1787001510,
-  "generated_at_utc": "2026-08-17T21:18:30+00:00",
+  "generated_at": 1787087766,
+  "generated_at_utc": "2026-08-18T21:16:06+00:00",
   "auto_apply": false,
   "thresholds": {
     "confidence": {
@@ -45,27 +45,27 @@
       "premium_performance": {
         "path": "performance.json",
         "exists": true,
-        "bytes": 665721,
+        "bytes": 695987,
         "valid_json": true,
         "error": null,
-        "last_update": 1786999841,
-        "age_hours": 0.46,
+        "last_update": 1787087121,
+        "age_hours": 0.18,
         "stale_over_48h": false
       },
       "premium_trade_ledger": {
         "path": "trade_ledger.json",
         "exists": true,
-        "bytes": 3189600,
+        "bytes": 3423105,
         "valid_json": true,
         "error": null,
-        "last_update": 1787000649,
-        "age_hours": 0.24,
+        "last_update": 1787087124,
+        "age_hours": 0.18,
         "stale_over_48h": false
       },
       "scalp_state": {
         "path": "scalp_radar_state.json",
         "exists": true,
-        "bytes": 5380,
+        "bytes": 6206,
         "valid_json": true,
         "error": null,
         "last_update": 0,
@@ -75,17 +75,17 @@
       "scalp_ledger": {
         "path": "scalp_performance_ledger.json",
         "exists": true,
-        "bytes": 1597573,
+        "bytes": 1592899,
         "valid_json": true,
         "error": null,
-        "last_update": 1787000478,
-        "age_hours": 0.29,
+        "last_update": 1787087120,
+        "age_hours": 0.18,
         "stale_over_48h": false
       },
       "pump_state": {
         "path": "pump_radar_state.json",
         "exists": true,
-        "bytes": 324579,
+        "bytes": 325909,
         "valid_json": true,
         "error": null,
         "last_update": 0,
@@ -95,51 +95,51 @@
       "pump_ledger": {
         "path": "pump_performance_ledger.json",
         "exists": true,
-        "bytes": 69906,
+        "bytes": 76181,
         "valid_json": true,
         "error": null,
-        "last_update": 1787000604,
-        "age_hours": 0.25,
+        "last_update": 1787087198,
+        "age_hours": 0.16,
         "stale_over_48h": false
       },
       "swing_v4_ledger": {
         "path": "swing_shadow_v4_ledger.json",
         "exists": true,
-        "bytes": 12492,
+        "bytes": 12349,
         "valid_json": true,
         "error": null,
-        "last_update": 1786999151,
-        "age_hours": 0.66,
+        "last_update": 1787043078,
+        "age_hours": 12.41,
         "stale_over_48h": false
       },
       "momentum_shadow": {
         "path": "momentum_shadow.json",
         "exists": true,
-        "bytes": 59538,
+        "bytes": 59557,
         "valid_json": true,
         "error": null,
-        "last_update": 1786996688,
-        "age_hours": 1.34,
+        "last_update": 1787082963,
+        "age_hours": 1.33,
         "stale_over_48h": false
       },
       "range_shadow": {
-        "path": "range_shadow.json",
+        "path": "range_shadow_v4.json",
         "exists": true,
-        "bytes": 708147,
+        "bytes": 4915,
         "valid_json": true,
         "error": null,
-        "last_update": 1786997442,
-        "age_hours": 1.13,
+        "last_update": 1787085906,
+        "age_hours": 0.52,
         "stale_over_48h": false
       },
       "portfolio_risk_outcomes": {
         "path": "portfolio_risk_outcomes.json",
         "exists": true,
-        "bytes": 2557828,
+        "bytes": 2742868,
         "valid_json": true,
         "error": null,
-        "last_update": 1786999774,
-        "age_hours": 0.48,
+        "last_update": 1787085878,
+        "age_hours": 0.52,
         "stale_over_48h": false
       },
       "post_result_v2": {
@@ -155,7 +155,7 @@
       "post_result_v3": {
         "path": "post_result_shadow_v3_report.json",
         "exists": true,
-        "bytes": 1653,
+        "bytes": 1655,
         "valid_json": true,
         "error": null,
         "last_update": 0,
@@ -167,15 +167,6 @@
   "executive": {
     "overall": "ACTION_REQUIRED",
     "top_actions": [
-      {
-        "priority": 2,
-        "component": "RANGE_SHADOW",
-        "decision_code": "CANLIYA_ALMA_YENIDEN_TASARLA",
-        "decision_tr": "🔴 CANLIYA ALMA / YENİDEN TASARLA",
-        "confidence": "YUKSEK",
-        "sample_size": 529,
-        "next_action": "Mevcut Range V3'ü canlı aday olarak bırak; yeni mimari ancak ayrı gölge sürüm olarak denensin."
-      },
       {
         "priority": 3,
         "component": "MOMENTUM_SHADOW",
@@ -191,8 +182,17 @@
         "decision_code": "YONETIM_ALTERNATIFI_GOLGE_TEST",
         "decision_tr": "🟠 İŞLEM YÖNETİMİ ALTERNATİFİNİ GÖLGE TEST ET",
         "confidence": "YUKSEK",
-        "sample_size": 130,
+        "sample_size": 151,
         "next_action": "V3 modellerini karşılaştır; yalnız yeterli örnek ve pozitif net ek R doğrulanırsa canlı kural önerisi üret."
+      },
+      {
+        "priority": 5,
+        "component": "RANGE_SHADOW",
+        "decision_code": "GOLGEDE_TUT",
+        "decision_tr": "🟡 GÖLGEDE TUT",
+        "confidence": "DUSUK",
+        "sample_size": 0,
+        "next_action": "Canlıya alma; gölge değerlendirmeyi sürdür."
       },
       {
         "priority": 6,
@@ -200,7 +200,7 @@
         "decision_code": "IZLE",
         "decision_tr": "🟡 PORTFÖY RİSKİNİ İZLE",
         "confidence": "YUKSEK",
-        "sample_size": 812,
+        "sample_size": 872,
         "next_action": "Canlı limit değiştirmeden BLOCK/ALLOW ve block_code sonuçlarını toplamaya devam et."
       },
       {
@@ -209,7 +209,7 @@
         "decision_code": "IZLE",
         "decision_tr": "🟡 İZLE",
         "confidence": "ORTA",
-        "sample_size": 22,
+        "sample_size": 17,
         "next_action": "Canlı filtreyi değiştirmeden setup bazlı ayrıştırmayı sürdür."
       },
       {
@@ -218,7 +218,7 @@
         "decision_code": "KORU_IZLE",
         "decision_tr": "🟢 KORU / İZLE",
         "confidence": "ORTA",
-        "sample_size": 21,
+        "sample_size": 23,
         "next_action": "Ayarları değiştirme; örnek sayısını büyüt."
       },
       {
@@ -227,7 +227,7 @@
         "decision_code": "KORU",
         "decision_tr": "🟢 KORU",
         "confidence": "YUKSEK",
-        "sample_size": 325,
+        "sample_size": 337,
         "next_action": "Ana giriş mantığını değiştirme."
       },
       {
@@ -240,7 +240,7 @@
         "next_action": "Telegram ve emir kapalı kalsın; 30 kapanışa kadar veri topla."
       }
     ],
-    "urgent_action_count": 3,
+    "urgent_action_count": 2,
     "auto_apply": false
   },
   "components": {
@@ -248,37 +248,37 @@
       "decision_code": "KORU",
       "decision_tr": "🟢 KORU",
       "confidence": "YUKSEK",
-      "sample_size": 325,
+      "sample_size": 337,
       "auto_apply": false,
       "reasons": [
-        "Ölçülebilir kapanış: 325.",
-        "Stop oranı: %30.8; pozitif kapanış oranı: %69.2.",
-        "Exact-R ortalaması: +0.064R."
+        "Ölçülebilir kapanış: 337.",
+        "Stop oranı: %32.3; pozitif kapanış oranı: %67.7.",
+        "Exact-R ortalaması: +0.050R."
       ],
       "next_action": "Ana giriş mantığını değiştirme.",
       "metrics": {
-        "sample_size": 332,
-        "measurable_closed": 325,
-        "tp3": 74,
-        "be": 151,
-        "sl": 100,
+        "sample_size": 344,
+        "measurable_closed": 337,
+        "tp3": 79,
+        "be": 149,
+        "sl": 109,
         "expired": 7,
-        "tp3_rate_percent": 22.77,
-        "be_rate_percent": 46.46,
-        "stop_rate_percent": 30.77,
-        "positive_close_rate_percent": 69.23,
-        "r_records": 332,
+        "tp3_rate_percent": 23.44,
+        "be_rate_percent": 44.21,
+        "stop_rate_percent": 32.34,
+        "positive_close_rate_percent": 67.66,
+        "r_records": 344,
         "r_coverage_percent": 100.0,
-        "net_r": 21.316,
-        "avg_r": 0.0642,
+        "net_r": 17.1414,
+        "avg_r": 0.0498,
         "data_basis": "trade_ledger_recent_14d",
         "source_breakdown": {
-          "15M_ENTRY": 280,
-          "5M_RADAR": 52
+          "15M_ENTRY": 290,
+          "5M_RADAR": 54
         },
         "direction_breakdown": {
-          "LONG": 192,
-          "SHORT": 140
+          "LONG": 191,
+          "SHORT": 153
         }
       }
     },
@@ -286,48 +286,48 @@
       "decision_code": "IZLE",
       "decision_tr": "🟡 İZLE",
       "confidence": "ORTA",
-      "sample_size": 22,
+      "sample_size": 17,
       "auto_apply": false,
       "reasons": [
-        "Gerçek Scalp örneği: 22."
+        "Gerçek Scalp örneği: 17."
       ],
       "next_action": "Canlı filtreyi değiştirmeden setup bazlı ayrıştırmayı sürdür.",
       "metrics": {
-        "sample_size": 22,
-        "measurable_closed": 22,
-        "tp3": 12,
+        "sample_size": 17,
+        "measurable_closed": 17,
+        "tp3": 8,
         "be": 4,
-        "sl": 6,
+        "sl": 5,
         "expired": 0,
-        "tp3_rate_percent": 54.55,
-        "be_rate_percent": 18.18,
-        "stop_rate_percent": 27.27,
-        "positive_close_rate_percent": 72.73,
+        "tp3_rate_percent": 47.06,
+        "be_rate_percent": 23.53,
+        "stop_rate_percent": 29.41,
+        "positive_close_rate_percent": 70.59,
         "data_basis": "scalp_ledger_real_signal",
         "setup_breakdown": {
           "ATAK_SCALP": {
-            "sample_size": 13,
-            "measurable_closed": 13,
-            "tp3": 5,
-            "be": 3,
-            "sl": 5,
-            "expired": 0,
-            "tp3_rate_percent": 38.46,
-            "be_rate_percent": 23.08,
-            "stop_rate_percent": 38.46,
-            "positive_close_rate_percent": 61.54
-          },
-          "TEPKI_SCALP": {
             "sample_size": 9,
             "measurable_closed": 9,
-            "tp3": 7,
-            "be": 1,
+            "tp3": 3,
+            "be": 2,
+            "sl": 4,
+            "expired": 0,
+            "tp3_rate_percent": 33.33,
+            "be_rate_percent": 22.22,
+            "stop_rate_percent": 44.44,
+            "positive_close_rate_percent": 55.56
+          },
+          "TEPKI_SCALP": {
+            "sample_size": 8,
+            "measurable_closed": 8,
+            "tp3": 5,
+            "be": 2,
             "sl": 1,
             "expired": 0,
-            "tp3_rate_percent": 77.78,
-            "be_rate_percent": 11.11,
-            "stop_rate_percent": 11.11,
-            "positive_close_rate_percent": 88.89
+            "tp3_rate_percent": 62.5,
+            "be_rate_percent": 25.0,
+            "stop_rate_percent": 12.5,
+            "positive_close_rate_percent": 87.5
           }
         }
       }
@@ -336,24 +336,24 @@
       "decision_code": "KORU_IZLE",
       "decision_tr": "🟢 KORU / İZLE",
       "confidence": "ORTA",
-      "sample_size": 21,
+      "sample_size": 23,
       "auto_apply": false,
       "reasons": [
-        "Pump/Dump örneği 21.",
-        "Stop oranı %15.8, TP3 oranı %31.6."
+        "Pump/Dump örneği 23.",
+        "Stop oranı %19.1, TP3 oranı %28.6."
       ],
       "next_action": "Ayarları değiştirme; örnek sayısını büyüt.",
       "metrics": {
-        "sample_size": 21,
-        "measurable_closed": 19,
+        "sample_size": 23,
+        "measurable_closed": 21,
         "tp3": 6,
-        "be": 10,
-        "sl": 3,
+        "be": 11,
+        "sl": 4,
         "expired": 2,
-        "tp3_rate_percent": 31.58,
-        "be_rate_percent": 52.63,
-        "stop_rate_percent": 15.79,
-        "positive_close_rate_percent": 84.21,
+        "tp3_rate_percent": 28.57,
+        "be_rate_percent": 52.38,
+        "stop_rate_percent": 19.05,
+        "positive_close_rate_percent": 80.95,
         "data_basis": "pump_ledger"
       }
     },
@@ -406,23 +406,24 @@
           "opened": 0,
           "resolved": 0,
           "universe": 60,
-          "near_misses": 37
+          "near_misses": 41
         },
         "rejections": {
-          "H4_VOLUME": 3,
-          "M15_TRIGGER": 5,
-          "H1_PULLBACK_RECLAIM": 12,
-          "H4_ADX": 4,
-          "REGIME_PREFILTER": 21,
+          "REGIME_PREFILTER": 17,
+          "M15_TRIGGER": 10,
+          "H4_TREND": 6,
+          "D1_REGIME_NEUTRAL": 7,
+          "H4_ADX": 1,
+          "H1_PULLBACK_RECLAIM": 7,
+          "H4_VOLUME": 5,
           "DATA_MISSING": 2,
-          "D1_REGIME_NEUTRAL": 4,
-          "H1_ADX": 4,
-          "H4_TREND": 4,
-          "H1_RSI": 1
+          "H1_ADX": 3,
+          "H1_RSI": 1,
+          "M15_VOLUME": 1
         },
         "latest_near_misses": [
           {
-            "symbol": "PEPEUSDT",
+            "symbol": "SHIBUSDT",
             "direction": "SHORT",
             "first_failure": "M15_TRIGGER",
             "passed_checks": 8,
@@ -431,76 +432,74 @@
               "M15_TRIGGER"
             ],
             "metrics": {
-              "d1_rsi": 35.06,
-              "h4_adx": 45.74,
-              "h1_adx": 26.75,
-              "h1_rsi": 45.89,
-              "m15_rsi": 48.44,
-              "m15_volume_ratio": 1.292,
-              "m15_body_strength": 0.692
-            }
-          },
-          {
-            "symbol": "MEWUSDT",
-            "direction": "SHORT",
-            "first_failure": "H1_ADX",
-            "passed_checks": 8,
-            "total_checks": 9,
-            "missing_checks": [
-              "H1_ADX"
-            ],
-            "metrics": {
-              "d1_rsi": 35.74,
-              "h4_adx": 24.91,
-              "h1_adx": 11.18,
-              "h1_rsi": 43.75,
-              "m15_rsi": 38.09,
-              "m15_volume_ratio": 1.348,
-              "m15_body_strength": 0.5
-            }
-          },
-          {
-            "symbol": "SATSUSDT",
-            "direction": "LONG",
-            "first_failure": "H4_VOLUME",
-            "passed_checks": 7,
-            "total_checks": 9,
-            "missing_checks": [
-              "H4_VOLUME",
-              "M15_TRIGGER"
-            ],
-            "metrics": {
-              "d1_rsi": 54.04,
-              "h4_adx": 22.59,
-              "h1_adx": 15.85,
-              "h1_rsi": 50.39,
-              "m15_rsi": 42.47,
-              "m15_volume_ratio": 1.036,
-              "m15_body_strength": 0.526
-            }
-          },
-          {
-            "symbol": "PUMPUSDT",
-            "direction": "LONG",
-            "first_failure": "H1_PULLBACK_RECLAIM",
-            "passed_checks": 7,
-            "total_checks": 9,
-            "missing_checks": [
-              "H1_PULLBACK_RECLAIM",
-              "M15_TRIGGER"
-            ],
-            "metrics": {
-              "d1_rsi": 62.78,
-              "h4_adx": 20.76,
-              "h1_adx": 26.34,
-              "h1_rsi": 46.75,
-              "m15_rsi": 27.56,
-              "m15_volume_ratio": 1.153,
-              "m15_body_strength": 0.771
+              "d1_rsi": 45.99,
+              "h4_adx": 21.42,
+              "h1_adx": 27.64,
+              "h1_rsi": 41.78,
+              "m15_rsi": 56.25,
+              "m15_volume_ratio": 1.057,
+              "m15_body_strength": 0.762
             }
           },
           {
             "symbol": "FLOKIUSDT",
+            "direction": "SHORT",
+            "first_failure": "M15_TRIGGER",
+            "passed_checks": 8,
+            "total_checks": 9,
+            "missing_checks": [
+              "M15_TRIGGER"
+            ],
+            "metrics": {
+              "d1_rsi": 41.05,
+              "h4_adx": 24.22,
+              "h1_adx": 28.46,
+              "h1_rsi": 38.89,
+              "m15_rsi": 56.24,
+              "m15_volume_ratio": 1.813,
+              "m15_body_strength": 0.667
+            }
+          },
+          {
+            "symbol": "DOGEUSDT",
+            "direction": "SHORT",
+            "first_failure": "M15_TRIGGER",
+            "passed_checks": 8,
+            "total_checks": 9,
+            "missing_checks": [
+              "M15_TRIGGER"
+            ],
+            "metrics": {
+              "d1_rsi": 48.06,
+              "h4_adx": 23.41,
+              "h1_adx": 18.34,
+              "h1_rsi": 43.77,
+              "m15_rsi": 45.95,
+              "m15_volume_ratio": 1.314,
+              "m15_body_strength": 0.529
+            }
+          },
+          {
+            "symbol": "BEATUSDT",
+            "direction": "SHORT",
+            "first_failure": "H1_PULLBACK_RECLAIM",
+            "passed_checks": 8,
+            "total_checks": 9,
+            "missing_checks": [
+              "H1_PULLBACK_RECLAIM"
+            ],
+            "metrics": {
+              "d1_rsi": 33.0,
+              "h4_adx": 46.19,
+              "h1_adx": 20.69,
+              "h1_rsi": 37.19,
+              "m15_rsi": 40.06,
+              "m15_volume_ratio": 1.104,
+              "m15_body_strength": 0.61
+            }
+          },
+          {
+            "symbol": "PEPEUSDT",
             "direction": "SHORT",
             "first_failure": "M15_TRIGGER",
             "passed_checks": 7,
@@ -510,102 +509,41 @@
               "M15_VOLUME"
             ],
             "metrics": {
-              "d1_rsi": 38.36,
-              "h4_adx": 18.84,
-              "h1_adx": 14.42,
-              "h1_rsi": 47.01,
-              "m15_rsi": 50.82,
-              "m15_volume_ratio": 0.528,
-              "m15_body_strength": 0.5
+              "d1_rsi": 36.91,
+              "h4_adx": 45.99,
+              "h1_adx": 27.56,
+              "h1_rsi": 41.36,
+              "m15_rsi": 47.27,
+              "m15_volume_ratio": 0.424,
+              "m15_body_strength": 0.667
             }
           }
         ]
       }
     },
     "RANGE_SHADOW": {
-      "decision_code": "CANLIYA_ALMA_YENIDEN_TASARLA",
-      "decision_tr": "🔴 CANLIYA ALMA / YENİDEN TASARLA",
-      "confidence": "YUKSEK",
-      "sample_size": 529,
+      "decision_code": "GOLGEDE_TUT",
+      "decision_tr": "🟡 GÖLGEDE TUT",
+      "confidence": "DUSUK",
+      "sample_size": 0,
       "auto_apply": false,
       "reasons": [
-        "529 kapanmış gölge işlemde net sonuç -315.04R.",
-        "Ortalama maliyet etkisi işlem başına 0.571R."
+        "Range kapanmış örnek: 0."
       ],
-      "next_action": "Mevcut Range V3'ü canlı aday olarak bırak; yeni mimari ancak ayrı gölge sürüm olarak denensin.",
+      "next_action": "Canlıya alma; gölge değerlendirmeyi sürdür.",
       "metrics": {
-        "total_opened": 532,
-        "total_closed": 529,
-        "wins": 95,
-        "sl": 420,
-        "win_rate_percent": 20.23,
-        "gross_r": -13.214,
-        "net_r": -315.0424,
-        "gross_to_net_cost_r": 301.8284,
-        "average_cost_r_per_closed": 0.5706,
-        "close_reason_counts": {
-          "TIGHT_STOP_COST_DOMINATED": 142,
-          "LOW_VOLUME_NO_CONTINUATION": 30,
-          "WEAK_SINGLE_CONFIRMATION": 83,
-          "RANGE_BROKEN_BY_TREND_PRESSURE": 100,
-          "COMPLETED_RANGE_LEG": 95,
-          "DIRECTION_OR_ENTRY_TIMING_FAILURE": 65,
-          "TIMEOUT_PARTIAL_FAVORABLE_MOVE": 12,
-          "TIMEOUT_EDGE_ERASED_BY_COST": 1,
-          "TIMEOUT_DIRECTION_WEAK": 1
-        },
-        "risk_band_stats": {
-          "LT_0_20": {
-            "closed": 167,
-            "wins": 25,
-            "sl": 142,
-            "gross_r": 1.3758,
-            "net_r": -171.3085,
-            "win_rate_percent": 14.97
-          },
-          "0_35_TO_0_60": {
-            "closed": 115,
-            "wins": 33,
-            "sl": 82,
-            "gross_r": 17.9496,
-            "net_r": -14.0435,
-            "win_rate_percent": 28.7
-          },
-          "0_20_TO_0_35": {
-            "closed": 192,
-            "wins": 36,
-            "sl": 155,
-            "gross_r": -24.6893,
-            "net_r": -113.269,
-            "win_rate_percent": 18.75
-          },
-          "GTE_0_60": {
-            "closed": 55,
-            "wins": 13,
-            "sl": 41,
-            "gross_r": -7.8501,
-            "net_r": -16.4214,
-            "win_rate_percent": 23.64
-          }
-        },
-        "direction_stats": {
-          "LONG": {
-            "closed": 293,
-            "wins": 59,
-            "sl": 234,
-            "gross_r": -8.6049,
-            "net_r": -173.0858,
-            "win_rate_percent": 20.14
-          },
-          "SHORT": {
-            "closed": 236,
-            "wins": 48,
-            "sl": 186,
-            "gross_r": -4.6091,
-            "net_r": -141.9566,
-            "win_rate_percent": 20.34
-          }
-        }
+        "total_opened": 1,
+        "total_closed": 0,
+        "wins": 0,
+        "sl": 0,
+        "win_rate_percent": 0.0,
+        "gross_r": 0.0,
+        "net_r": 0.0,
+        "gross_to_net_cost_r": 0.0,
+        "average_cost_r_per_closed": 0.0,
+        "close_reason_counts": {},
+        "risk_band_stats": {},
+        "direction_stats": {}
       }
     },
     "MOMENTUM_SHADOW": {
@@ -635,81 +573,81 @@
       "decision_code": "IZLE",
       "decision_tr": "🟡 PORTFÖY RİSKİNİ İZLE",
       "confidence": "YUKSEK",
-      "sample_size": 812,
+      "sample_size": 872,
       "auto_apply": false,
       "reasons": [
-        "Takip edilen portföy karar kaydı: 812; tamamlanan: 759.",
+        "Takip edilen portföy karar kaydı: 872; tamamlanan: 812.",
         "Bu kayıtların bir kısmı aynı adayın farklı zamanlardaki kararlarıdır; benzersiz trade sayısı değildir."
       ],
       "next_action": "Canlı limit değiştirmeden BLOCK/ALLOW ve block_code sonuçlarını toplamaya devam et.",
       "metrics": {
         "sample_unit": "portfolio_decision_records_not_unique_trades",
-        "source_records": 812,
-        "tracked_records": 812,
-        "completed_records": 759,
-        "tracking_records": 53,
+        "source_records": 872,
+        "tracked_records": 872,
+        "completed_records": 812,
+        "tracking_records": 60,
         "data_error_records": 0,
         "block": {
-          "records": 431,
-          "first_0_5_favorable": 202,
-          "first_0_5_adverse": 229,
+          "records": 452,
+          "first_0_5_favorable": 210,
+          "first_0_5_adverse": 242,
           "first_0_5_ambiguous": 0,
           "first_0_5_none": 0,
-          "favorable_first_rate_percent": 46.87,
-          "adverse_first_rate_percent": 53.13,
-          "avg_return_60m_percent": -0.0586,
-          "avg_return_240m_percent": -0.2484,
-          "avg_return_720m_percent": -0.2451,
-          "avg_return_1440m_percent": 0.0098,
-          "avg_mfe_240m_percent": 0.9411,
-          "avg_mae_240m_percent": 1.0806
+          "favorable_first_rate_percent": 46.46,
+          "adverse_first_rate_percent": 53.54,
+          "avg_return_60m_percent": -0.0634,
+          "avg_return_240m_percent": -0.2569,
+          "avg_return_720m_percent": -0.2474,
+          "avg_return_1440m_percent": -0.0105,
+          "avg_mfe_240m_percent": 0.9295,
+          "avg_mae_240m_percent": 1.0942
         },
         "allow": {
-          "records": 381,
-          "first_0_5_favorable": 199,
-          "first_0_5_adverse": 175,
+          "records": 420,
+          "first_0_5_favorable": 219,
+          "first_0_5_adverse": 197,
           "first_0_5_ambiguous": 3,
-          "first_0_5_none": 4,
-          "favorable_first_rate_percent": 53.21,
-          "adverse_first_rate_percent": 46.79,
-          "avg_return_60m_percent": -0.0058,
-          "avg_return_240m_percent": -0.1035,
-          "avg_return_720m_percent": -0.0207,
-          "avg_return_1440m_percent": 0.1325,
-          "avg_mfe_240m_percent": 1.3034,
-          "avg_mae_240m_percent": 1.2087
+          "first_0_5_none": 1,
+          "favorable_first_rate_percent": 52.64,
+          "adverse_first_rate_percent": 47.36,
+          "avg_return_60m_percent": 0.0044,
+          "avg_return_240m_percent": -0.0863,
+          "avg_return_720m_percent": -0.0551,
+          "avg_return_1440m_percent": 0.1864,
+          "avg_mfe_240m_percent": 1.3128,
+          "avg_mae_240m_percent": 1.1966
         },
         "by_block_code": {
           "ALLOW": {
-            "records": 381,
-            "first_0_5_favorable": 199,
-            "first_0_5_adverse": 175,
+            "records": 420,
+            "first_0_5_favorable": 219,
+            "first_0_5_adverse": 197,
             "first_0_5_ambiguous": 3,
-            "first_0_5_none": 4,
-            "favorable_first_rate_percent": 53.21,
-            "adverse_first_rate_percent": 46.79,
-            "avg_return_60m_percent": -0.0058,
-            "avg_return_240m_percent": -0.1035,
-            "avg_return_720m_percent": -0.0207,
-            "avg_return_1440m_percent": 0.1325,
-            "avg_mfe_240m_percent": 1.3034,
-            "avg_mae_240m_percent": 1.2087,
+            "first_0_5_none": 1,
+            "favorable_first_rate_percent": 52.64,
+            "adverse_first_rate_percent": 47.36,
+            "avg_return_60m_percent": 0.0044,
+            "avg_return_240m_percent": -0.0863,
+            "avg_return_720m_percent": -0.0551,
+            "avg_return_1440m_percent": 0.1864,
+            "avg_mfe_240m_percent": 1.3128,
+            "avg_mae_240m_percent": 1.1966,
             "finding": "IZLE"
           },
           "DIRECTION_RISK_LIMIT": {
-            "records": 430,
-            "first_0_5_favorable": 202,
-            "first_0_5_adverse": 228,
+            "records": 451,
+            "first_0_5_favorable": 210,
+            "first_0_5_adverse": 241,
             "first_0_5_ambiguous": 0,
             "first_0_5_none": 0,
-            "favorable_first_rate_percent": 46.98,
-            "adverse_first_rate_percent": 53.02,
-            "avg_return_60m_percent": -0.0595,
-            "avg_return_240m_percent": -0.2491,
-            "avg_return_720m_percent": -0.2451,
-            "avg_return_1440m_percent": 0.0098,
-            "avg_mfe_240m_percent": 0.9415,
-            "avg_mae_240m_percent": 1.0817,
+            "favorable_first_rate_percent": 46.56,
+            "adverse_first_rate_percent": 53.44,
+            "avg_return_60m_percent": -0.0643,
+            "avg_return_240m_percent": -0.2576,
+            "avg_return_720m_percent": -0.2472,
+            "avg_return_1440m_percent": -0.0086,
+            "avg_mfe_240m_percent": 0.9298,
+            "avg_mae_240m_percent": 1.0953,
             "finding": "IZLE"
           },
           "SAME_COIN_SAME_DIRECTION": {
@@ -722,8 +660,8 @@
             "adverse_first_rate_percent": 100.0,
             "avg_return_60m_percent": 0.3371,
             "avg_return_240m_percent": 0.0632,
-            "avg_return_720m_percent": null,
-            "avg_return_1440m_percent": null,
+            "avg_return_720m_percent": -0.3476,
+            "avg_return_1440m_percent": -0.8216,
             "avg_mfe_240m_percent": 0.7584,
             "avg_mae_240m_percent": 0.6109,
             "finding": "IZLE"
@@ -735,63 +673,63 @@
       "decision_code": "YONETIM_ALTERNATIFI_GOLGE_TEST",
       "decision_tr": "🟠 İŞLEM YÖNETİMİ ALTERNATİFİNİ GÖLGE TEST ET",
       "confidence": "YUKSEK",
-      "sample_size": 130,
+      "sample_size": 151,
       "auto_apply": false,
       "reasons": [
-        "V3 TP1_DELAY_BE_UNTIL_TP2: 65 örnek, ortalama ek sonuç -0.079R.",
-        "V3 TP1_SOFT_BE_MINUS_0_25R: 65 örnek, ortalama ek sonuç +0.001R.",
-        "V3 TP2_SOFT_BE_MINUS_0_25R: 20 örnek, ortalama ek sonuç +0.140R.",
-        "V3 TP3_RUNNER_TRAIL_0_5R: 45 örnek, ortalama ek sonuç +0.112R.",
-        "V3 TP3_RUNNER_TRAIL_1_0R: 45 örnek, ortalama ek sonuç +0.088R.",
-        "TP1→BE tamamlanmış 65; sonradan TP2 %33.9, TP3 %18.5.",
-        "TP2→BE tamamlanmış 20; sonradan TP3 %30.0.",
-        "TP3 sonrası ortalama ek MFE: 1.463R."
+        "V3 TP1_DELAY_BE_UNTIL_TP2: 76 örnek, ortalama ek sonuç -0.054R.",
+        "V3 TP1_SOFT_BE_MINUS_0_25R: 76 örnek, ortalama ek sonuç +0.062R.",
+        "V3 TP2_SOFT_BE_MINUS_0_25R: 22 örnek, ortalama ek sonuç +0.104R.",
+        "V3 TP3_RUNNER_TRAIL_0_5R: 53 örnek, ortalama ek sonuç +0.122R.",
+        "V3 TP3_RUNNER_TRAIL_1_0R: 53 örnek, ortalama ek sonuç +0.139R.",
+        "TP1→BE tamamlanmış 76; sonradan TP2 %34.2, TP3 %21.1.",
+        "TP2→BE tamamlanmış 22; sonradan TP3 %27.3.",
+        "TP3 sonrası ortalama ek MFE: 1.614R."
       ],
       "next_action": "V3 modellerini karşılaştır; yalnız yeterli örnek ve pozitif net ek R doğrulanırsa canlı kural önerisi üret.",
       "metrics": {
-        "tracked_total": 131,
-        "completed_total": 130,
+        "tracked_total": 154,
+        "completed_total": 151,
         "groups": {
           "TP1_SONRASI_BE": {
-            "tracked": 66,
-            "completed": 65,
-            "tp1_reached_after_close": 38,
-            "tp2_reached_after_close": 22,
-            "tp3_reached_after_close": 12,
-            "tp1_reach_rate_percent": 58.46,
-            "tp2_reach_rate_percent": 33.85,
-            "tp3_reach_rate_percent": 18.46,
-            "avg_max_favorable_r": 1.093,
-            "median_max_favorable_r": 0.6479,
-            "avg_max_adverse_r": 1.4709,
-            "median_240m_directional_r": -0.1347
+            "tracked": 78,
+            "completed": 76,
+            "tp1_reached_after_close": 45,
+            "tp2_reached_after_close": 26,
+            "tp3_reached_after_close": 16,
+            "tp1_reach_rate_percent": 59.21,
+            "tp2_reach_rate_percent": 34.21,
+            "tp3_reach_rate_percent": 21.05,
+            "avg_max_favorable_r": 1.2968,
+            "median_max_favorable_r": 0.6439,
+            "avg_max_adverse_r": 1.5638,
+            "median_240m_directional_r": -0.1875
           },
           "TP3": {
-            "tracked": 45,
-            "completed": 45,
+            "tracked": 54,
+            "completed": 53,
             "tp1_reached_after_close": 0,
             "tp2_reached_after_close": 0,
             "tp3_reached_after_close": 0,
             "tp1_reach_rate_percent": 0.0,
             "tp2_reach_rate_percent": 0.0,
             "tp3_reach_rate_percent": 0.0,
-            "avg_max_favorable_r": 1.4633,
-            "median_max_favorable_r": 0.8459,
-            "avg_max_adverse_r": 1.844,
-            "median_240m_directional_r": -0.8994
+            "avg_max_favorable_r": 1.6138,
+            "median_max_favorable_r": 0.9812,
+            "avg_max_adverse_r": 1.8205,
+            "median_240m_directional_r": -0.8678
           },
           "TP2_SONRASI_BE": {
-            "tracked": 20,
-            "completed": 20,
+            "tracked": 22,
+            "completed": 22,
             "tp1_reached_after_close": 0,
             "tp2_reached_after_close": 11,
             "tp3_reached_after_close": 6,
             "tp1_reach_rate_percent": 0.0,
-            "tp2_reach_rate_percent": 55.0,
-            "tp3_reach_rate_percent": 30.0,
-            "avg_max_favorable_r": 1.3026,
-            "median_max_favorable_r": 1.1038,
-            "avg_max_adverse_r": 1.8744,
+            "tp2_reach_rate_percent": 50.0,
+            "tp3_reach_rate_percent": 27.27,
+            "avg_max_favorable_r": 1.2017,
+            "median_max_favorable_r": 1.0021,
+            "avg_max_adverse_r": 1.8455,
             "median_240m_directional_r": -0.1304
           }
         },
@@ -799,155 +737,155 @@
           "version": "POST_RESULT_SHADOW_V2_2026_08_14",
           "shadow_only": true,
           "changes_live_rules": false,
-          "generated_at": 1787000649,
+          "generated_at": 1787087125,
           "minimum_sample": 20,
           "data_quality": {
-            "ledger_trades": 717,
-            "completed_post_result_samples": 130,
-            "tracking_samples_excluded": 1
+            "ledger_trades": 753,
+            "completed_post_result_samples": 151,
+            "tracking_samples_excluded": 3
           },
           "overall": {
-            "sample": 130,
-            "complete": 130,
+            "sample": 151,
+            "complete": 151,
             "evidence_gate": "ENOUGH_SAMPLE",
-            "average_mfe_r": 1.2534,
-            "average_mae_r": 1.6621,
-            "extension_0_5r_rate": 65.38,
-            "extension_1r_rate": 40.77,
-            "adverse_0_5r_rate": 75.38,
+            "average_mfe_r": 1.3942,
+            "average_mae_r": 1.6949,
+            "extension_0_5r_rate": 66.23,
+            "extension_1r_rate": 41.72,
+            "adverse_0_5r_rate": 74.83,
             "checkpoint_positive_rate": {
-              "15": 46.92,
-              "30": 48.46,
-              "60": 43.08,
-              "120": 39.23,
-              "240": 40.77
+              "15": 47.02,
+              "30": 48.34,
+              "60": 44.37,
+              "120": 39.07,
+              "240": 39.07
             }
           },
           "by_final_result": {
             "TP1_SONRASI_BE": {
-              "sample": 65,
-              "complete": 65,
+              "sample": 76,
+              "complete": 76,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_mfe_r": 1.093,
-              "average_mae_r": 1.4709,
-              "extension_0_5r_rate": 64.62,
-              "extension_1r_rate": 35.38,
-              "adverse_0_5r_rate": 73.85,
+              "average_mfe_r": 1.2968,
+              "average_mae_r": 1.5638,
+              "extension_0_5r_rate": 64.47,
+              "extension_1r_rate": 35.53,
+              "adverse_0_5r_rate": 73.68,
               "checkpoint_positive_rate": {
-                "15": 46.15,
-                "30": 50.77,
-                "60": 46.15,
-                "120": 43.08,
-                "240": 43.08
+                "15": 48.68,
+                "30": 50.0,
+                "60": 46.05,
+                "120": 40.79,
+                "240": 39.47
               },
-              "tp2_recovery_rate": 33.85,
-              "tp3_recovery_rate": 18.46
+              "tp2_recovery_rate": 34.21,
+              "tp3_recovery_rate": 21.05
             },
             "TP2_SONRASI_BE": {
-              "sample": 20,
-              "complete": 20,
+              "sample": 22,
+              "complete": 22,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_mfe_r": 1.3026,
-              "average_mae_r": 1.8744,
-              "extension_0_5r_rate": 70.0,
-              "extension_1r_rate": 55.0,
-              "adverse_0_5r_rate": 65.0,
+              "average_mfe_r": 1.2017,
+              "average_mae_r": 1.8455,
+              "extension_0_5r_rate": 63.64,
+              "extension_1r_rate": 50.0,
+              "adverse_0_5r_rate": 68.18,
               "checkpoint_positive_rate": {
-                "15": 65.0,
-                "30": 60.0,
-                "60": 55.0,
-                "120": 45.0,
-                "240": 45.0
+                "15": 59.09,
+                "30": 54.55,
+                "60": 50.0,
+                "120": 40.91,
+                "240": 40.91
               },
-              "tp3_recovery_rate": 30.0
+              "tp3_recovery_rate": 27.27
             },
             "TP3": {
-              "sample": 45,
-              "complete": 45,
+              "sample": 53,
+              "complete": 53,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_mfe_r": 1.4633,
-              "average_mae_r": 1.844,
-              "extension_0_5r_rate": 64.44,
-              "extension_1r_rate": 42.22,
-              "adverse_0_5r_rate": 82.22,
+              "average_mfe_r": 1.6138,
+              "average_mae_r": 1.8205,
+              "extension_0_5r_rate": 69.81,
+              "extension_1r_rate": 47.17,
+              "adverse_0_5r_rate": 79.25,
               "checkpoint_positive_rate": {
-                "15": 40.0,
-                "30": 40.0,
-                "60": 33.33,
-                "120": 31.11,
-                "240": 35.56
+                "15": 39.62,
+                "30": 43.4,
+                "60": 39.62,
+                "120": 35.85,
+                "240": 37.74
               }
             }
           },
           "by_source": {
             "15M_ENTRY": {
-              "sample": 108,
-              "complete": 108,
+              "sample": 126,
+              "complete": 126,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_mfe_r": 1.0769,
-              "average_mae_r": 1.4247,
-              "extension_0_5r_rate": 63.89,
-              "extension_1r_rate": 36.11,
-              "adverse_0_5r_rate": 75.93,
+              "average_mfe_r": 1.2795,
+              "average_mae_r": 1.4192,
+              "extension_0_5r_rate": 65.08,
+              "extension_1r_rate": 38.1,
+              "adverse_0_5r_rate": 74.6,
               "checkpoint_positive_rate": {
-                "15": 45.37,
+                "15": 45.24,
                 "30": 50.0,
-                "60": 43.52,
-                "120": 37.96,
-                "240": 39.81
+                "60": 46.03,
+                "120": 38.89,
+                "240": 38.89
               }
             },
             "5M_RADAR": {
-              "sample": 22,
-              "complete": 22,
+              "sample": 25,
+              "complete": 25,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_mfe_r": 2.1202,
-              "average_mae_r": 2.8279,
-              "extension_0_5r_rate": 72.73,
-              "extension_1r_rate": 63.64,
-              "adverse_0_5r_rate": 72.73,
+              "average_mfe_r": 1.9722,
+              "average_mae_r": 3.0848,
+              "extension_0_5r_rate": 72.0,
+              "extension_1r_rate": 60.0,
+              "adverse_0_5r_rate": 76.0,
               "checkpoint_positive_rate": {
-                "15": 54.55,
-                "30": 40.91,
-                "60": 40.91,
-                "120": 45.45,
-                "240": 45.45
+                "15": 56.0,
+                "30": 40.0,
+                "60": 36.0,
+                "120": 40.0,
+                "240": 40.0
               }
             }
           },
           "by_direction": {
             "LONG": {
-              "sample": 71,
-              "complete": 71,
+              "sample": 78,
+              "complete": 78,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_mfe_r": 1.4053,
-              "average_mae_r": 1.7032,
-              "extension_0_5r_rate": 67.61,
-              "extension_1r_rate": 43.66,
-              "adverse_0_5r_rate": 74.65,
+              "average_mfe_r": 1.4463,
+              "average_mae_r": 1.7917,
+              "extension_0_5r_rate": 67.95,
+              "extension_1r_rate": 43.59,
+              "adverse_0_5r_rate": 74.36,
               "checkpoint_positive_rate": {
-                "15": 52.11,
-                "30": 46.48,
-                "60": 45.07,
-                "120": 33.8,
-                "240": 46.48
+                "15": 52.56,
+                "30": 46.15,
+                "60": 46.15,
+                "120": 33.33,
+                "240": 43.59
               }
             },
             "SHORT": {
-              "sample": 59,
-              "complete": 59,
+              "sample": 73,
+              "complete": 73,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_mfe_r": 1.0707,
-              "average_mae_r": 1.6127,
-              "extension_0_5r_rate": 62.71,
-              "extension_1r_rate": 37.29,
-              "adverse_0_5r_rate": 76.27,
+              "average_mfe_r": 1.3386,
+              "average_mae_r": 1.5915,
+              "extension_0_5r_rate": 64.38,
+              "extension_1r_rate": 39.73,
+              "adverse_0_5r_rate": 75.34,
               "checkpoint_positive_rate": {
-                "15": 40.68,
-                "30": 50.85,
-                "60": 40.68,
-                "120": 45.76,
-                "240": 33.9
+                "15": 41.1,
+                "30": 50.68,
+                "60": 42.47,
+                "120": 45.21,
+                "240": 34.25
               }
             }
           },
@@ -961,57 +899,57 @@
           "version": "POST_RESULT_SHADOW_V3_2026_08_14",
           "shadow_only": true,
           "changes_live_rules": false,
-          "generated_at": 1787000649,
+          "generated_at": 1787087126,
           "minimum_sample": 20,
-          "modeled_trades": 130,
+          "modeled_trades": 151,
           "baseline": {
             "name": "CURRENT_RULE",
             "incremental_r_after_close": 0.0
           },
           "models": {
             "TP1_DELAY_BE_UNTIL_TP2": {
-              "sample": 65,
+              "sample": 76,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_incremental_r": -0.0793,
-              "net_incremental_r": -5.1564,
-              "positive_rate": 38.46,
-              "zero_rate": 4.62,
-              "negative_rate": 56.92
+              "average_incremental_r": -0.0541,
+              "net_incremental_r": -4.1152,
+              "positive_rate": 38.16,
+              "zero_rate": 3.95,
+              "negative_rate": 57.89
             },
             "TP1_SOFT_BE_MINUS_0_25R": {
-              "sample": 65,
+              "sample": 76,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_incremental_r": 0.0009,
-              "net_incremental_r": 0.059,
-              "positive_rate": 16.92,
+              "average_incremental_r": 0.062,
+              "net_incremental_r": 4.709,
+              "positive_rate": 19.74,
               "zero_rate": 0.0,
-              "negative_rate": 83.08
+              "negative_rate": 80.26
             },
             "TP2_SOFT_BE_MINUS_0_25R": {
-              "sample": 20,
+              "sample": 22,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_incremental_r": 0.1395,
-              "net_incremental_r": 2.7909,
-              "positive_rate": 30.0,
+              "average_incremental_r": 0.1041,
+              "net_incremental_r": 2.2909,
+              "positive_rate": 27.27,
               "zero_rate": 0.0,
-              "negative_rate": 70.0
+              "negative_rate": 72.73
             },
             "TP3_RUNNER_TRAIL_0_5R": {
-              "sample": 45,
+              "sample": 53,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_incremental_r": 0.1116,
-              "net_incremental_r": 5.0231,
-              "positive_rate": 20.0,
-              "zero_rate": 80.0,
+              "average_incremental_r": 0.1219,
+              "net_incremental_r": 6.459,
+              "positive_rate": 20.75,
+              "zero_rate": 79.25,
               "negative_rate": 0.0
             },
             "TP3_RUNNER_TRAIL_1_0R": {
-              "sample": 45,
+              "sample": 53,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_incremental_r": 0.0884,
-              "net_incremental_r": 3.9789,
-              "positive_rate": 13.33,
-              "zero_rate": 86.67,
+              "average_incremental_r": 0.1393,
+              "net_incremental_r": 7.3821,
+              "positive_rate": 13.21,
+              "zero_rate": 86.79,
               "negative_rate": 0.0
             }
           },
