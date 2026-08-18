@@ -6,6 +6,8 @@ OKX USDT perpetual futures piyasasını analiz eden, işlem adaylarını Telegra
 
 ## Güncel Sistem Özeti
 
+**Bakım tabanı — 18 Ağustos 2026:** Trading çekirdeği korunur; panelin aktif ürün zinciri V3.32.9'dur. Öncelik yeni özellik değil, veri büyütme, ledger sağlığı, TP3 runner ölçümü ve gerçek telefon/masaüstü sürtünmelerinin giderilmesidir. Ayrıntılı politika: `docs/system-maintenance-v3329.md`.
+
 Canlı Telegram işlem sinyali üreten üç bileşen vardır:
 
 1. **Premium MTF Futures Bot** — ana ve öncelikli işlem sinyalleri
@@ -24,6 +26,9 @@ Yerine yalnız gölge modunda çalışan **Swing Shadow V4** bulunmaktadır.
 
 **Kripto Kontrol Paneli**, özel repodaki gerçek state ve ledger kayıtlarını şifreli bir web ekranında birleştirir.
 
+- Aktif ürün zinciri: **V3.32.9**
+- Sabit giriş noktası: `dashboard_app.py`
+- Aktif runtime: `dashboard_share_runtime_app.py`
 - Premium, Scalp, Pump/Dump ve Yeni Liste açık işlemleri
 - Giriş, TP1/TP2/TP3, SL ve hedef ilerlemesi
 - Kapanmış TP/SL/BE sonuçları ve kesin kaydı bulunan Net R
@@ -35,9 +40,14 @@ Yerine yalnız gölge modunda çalışan **Swing Shadow V4** bulunmaktadır.
 
 Panel botlardan ayrı ve **salt okunur** çalışır. Telegram akışını, sinyal üretimini, TP/SL takibini veya strateji kurallarını değiştirmez. Otomatik emir açmaz; kullanıcı parası tutmaz; borsa hesabı yönetmez ve kazanç garantisi vermez.
 
-Canlı servis `dashboard_live_app.py` ile çalışır. Dağıtım ayarları `Dockerfile.dashboard` ve `render.yaml` dosyalarındadır. Ayrıntılı kurulum için `dashboard/README.md` okunmalıdır. Actions artifact'ı yalnız acil durum için üretilen statik yedektir; canlı panel değildir.
+V3.32.9 zincirinde V3.32.6 yüzey/parite koruması, V3.32.7 kullanıcı yolculuğu ve hesap güvenliği, V3.32.8 hesaba bağlı İzleme Listesi, V3.32.9 paylaşılabilir gerçek işlem kartları birlikte korunur. Ayrıntılı mimari ve kurulum için `dashboard/README.md` okunmalıdır.
+
+Panel artık **stabilite modundadır**: gerçek telefon/masaüstü kullanımında doğrulanmış sürtünme, hata veya gereksiz karmaşa yoksa yeni özellik eklenmez. Panel değişikliği trading çekirdeğinden ayrı tutulur.
+
+Dağıtım ayarları `Dockerfile.dashboard` ve `render.yaml` dosyalarındadır. Actions artifact'ı yalnız acil durum için üretilen statik yedektir; canlı panel değildir.
 
 İlk hedef paneli 30–60 gün yalnız kendi kullanımımızda doğrulamaktır. Performans kayıtları güvenilir ve sistem kararlı görülmeden ücretli beta açılmaz. Ücretli sunumdan önce ücretli sinyal ve yatırım danışmanlığı yönünden hukukçu görüşü alınır.
+
 ## 1. Premium MTF Futures Bot
 
 Ana işlem sinyali sistemidir.
@@ -167,6 +177,8 @@ Kararlar otomatik uygulanmaz.
 
 `system_control_center.py` workflow, dosya, JSON, veri güncelliği ve repo kökündeki tüm JSON dosyalarının büyüklüğünü kontrol eder. Dosya başına 4 MB üzerinde sarı, 8 MB üzerinde kırmızı sağlık uyarısı üretir. Telegram yalnız genel sağlık RED olduğunda ve aynı hata için 12 saatlik tekrar engeliyle kullanılır. Teknik sağlık ile işlem performansını birbirinden ayırır.
 
+Ledger arşivleme ilk aşamada otomatik değildir. 4 MB sonrası hazırlık, 6 MB sonrası manuel arşiv hazırlığı ve 8 MB öncesi zorunlu müdahale politikası `docs/system-maintenance-v3329.md` içinde tanımlanmıştır. Açık/sonuçlanmamış kayıtlar arşivlenmez veya silinmez.
+
 ### Diğer Gölge Katmanları
 
 - Position Trend Shadow
@@ -187,6 +199,8 @@ Post-Result Shadow, Premium işlemlerindeki TP1/TP2/TP3 sonrası alternatif yön
 - TP3 sonrası runner
 - Ek Net R
 - Pozitif, sıfır ve negatif fark oranları
+
+**TP3 runner**, V3.32.9 bakım döneminin resmi takip metriklerinden biridir. `post_result_shadow_v3_report.json` içindeki örnek sayısı, ortalama/toplam ek Net R ve pozitif/sıfır/negatif fark oranları ileri örnekte izlenir. `COMPARE_ONLY` kararı canlı TP3/BE kuralını değiştirmez.
 
 Yeterli örnek ve ileri dönem doğrulaması olmadan canlı TP/BE kuralı değiştirilmez.
 
@@ -240,7 +254,7 @@ python pump_radar.py
 python swing_shadow_v4.py
 python decision_engine.py
 python system_control_center.py
-python dashboard_live_app.py --root .
+python dashboard_app.py --root .
 # Acil durum statik yedeği:
 python dashboard_builder.py --root . --output dashboard_output/index.html
 ```
@@ -269,6 +283,15 @@ Token ve kimlik bilgileri Python, JSON, YAML, README veya Actions loglarına dü
 - Premium'un çalışan ana giriş profili korunur.
 - Değişiklikten sonra çekirdek test ve ilgili workflow yeşil doğrulanır.
 - Gölge sonuçları canlı sisteme otomatik uygulanmaz.
+- Ledger arşivleme önce manuel, ölçülebilir ve geri alınabilir tek çevrimle doğrulanır; sıcak ledger şeması aynı anda değiştirilmez.
+- Panelde yeni özellik varsayılan olarak bekletilir; önce gerçek mobil/masaüstü sürtünmesi, hata ve gereksiz karmaşa çözülür.
+
+## Bakım Belgeleri
+
+- `docs/system-maintenance-v3329.md` — çekirdek dondurma sınırı, veri toplama, TP3 runner takibi, ledger arşivleme ve panel stabilite modu
+- `docs/panel-journey-audit-v3327.md` — uçtan uca kullanıcı akışı
+- `docs/panel-watchlist-sync-v3328.md` — hesap tabanlı cihazlar arası İzleme Listesi
+- `docs/panel-share-cards-v3329.md` — paylaşılabilir işlem kartları
 
 ## Güvenlik
 
