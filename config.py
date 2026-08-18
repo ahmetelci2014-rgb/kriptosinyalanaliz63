@@ -2,6 +2,11 @@
 # Premium MTF TP Odaklı v3 - Erken Giriş + Geç Sinyal Koruması
 # 5M + 15M + 1H + 4H çoklu zaman dilimi futures sinyal botu.
 # Emir açmaz. Sadece Telegram sinyali gönderir ve TP/SL takibi yapar.
+#
+# 2026-08-18 kalite düzeltmesi (mevcut geçmiş/veri motorlarına dayanır):
+# - MIN_SCORE_TRADE 72 -> 91
+# - MAX_ENTRY_DISTANCE_PERCENT 0.35 -> 0.25
+# Yön, RSI, ADX, hacim ve TP/SL/BE eşikleri bu pakette değiştirilmedi.
 
 BOT_NAME = "Premium MTF TP Odaklı v3"
 
