@@ -73,6 +73,16 @@ is only a **LEGACY CANDIDATE**, not confirmed dead code.
 
 No bulk deletion is allowed until all four checks pass.
 
+### Spot checks completed
+
+The first legacy-looking mobile layers were searched before deletion:
+
+- `dashboard_simplevoice_app.py` is referenced by `dashboard_mobileux_app.py` and its regression tests.
+- `dashboard_mobileux_app.py` is referenced by `dashboard_touchguard_app.py` and its regression tests.
+- These findings show that apparently old version layers still form dependency/test chains.
+
+Decision: **do not delete these files now**. A filename looking old is not sufficient evidence of dead code.
+
 ## SAFE CLEANUP PROCEDURE
 
 Before deleting a legacy candidate:
@@ -90,7 +100,8 @@ Before deleting a legacy candidate:
 
 - ACTIVE chain: preserve.
 - TEST-ONLY: preserve.
-- LEGACY candidates: classify later; no deletion in the current quality-maintenance patch.
+- LEGACY candidates: no deletion yet; spot checks found real dependency/test chains.
 - Reason: the panel is currently stable and file deletion has no direct signal-quality benefit.
+- Revisit deletion only when a candidate has zero runtime references, zero test references, and passes the full panel regression/Docker/runtime checks.
 
 This map is the source of truth for the next panel cleanup pass.
