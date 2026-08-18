@@ -1,19 +1,20 @@
-name: Range Cycle Shadow v2
+name: Range Cycle Shadow V4
 
 on:
-  # Range Shadow 529 örnekte CANLIYA ALMA / YENİDEN TASARLA sonucuna ulaştı.
-  # Geçmiş veri ve motor korunur; Actions tüketmemesi için yalnız manuel çalışır.
   workflow_dispatch:
+  schedule:
+    # V3 arşivlendi. V4 temiz örneklem toplar; Actions maliyeti için 4 saatte bir.
+    - cron: "23 0,4,8,12,16,20 * * *"
 
 permissions:
   contents: write
 
 concurrency:
-  group: range-cycle-shadow-v2
+  group: range-cycle-shadow-v4
   cancel-in-progress: false
 
 jobs:
-  range-shadow:
+  range-shadow-v4:
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -36,16 +37,16 @@ jobs:
         run: |
           python -m pip install --prefer-binary -r requirements.txt
 
-      - name: Range motorunu doğrula
+      - name: Range V4 motorunu doğrula
         run: |
-          python -m py_compile range_shadow.py test_range_shadow.py
-          python range_shadow.py --self-test
+          python -m py_compile range_shadow.py range_shadow_v4_runner.py test_range_shadow.py
           python test_range_shadow.py -v
+          python range_shadow_v4_runner.py --self-test
 
-      - name: Range bant döngü analizini çalıştır
-        run: python range_shadow.py
+      - name: Range V4 bant döngü analizini çalıştır
+        run: python range_shadow_v4_runner.py
 
-      - name: Range gölge ledgerını kaydet
+      - name: Range V4 gölge ledgerını kaydet
         if: always()
         run: |
           set -e
@@ -53,19 +54,19 @@ jobs:
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-          if [ -f "range_shadow.json" ]; then
-            git add range_shadow.json
+          if [ -f "range_shadow_v4.json" ]; then
+            git add range_shadow_v4.json
           else
-            echo "range_shadow.json oluşmadı."
+            echo "range_shadow_v4.json oluşmadı."
             exit 1
           fi
 
           if git diff --cached --quiet; then
-            echo "Range gölge ledgerında yeni değişiklik yok."
+            echo "Range V4 gölge ledgerında yeni değişiklik yok."
             exit 0
           fi
 
-          git commit -m "Update range cycle shadow ledger"
+          git commit -m "Update Range Shadow V4 ledger"
 
           for attempt in 1 2 3
           do
@@ -73,12 +74,12 @@ jobs:
             git pull --rebase --autostash origin main
 
             if git push origin HEAD:main; then
-              echo "Range gölge ledgerı kaydedildi."
+              echo "Range V4 gölge ledgerı kaydedildi."
               exit 0
             fi
 
             sleep 10
           done
 
-          echo "Range gölge ledgerı üç denemede de kaydedilemedi."
+          echo "Range V4 gölge ledgerı üç denemede de kaydedilemedi."
           exit 1
