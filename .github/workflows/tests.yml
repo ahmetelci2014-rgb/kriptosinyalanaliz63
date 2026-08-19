@@ -1,4 +1,4 @@
-name: Profit Mode Core Tests
+name: Profit Mode V2 Core Tests
 
 on:
   workflow_dispatch:
@@ -21,7 +21,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: profit-mode-core-tests-${{ github.ref }}
+  group: profit-mode-v2-core-tests-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -45,7 +45,7 @@ jobs:
           python -m pip install --prefer-binary -r requirements.txt
           python -m pip install "pytest>=8,<10"
 
-      - name: Profit Mode cekirdek dosyalarini kontrol et
+      - name: Profit Mode V2 cekirdek dosyalarini kontrol et
         run: |
           test -f main.py
           test -f strategy.py
@@ -53,13 +53,15 @@ jobs:
           test -f premium_profit_runner.py
           test -f scalp_profit_runner.py
           test -f pump_profit_runner.py
+          test -f profitability_engine.py
+          test -f test_profitability_engine.py
           test -f big_move_shadow_runner.py
           test -f market_impulse_guard.py
           test -f opportunity_capture.py
           test -f live_entry_safety.py
           test -f portfolio_risk.py
 
-      - name: Profit Mode cekirdegini derle
+      - name: Profit Mode V2 cekirdegini derle
         run: |
           python -m py_compile \
             main.py \
@@ -70,6 +72,8 @@ jobs:
             scalp_profit_runner.py \
             pump_radar.py \
             pump_profit_runner.py \
+            profitability_engine.py \
+            test_profitability_engine.py \
             big_move_route.py \
             big_move_route_runner.py \
             big_move_shadow_runner.py \
