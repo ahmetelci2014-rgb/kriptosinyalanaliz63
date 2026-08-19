@@ -2,24 +2,19 @@
   "version": "SYSTEM_CONTROL_CENTER_V1_4_GLOBAL_JSON_GUARD_2026_08_14",
   "mode": "READ_ONLY_MONITOR_CRITICAL_RED_ALERT_ONLY_NO_ORDERS_NO_SIGNAL_CHANGE_NO_AUTO_APPLY",
   "auto_apply": false,
-  "generated_at": 1787118440,
-  "generated_at_utc": "2026-08-19T05:47:20+00:00",
+  "generated_at": 1787123149,
+  "generated_at_utc": "2026-08-19T07:05:49+00:00",
   "executive": {
     "component_count": 15,
     "health_counts": {
-      "GREEN": 8,
-      "YELLOW": 7,
+      "GREEN": 13,
+      "YELLOW": 2,
       "RED": 0
     },
     "critical_components": [],
     "attention_components": [
-      "PREMIUM",
-      "SCALP",
-      "PUMP_DUMP",
       "SWING_V4_SHADOW",
-      "POSITION_TREND",
-      "NEW_LISTING",
-      "POST_RESULT"
+      "POSITION_TREND"
     ],
     "overall_health": "YELLOW",
     "note": "Sağlık teknik çalışma/veri güncelliğidir; performans kararı ayrı alandadır."
@@ -28,43 +23,43 @@
     "PREMIUM": {
       "label": "Premium MTF",
       "kind": "LIVE_SIGNAL",
-      "health": "YELLOW",
+      "health": "GREEN",
       "health_reasons": [
-        "Veri eski: 1.66s > 1.50s"
+        "Dosyalar geçerli, boyut kontrollü ve veri güncel"
       ],
-      "latest_timestamp": 1787112449,
-      "latest_utc": "2026-08-19T04:07:29+00:00",
-      "age_hours": 1.66,
+      "latest_timestamp": 1787122265,
+      "latest_utc": "2026-08-19T06:51:05+00:00",
+      "age_hours": 0.25,
       "workflow": ".github/workflows/main.yml",
       "workflow_file_exists": true,
       "files": [
         {
           "path": "open_signals.json",
           "exists": true,
-          "bytes": 9071,
+          "bytes": 11852,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787112090
+          "latest_timestamp": 1787122259
         },
         {
           "path": "trade_ledger.json",
           "exists": true,
-          "bytes": 3493355,
+          "bytes": 3512152,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787112449
+          "latest_timestamp": 1787122265
         },
         {
           "path": "performance.json",
           "exists": true,
-          "bytes": 706262,
+          "bytes": 707507,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787112091
+          "latest_timestamp": 1787122259
         }
       ],
       "metrics": {
-        "open_count": 3
+        "open_count": 4
       },
       "performance": {
         "source": "decision_report.json",
@@ -79,20 +74,20 @@
     "SCALP": {
       "label": "Scalp Radar",
       "kind": "LIVE_SIGNAL",
-      "health": "YELLOW",
+      "health": "GREEN",
       "health_reasons": [
-        "Veri eski: 2.10s > 1.50s"
+        "Dosyalar geçerli, boyut kontrollü ve veri güncel"
       ],
-      "latest_timestamp": 1787110890,
-      "latest_utc": "2026-08-19T03:41:30+00:00",
-      "age_hours": 2.1,
+      "latest_timestamp": 1787120549,
+      "latest_utc": "2026-08-19T06:22:29+00:00",
+      "age_hours": 0.72,
       "workflow": ".github/workflows/scalp-radar.yml",
       "workflow_file_exists": true,
       "files": [
         {
           "path": "scalp_radar_state.json",
           "exists": true,
-          "bytes": 6134,
+          "bytes": 5691,
           "valid_json": true,
           "error": null,
           "latest_timestamp": 0
@@ -100,10 +95,10 @@
         {
           "path": "scalp_performance_ledger.json",
           "exists": true,
-          "bytes": 1593748,
+          "bytes": 1594688,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787110890
+          "latest_timestamp": 1787120549
         }
       ],
       "metrics": {
@@ -131,23 +126,23 @@
     "PUMP_DUMP": {
       "label": "Pump/Dump Radar",
       "kind": "LIVE_SIGNAL",
-      "health": "YELLOW",
+      "health": "GREEN",
       "health_reasons": [
-        "Veri eski: 2.29s > 1.50s"
+        "Dosyalar geçerli, boyut kontrollü ve veri güncel"
       ],
-      "latest_timestamp": 1787110206,
-      "latest_utc": "2026-08-19T03:30:06+00:00",
-      "age_hours": 2.29,
+      "latest_timestamp": 1787123030,
+      "latest_utc": "2026-08-19T07:03:50+00:00",
+      "age_hours": 0.03,
       "workflow": ".github/workflows/pump-radar.yml",
       "workflow_file_exists": true,
       "files": [
         {
           "path": "pump_radar_state.json",
           "exists": true,
-          "bytes": 324210,
+          "bytes": 323376,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787110206
+          "latest_timestamp": 1787123030
         },
         {
           "path": "pump_performance_ledger.json",
@@ -155,7 +150,7 @@
           "bytes": 76433,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787110063
+          "latest_timestamp": 1787122821
         }
       ],
       "metrics": {
@@ -185,11 +180,11 @@
       "kind": "SHADOW",
       "health": "YELLOW",
       "health_reasons": [
-        "Veri eski: 20.93s > 8.00s"
+        "Veri eski: 22.24s > 8.00s"
       ],
       "latest_timestamp": 1787043078,
       "latest_utc": "2026-08-18T08:51:18+00:00",
-      "age_hours": 20.93,
+      "age_hours": 22.24,
       "workflow": ".github/workflows/swing-shadow-v4.yml",
       "workflow_file_exists": true,
       "files": [
@@ -220,11 +215,11 @@
       "kind": "SHADOW",
       "health": "YELLOW",
       "health_reasons": [
-        "Veri eski: 21.06s > 14.00s"
+        "Veri eski: 22.37s > 14.00s"
       ],
       "latest_timestamp": 1787042622,
       "latest_utc": "2026-08-18T08:43:42+00:00",
-      "age_hours": 21.06,
+      "age_hours": 22.37,
       "workflow": ".github/workflows/position-trend-shadow.yml",
       "workflow_file_exists": true,
       "files": [
@@ -279,7 +274,7 @@
       ],
       "latest_timestamp": 1787107071,
       "latest_utc": "2026-08-19T02:37:51+00:00",
-      "age_hours": 3.16,
+      "age_hours": 4.47,
       "workflow": ".github/workflows/all-market-shadow.yml",
       "workflow_file_exists": true,
       "files": [
@@ -327,7 +322,7 @@
       ],
       "latest_timestamp": 1787107435,
       "latest_utc": "2026-08-19T02:43:55+00:00",
-      "age_hours": 3.06,
+      "age_hours": 4.36,
       "workflow": ".github/workflows/momentum-shadow.yml",
       "workflow_file_exists": true,
       "files": [
@@ -360,7 +355,7 @@
       ],
       "latest_timestamp": 1787104675,
       "latest_utc": "2026-08-19T01:57:55+00:00",
-      "age_hours": 3.82,
+      "age_hours": 5.13,
       "workflow": ".github/workflows/range-shadow.yml",
       "workflow_file_exists": true,
       "files": [
@@ -393,7 +388,7 @@
       ],
       "latest_timestamp": 1787109343,
       "latest_utc": "2026-08-19T03:15:43+00:00",
-      "age_hours": 2.53,
+      "age_hours": 3.83,
       "workflow": ".github/workflows/portfolio-risk-outcomes.yml",
       "workflow_file_exists": true,
       "files": [
@@ -434,7 +429,7 @@
       ],
       "latest_timestamp": 1787087766,
       "latest_utc": "2026-08-18T21:16:06+00:00",
-      "age_hours": 8.52,
+      "age_hours": 9.83,
       "workflow": ".github/workflows/decision-engine.yml",
       "workflow_file_exists": true,
       "files": [
@@ -467,7 +462,7 @@
       ],
       "latest_timestamp": 1787087766,
       "latest_utc": "2026-08-18T21:16:06+00:00",
-      "age_hours": 8.52,
+      "age_hours": 9.83,
       "workflow": ".github/workflows/decision-engine.yml",
       "workflow_file_exists": true,
       "files": [
@@ -494,13 +489,13 @@
     "NEW_LISTING": {
       "label": "New Listing Radar",
       "kind": "RADAR",
-      "health": "YELLOW",
+      "health": "GREEN",
       "health_reasons": [
-        "Veri eski: 2.20s > 2.00s"
+        "Dosyalar geçerli, boyut kontrollü ve veri güncel"
       ],
-      "latest_timestamp": 1787110503,
-      "latest_utc": "2026-08-19T03:35:03+00:00",
-      "age_hours": 2.2,
+      "latest_timestamp": 1787122835,
+      "latest_utc": "2026-08-19T07:00:35+00:00",
+      "age_hours": 0.09,
       "workflow": ".github/workflows/new-listing-radar.yml",
       "workflow_file_exists": true,
       "files": [
@@ -510,7 +505,7 @@
           "bytes": 298,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787110503
+          "latest_timestamp": 1787122835
         }
       ],
       "metrics": {},
@@ -527,31 +522,31 @@
     "POST_RESULT": {
       "label": "TP Sonrası / Post Result Shadow",
       "kind": "INTEGRATED_ANALYSIS",
-      "health": "YELLOW",
+      "health": "GREEN",
       "health_reasons": [
-        "Veri eski: 1.66s > 1.50s"
+        "Dosyalar geçerli, boyut kontrollü ve veri güncel"
       ],
-      "latest_timestamp": 1787112450,
-      "latest_utc": "2026-08-19T04:07:30+00:00",
-      "age_hours": 1.66,
+      "latest_timestamp": 1787122266,
+      "latest_utc": "2026-08-19T06:51:06+00:00",
+      "age_hours": 0.24,
       "workflow": ".github/workflows/main.yml",
       "workflow_file_exists": true,
       "files": [
         {
           "path": "trade_ledger.json",
           "exists": true,
-          "bytes": 3493355,
+          "bytes": 3512152,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787112449
+          "latest_timestamp": 1787122265
         },
         {
           "path": "post_result_shadow_v2_report.json",
           "exists": true,
-          "bytes": 3976,
+          "bytes": 3978,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787112449
+          "latest_timestamp": 1787122263
         },
         {
           "path": "post_result_shadow_v3_report.json",
@@ -559,7 +554,7 @@
           "bytes": 1654,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787112450
+          "latest_timestamp": 1787122266
         }
       ],
       "metrics": {},
@@ -580,19 +575,19 @@
       "health_reasons": [
         "Dosyalar geçerli, boyut kontrollü ve veri güncel"
       ],
-      "latest_timestamp": 1787118065,
-      "latest_utc": "2026-08-19T05:41:05+00:00",
-      "age_hours": 0.1,
+      "latest_timestamp": 1787119189,
+      "latest_utc": "2026-08-19T05:59:49+00:00",
+      "age_hours": 1.1,
       "workflow": ".github/workflows/big-move-route.yml",
       "workflow_file_exists": true,
       "files": [
         {
           "path": "big_move_route_state.json",
           "exists": true,
-          "bytes": 1395,
+          "bytes": 33548,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787118065
+          "latest_timestamp": 1787119189
         },
         {
           "path": "big_move_route_ledger.json",
@@ -600,7 +595,7 @@
           "bytes": 560,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787118065
+          "latest_timestamp": 1787119189
         }
       ],
       "metrics": {
@@ -651,15 +646,15 @@
           "bytes": 560,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787118065
+          "latest_timestamp": 1787119189
         },
         {
           "path": "big_move_route_state.json",
           "exists": true,
-          "bytes": 1395,
+          "bytes": 33548,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787118065
+          "latest_timestamp": 1787119189
         },
         {
           "path": "decision_report.json",
@@ -691,23 +686,23 @@
           "bytes": 298,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787110503
+          "latest_timestamp": 1787122835
         },
         {
           "path": "new_listing_radar_state.json",
           "exists": true,
-          "bytes": 3523,
+          "bytes": 6623,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787110502
+          "latest_timestamp": 1787122834
         },
         {
           "path": "open_signals.json",
           "exists": true,
-          "bytes": 9071,
+          "bytes": 11852,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787112090
+          "latest_timestamp": 1787122259
         },
         {
           "path": "paper_demo_state.json",
@@ -720,10 +715,10 @@
         {
           "path": "performance.json",
           "exists": true,
-          "bytes": 706262,
+          "bytes": 707507,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787112091
+          "latest_timestamp": 1787122259
         },
         {
           "path": "portfolio_risk_outcomes.json",
@@ -744,10 +739,10 @@
         {
           "path": "portfolio_risk_shadow_main_mtf.json",
           "exists": true,
-          "bytes": 150444,
+          "bytes": 152689,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787111382
+          "latest_timestamp": 1787122258
         },
         {
           "path": "portfolio_risk_shadow_pump_dump.json",
@@ -784,10 +779,10 @@
         {
           "path": "post_result_shadow_v2_report.json",
           "exists": true,
-          "bytes": 3976,
+          "bytes": 3978,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787112449
+          "latest_timestamp": 1787122263
         },
         {
           "path": "post_result_shadow_v3_report.json",
@@ -795,7 +790,7 @@
           "bytes": 1654,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787112450
+          "latest_timestamp": 1787122266
         },
         {
           "path": "prescription_report.json",
@@ -811,15 +806,15 @@
           "bytes": 76433,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787110063
+          "latest_timestamp": 1787122821
         },
         {
           "path": "pump_radar_state.json",
           "exists": true,
-          "bytes": 324210,
+          "bytes": 323376,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787110206
+          "latest_timestamp": 1787123030
         },
         {
           "path": "range_shadow.json",
@@ -840,23 +835,23 @@
         {
           "path": "scalp_attack_guard_shadow.json",
           "exists": true,
-          "bytes": 1370,
+          "bytes": 2522,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787110724
+          "latest_timestamp": 1787120383
         },
         {
           "path": "scalp_performance_ledger.json",
           "exists": true,
-          "bytes": 1593748,
+          "bytes": 1594688,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787110890
+          "latest_timestamp": 1787120549
         },
         {
           "path": "scalp_radar_state.json",
           "exists": true,
-          "bytes": 6134,
+          "bytes": 5691,
           "valid_json": true,
           "error": null,
           "latest_timestamp": 0
@@ -888,10 +883,10 @@
         {
           "path": "system_control_center_report.json",
           "exists": true,
-          "bytes": 27508,
+          "bytes": 27467,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787112151
+          "latest_timestamp": 1787118440
         },
         {
           "path": "telegram_delivery_main.json",
@@ -904,18 +899,18 @@
         {
           "path": "telegram_delivery_pump.json",
           "exists": true,
-          "bytes": 8319,
+          "bytes": 9056,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787074685
+          "latest_timestamp": 1787123032
         },
         {
           "path": "telegram_delivery_scalp.json",
           "exists": true,
-          "bytes": 23865,
+          "bytes": 25342,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787073153
+          "latest_timestamp": 1787120550
         },
         {
           "path": "tp_capacity_shadow_report.json",
@@ -928,19 +923,19 @@
         {
           "path": "trade_ledger.json",
           "exists": true,
-          "bytes": 3493355,
+          "bytes": 3512152,
           "valid_json": true,
           "error": null,
-          "latest_timestamp": 1787112449
+          "latest_timestamp": 1787122265
         }
       ],
       "metrics": {
         "file_count": 38,
-        "total_mb": 10.55,
+        "total_mb": 10.61,
         "largest_files": [
           {
             "path": "trade_ledger.json",
-            "mb": 3.33
+            "mb": 3.35
           },
           {
             "path": "portfolio_risk_outcomes.json",
