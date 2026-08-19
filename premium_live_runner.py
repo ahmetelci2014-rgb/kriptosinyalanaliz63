@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
+import live_entry_safety as safety
 import opportunity_capture as capture
 
 
@@ -40,6 +41,8 @@ def apply_opportunity_capture(bot: Any) -> None:
     bot.evaluate_portfolio_risk = capture.make_opposite_direction_evaluator(
         bot.evaluate_portfolio_risk
     )
+    # Safety is under the clear-entry wrapper so it sees the final entry heading.
+    bot.send_telegram = safety.make_entry_safety_sender(bot.send_telegram)
     bot.send_telegram = make_clear_signal_sender(bot.send_telegram)
 
 
@@ -50,7 +53,7 @@ def run(bot: Any | None = None) -> None:
     apply_opportunity_capture(bot)
     print(
         "Premium fırsat yakalama: ters-yön açık sinyal yeni fırsatı ENGELLEMEZ | "
-        "gerçek Telegram girişi ayrı etiketli"
+        "gerçek Telegram girişi ayrı etiketli + net SL disiplini"
     )
     bot.main()
 
