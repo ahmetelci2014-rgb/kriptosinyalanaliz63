@@ -45,17 +45,20 @@ jobs:
           GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
           # ATAK 70/30 kalite guardı korunur.
-          # PREWATCH/EARLY seçici görünür; ters-yön fırsatı susturulmaz.
-          # TEPKİ_SCALP karşı-trend girişi son 1M gerçek dönüş teyidi ister.
+          # PREWATCH/EARLY seçici görünür; eski ters-yön sinyal fırsatı susturmaz.
+          # TEPKİ_SCALP için hem 1M gerçek dönüş teyidi hem de canlı impuls koruması var.
           python -m py_compile \
             scalp_radar.py \
             scalp_live_runner.py \
+            scalp_impulse_live_runner.py \
+            market_impulse_guard.py \
             test_scalp_live_runner.py \
+            test_market_impulse_guard.py \
             scalp_attack_guard_shadow.py \
             scalp_quality_config.py \
             opportunity_capture.py
-          python -m unittest -v test_scalp_live_runner.py
-          python scalp_live_runner.py
+          python -m unittest -v test_scalp_live_runner.py test_market_impulse_guard.py
+          python scalp_impulse_live_runner.py
 
       - name: Scalp durum ve performans dosyalarını güvenli kaydet
         if: always()
