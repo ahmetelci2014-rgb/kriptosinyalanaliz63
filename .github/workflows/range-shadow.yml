@@ -3,7 +3,8 @@ name: Range Cycle Shadow V4
 on:
   workflow_dispatch:
   schedule:
-    # V3 arşivlendi. V4 temiz örneklem toplar; Actions maliyeti için 4 saatte bir.
+    # V4 her tur bütün aktif lineer USDT perpetual evrenini tarar.
+    # Range yapısı yavaş değiştiği için 4 saatlik örnekleme korunur.
     - cron: "23 0,4,8,12,16,20 * * *"
 
 permissions:
@@ -16,7 +17,7 @@ concurrency:
 jobs:
   range-shadow-v4:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
 
     steps:
       - name: Repo indir
