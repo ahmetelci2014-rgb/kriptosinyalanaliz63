@@ -1,11 +1,11 @@
 """Pump/Dump canlı sinyal + seçici erken büyük hareket görünürlük katmanı.
 
 Gerçek Pump/Dump kalite şartlarını değiştirmez. Sessiz trend adaylarının tamamı
-arka planda tutulur; Telegram'a yalnız Pump'ın kendi devam teyitleri tamamlanan
-veya Scalp aynı coin/yönü yakın zamanda önceden işaretlemiş güçlü hareket çıkar.
-Böylece GPS tipi fırsatlar görünür kalırken SNXX/SNDK tipi geç/tekil hızlanmalar
-Telegram'ı doldurmaz. Eski ters-yön sinyal yeni fırsatı bloklamaz.
-Gerçek emir açmaz.
+arka planda tutulur; Telegram'a yalnız Pump'ın kendi devam teyitleri tamamlanan,
+Scalp aynı coin/yönü yakın zamanda işaretlemiş veya UNI 2026-08-19 örneğindeki
+gibi güçlü iç trend devamı oluşmuş hareket çıkar. Böylece GPS/UNI tipi fırsatlar
+görünür kalırken tek başına sert fiyat sıçramaları Telegram'ı doldurmaz.
+Eski ters-yön sinyal yeni fırsatı bloklamaz. Gerçek emir açmaz.
 """
 from __future__ import annotations
 
@@ -21,6 +21,19 @@ MAX_SHADOW_ALERTS_PER_RUN = 1
 SHADOW_ALERT_MIN_15M_PERCENT = 0.90
 SHADOW_ALERT_MIN_30M_PERCENT = 1.20
 SCALP_CONFIRM_LOOKBACK_MINUTES = 120
+
+# Güçlü iç trend devamı: Scalp teyidi olmasa bile görünür olur.
+# Ama tek başına 15M/30M hareketi yetmez; yönlü 5M yapı + devam teyidi + hacim
+# + EMA20 eğimi birlikte aranır. Bu yol gerçek işlem değil, erken fırsat katmanıdır.
+STRONG_TREND_MIN_15M_PERCENT = 0.80
+STRONG_TREND_MIN_30M_PERCENT = 1.00
+STRONG_TREND_MIN_EMA20_SLOPE_PERCENT = 0.15
+STRONG_TREND_MAX_EMA20_DISTANCE_PERCENT = 1.10
+STRONG_TREND_MIN_5M_VOLUME_RATIO = 1.00
+STRONG_TREND_LONG_RSI_MIN = 52
+STRONG_TREND_LONG_RSI_MAX = 76
+STRONG_TREND_SHORT_RSI_MIN = 24
+STRONG_TREND_SHORT_RSI_MAX = 48
 
 
 def safe_load_json(path: str) -> Dict[str, Any]:
@@ -77,9 +90,64 @@ def movement_is_large_enough(radar: Any, event: Dict[str, Any]) -> bool:
     )
 
 
+def strong_internal_trend_confirmation(
+    radar: Any,
+    event: Dict[str, Any],
+) -> bool:
+    """Klasik 1M pump filtresi yokken bile güçlü 5M trend devamını yakala."""
+    direction = str(event.get("direction") or "").upper()
+    move15 = radar.safe_float(event.get("move15_percent"))
+    move30 = radar.safe_float(event.get("move30_percent"))
+    slope = radar.safe_float(event.get("ema20_slope_percent"))
+    distance = abs(radar.safe_float(event.get("ema20_distance_percent")))
+    green_count = int(event.get("green_5m_count") or 0)
+    red_count = int(event.get("red_5m_count") or 0)
+    resume = bool(event.get("resume_confirmed"))
+    rsi5 = radar.safe_float(event.get("rsi5"))
+    vol5 = radar.safe_float(event.get("vol5"))
+    price = radar.safe_float(event.get("price"))
+    ema20 = radar.safe_float(event.get("ema20"))
+
+    if (
+        distance > STRONG_TREND_MAX_EMA20_DISTANCE_PERCENT
+        or vol5 < STRONG_TREND_MIN_5M_VOLUME_RATIO
+        or not resume
+    ):
+        return False
+
+    if direction == "LONG":
+        return (
+            move15 >= STRONG_TREND_MIN_15M_PERCENT
+            and move30 >= STRONG_TREND_MIN_30M_PERCENT
+            and slope >= STRONG_TREND_MIN_EMA20_SLOPE_PERCENT
+            and green_count >= 4
+            and price > ema20
+            and STRONG_TREND_LONG_RSI_MIN
+            <= rsi5
+            <= STRONG_TREND_LONG_RSI_MAX
+        )
+
+    if direction == "SHORT":
+        return (
+            move15 <= -STRONG_TREND_MIN_15M_PERCENT
+            and move30 <= -STRONG_TREND_MIN_30M_PERCENT
+            and slope <= -STRONG_TREND_MIN_EMA20_SLOPE_PERCENT
+            and red_count >= 4
+            and price < ema20
+            and STRONG_TREND_SHORT_RSI_MIN
+            <= rsi5
+            <= STRONG_TREND_SHORT_RSI_MAX
+        )
+
+    return False
+
+
 def shadow_event_is_alert_worthy(radar: Any, event: Dict[str, Any]) -> bool:
-    """Tek başına fiyat sıçraması yetmez; kalite veya çapraz teyit gerekir."""
+    """Tek fiyat sıçraması yetmez; kalite, çapraz teyit veya güçlü iç trend gerekir."""
     if bool(event.get("shadow_ready")):
+        return True
+
+    if strong_internal_trend_confirmation(radar, event):
         return True
 
     if not movement_is_large_enough(radar, event):
@@ -101,19 +169,24 @@ def build_shadow_alert_message(radar: Any, event: Dict[str, Any]) -> str:
         str(event.get("symbol") or ""),
         direction,
     )
+    internal = strong_internal_trend_confirmation(radar, event)
 
     if scalp:
-        scalp_text = (
+        confirm_text = (
             f"✅ SCALP {str(scalp.get('stage') or '').upper()} aynı yönde görüldü"
         )
+    elif internal:
+        confirm_text = "✅ Pump güçlü iç trend devamı teyidi"
     else:
-        scalp_text = "✅ Pump trend-devam teyitleri tamamlandı"
+        confirm_text = "✅ Pump trend-devam teyitleri tamamlandı"
 
     missing = list(event.get("trend_missing") or [])
     missing_text = ", ".join(missing[:3]) if missing else "eksik teyit yok"
 
     if event.get("shadow_ready"):
         status = "GÜÇLÜ ERKEN TEYİT"
+    elif internal:
+        status = "GÜÇLÜ TREND DEVAMI — GİRİŞ HAZIRLIĞI"
     else:
         status = "ÇAPRAZ SİSTEM ERKEN TEYİDİ"
 
@@ -136,10 +209,11 @@ def build_shadow_alert_message(radar: Any, event: Dict[str, Any]) -> str:
         f"30M hareket: %{radar.safe_float(event.get('move30_percent')):+.2f}\n"
         f"5M hacim: {radar.safe_float(event.get('vol5')):.2f}x\n"
         f"5M RSI: {rsi5:.1f}\n"
-        f"Çapraz/kalite teyidi: {scalp_text}\n"
+        f"Çapraz/kalite teyidi: {confirm_text}\n"
         f"Henüz eksik olabilecek teyitler: {missing_text}"
         f"{late_warning}\n\n"
-        "📌 Bu mesaj fırsatı erkenden göstermek içindir; tek başına işlem açma.\n"
+        "📌 Bu mesaj trendi kaçırmamak için erken giriş hazırlığıdır; "
+        "tek başına işlem açma.\n"
         "🔄 Aynı coinde daha önce ters yön sinyali olması yeni fırsatı ENGELLEMEZ."
     )
 
@@ -197,6 +271,7 @@ def make_shadow_saver(
         eligible.sort(
             key=lambda item: (
                 1 if item.get("shadow_ready") else 0,
+                1 if strong_internal_trend_confirmation(radar, item) else 0,
                 1
                 if recent_scalp_confirmation(
                     radar,
@@ -251,7 +326,7 @@ def run(radar: Any | None = None) -> None:
     apply_opportunity_capture(radar)
     print(
         "Fırsat yakalama: tüm büyük hareketler arka planda | "
-        "Telegram yalnız Pump-ready veya Scalp çapraz teyit | gerçek giriş ayrı"
+        "Telegram Pump-ready / Scalp teyit / güçlü iç trend | gerçek giriş ayrı"
     )
     radar.main()
 
