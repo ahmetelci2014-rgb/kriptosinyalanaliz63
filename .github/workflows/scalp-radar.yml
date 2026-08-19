@@ -1,4 +1,4 @@
-name: Scalp Profit Mode V1
+name: Scalp Profit Mode V2
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: scalp-profit-mode-v1
+  group: scalp-profit-mode-v2
   cancel-in-progress: false
 
 jobs:
@@ -35,7 +35,7 @@ jobs:
           PIP_DISABLE_PIP_VERSION_CHECK: "1"
         run: python -m pip install --prefer-binary -r requirements.txt
 
-      - name: Scalp karlilik cekirdegini calistir
+      - name: Scalp Profit Mode V2 calistir
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -46,11 +46,13 @@ jobs:
           python -m py_compile \
             scalp_radar.py \
             scalp_profit_runner.py \
+            profitability_engine.py \
             market_impulse_guard.py \
             opportunity_capture.py \
             live_entry_safety.py \
+            test_profitability_engine.py \
             test_market_impulse_guard.py
-          python -m unittest -v test_market_impulse_guard.py
+          python -m unittest -v test_profitability_engine.py test_market_impulse_guard.py
           python scalp_profit_runner.py
 
       - name: Scalp durum ve performans kaydet
@@ -75,7 +77,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update Scalp Profit Mode state"
+          git commit -m "Update Scalp Profit Mode V2 state"
 
           for attempt in 1 2 3
           do
