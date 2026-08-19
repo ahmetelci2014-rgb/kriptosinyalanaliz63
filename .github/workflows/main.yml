@@ -43,7 +43,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
-        run: python main.py
+        run: |
+          # Premium kalite eşikleri aynen korunur; eski ters-yön açık sinyal
+          # yeni güçlü yönün analiz edilmesini engellemez.
+          python -m py_compile main.py premium_live_runner.py opportunity_capture.py
+          python premium_live_runner.py
 
       - name: TP/BE sonrası sessiz gölge takibi çalıştır
         if: always()
