@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from typing import Any, Dict
 
+import live_entry_safety as safety
 import market_impulse_guard as impulse
 import pump_live_runner as live
 
@@ -78,9 +79,10 @@ def run(radar: Any | None = None) -> None:
     radar.get_exchange = lambda: exchange
     radar.get_scan_coins = lambda _exchange: list(scan_coins)
 
-    # Raw impulse warning is still deduplicated by telegram_delivery; existing
-    # Pump quality wrappers are applied once inside live.run().
+    # Raw impulse warning is informational. Real entry messages below receive
+    # an explicit stop/position-discipline footer before Telegram delivery.
     sent_alert = maybe_send_very_strong_alert(radar, state)
+    radar.send_telegram = safety.make_entry_safety_sender(radar.send_telegram)
 
     print(
         "Tüm piyasa impuls katmanı AKTİF | derin tarama:", len(scan_coins),
