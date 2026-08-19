@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
+import live_entry_safety as safety
 import market_impulse_guard as impulse
 import scalp_live_runner as live
 
@@ -40,6 +41,7 @@ def run(radar: Any | None = None) -> None:
         import scalp_radar as radar  # type: ignore[no-redef]
 
     radar.analyze_reaction_side = make_impulse_reaction_guard(radar.analyze_reaction_side)
+    radar.send_telegram = safety.make_entry_safety_sender(radar.send_telegram)
     print("Scalp canlı impuls koruması AKTİF: güçlü ters impuls varken TEPKİ_SCALP yok.")
     live.run(radar)
 
