@@ -2,27 +2,27 @@
 
 - Sürüm: `SYSTEM_CONTROL_CENTER_V1_4_GLOBAL_JSON_GUARD_2026_08_14`
 - Mod: `READ_ONLY_MONITOR_CRITICAL_RED_ALERT_ONLY_NO_ORDERS_NO_SIGNAL_CHANGE_NO_AUTO_APPLY`
-- Üretim: 2026-08-19T10:46:29+00:00
+- Üretim: 2026-08-19T11:41:03+00:00
 - Genel sağlık: 🟡 **YELLOW**
 
 ## Sistemler
 
 | Sistem | Sağlık | Açık | Performans kararı | Veri yaşı |
 |---|---:|---:|---|---:|
-| Premium MTF | 🟢 GREEN | 3 | 🟢 KORU | 0.06s |
-| Scalp Radar | 🟢 GREEN | 0 | 🟡 İZLE | 0.12s |
-| Pump/Dump Radar | 🟢 GREEN | 0 | 🟢 KORU / İZLE | 0.49s |
-| Swing Shadow V5 | 🟡 YELLOW | 0 | ⚪ SWING V4 GÖLGE VERİ TOPLA | 25.92s |
-| Ana Trend Pozisyon Shadow V2 | 🟡 YELLOW | 4 | ⚪ VERİ TOPLA | 26.05s |
-| Tüm Piyasa Keşif Radarı | 🟢 GREEN | 1 | 🟡 İZLE / DOĞRULA | 2.72s |
-| Momentum Shadow V2 | 🟢 GREEN | - | 🟠 GÖLGEDE TUT / CANLIYA ALMA | 2.64s |
-| Range Cycle Shadow V4 | 🟢 GREEN | - | 🟡 GÖLGEDE TUT | 1.75s |
-| Portfolio Risk | 🟢 GREEN | - | 🟡 PORTFÖY RİSKİNİ İZLE | 1.76s |
-| Decision Engine | 🟢 GREEN | - | ⚪ KARAR YOK | 13.51s |
-| Prescription Engine | 🟢 GREEN | - | ⚪ KARAR YOK | 13.51s |
-| New Listing Radar | 🟢 GREEN | - | ⚪ KARAR YOK | 0.54s |
-| TP Sonrası / Post Result Shadow | 🟢 GREEN | - | 🟠 İŞLEM YÖNETİMİ ALTERNATİFİNİ GÖLGE TEST ET | 0.06s |
-| Büyük Hareket Fiyat Rotası | 🟢 GREEN | 0 | ⚪ KARAR YOK | 0.18s |
+| Premium MTF | 🟢 GREEN | 4 | 🟢 KORU | 0.10s |
+| Scalp Radar | 🟢 GREEN | 1 | 🟡 İZLE | 0.21s |
+| Pump/Dump Radar | 🟢 GREEN | 0 | 🟢 KORU / İZLE | 0.37s |
+| Swing Shadow V5 | 🟡 YELLOW | 0 | ⚪ SWING V4 GÖLGE VERİ TOPLA | 26.83s |
+| Ana Trend Pozisyon Shadow V2 | 🟡 YELLOW | 4 | ⚪ VERİ TOPLA | 26.96s |
+| Tüm Piyasa Keşif Radarı | 🟢 GREEN | 1 | 🟡 İZLE / DOĞRULA | 3.63s |
+| Momentum Shadow V2 | 🟢 GREEN | - | 🟠 GÖLGEDE TUT / CANLIYA ALMA | 3.55s |
+| Range Cycle Shadow V4 | 🟢 GREEN | - | 🟡 GÖLGEDE TUT | 2.66s |
+| Portfolio Risk | 🟢 GREEN | - | 🟡 PORTFÖY RİSKİNİ İZLE | 2.67s |
+| Decision Engine | 🟢 GREEN | - | ⚪ KARAR YOK | 14.42s |
+| Prescription Engine | 🟢 GREEN | - | ⚪ KARAR YOK | 14.42s |
+| New Listing Radar | 🟢 GREEN | - | ⚪ KARAR YOK | 0.46s |
+| TP Sonrası / Post Result Shadow | 🟢 GREEN | - | 🟠 İŞLEM YÖNETİMİ ALTERNATİFİNİ GÖLGE TEST ET | 0.10s |
+| Büyük Hareket Fiyat Rotası | 🟢 GREEN | 0 | ⚪ KARAR YOK | 0.16s |
 | JSON Depolama Koruması | 🟢 GREEN | - | ⚪ TEKNİK KORUMA | - |
 
 ## Güvenlik
