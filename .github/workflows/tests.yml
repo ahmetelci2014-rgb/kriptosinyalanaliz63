@@ -1,4 +1,4 @@
-name: Bot Core Tests
+name: Profit Mode Core Tests
 
 on:
   workflow_dispatch:
@@ -7,8 +7,6 @@ on:
       - main
     paths:
       - "*.py"
-      - "!dashboard_*.py"
-      - "!test_dashboard_*.py"
       - "requirements.txt"
       - ".github/workflows/tests.yml"
   pull_request:
@@ -16,8 +14,6 @@ on:
       - main
     paths:
       - "*.py"
-      - "!dashboard_*.py"
-      - "!test_dashboard_*.py"
       - "requirements.txt"
       - ".github/workflows/tests.yml"
 
@@ -25,7 +21,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: bot-core-tests-${{ github.ref }}
+  group: profit-mode-core-tests-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -44,62 +40,51 @@ jobs:
           cache: "pip"
           cache-dependency-path: requirements.txt
 
-      - name: Bağımlılıkları kur
+      - name: Bagimliliklari kur
         run: |
           python -m pip install --prefer-binary -r requirements.txt
           python -m pip install "pytest>=8,<10"
 
-      - name: Gerekli dosyaları kontrol et
+      - name: Profit Mode cekirdek dosyalarini kontrol et
         run: |
-          pwd
-          ls -la
           test -f main.py
           test -f strategy.py
           test -f config.py
+          test -f premium_profit_runner.py
+          test -f scalp_profit_runner.py
+          test -f pump_profit_runner.py
+          test -f big_move_shadow_runner.py
+          test -f market_impulse_guard.py
+          test -f opportunity_capture.py
+          test -f live_entry_safety.py
           test -f portfolio_risk.py
-          test -f scalp_radar.py
-          test -f pump_radar.py
-          test -f new_listing_radar.py
-          test -f coin_analyzer.py
-          test -f decision_engine.py
-          test -f prescription_engine.py
-          test -f system_control_center.py
 
-      - name: Aktif Python dosyalarını derle
+      - name: Profit Mode cekirdegini derle
         run: |
           python -m py_compile \
             main.py \
             strategy.py \
             config.py \
-            portfolio_risk.py \
+            premium_profit_runner.py \
             scalp_radar.py \
+            scalp_profit_runner.py \
             pump_radar.py \
-            new_listing_radar.py \
-            coin_analyzer.py \
-            decision_engine.py \
-            prescription_engine.py \
-            system_control_center.py
+            pump_profit_runner.py \
+            big_move_route.py \
+            big_move_route_runner.py \
+            big_move_shadow_runner.py \
+            market_impulse_guard.py \
+            opportunity_capture.py \
+            live_entry_safety.py \
+            portfolio_risk.py
 
-      - name: Çekirdek ve gölge Python testlerini çalıştır
+      - name: Mevcut regresyon testlerini calistir
         env:
           TOKEN: ""
           CHAT_ID: ""
         run: |
           for test_file in test_*.py
           do
-            case "$test_file" in
-              test_dashboard_*.py)
-                echo "Panel testi ayrı Kripto Panel Kontrolü workflow'unda: ${test_file}"
-                continue
-                ;;
-            esac
-            echo "Çalıştırılıyor: ${test_file}"
+            echo "Calistiriliyor: ${test_file}"
             python -m pytest -q "${test_file}"
           done
-
-      - name: Yeni Liste Radar self-testini çalıştır
-        env:
-          TOKEN: ""
-          CHAT_ID: ""
-        run: |
-          python new_listing_radar.py --self-test
