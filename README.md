@@ -1,101 +1,71 @@
-# Kripto Sinyal Sistemi — Kârlılık Modu V1
+# Kripto Sinyal Sistemi — Kârlılık Modu V2
 
-Bu repo artık **çok sinyal üretmek** yerine **az, ölçülebilir ve sermayeyi koruyan canlı işlem fikirleri** üretmek için sadeleştirilmiştir.
+Bu repo artık sinyal sayısını değil **maliyet sonrası beklenen değeri** merkeze alır.
 
-> Bu yazılım kâr garantisi vermez ve gerçek borsa emri açmaz. Canlı Telegram girişleri manuel karar içindir.
+> Kâr garantisi yoktur. Sistem gerçek borsa emri açmaz; Telegram girişleri manuel karar içindir.
 
-## Canlı çekirdek
+## Profit Mode V2 karar zinciri
 
-### 1. Premium Profit Mode V1
-- Kaynak: `main.py` + `strategy.py`
-- Canlı giriş: ana **15M MTF** yolu.
-- 5M erken trade: **canlıda kapalı**.
-- Tur başına en fazla 1 yeni sinyal.
-- En fazla 2 açık Premium sinyal.
-- 2 stop sonrası risk modu.
-- Eski ters-yön fikir yeni yönün analizini körleştirmez; aynı-yön duplicate ve portföy limitleri korunur.
-- Workflow: `.github/workflows/main.yml`
-- Entry point: `premium_profit_runner.py`
+### Premium — ana canlı çekirdek
+- Yalnız 15M MTF giriş yolu canlıdır; 5M erken trade kapalıdır.
+- Yeni aday önce mevcut teknik filtreleri geçer.
+- Ardından canlı fiyatın TP1 yolunda en az %5 ilerlemiş, en fazla %40 ilerlemiş olması gerekir.
+- Girişten canlı fiyat uzaklığı yaklaşık %0.08–%0.25 teyit koridorunda olmalıdır.
+- Stop çok dar olduğu için komisyon/kayma sonrası TP1→BE sonucu zayıf kalacaksa işlem reddedilir.
+- Aynı tip geçmiş 15M işlemler maliyet sonrası yeniden hesaplanır.
+- Minimum örnek, ortalama Net R, profit factor ve stop oranı şartları geçmeden Telegram'a gerçek giriş çıkmaz.
+- Reddedilen adaylar `profit_mode_rejections.json` içinde sessizce tutulur.
+- Kapanmış Premium işlemlerinde eski `r_result` korunur; ayrıca `gross_r_before_costs`, `estimated_execution_cost_r` ve `net_r_after_costs` alanları eklenir.
 
-### 2. Scalp Profit Mode V1
-- Canlı giriş: yalnız **TEPKI_SCALP**.
-- PREWATCH/EARLY: Telegram'a gönderilmez.
-- ATAK_SCALP: canlıda kapalı.
-- TEPKI için gerçek 1M yön dönüşü zorunlu.
-- Güçlü ters canlı piyasa impulsu varsa TEPKI engellenir.
-- En fazla 1 açık Scalp sinyal.
-- Workflow: `.github/workflows/scalp-radar.yml`
-- Entry point: `scalp_profit_runner.py`
+### Scalp
+- ATAK_SCALP canlı değildir.
+- TEPKI_SCALP gerçek 1M dönüş teyidi + ters canlı impuls korumasını korur.
+- TEPKI maliyet sonrası yeterli örneğe ulaşmadıysa Telegram'a çıkmaz; sanal olarak takip edilip örnek büyütür.
+- Yeterli örnek ve pozitif maliyet-sonrası performans oluşursa otomatik canlıya hak kazanır.
 
-### 3. Pump/Dump Profit Mode V1
-- Canlı giriş: yalnız klasik Pump/Dump kalite yolu.
-- `TREND_CONTINUATION`: canlıda kapalı.
-- Tüm piyasa 5/15/30M impulsu yalnız sessiz coin önceliklendirmesi için kullanılır.
-- Ham impuls/erken uyarı Telegram mesajı yoktur.
-- En fazla 1 açık Pump/Dump sinyal.
-- Workflow: `.github/workflows/pump-radar.yml`
-- Entry point: `pump_profit_runner.py`
-
-## Araştırma / shadow
+### Pump/Dump
+- Tüm piyasa 5/15/30M impulsu yalnız sessiz önceliklendirme katmanıdır.
+- Trend Continuation canlı değildir.
+- Mevcut açık Pump sinyalleri sonuçlanana kadar takip edilir.
+- Yeni Pump girişleri yalnız geçmiş REAL_SIGNAL örnekleri maliyet sonrası eşikleri geçerse açılır.
 
 ### Big Move
-Büyük Hareket motoru henüz yeterli kapanmış rota örneğine sahip olmadığı için canlı Telegram'dan çıkarılmıştır.
+- Shadow/sanal kalır; yeterli kapanmış rota kanıtı oluşmadan canlı Telegram'a dönmez.
 
-- Saatlik taranır.
-- Yalnız sanal rota ve sonuç toplar.
-- Telegram sinyali göndermez.
-- Gerçek emir açmaz.
-- Workflow: `.github/workflows/big-move-route.yml`
-- Entry point: `big_move_shadow_runner.py`
+## Maliyet modeli
 
-## Sessize alınan sürekli araştırma işler
+`profitability_engine.py` varsayılan olarak yapılandırılabilir bir execution-cost modeli kullanır:
+- fee/side: `PROFIT_FEE_RATE_PER_SIDE` (varsayılan 0.0005)
+- slippage reserve/side: `PROFIT_SLIPPAGE_RATE_PER_SIDE` (varsayılan 0.0001)
+- funding reserve: `PROFIT_FUNDING_RESERVE_RATE` (varsayılan 0)
 
-Aşağıdaki deneysel yollar artık cron ile sürekli çalışmaz:
-- All Market Shadow
-- Momentum Shadow
-- Range Shadow
-- Swing Shadow
-- Position Trend Shadow
-- New Listing Radar
+Gerçek hesap/tier ücretleri farklıysa environment değişkenleriyle güncellenebilir. Slippage değeri borsa ücreti değil, konservatif modelleme rezervidir.
 
-Kod/ledger geçmişi, performans incelemesi için gerektiği ölçüde korunabilir; fakat canlı karar ve Telegram yolu değildir.
+## Canlıya çıkma eşikleri
 
-## Canlı Telegram ilkesi
+Varsayılan Profit Mode V2 eşikleri:
+- minimum örnek: 20
+- minimum ortalama Net R: +0.03R
+- minimum maliyet-sonrası profit factor: 1.10
+- maksimum stop oranı: %32
+- TP1→BE senaryosunda maliyet sonrası minimum +0.05R
 
-Telegram'a normal koşulda yalnız:
-1. Gerçek işlem girişi,
-2. TP / BE / SL sonucu,
-3. gerekli risk disiplini
+Bu değerler `profitability_engine.py` üzerinden environment değişkenleriyle ayarlanabilir; performans kanıtı olmadan gevşetilmemelidir.
 
-gider.
+## Ana raporlar
 
-PREWATCH, EARLY, ham piyasa impulsu, yeni ve kanıtlanmamış setup'lar canlı işlem mesajı değildir.
+- `profit_mode_report.json` — Premium LONG/SHORT, Scalp TEPKI ve Pump maliyet-sonrası profil
+- `profit_mode_rejections.json` — canlıya çıkmayan Premium adayları ve nedenleri
+- `trade_ledger.json` — Premium geçmiş + maliyet sonrası Net R alanları
+- `scalp_performance_ledger.json` — Scalp sanal/gerçek teknik sonuçları
+- `pump_performance_ledger.json` — Pump/Dump sonuçları
 
-## Robotlaştırma şartı
+## Telegram ilkesi
 
-Otomatik emir aşamasına geçmeden önce sistemin aşağıdakileri gerçekçi işlem maliyetleriyle kanıtlaması gerekir:
+Telegram'a mümkün olduğunca yalnız kanıtlanmış gerçek giriş ve mevcut açık işlemlerin TP/BE/SL sonuçları gider. PREWATCH, EARLY, ham impuls ve kanıtlanmamış setup'lar kullanıcıya işlem olarak sunulmaz.
 
-- yeterli kapanmış işlem örneği,
-- komisyon ve kayma sonrası pozitif beklenen değer,
-- kabul edilebilir maksimum drawdown,
-- setup bazında tutarlı performans,
-- aynı anda açık risk için kesin sermaye limiti,
-- stop ve günlük zarar kesici,
-- borsa API hata/tekrar/pozisyon senkronizasyon korumaları.
+## Robotlaştırma
 
-Bu şartlar oluşmadan otomatik emir açma eklenmez.
+Otomatik emir aşamasına geçiş için sistemin önce gerçekçi maliyet modeliyle yeterli örnekte pozitif Net R, kabul edilebilir drawdown ve setup bazında tutarlı performans göstermesi gerekir. Bu kanıt oluşmadan otomatik OKX emirleri eklenmez.
 
-## Ana veri ve denetim dosyaları
-
-- `trade_ledger.json` — Premium işlem geçmişi
-- `performance.json` — Premium performans takibi
-- `scalp_performance_ledger.json` — Scalp performans geçmişi
-- `pump_performance_ledger.json` — Pump/Dump performans geçmişi
-- `market_impulse_guard.py` — tüm piyasa canlı impuls önceliklendirme/koruma katmanı
-- `portfolio_risk.py` — ortak risk/çakışma koruması
-- `decision_engine.py` — performans karar raporları
-- `system_control_center.py` — teknik sistem sağlığı
-
-## Temel ilke
-
-**Kalite > miktar. Sermaye korunmadan getiri kovalanmaz. Kanıtı olmayan setup canlıya çıkmaz.**
+**Temel ilke: önce maliyet sonrası edge, sonra canlı sinyal; edge yoksa işlem yok.**
