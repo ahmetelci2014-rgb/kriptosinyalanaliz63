@@ -1,9 +1,10 @@
 """Hızlı Scalp Radar canlı giriş noktası.
 
-Canlı ATAK kapanış gücü eşiklerini tek config kaynağından uygular, 62/38 ->
-70/30 farkı yüzünden elenen eski ATAK adaylarını counterfactual gölgede izler
-ve GPS benzeri hızlı fırsatları kaçırmamak için PREWATCH/EARLY katmanlarını
-Telegram'da görünür yapar. Gerçek emir açmaz.
+Canlı ATAK kalite eşiklerini korur. PREWATCH/EARLY adaylarının tamamı arka
+planda performans için kaydedilir; Telegram'a yalnız gerçekten erken ve güçlü
+olanlar çıkar. Gerçek Scalp sinyalleri ayrıca açıkça "İŞLEM GİRİŞİ" olarak
+etiketlenir. Aynı coindeki eski ters-yön sinyal yeni fırsatı susturmaz.
+Gerçek emir açmaz.
 """
 from __future__ import annotations
 
@@ -12,6 +13,18 @@ from typing import Any, Callable
 import opportunity_capture as capture
 import scalp_attack_guard_shadow as guard
 import scalp_quality_config as cfg
+
+# Telegram yalnız en güçlü erken adayları görür. Arka plan kayıt mantığı değişmez.
+VISIBLE_PREWATCH_MIN_SCORE = 90
+VISIBLE_PREWATCH_MAX_BREAKOUT_DISTANCE_PERCENT = 0.10
+VISIBLE_PREWATCH_MIN_VOLUME_SUPPORT = 1.10
+
+VISIBLE_EARLY_MIN_SCORE = 85
+VISIBLE_EARLY_MIN_VOLUME_SUPPORT = 1.25
+VISIBLE_EARLY_MIN_15M_MOVE = 1.00
+
+MAX_VISIBLE_PREWATCH_PER_RUN = 1
+MAX_VISIBLE_EARLY_PER_RUN = 1
 
 
 def apply_live_thresholds(radar: Any) -> None:
@@ -58,27 +71,111 @@ def make_attack_wrapper(
     return wrapped
 
 
+def safe_number(value: Any, default: float = 0.0) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def should_surface_early(stage: str, item: Any) -> bool:
+    """Arka plandaki adayı Telegram'a çıkaracak kadar güçlü mü?"""
+    if not isinstance(item, dict):
+        return False
+
+    score = safe_number(item.get("score"))
+    breakout = bool(item.get("breakout"))
+
+    if stage == "PREWATCH":
+        distance = safe_number(item.get("breakout_distance"), 999.0)
+        volume_support = max(
+            safe_number(item.get("vol1")),
+            safe_number(item.get("rolling_vol3")),
+        )
+        return (
+            score >= VISIBLE_PREWATCH_MIN_SCORE
+            and volume_support >= VISIBLE_PREWATCH_MIN_VOLUME_SUPPORT
+            and (
+                breakout
+                or distance <= VISIBLE_PREWATCH_MAX_BREAKOUT_DISTANCE_PERCENT
+            )
+        )
+
+    if stage == "EARLY":
+        volume_support = max(
+            safe_number(item.get("vol1")),
+            safe_number(item.get("rolling_vol5")),
+        )
+        move15 = abs(safe_number(item.get("live_move15")))
+        return (
+            score >= VISIBLE_EARLY_MIN_SCORE
+            and volume_support >= VISIBLE_EARLY_MIN_VOLUME_SUPPORT
+            and (
+                breakout
+                or move15 >= 1.20
+            )
+            and move15 >= VISIBLE_EARLY_MIN_15M_MOVE
+        )
+
+    return False
+
+
+def make_clear_signal_sender(
+    original: Callable[..., Any],
+) -> Callable[..., Any]:
+    """Gerçek Scalp girişini erken uyarılardan görsel olarak ayır."""
+    if getattr(original, "_clear_scalp_entry_wrapped", False):
+        return original
+
+    def wrapped(message: Any, *args: Any, **kwargs: Any) -> Any:
+        text = str(message or "")
+        if text.startswith("🚀 SCALP SİNYALİ"):
+            text = (
+                "✅ İŞLEM GİRİŞİ — SCALP\n"
+                "Giriş + TP + SL hazır. Bu, erken izleme mesajı değildir.\n\n"
+                + text
+            )
+        return original(text, *args, **kwargs)
+
+    wrapped._clear_scalp_entry_wrapped = True  # type: ignore[attr-defined]
+    return wrapped
+
+
 def make_visible_early_recorder(
     radar: Any,
     original: Callable[..., Any],
 ) -> Callable[..., Any]:
-    """PREWATCH/EARLY kaydını koru, ardından Telegram'da görünür yap."""
+    """Tüm adayları kaydet; yalnız seçilmiş güçlü adayları Telegram'a çıkar."""
     if getattr(original, "_visible_early_wrapped", False):
         return original
+
+    visible_count = {"PREWATCH": 0, "EARLY": 0}
 
     def wrapped(stage: Any, item: Any, *args: Any, **kwargs: Any) -> Any:
         record_id = original(stage, item, *args, **kwargs)
         stage_name = str(stage or "").upper()
-        should_send = (
-            (stage_name == "PREWATCH" and bool(radar.SEND_PREWATCH_ALERTS_TO_TELEGRAM))
-            or (stage_name == "EARLY" and bool(radar.SEND_EARLY_ALERTS_TO_TELEGRAM))
+
+        limit = (
+            MAX_VISIBLE_PREWATCH_PER_RUN
+            if stage_name == "PREWATCH"
+            else MAX_VISIBLE_EARLY_PER_RUN
         )
-        if record_id and should_send and isinstance(item, dict):
-            message = str(item.get("message") or "").strip()
+
+        if (
+            record_id
+            and stage_name in visible_count
+            and visible_count[stage_name] < limit
+            and should_surface_early(stage_name, item)
+        ):
+            message = str((item or {}).get("message") or "").strip()
             if message:
+                visible_count[stage_name] += 1
                 radar.send_telegram(
-                    "🚨 HIZLI FIRSAT YAKALAMA KATMANI\n\n" + message,
-                    delivery_key=f"{stage_name}|{record_id}",
+                    "⚠️ SADECE TAKİP — HENÜZ İŞLEM AÇMA\n"
+                    "Gerçek işlem girişi ayrıca Giriş + TP + SL ile gelecek.\n\n"
+                    "🚨 HIZLI FIRSAT YAKALAMA KATMANI\n\n"
+                    + message,
+                    delivery_key=f"VISIBLE_{stage_name}|{record_id}",
                 )
         return record_id
 
@@ -87,17 +184,18 @@ def make_visible_early_recorder(
 
 
 def apply_opportunity_capture(radar: Any) -> None:
-    # GPS örneğinde olduğu gibi PREWATCH/EARLY artık kullanıcıya görünür.
+    # Motor PREWATCH/EARLY adaylarını üretmeye ve arka planda kaydetmeye devam eder.
     radar.SEND_EARLY_ALERTS_TO_TELEGRAM = True
     radar.SEND_PREWATCH_ALERTS_TO_TELEGRAM = True
 
-    # Aynı coinde eski LONG varsa SHORT (ve tersi) yine analiz edilir.
-    # Aynı yön duplicate/portföy filtresi daha sonra çalışmaya devam eder.
+    # Eski ters-yön açık sinyal yeni fırsatın analizini durdurmaz.
+    # Aynı-yön duplicate ve portföy limitleri aşağı akışta korunur.
     radar.has_open_same_symbol = lambda state, symbol: False
-
     radar.evaluate_portfolio_risk = capture.make_opposite_direction_evaluator(
         radar.evaluate_portfolio_risk
     )
+
+    radar.send_telegram = make_clear_signal_sender(radar.send_telegram)
     radar.record_scalp_performance = make_visible_early_recorder(
         radar,
         radar.record_scalp_performance,
@@ -115,7 +213,10 @@ def run(radar: Any | None = None) -> None:
         f"LONG close_power >= {cfg.LIVE_ATTACK_LONG_MIN_CLOSE_POWER:g}",
         f"| SHORT close_power <= {cfg.LIVE_ATTACK_SHORT_MAX_CLOSE_POWER:g}",
     )
-    print("Fırsat yakalama: PREWATCH/EARLY Telegram AÇIK | ters-yön fırsatı ENGELLENMEZ")
+    print(
+        "Fırsat yakalama: tüm PREWATCH/EARLY arka planda | "
+        "Telegram yalnız güçlü erken aday | gerçek giriş ayrı etiketli"
+    )
 
     try:
         guard.update_shadow(radar.get_exchange())
