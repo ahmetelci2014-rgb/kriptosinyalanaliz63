@@ -1,4 +1,4 @@
-name: Erken Pump/Dump Radarı
+name: Pump Dump Profit Mode V1
 
 on:
   workflow_dispatch:
@@ -9,11 +9,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: erken-pump-dump-radari
+  group: pump-profit-mode-v1
   cancel-in-progress: false
 
 jobs:
-  pump-radar:
+  pump:
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -23,7 +23,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Python kur ve pip önbelleğini hazırla
+      - name: Python kur
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -33,10 +33,9 @@ jobs:
       - name: Paketleri kur
         env:
           PIP_DISABLE_PIP_VERSION_CHECK: "1"
-        run: |
-          python -m pip install --prefer-binary -r requirements.txt
+        run: python -m pip install --prefer-binary -r requirements.txt
 
-      - name: Erken pump/dump radar çalıştır
+      - name: Pump Dump karlilik cekirdegini calistir
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -44,28 +43,20 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
-          # Klasik Pump/Dump kalite şartları korunur.
-          # Tüm aktif USDT perpetual evreninde canlı 5/15/30M impuls ölçülür.
-          # Hızlanan coinler normal top-hacim listesinin önüne alınır; gerçek
-          # giriş yine Pump/Trend-Continuation kalite + risk şartlarını geçmelidir.
           python -m py_compile \
             pump_radar.py \
-            pump_live_runner.py \
-            pump_impulse_live_runner.py \
+            pump_profit_runner.py \
             market_impulse_guard.py \
-            test_pump_live_runner.py \
-            test_market_impulse_guard.py \
             opportunity_capture.py \
-            portfolio_risk.py \
-            telegram_delivery.py
-          python -m unittest -v test_pump_live_runner.py test_market_impulse_guard.py
-          python pump_impulse_live_runner.py
+            live_entry_safety.py \
+            test_market_impulse_guard.py
+          python -m unittest -v test_market_impulse_guard.py
+          python pump_profit_runner.py
 
-      - name: Pump/Dump durum, impuls, teşhis ve performans kayıtlarını güvenli kaydet
+      - name: Pump durum ve performans kaydet
         if: always()
         run: |
           set -e
-
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
@@ -77,31 +68,23 @@ jobs:
           do
             if [ -f "$file" ]; then
               git add "$file"
-            else
-              echo "$file henüz oluşmamış; atlandı."
             fi
           done
 
           if git diff --cached --quiet; then
-            echo "Pump/Dump dosyalarında kaydedilecek değişiklik yok."
+            echo "Kaydedilecek Pump degisikligi yok."
             exit 0
           fi
 
-          git commit -m "Update pump dump state impulse performance and portfolio risk shadow"
+          git commit -m "Update Pump Profit Mode state"
 
           for attempt in 1 2 3
           do
-            echo "Push denemesi: $attempt"
-
             git pull --rebase --autostash origin main
-            if git push origin HEAD:main
-            then
-              echo "Pump/Dump durum, impuls ve performans dosyaları kaydedildi."
+            if git push origin HEAD:main; then
               exit 0
             fi
-
             sleep 10
           done
 
-          echo "Pump/Dump dosyaları üç denemede de kaydedilemedi."
           exit 1

@@ -1,4 +1,4 @@
-name: Premium MTF Futures Bot
+name: Premium Profit Mode V1
 
 on:
   workflow_dispatch:
@@ -9,11 +9,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: premium-mtf-futures-bot
+  group: premium-profit-mode-v1
   cancel-in-progress: false
 
 jobs:
-  signal-bot:
+  premium:
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -23,7 +23,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Python kur ve pip önbelleğini hazırla
+      - name: Python kur
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -33,10 +33,9 @@ jobs:
       - name: Paketleri kur
         env:
           PIP_DISABLE_PIP_VERSION_CHECK: "1"
-        run: |
-          python -m pip install --prefer-binary -r requirements.txt
+        run: python -m pip install --prefer-binary -r requirements.txt
 
-      - name: Botu çalıştır
+      - name: Premium karlilik cekirdegini calistir
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -44,28 +43,22 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
-          # Premium kalite eşikleri aynen korunur; eski ters-yön açık sinyal
-          # yeni güçlü yönün analiz edilmesini engellemez.
-          python -m py_compile main.py premium_live_runner.py opportunity_capture.py
-          python premium_live_runner.py
+          python -m py_compile \
+            main.py \
+            strategy.py \
+            premium_profit_runner.py \
+            opportunity_capture.py \
+            live_entry_safety.py
+          python premium_profit_runner.py
 
-      - name: TP/BE sonrası sessiz gölge takibi çalıştır
+      - name: TP BE sonrasi sessiz takip
         if: always()
         run: python post_result_shadow.py
 
-      - name: Post-Result Shadow V2 karar raporunu üret
-        if: always()
-        run: python post_result_shadow_v2.py
-
-      - name: Post-Result Shadow V3 karşılaştırmalı yönetim testi
-        if: always()
-        run: python post_result_shadow_v3.py
-
-      - name: Durum dosyalarını kaydet
+      - name: Durum dosyalarini kaydet
         if: always()
         run: |
           set -e
-
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
@@ -74,37 +67,27 @@ jobs:
             performance.json \
             last_signals.json \
             trade_ledger.json \
-            portfolio_risk_shadow_main_mtf.json \
-            post_result_shadow_v2_report.json \
-            post_result_shadow_v3_report.json
+            portfolio_risk_shadow_main_mtf.json
           do
             if [ -f "$file" ]; then
               git add "$file"
-            else
-              echo "$file henüz oluşmadı; atlandı."
             fi
           done
 
           if git diff --cached --quiet; then
-            echo "Kaydedilecek yeni durum değişikliği yok."
+            echo "Kaydedilecek degisiklik yok."
             exit 0
           fi
 
-          git commit -m "Update main bot state and portfolio risk shadow"
+          git commit -m "Update Premium Profit Mode state"
 
           for attempt in 1 2 3
           do
-            echo "Push denemesi: $attempt"
-
             git pull --rebase --autostash origin main
-
             if git push origin HEAD:main; then
-              echo "Durum dosyaları başarıyla kaydedildi."
               exit 0
             fi
-
             sleep 10
           done
 
-          echo "Durum dosyaları üç denemede de kaydedilemedi."
           exit 1
