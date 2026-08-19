@@ -29084,17 +29084,17 @@
       "sl_after_no_return": 11
     },
     "2026-08-19": {
-      "opened": 9,
+      "opened": 10,
       "radar": 0,
       "tp1": 6,
       "tp2": 2,
       "tp3": 0,
-      "sl": 2,
+      "sl": 3,
       "be": 4,
       "expired": 0,
       "long": 2,
-      "short": 7,
-      "normal": 8,
+      "short": 8,
+      "normal": 9,
       "radar_trade": 1,
       "coins": {
         "SOLUSDT": {
@@ -29183,7 +29183,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -29206,14 +29206,26 @@
           "sl": 0,
           "be": 0,
           "expired": 0
+        },
+        "ZAMAUSDT": {
+          "opened": 1,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 0,
+          "be": 0,
+          "expired": 0
         }
       },
       "direction_stops": {
-        "LONG": 2
+        "LONG": 2,
+        "SHORT": 1
       },
       "stop_times": {
         "SOLUSDT": 1787086894,
-        "PNUTUSDT": 1787087776
+        "PNUTUSDT": 1787087776,
+        "LINEAUSDT": 1787102170
       },
       "closed_times": {
         "MEMEUSDT": 1787094967,
@@ -29367,15 +29379,25 @@
           "exit": 0.2409,
           "source": "15M_ENTRY",
           "score": 98
+        },
+        {
+          "time": "04:16:10",
+          "symbol": "LINEAUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.002077,
+          "exit": 0.002086,
+          "source": "15M_ENTRY",
+          "score": 100
         }
       ],
       "sl_after_tp1": 0,
       "sl_after_tp2": 0,
-      "sl_after_no_return": 1
+      "sl_after_no_return": 3
     }
   },
-  "last_update": 1787099691,
-  "last_open_summary": 1787096541,
+  "last_update": 1787102533,
+  "last_open_summary": 1787102189,
   "last_status_message": 1787100663,
   "last_daily_report": "2026-08-18",
   "sl_after_follow": {
@@ -29397,12 +29419,15 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-08-19"
     },
     "PNUTUSDT_LONG_1787087776": {
       "trade_id": "PNUTUSDT_LONG_15M_ENTRY_1787075451",
@@ -29422,8 +29447,31 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-08-19"
+    },
+    "LINEAUSDT_SHORT_1787102170": {
+      "trade_id": "LINEAUSDT_SHORT_15M_ENTRY_1787098835",
+      "symbol": "LINEAUSDT",
+      "direction": "SHORT",
+      "source": "15M_ENTRY",
+      "entry": 0.002077,
+      "tp1": 0.0020723509,
+      "tp2": 0.0020681245,
+      "tp3": 0.0020634754,
+      "sl": 0.0020854529,
+      "score": 100,
+      "risk_percent": 0.407,
+      "stopped_at": 1787102170,
+      "stop_exit": 0.002086,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
