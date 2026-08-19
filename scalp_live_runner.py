@@ -4,6 +4,8 @@ Canlı ATAK kalite eşiklerini korur. PREWATCH/EARLY adaylarının tamamı arka
 planda performans için kaydedilir; Telegram'a yalnız gerçekten erken ve güçlü
 olanlar çıkar. Gerçek Scalp sinyalleri ayrıca açıkça "İŞLEM GİRİŞİ" olarak
 etiketlenir. Aynı coindeki eski ters-yön sinyal yeni fırsatı susturmaz.
+TEPKİ_SCALP karşı-trend girişlerinde son 1M mumun gerçekten ters yöne dönmesi
+zorunludur; güçlü ana momentum sürerken yalnız fitil/RSI ile ters işlem açılmaz.
 Gerçek emir açmaz.
 """
 from __future__ import annotations
@@ -25,6 +27,11 @@ VISIBLE_EARLY_MIN_15M_MOVE = 1.00
 
 MAX_VISIBLE_PREWATCH_PER_RUN = 1
 MAX_VISIBLE_EARLY_PER_RUN = 1
+
+# UNI 2026-08-19 örneğinde SHORT tepki sinyali oluşurken son 1M mum hâlâ
+# +%0.03 yeşildi. Karşı-trend giriş için yalnız üst/alt fitil yetmez; son
+# tamamlanmış 1M mum da yeni yönü en az bu kadar teyit etmelidir.
+REACTION_MIN_1M_REVERSAL_PERCENT = 0.05
 
 
 def apply_live_thresholds(radar: Any) -> None:
@@ -76,6 +83,47 @@ def safe_number(value: Any, default: float = 0.0) -> float:
         return float(value)
     except (TypeError, ValueError):
         return default
+
+
+def make_reaction_confirmation_wrapper(
+    original: Callable[..., tuple[Any, Any]],
+) -> Callable[..., tuple[Any, Any]]:
+    """Karşı-trend tepkiyi son 1M mum gerçekten yön değiştirmeden canlıya alma."""
+    if getattr(original, "_reaction_confirmation_wrapped", False):
+        return original
+
+    def wrapped(*args: Any, **kwargs: Any) -> tuple[Any, Any]:
+        signal, debug = original(*args, **kwargs)
+        if not isinstance(signal, dict):
+            return signal, debug
+
+        direction = str(signal.get("direction") or "").upper()
+        move1 = safe_number(signal.get("move1"))
+
+        if (
+            direction == "SHORT"
+            and move1 > -REACTION_MIN_1M_REVERSAL_PERCENT
+        ):
+            print(
+                "TEPKİ_SCALP canlı guard: SHORT engellendi | "
+                f"1M hareket %{move1:+.3f}, kırmızı dönüş teyidi yok"
+            )
+            return None, debug
+
+        if (
+            direction == "LONG"
+            and move1 < REACTION_MIN_1M_REVERSAL_PERCENT
+        ):
+            print(
+                "TEPKİ_SCALP canlı guard: LONG engellendi | "
+                f"1M hareket %{move1:+.3f}, yeşil dönüş teyidi yok"
+            )
+            return None, debug
+
+        return signal, debug
+
+    wrapped._reaction_confirmation_wrapped = True  # type: ignore[attr-defined]
+    return wrapped
 
 
 def should_surface_early(stage: str, item: Any) -> bool:
@@ -214,6 +262,10 @@ def run(radar: Any | None = None) -> None:
         f"| SHORT close_power <= {cfg.LIVE_ATTACK_SHORT_MAX_CLOSE_POWER:g}",
     )
     print(
+        "TEPKİ_SCALP canlı guard: karşı-trend için 1M gerçek dönüş >=",
+        f"%{REACTION_MIN_1M_REVERSAL_PERCENT:.2f}",
+    )
+    print(
         "Fırsat yakalama: tüm PREWATCH/EARLY arka planda | "
         "Telegram yalnız güçlü erken aday | gerçek giriş ayrı etiketli"
     )
@@ -223,8 +275,14 @@ def run(radar: Any | None = None) -> None:
     except Exception as exc:
         print("ATAK guard shadow takip atlandı:", type(exc).__name__)
 
-    original = radar.analyze_attack_side
-    radar.analyze_attack_side = make_attack_wrapper(radar, original)
+    original_attack = radar.analyze_attack_side
+    radar.analyze_attack_side = make_attack_wrapper(radar, original_attack)
+
+    original_reaction = radar.analyze_reaction_side
+    radar.analyze_reaction_side = make_reaction_confirmation_wrapper(
+        original_reaction
+    )
+
     apply_live_thresholds(radar)
     radar.main()
 
