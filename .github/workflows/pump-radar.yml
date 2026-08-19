@@ -45,19 +45,23 @@ jobs:
           GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
           # Klasik Pump/Dump kalite şartları korunur.
-          # GPS/UNI tipi güçlü iç trendler erken görünür ve sıkı şartlarda
-          # TREND_CONTINUATION gerçek girişine dönüşebilir.
+          # Tüm aktif USDT perpetual evreninde canlı 5/15/30M impuls ölçülür.
+          # Hızlanan coinler normal top-hacim listesinin önüne alınır; gerçek
+          # giriş yine Pump/Trend-Continuation kalite + risk şartlarını geçmelidir.
           python -m py_compile \
             pump_radar.py \
             pump_live_runner.py \
+            pump_impulse_live_runner.py \
+            market_impulse_guard.py \
             test_pump_live_runner.py \
+            test_market_impulse_guard.py \
             opportunity_capture.py \
             portfolio_risk.py \
             telegram_delivery.py
-          python -m unittest -v test_pump_live_runner.py
-          python pump_live_runner.py
+          python -m unittest -v test_pump_live_runner.py test_market_impulse_guard.py
+          python pump_impulse_live_runner.py
 
-      - name: Pump/Dump durum, teşhis ve performans kayıtlarını güvenli kaydet
+      - name: Pump/Dump durum, impuls, teşhis ve performans kayıtlarını güvenli kaydet
         if: always()
         run: |
           set -e
@@ -68,6 +72,7 @@ jobs:
           for file in \
             pump_radar_state.json \
             pump_performance_ledger.json \
+            market_impulse_state.json \
             portfolio_risk_shadow_pump_dump.json
           do
             if [ -f "$file" ]; then
@@ -82,7 +87,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update pump dump state performance and portfolio risk shadow"
+          git commit -m "Update pump dump state impulse performance and portfolio risk shadow"
 
           for attempt in 1 2 3
           do
@@ -91,7 +96,7 @@ jobs:
             git pull --rebase --autostash origin main
             if git push origin HEAD:main
             then
-              echo "Pump/Dump durum ve performans dosyaları kaydedildi."
+              echo "Pump/Dump durum, impuls ve performans dosyaları kaydedildi."
               exit 0
             fi
 
