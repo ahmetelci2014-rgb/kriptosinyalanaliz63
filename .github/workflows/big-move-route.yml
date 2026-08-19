@@ -3,8 +3,8 @@ name: Büyük Hareket Fiyat Rotası
 on:
   workflow_dispatch:
   schedule:
-    # Büyük hareket için saatlik tarama yeterli; 5 dakikalık spam/Actions maliyeti yok.
-    - cron: "37 * * * *"
+    # GPS benzeri hızlanan ve yön değiştiren rotaları daha erken görmek için yarım saatte bir.
+    - cron: "7,37 * * * *"
 
 permissions:
   contents: write
