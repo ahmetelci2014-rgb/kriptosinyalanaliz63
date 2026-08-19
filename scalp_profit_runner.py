@@ -1,139 +1,96 @@
-"""Scalp Profit Mode V1.
+"""Scalp Profit Mode V2.
 
-Live Telegram receives only confirmed TEPKI_SCALP entries and their outcomes.
-PREWATCH/EARLY remain silent and ATAK is removed from the live path. A strong
-opposing all-market impulse blocks countertrend reactions. No exchange orders.
+TEPKI_SCALP is live only after enough cost-adjusted virtual/real evidence.
+Until then it continues as silent shadow so the sample can grow. No orders.
 """
 from __future__ import annotations
-
 from typing import Any, Callable
 
 import live_entry_safety as safety
 import market_impulse_guard as impulse
+import profitability_engine as profit
 import opportunity_capture as capture
 import scalp_radar as radar
 
-REACTION_MIN_1M_REVERSAL_PERCENT = 0.05
-MAX_OPEN_SCALP_PROFIT_MODE = 1
+REACTION_MIN_1M_REVERSAL_PERCENT=0.05
 
 
-def _safe_number(value: Any, default: float = 0.0) -> float:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return default
+def _n(v:Any,d=0.0):
+    try:return float(v)
+    except:return d
 
 
-def _attack_live_disabled(*args: Any, **kwargs: Any):
-    return None, {
-        "reason": "PROFIT_MODE_V1_ATAK_LIVE_DISABLED",
-        "live": False,
-    }
+def _attack_off(*args:Any,**kwargs:Any):
+    return None,{"reason":"PROFIT_V2_ATAK_DISABLED","live":False}
 
 
-def _make_reaction_confirmation_guard(
-    original: Callable[..., tuple[Any, Any]],
-) -> Callable[..., tuple[Any, Any]]:
-    def wrapped(*args: Any, **kwargs: Any) -> tuple[Any, Any]:
-        signal, debug = original(*args, **kwargs)
-        if not isinstance(signal, dict):
-            return signal, debug
-
-        direction = str(signal.get("direction") or "").upper()
-        move1 = _safe_number(signal.get("move1"))
-
-        if direction == "SHORT" and move1 > -REACTION_MIN_1M_REVERSAL_PERCENT:
-            print(
-                "PROFIT MODE TEPKI: SHORT engellendi | "
-                f"1M %{move1:+.3f}, kırmızı dönüş teyidi yok"
-            )
-            return None, debug
-
-        if direction == "LONG" and move1 < REACTION_MIN_1M_REVERSAL_PERCENT:
-            print(
-                "PROFIT MODE TEPKI: LONG engellendi | "
-                f"1M %{move1:+.3f}, yeşil dönüş teyidi yok"
-            )
-            return None, debug
-
-        return signal, debug
-
+def _reaction_confirm(original:Callable[...,tuple[Any,Any]]):
+    def wrapped(*args:Any,**kwargs:Any):
+        signal,debug=original(*args,**kwargs)
+        if not isinstance(signal,dict):return signal,debug
+        direction=str(signal.get("direction") or "").upper()
+        move1=_n(signal.get("move1"))
+        if direction=="SHORT" and move1>-REACTION_MIN_1M_REVERSAL_PERCENT:return None,debug
+        if direction=="LONG" and move1<REACTION_MIN_1M_REVERSAL_PERCENT:return None,debug
+        opposing=impulse.recent_opposing_strong_impulse(str(signal.get("symbol") or ""),direction)
+        if opposing:return None,debug
+        return signal,debug
     return wrapped
 
 
-def _make_impulse_reaction_guard(
-    original: Callable[..., tuple[Any, Any]],
-) -> Callable[..., tuple[Any, Any]]:
-    def wrapped(*args: Any, **kwargs: Any) -> tuple[Any, Any]:
-        signal, debug = original(*args, **kwargs)
-        if not isinstance(signal, dict):
-            return signal, debug
-
-        symbol = str(signal.get("symbol") or "")
-        direction = str(signal.get("direction") or "").upper()
-        opposing = impulse.recent_opposing_strong_impulse(symbol, direction)
-        if opposing:
-            print(
-                "PROFIT MODE TEPKI:",
-                symbol,
-                direction,
-                "engellendi | ters canlı impuls",
-                opposing.get("direction"),
-            )
-            return None, debug
-        return signal, debug
-
-    return wrapped
-
-
-def _make_clear_signal_sender(original: Callable[..., Any]) -> Callable[..., Any]:
-    def wrapped(message: Any, *args: Any, **kwargs: Any) -> Any:
-        text = str(message or "")
+def _clear_sender(original:Callable[...,Any]):
+    def wrapped(message:Any,*args:Any,**kwargs:Any):
+        text=str(message or "")
         if text.startswith("🚀 SCALP SİNYALİ"):
-            text = (
-                "✅ İŞLEM GİRİŞİ — SCALP\n"
-                "Giriş + TP + SL hazır. Erken izleme mesajı değildir.\n\n"
-                + text
-            )
-        return original(text, *args, **kwargs)
-
+            text=("✅ İŞLEM GİRİŞİ — SCALP V2\n"
+                  "Maliyet-sonrası setup kanıtı geçti.\n\n"+text)
+        return original(text,*args,**kwargs)
     return wrapped
 
 
-def run() -> None:
-    # Early layers may still be measured by the core ledger, but never notify.
-    radar.SEND_EARLY_ALERTS_TO_TELEGRAM = False
-    radar.SEND_PREWATCH_ALERTS_TO_TELEGRAM = False
-    radar.MAX_NEW_SIGNALS_PER_RUN = 1
-    radar.MAX_OPEN_SCALP_SIGNALS = MAX_OPEN_SCALP_PROFIT_MODE
+def _silent_sender(message:Any,*args:Any,**kwargs:Any):
+    text=str(message or "")
+    if "SCALP SİNYALİ" in text:
+        print("PROFIT V2 SHADOW SCALP ENTRY suppressed")
+    return True
 
-    # A previous opposite-direction idea must not make the symbol invisible.
-    # Same-direction duplicate and portfolio exposure rules still apply later.
-    radar.has_open_same_symbol = lambda state, symbol: False
-    radar.evaluate_portfolio_risk = capture.make_opposite_direction_evaluator(
-        radar.evaluate_portfolio_risk
-    )
 
-    # Historical live evidence for ATAK is too weak for the profit-only path.
-    radar.analyze_attack_side = _attack_live_disabled
+def _mark_shadow_open():
+    state=radar.load_state(); changed=False
+    for signal in state.get("open_scalp_signals",{}).values():
+        if isinstance(signal,dict) and not signal.get("profit_mode_v2_shadow"):
+            signal["profit_mode_v2_shadow"]=True
+            signal["profit_mode_v2_version"]=profit.VERSION
+            changed=True
+    if changed:radar.save_state(state)
 
-    # TEPKI survives only with actual 1M reversal and no strong opposing impulse.
-    radar.analyze_reaction_side = _make_reaction_confirmation_guard(
-        radar.analyze_reaction_side
-    )
-    radar.analyze_reaction_side = _make_impulse_reaction_guard(
-        radar.analyze_reaction_side
-    )
 
-    radar.send_telegram = safety.make_entry_safety_sender(radar.send_telegram)
-    radar.send_telegram = _make_clear_signal_sender(radar.send_telegram)
+def run()->None:
+    profile=profit.scalp_profile()
+    state=radar.load_state()
+    shadow_open=any(isinstance(s,dict) and s.get("profit_mode_v2_shadow") for s in state.get("open_scalp_signals",{}).values())
+    live=bool(profile.get("live_allowed")) and not shadow_open
 
-    print(
-        "PROFIT MODE V1 / SCALP | Telegram: sadece TEPKI_SCALP gerçek giriş | "
-        "PREWATCH/EARLY sessiz | ATAK canlı KAPALI | max açık 1"
-    )
+    radar.SEND_EARLY_ALERTS_TO_TELEGRAM=False
+    radar.SEND_PREWATCH_ALERTS_TO_TELEGRAM=False
+    radar.MAX_NEW_SIGNALS_PER_RUN=1
+    radar.MAX_OPEN_SCALP_SIGNALS=1
+    radar.has_open_same_symbol=lambda state,symbol: False
+    radar.evaluate_portfolio_risk=capture.make_opposite_direction_evaluator(radar.evaluate_portfolio_risk)
+    radar.analyze_attack_side=_attack_off
+    radar.analyze_reaction_side=_reaction_confirm(radar.analyze_reaction_side)
+
+    if not live:
+        radar.send_telegram=_silent_sender
+        print("PROFIT V2 / SCALP SHADOW | cost-adjusted evidence:",profile)
+    else:
+        radar.send_telegram=safety.make_entry_safety_sender(radar.send_telegram)
+        radar.send_telegram=_clear_sender(radar.send_telegram)
+        print("PROFIT V2 / SCALP LIVE | cost-adjusted evidence:",profile)
+
     radar.main()
+    if not live:_mark_shadow_open()
 
 
-if __name__ == "__main__":
+if __name__=="__main__":
     run()
