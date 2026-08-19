@@ -1,4 +1,4 @@
-name: Premium Profit Mode V1
+name: Premium Profit Mode V2
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: premium-profit-mode-v1
+  group: premium-profit-mode-v2
   cancel-in-progress: false
 
 jobs:
@@ -35,7 +35,7 @@ jobs:
           PIP_DISABLE_PIP_VERSION_CHECK: "1"
         run: python -m pip install --prefer-binary -r requirements.txt
 
-      - name: Premium karlilik cekirdegini calistir
+      - name: Premium Profit Mode V2 calistir
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -47,15 +47,18 @@ jobs:
             main.py \
             strategy.py \
             premium_profit_runner.py \
+            profitability_engine.py \
             opportunity_capture.py \
-            live_entry_safety.py
+            live_entry_safety.py \
+            test_profitability_engine.py
+          python -m unittest -v test_profitability_engine.py
           python premium_profit_runner.py
 
       - name: TP BE sonrasi sessiz takip
         if: always()
         run: python post_result_shadow.py
 
-      - name: Durum dosyalarini kaydet
+      - name: Durum ve karlilik dosyalarini kaydet
         if: always()
         run: |
           set -e
@@ -67,6 +70,8 @@ jobs:
             performance.json \
             last_signals.json \
             trade_ledger.json \
+            profit_mode_report.json \
+            profit_mode_rejections.json \
             portfolio_risk_shadow_main_mtf.json
           do
             if [ -f "$file" ]; then
@@ -79,7 +84,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update Premium Profit Mode state"
+          git commit -m "Update Premium Profit Mode V2 state"
 
           for attempt in 1 2 3
           do
