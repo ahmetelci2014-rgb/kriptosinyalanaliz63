@@ -68,6 +68,50 @@ def _make_profit_gate(
     return wrapped
 
 
+def _make_pending_analyzer(
+    original: Callable[..., Any],
+    pending_gate: confirmation.PendingConfirmationGate,
+) -> Callable[..., Any]:
+    def wrapped(
+        symbol: str,
+        df15m: Any,
+        df1h: Any,
+        df4h: Any,
+        current_price: Any = None,
+    ) -> Any:
+        fresh = original(
+            symbol,
+            df15m,
+            df1h,
+            df4h,
+            current_price,
+        )
+
+        if fresh is not None:
+            return fresh
+
+        fallback = pending_gate.fallback_signal(
+            symbol=symbol,
+            df15m=df15m,
+            df1h=df1h,
+            df4h=df4h,
+            strategy_module=strategy,
+        )
+
+        if fallback is not None:
+            print(
+                "PROFIT V3 PENDING RECHECK:",
+                fallback.get("symbol"),
+                fallback.get("direction"),
+                "anchor=",
+                fallback.get("entry"),
+            )
+
+        return fallback
+
+    return wrapped
+
+
 def run() -> None:
     # Premium geçmiş performans profili şu anda yalnız 15M_ENTRY işlemlerinden
     # oluşuyor. 5M erken trade bu nedenle ayrı kaynak performansı kanıtlanana
@@ -75,12 +119,20 @@ def run() -> None:
     # değiştirilmez.
     strategy.ENABLE_5M_EARLY_TRADE = False
 
-    # ÖNEMLİ: Burada artık MAX_TRADE_SIGNALS_PER_RUN, MAX_OPEN_SIGNALS veya
-    # RISK_MODE_STOP_COUNT üzerine gizli override yapılmıyor. Ana config.py
-    # değerleri aynen kullanılır (şu an sırasıyla 2 / 6 / 5).
-
+    # Burada MAX_TRADE_SIGNALS_PER_RUN, MAX_OPEN_SIGNALS veya
+    # RISK_MODE_STOP_COUNT üzerine gizli override yapılmaz. Ana config.py
+    # değerleri aynen kullanılır.
     gate = profit.PremiumGate(bot.TRADE_LEDGER_FILE)
     pending_gate = confirmation.PendingConfirmationGate(gate)
+
+    # Bekleyen sabit aday, aynı 15M reversal şartı bir sonraki turda yeniden
+    # oluşmasa bile her taramada tekrar ana zincire sokulur. Main market guard,
+    # duplicate, portfolio risk ve son giriş kontrolünü yeniden uygular.
+    bot.analyze_mtf_trade = _make_pending_analyzer(
+        bot.analyze_mtf_trade,
+        pending_gate,
+    )
+
     bot.is_entry_still_valid = _make_profit_gate(
         bot.is_entry_still_valid,
         gate,
@@ -98,7 +150,7 @@ def run() -> None:
     bot.send_telegram = _make_clear_signal_sender(bot.send_telegram)
 
     print(
-        "PROFIT MODE V3 / PREMIUM | 15M | sabit aday + canlı teyit | "
+        "PROFIT MODE V3 / PREMIUM | 15M | sabit aday + aktif 5dk yeniden teyit | "
         "5M erken trade kapalı"
     )
     print(
