@@ -1,4 +1,4 @@
-name: Scalp Profit Mode V2
+name: Scalp Shadow Data Mode
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: scalp-profit-mode-v2
+  group: scalp-shadow-data-mode
   cancel-in-progress: false
 
 jobs:
@@ -35,10 +35,8 @@ jobs:
           PIP_DISABLE_PIP_VERSION_CHECK: "1"
         run: python -m pip install --prefer-binary -r requirements.txt
 
-      - name: Scalp Profit Mode V2 calistir
+      - name: Scalp shadow veri modunu calistir
         env:
-          TOKEN: ${{ secrets.TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
@@ -55,7 +53,7 @@ jobs:
           python -m unittest -v test_profitability_engine.py test_market_impulse_guard.py
           python scalp_profit_runner.py
 
-      - name: Scalp durum ve performans kaydet
+      - name: Scalp shadow durum ve performans kaydet
         if: always()
         run: |
           set -e
@@ -73,11 +71,11 @@ jobs:
           done
 
           if git diff --cached --quiet; then
-            echo "Kaydedilecek Scalp degisikligi yok."
+            echo "Kaydedilecek Scalp shadow degisikligi yok."
             exit 0
           fi
 
-          git commit -m "Update Scalp Profit Mode V2 state"
+          git commit -m "Update Scalp shadow data state"
 
           for attempt in 1 2 3
           do
