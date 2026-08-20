@@ -1,4 +1,4 @@
-name: Premium Profit Mode V3
+name: Premium Profit Mode V4 All Coins
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: premium-profit-mode-v3
+  group: premium-profit-mode-v4-all-coins
   cancel-in-progress: false
 
 jobs:
@@ -35,7 +35,7 @@ jobs:
           PIP_DISABLE_PIP_VERSION_CHECK: "1"
         run: python -m pip install --prefer-binary -r requirements.txt
 
-      - name: Premium Profit Mode V3 calistir
+      - name: Premium Profit Mode V4 All Coins calistir
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -48,15 +48,19 @@ jobs:
             strategy.py \
             premium_profit_runner.py \
             premium_confirmation.py \
+            premium_all_coins.py \
+            all_market_shadow.py \
             smart_recovery.py \
             profitability_engine.py \
             opportunity_capture.py \
             live_entry_safety.py \
             test_profitability_engine.py \
-            test_premium_confirmation.py
+            test_premium_confirmation.py \
+            test_premium_all_coins.py
           python -m unittest -v \
             test_profitability_engine.py \
-            test_premium_confirmation.py
+            test_premium_confirmation.py \
+            test_premium_all_coins.py
           python premium_profit_runner.py
 
       - name: TP BE sonrasi sessiz takip
@@ -76,6 +80,7 @@ jobs:
             last_signals.json \
             trade_ledger.json \
             premium_pending_candidates.json \
+            premium_all_coins_state.json \
             smart_recovery_state.json \
             profit_mode_report.json \
             profit_mode_rejections.json \
@@ -91,7 +96,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update Premium Profit Mode V3 state"
+          git commit -m "Update Premium Profit Mode V4 All Coins state"
 
           for attempt in 1 2 3
           do
