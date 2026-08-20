@@ -18,6 +18,7 @@ import main as bot
 import smart_recovery as recovery
 import movement_start_shadow as movement_start
 import movement_start_v2_shadow as movement_start_v2
+import movement_start_v3_orderflow_shadow as movement_start_v3
 
 
 def _make_clear_signal_sender(original: Callable[..., Any]) -> Callable[..., Any]:
@@ -49,13 +50,8 @@ def _make_clear_signal_sender(original: Callable[..., Any]) -> Callable[..., Any
 def _direct_evidence_allows(gate: profit.PremiumGate, signal: dict) -> bool:
     source = str(signal.get("source") or "").upper()
     if source in {"YOUNG_COIN_ENTRY", "NEW_COIN_ENTRY"}:
-        # Bu iki kaynak uzun EMA200 geçmişi olmadığı için kendi daha sıkı
-        # skor/hacim/risk kapılarını kullanır; olgun 15M geçmiş metriğiyle
-        # yanlış biçimde kanıtlanmış sayılmaz.
         return True
 
-    # TREND_CONTINUATION dahil olgun kaynaklarda canlı yönün mevcut Premium
-    # geçmiş edge'i hâlâ kanıtlı olmalıdır. Yeni yol bu korumayı atlamaz.
     direction = str(signal.get("direction") or "").upper()
     evidence = gate.profiles.get(direction, {}) if isinstance(gate.profiles, dict) else {}
     return bool(evidence.get("live_allowed"))
@@ -67,8 +63,6 @@ def _make_profit_gate(
     pending_gate: confirmation.PendingConfirmationGate,
 ) -> Callable[..., Any]:
     def wrapped(signal: dict, current_price: Any):
-        # En güçlü olgun A+ adaylar, kontrollü trend-devam adayları ve daha sıkı
-        # eşikten geçen genç/yeni coinler dar confirmation penceresinde kaybolmasın.
         direct_allowed = (
             allcoins.strong_direct_allowed(
                 signal,
@@ -160,7 +154,6 @@ def _make_pending_analyzer(
         df4h: Any,
         current_price: Any = None,
     ) -> Any:
-        # V1: 15M taban/sıkışma öğrenmesi. Canlı Premium kararını değiştirmez.
         movement_event = movement_start.observe(
             symbol,
             df15m,
@@ -184,7 +177,6 @@ def _make_pending_analyzer(
                 movement_event.get("event"),
             )
 
-        # Mevcut kanıtlanmış Premium MTF kalıbı her zaman ilk tercihtir.
         fresh = original(
             symbol,
             df15m,
@@ -196,9 +188,6 @@ def _make_pending_analyzer(
         if fresh is not None:
             return fresh
 
-        # IOTA tipi durum: klasik pullback kalıbı yok ama Pump gölge katmanı
-        # güçlü devamı görmüşse, güncel 1H/4H yapı ve fiyat sapması yeniden
-        # doğrulanarak ikinci Premium işlem yolu üretilebilir.
         trend_continue = continuation.analyze_continuation(
             symbol,
             df15m,
@@ -218,8 +207,6 @@ def _make_pending_analyzer(
             )
             return trend_continue
 
-        # Uzun EMA200 geçmişi tamamlanmamış coinleri çöpe atma. Veri yaşına göre
-        # 1H/15M adaptif yol veya çok yeni coinde 1M momentum yolu kullanılır.
         young = allcoins.analyze_young_coin(
             symbol,
             df15m,
@@ -261,7 +248,7 @@ def _make_pending_analyzer(
 
 
 def _make_5m_start_observer(original: Callable[..., Any]) -> Callable[..., Any]:
-    """5M verisi indirildikten sonra V2 öğrenmesini çalıştır, canlı sonucu değiştirme."""
+    """5M V2 yapısını ve yalnız güçlü adaylarda V3 OKX order-flow'u gölgede öğren."""
     def wrapped(
         symbol: str,
         df5m: Any,
@@ -270,6 +257,17 @@ def _make_5m_start_observer(original: Callable[..., Any]) -> Callable[..., Any]:
         df4h: Any,
         current_price: Any = None,
     ) -> Any:
+        # V3'ün order-flow sorgusunu sadece mevcut V2 price-structure adayı
+        # tetikleyebilir. Böylece tüm piyasada iki ek REST çağrısı açmayız.
+        base_result = movement_start_v2.analyze(
+            symbol,
+            df5m,
+            df15m,
+            df1h,
+            df4h,
+            current_price,
+        )
+
         event = movement_start_v2.observe(
             symbol,
             df5m,
@@ -293,6 +291,30 @@ def _make_5m_start_observer(original: Callable[..., Any]) -> Callable[..., Any]:
                 "event=",
                 event.get("event"),
             )
+
+        flow_event = movement_start_v3.observe(
+            symbol,
+            base_result,
+            df5m,
+            current_price,
+        )
+        if flow_event is not None:
+            snapshot = flow_event.get("snapshot") or {}
+            print(
+                "MOVEMENT START V3 ORDERFLOW:",
+                symbol,
+                snapshot.get("direction"),
+                snapshot.get("base_stage"),
+                "base=",
+                snapshot.get("base_score"),
+                "flow=",
+                snapshot.get("orderflow_score"),
+                "confirmed=",
+                snapshot.get("orderflow_confirmed"),
+                "event=",
+                flow_event.get("event"),
+            )
+
         return original(
             symbol,
             df5m,
@@ -321,39 +343,23 @@ def _make_all_coin_scanner(original: Callable[..., Any]) -> Callable[..., Any]:
 
 
 def run() -> None:
-    # Olgun Premium geçmiş performansı yalnız 15M_ENTRY kaynaklıdır. 5M erken
-    # trade ayrı kanıt oluşana kadar kapalı kalır. V2 5M verisini sadece gölgede
-    # öğrenir; bu satır canlı 5M trade'i bilinçli olarak kapalı tutar.
     strategy.ENABLE_5M_EARLY_TRADE = False
-
-    # Canlı loglarda çok sayıda güçlü kurulum %0.25 eşiğinde daha aday olmadan
-    # kayboluyordu. Burada yalnız ADAY YAKALAMA penceresini %0.35'e açıyoruz.
-    # Canlı gönderim filtresi gevşemiyor: aday hâlâ Premium pending/price teyidi,
-    # maliyet, geçmiş edge, market guard ve portföy risk kapılarından geçmek zorunda.
     strategy.MAX_LATE_ENTRY_DISTANCE_PERCENT = 0.35
 
     gate = profit.PremiumGate(bot.TRADE_LEDGER_FILE)
     pending_gate = confirmation.PendingConfirmationGate(gate)
 
-    # Hareket başlangıç motorları yalnız öğrenme/gölge state'i toplar.
     movement_start.begin()
     movement_start_v2.begin()
+    movement_start_v3.begin()
 
-    # Her uygun USDT perpetual ticker her tur görülür. Ana TOP300 her tur derin,
-    # dışarıda kalanlar sıcak-aday + rotation ile ek derin taranır.
     bot.get_scan_coins = _make_all_coin_scanner(bot.get_scan_coins)
-
-    # Yeni coinlerde mevcut kısa veri main.py tarafından <120 diye atılmasın.
-    # Olgun strategy.py yine kendi >=220 mum şartını korur.
     bot.fetch_df = allcoins.make_adaptive_fetcher(bot.fetch_df)
 
     bot.analyze_mtf_trade = _make_pending_analyzer(
         bot.analyze_mtf_trade,
         pending_gate,
     )
-
-    # main.py 5M verisini normal MTF analizinden sonra indiriyor. Bu wrapper V2'yi
-    # tam o noktada çalıştırır ve mevcut 5M radar dönüşünü aynen geri verir.
     bot.analyze_5m_radar = _make_5m_start_observer(bot.analyze_5m_radar)
 
     bot.is_entry_still_valid = _make_profit_gate(
@@ -362,8 +368,6 @@ def run() -> None:
         pending_gate,
     )
 
-    # Aynı coinde ters yön fırsatı eski sinyal yüzünden tamamen kaybolmasın.
-    # Aynı yön çakışması ve toplam/yön portföy risk limitleri korunur.
     bot.has_open_same_symbol = lambda symbol: False
     bot.evaluate_portfolio_risk = capture.make_opposite_direction_evaluator(
         bot.evaluate_portfolio_risk
@@ -387,6 +391,11 @@ def run() -> None:
         "| 5M squeeze+sweep+internal break+R öğrenme | canlı sinyal: KAPALI",
     )
     print(
+        "Movement Start Shadow V3:",
+        movement_start_v3.VERSION,
+        "| OKX trades+book order-flow | canlı sinyal: KAPALI | emir: YOK",
+    )
+    print(
         "Premium aday yakalama | 15M azami bölge uzaklığı:",
         strategy.MAX_LATE_ENTRY_DISTANCE_PERCENT,
         "% | canlı teyit kapıları korunuyor",
@@ -404,19 +413,20 @@ def run() -> None:
         pending_gate.pending_count(),
     )
 
-    # DCA1 yalnız yeterli 4H/1H/15M/5M geçmiş teyidi alabildiğinde çalışır;
-    # dolayısıyla çok yeni coinlerde otomatik olarak devre dışı kalır.
     recovery.run(bot)
 
     movement_summary = {}
     movement_v2_summary = {}
+    movement_v3_summary = {}
     try:
         bot.main()
     finally:
         movement_summary = movement_start.finish()
         movement_v2_summary = movement_start_v2.finish()
+        movement_v3_summary = movement_start_v3.finish()
         print("Movement Start Shadow V1 özet:", movement_summary)
         print("Movement Start Shadow V2 özet:", movement_v2_summary)
+        print("Movement Start Shadow V3 özet:", movement_v3_summary)
 
     changed = profit.enrich_premium(bot.TRADE_LEDGER_FILE)
     report = profit.report()
