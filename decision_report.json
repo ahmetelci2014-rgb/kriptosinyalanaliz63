@@ -1,8 +1,8 @@
 {
   "version": "DECISION_ENGINE_V3_LEGACY_SWING_REMOVED_2026_08_14",
   "mode": "ANALYSIS_ONLY_NO_SIGNAL_CHANGE_NO_TELEGRAM_NO_ORDERS",
-  "generated_at": 1787087766,
-  "generated_at_utc": "2026-08-18T21:16:06+00:00",
+  "generated_at": 1787260819,
+  "generated_at_utc": "2026-08-20T21:20:19+00:00",
   "auto_apply": false,
   "thresholds": {
     "confidence": {
@@ -38,34 +38,36 @@
     }
   },
   "data_quality": {
-    "warnings": [],
+    "warnings": [
+      "swing_v4_ledger: veri 48 saatten eski"
+    ],
     "source_count": 12,
     "valid_source_count": 12,
     "sources": {
       "premium_performance": {
         "path": "performance.json",
         "exists": true,
-        "bytes": 695987,
+        "bytes": 723480,
         "valid_json": true,
         "error": null,
-        "last_update": 1787087121,
-        "age_hours": 0.18,
+        "last_update": 1787260039,
+        "age_hours": 0.22,
         "stale_over_48h": false
       },
       "premium_trade_ledger": {
         "path": "trade_ledger.json",
         "exists": true,
-        "bytes": 3423105,
+        "bytes": 3784780,
         "valid_json": true,
         "error": null,
-        "last_update": 1787087124,
-        "age_hours": 0.18,
+        "last_update": 1787260043,
+        "age_hours": 0.22,
         "stale_over_48h": false
       },
       "scalp_state": {
         "path": "scalp_radar_state.json",
         "exists": true,
-        "bytes": 6206,
+        "bytes": 4231,
         "valid_json": true,
         "error": null,
         "last_update": 0,
@@ -75,17 +77,17 @@
       "scalp_ledger": {
         "path": "scalp_performance_ledger.json",
         "exists": true,
-        "bytes": 1592899,
+        "bytes": 1593096,
         "valid_json": true,
         "error": null,
-        "last_update": 1787087120,
-        "age_hours": 0.18,
+        "last_update": 1787244412,
+        "age_hours": 4.56,
         "stale_over_48h": false
       },
       "pump_state": {
         "path": "pump_radar_state.json",
         "exists": true,
-        "bytes": 325909,
+        "bytes": 325104,
         "valid_json": true,
         "error": null,
         "last_update": 0,
@@ -95,11 +97,11 @@
       "pump_ledger": {
         "path": "pump_performance_ledger.json",
         "exists": true,
-        "bytes": 76181,
+        "bytes": 86617,
         "valid_json": true,
         "error": null,
-        "last_update": 1787087198,
-        "age_hours": 0.16,
+        "last_update": 1787260341,
+        "age_hours": 0.13,
         "stale_over_48h": false
       },
       "swing_v4_ledger": {
@@ -109,8 +111,8 @@
         "valid_json": true,
         "error": null,
         "last_update": 1787043078,
-        "age_hours": 12.41,
-        "stale_over_48h": false
+        "age_hours": 60.48,
+        "stale_over_48h": true
       },
       "momentum_shadow": {
         "path": "momentum_shadow.json",
@@ -118,34 +120,34 @@
         "bytes": 59557,
         "valid_json": true,
         "error": null,
-        "last_update": 1787082963,
-        "age_hours": 1.33,
+        "last_update": 1787149030,
+        "age_hours": 31.05,
         "stale_over_48h": false
       },
       "range_shadow": {
         "path": "range_shadow_v4.json",
         "exists": true,
-        "bytes": 4915,
+        "bytes": 12822,
         "valid_json": true,
         "error": null,
-        "last_update": 1787085906,
-        "age_hours": 0.52,
+        "last_update": 1787158452,
+        "age_hours": 28.44,
         "stale_over_48h": false
       },
       "portfolio_risk_outcomes": {
         "path": "portfolio_risk_outcomes.json",
         "exists": true,
-        "bytes": 2742868,
+        "bytes": 2930156,
         "valid_json": true,
         "error": null,
-        "last_update": 1787085878,
-        "age_hours": 0.52,
+        "last_update": 1787238027,
+        "age_hours": 6.33,
         "stale_over_48h": false
       },
       "post_result_v2": {
         "path": "post_result_shadow_v2_report.json",
         "exists": true,
-        "bytes": 3973,
+        "bytes": 3965,
         "valid_json": true,
         "error": null,
         "last_update": 0,
@@ -155,7 +157,7 @@
       "post_result_v3": {
         "path": "post_result_shadow_v3_report.json",
         "exists": true,
-        "bytes": 1655,
+        "bytes": 1649,
         "valid_json": true,
         "error": null,
         "last_update": 0,
@@ -182,7 +184,7 @@
         "decision_code": "YONETIM_ALTERNATIFI_GOLGE_TEST",
         "decision_tr": "🟠 İŞLEM YÖNETİMİ ALTERNATİFİNİ GÖLGE TEST ET",
         "confidence": "YUKSEK",
-        "sample_size": 151,
+        "sample_size": 174,
         "next_action": "V3 modellerini karşılaştır; yalnız yeterli örnek ve pozitif net ek R doğrulanırsa canlı kural önerisi üret."
       },
       {
@@ -191,7 +193,7 @@
         "decision_code": "GOLGEDE_TUT",
         "decision_tr": "🟡 GÖLGEDE TUT",
         "confidence": "DUSUK",
-        "sample_size": 0,
+        "sample_size": 3,
         "next_action": "Canlıya alma; gölge değerlendirmeyi sürdür."
       },
       {
@@ -200,7 +202,7 @@
         "decision_code": "IZLE",
         "decision_tr": "🟡 PORTFÖY RİSKİNİ İZLE",
         "confidence": "YUKSEK",
-        "sample_size": 872,
+        "sample_size": 919,
         "next_action": "Canlı limit değiştirmeden BLOCK/ALLOW ve block_code sonuçlarını toplamaya devam et."
       },
       {
@@ -209,7 +211,7 @@
         "decision_code": "IZLE",
         "decision_tr": "🟡 İZLE",
         "confidence": "ORTA",
-        "sample_size": 17,
+        "sample_size": 15,
         "next_action": "Canlı filtreyi değiştirmeden setup bazlı ayrıştırmayı sürdür."
       },
       {
@@ -218,7 +220,7 @@
         "decision_code": "KORU_IZLE",
         "decision_tr": "🟢 KORU / İZLE",
         "confidence": "ORTA",
-        "sample_size": 23,
+        "sample_size": 26,
         "next_action": "Ayarları değiştirme; örnek sayısını büyüt."
       },
       {
@@ -227,7 +229,7 @@
         "decision_code": "KORU",
         "decision_tr": "🟢 KORU",
         "confidence": "YUKSEK",
-        "sample_size": 337,
+        "sample_size": 328,
         "next_action": "Ana giriş mantığını değiştirme."
       },
       {
@@ -248,37 +250,38 @@
       "decision_code": "KORU",
       "decision_tr": "🟢 KORU",
       "confidence": "YUKSEK",
-      "sample_size": 337,
+      "sample_size": 328,
       "auto_apply": false,
       "reasons": [
-        "Ölçülebilir kapanış: 337.",
-        "Stop oranı: %32.3; pozitif kapanış oranı: %67.7.",
-        "Exact-R ortalaması: +0.050R."
+        "Ölçülebilir kapanış: 328.",
+        "Stop oranı: %31.1; pozitif kapanış oranı: %68.9.",
+        "Exact-R ortalaması: +0.078R."
       ],
       "next_action": "Ana giriş mantığını değiştirme.",
       "metrics": {
-        "sample_size": 344,
-        "measurable_closed": 337,
-        "tp3": 79,
-        "be": 149,
-        "sl": 109,
+        "sample_size": 335,
+        "measurable_closed": 328,
+        "tp3": 82,
+        "be": 144,
+        "sl": 102,
         "expired": 7,
-        "tp3_rate_percent": 23.44,
-        "be_rate_percent": 44.21,
-        "stop_rate_percent": 32.34,
-        "positive_close_rate_percent": 67.66,
-        "r_records": 344,
+        "tp3_rate_percent": 25.0,
+        "be_rate_percent": 43.9,
+        "stop_rate_percent": 31.1,
+        "positive_close_rate_percent": 68.9,
+        "r_records": 335,
         "r_coverage_percent": 100.0,
-        "net_r": 17.1414,
-        "avg_r": 0.0498,
+        "net_r": 25.9914,
+        "avg_r": 0.0776,
         "data_basis": "trade_ledger_recent_14d",
         "source_breakdown": {
-          "15M_ENTRY": 290,
-          "5M_RADAR": 54
+          "15M_ENTRY": 285,
+          "5M_RADAR": 48,
+          "TREND_CONTINUATION": 2
         },
         "direction_breakdown": {
-          "LONG": 191,
-          "SHORT": 153
+          "SHORT": 146,
+          "LONG": 189
         }
       }
     },
@@ -286,48 +289,48 @@
       "decision_code": "IZLE",
       "decision_tr": "🟡 İZLE",
       "confidence": "ORTA",
-      "sample_size": 17,
+      "sample_size": 15,
       "auto_apply": false,
       "reasons": [
-        "Gerçek Scalp örneği: 17."
+        "Gerçek Scalp örneği: 15."
       ],
       "next_action": "Canlı filtreyi değiştirmeden setup bazlı ayrıştırmayı sürdür.",
       "metrics": {
-        "sample_size": 17,
-        "measurable_closed": 17,
-        "tp3": 8,
-        "be": 4,
-        "sl": 5,
+        "sample_size": 15,
+        "measurable_closed": 15,
+        "tp3": 5,
+        "be": 6,
+        "sl": 4,
         "expired": 0,
-        "tp3_rate_percent": 47.06,
-        "be_rate_percent": 23.53,
-        "stop_rate_percent": 29.41,
-        "positive_close_rate_percent": 70.59,
+        "tp3_rate_percent": 33.33,
+        "be_rate_percent": 40.0,
+        "stop_rate_percent": 26.67,
+        "positive_close_rate_percent": 73.33,
         "data_basis": "scalp_ledger_real_signal",
         "setup_breakdown": {
-          "ATAK_SCALP": {
-            "sample_size": 9,
-            "measurable_closed": 9,
-            "tp3": 3,
-            "be": 2,
-            "sl": 4,
-            "expired": 0,
-            "tp3_rate_percent": 33.33,
-            "be_rate_percent": 22.22,
-            "stop_rate_percent": 44.44,
-            "positive_close_rate_percent": 55.56
-          },
           "TEPKI_SCALP": {
-            "sample_size": 8,
-            "measurable_closed": 8,
-            "tp3": 5,
-            "be": 2,
-            "sl": 1,
+            "sample_size": 10,
+            "measurable_closed": 10,
+            "tp3": 3,
+            "be": 5,
+            "sl": 2,
             "expired": 0,
-            "tp3_rate_percent": 62.5,
-            "be_rate_percent": 25.0,
-            "stop_rate_percent": 12.5,
-            "positive_close_rate_percent": 87.5
+            "tp3_rate_percent": 30.0,
+            "be_rate_percent": 50.0,
+            "stop_rate_percent": 20.0,
+            "positive_close_rate_percent": 80.0
+          },
+          "ATAK_SCALP": {
+            "sample_size": 5,
+            "measurable_closed": 5,
+            "tp3": 2,
+            "be": 1,
+            "sl": 2,
+            "expired": 0,
+            "tp3_rate_percent": 40.0,
+            "be_rate_percent": 20.0,
+            "stop_rate_percent": 40.0,
+            "positive_close_rate_percent": 60.0
           }
         }
       }
@@ -336,24 +339,24 @@
       "decision_code": "KORU_IZLE",
       "decision_tr": "🟢 KORU / İZLE",
       "confidence": "ORTA",
-      "sample_size": 23,
+      "sample_size": 26,
       "auto_apply": false,
       "reasons": [
-        "Pump/Dump örneği 23.",
-        "Stop oranı %19.1, TP3 oranı %28.6."
+        "Pump/Dump örneği 26.",
+        "Stop oranı %20.8, TP3 oranı %29.2."
       ],
       "next_action": "Ayarları değiştirme; örnek sayısını büyüt.",
       "metrics": {
-        "sample_size": 23,
-        "measurable_closed": 21,
-        "tp3": 6,
-        "be": 11,
-        "sl": 4,
+        "sample_size": 26,
+        "measurable_closed": 24,
+        "tp3": 7,
+        "be": 12,
+        "sl": 5,
         "expired": 2,
-        "tp3_rate_percent": 28.57,
-        "be_rate_percent": 52.38,
-        "stop_rate_percent": 19.05,
-        "positive_close_rate_percent": 80.95,
+        "tp3_rate_percent": 29.17,
+        "be_rate_percent": 50.0,
+        "stop_rate_percent": 20.83,
+        "positive_close_rate_percent": 79.17,
         "data_basis": "pump_ledger"
       }
     },
@@ -525,25 +528,46 @@
       "decision_code": "GOLGEDE_TUT",
       "decision_tr": "🟡 GÖLGEDE TUT",
       "confidence": "DUSUK",
-      "sample_size": 0,
+      "sample_size": 3,
       "auto_apply": false,
       "reasons": [
-        "Range kapanmış örnek: 0."
+        "Range kapanmış örnek: 3."
       ],
       "next_action": "Canlıya alma; gölge değerlendirmeyi sürdür.",
       "metrics": {
-        "total_opened": 1,
-        "total_closed": 0,
-        "wins": 0,
-        "sl": 0,
-        "win_rate_percent": 0.0,
-        "gross_r": 0.0,
-        "net_r": 0.0,
-        "gross_to_net_cost_r": 0.0,
-        "average_cost_r_per_closed": 0.0,
-        "close_reason_counts": {},
-        "risk_band_stats": {},
-        "direction_stats": {}
+        "total_opened": 4,
+        "total_closed": 3,
+        "wins": 2,
+        "sl": 1,
+        "win_rate_percent": 66.67,
+        "gross_r": 3.6044,
+        "net_r": 2.6587,
+        "gross_to_net_cost_r": 0.9457,
+        "average_cost_r_per_closed": 0.3152,
+        "close_reason_counts": {
+          "COMPLETED_RANGE_LEG": 2,
+          "DIRECTION_OR_ENTRY_TIMING_FAILURE": 1
+        },
+        "risk_band_stats": {
+          "0_35_TO_0_60": {
+            "closed": 3,
+            "wins": 2,
+            "sl": 1,
+            "gross_r": 3.6044,
+            "net_r": 2.6587,
+            "win_rate_percent": 66.67
+          }
+        },
+        "direction_stats": {
+          "SHORT": {
+            "closed": 3,
+            "wins": 2,
+            "sl": 1,
+            "gross_r": 3.6044,
+            "net_r": 2.6587,
+            "win_rate_percent": 66.67
+          }
+        }
       }
     },
     "MOMENTUM_SHADOW": {
@@ -573,97 +597,97 @@
       "decision_code": "IZLE",
       "decision_tr": "🟡 PORTFÖY RİSKİNİ İZLE",
       "confidence": "YUKSEK",
-      "sample_size": 872,
+      "sample_size": 919,
       "auto_apply": false,
       "reasons": [
-        "Takip edilen portföy karar kaydı: 872; tamamlanan: 812.",
+        "Takip edilen portföy karar kaydı: 919; tamamlanan: 910.",
         "Bu kayıtların bir kısmı aynı adayın farklı zamanlardaki kararlarıdır; benzersiz trade sayısı değildir."
       ],
       "next_action": "Canlı limit değiştirmeden BLOCK/ALLOW ve block_code sonuçlarını toplamaya devam et.",
       "metrics": {
         "sample_unit": "portfolio_decision_records_not_unique_trades",
-        "source_records": 872,
-        "tracked_records": 872,
-        "completed_records": 812,
-        "tracking_records": 60,
+        "source_records": 919,
+        "tracked_records": 919,
+        "completed_records": 910,
+        "tracking_records": 9,
         "data_error_records": 0,
         "block": {
-          "records": 452,
-          "first_0_5_favorable": 210,
-          "first_0_5_adverse": 242,
+          "records": 462,
+          "first_0_5_favorable": 215,
+          "first_0_5_adverse": 247,
           "first_0_5_ambiguous": 0,
           "first_0_5_none": 0,
-          "favorable_first_rate_percent": 46.46,
-          "adverse_first_rate_percent": 53.54,
-          "avg_return_60m_percent": -0.0634,
-          "avg_return_240m_percent": -0.2569,
-          "avg_return_720m_percent": -0.2474,
-          "avg_return_1440m_percent": -0.0105,
-          "avg_mfe_240m_percent": 0.9295,
-          "avg_mae_240m_percent": 1.0942
+          "favorable_first_rate_percent": 46.54,
+          "adverse_first_rate_percent": 53.46,
+          "avg_return_60m_percent": -0.0633,
+          "avg_return_240m_percent": -0.2361,
+          "avg_return_720m_percent": -0.2566,
+          "avg_return_1440m_percent": -0.1301,
+          "avg_mfe_240m_percent": 0.9356,
+          "avg_mae_240m_percent": 1.0854
         },
         "allow": {
-          "records": 420,
-          "first_0_5_favorable": 219,
-          "first_0_5_adverse": 197,
+          "records": 457,
+          "first_0_5_favorable": 242,
+          "first_0_5_adverse": 212,
           "first_0_5_ambiguous": 3,
-          "first_0_5_none": 1,
-          "favorable_first_rate_percent": 52.64,
-          "adverse_first_rate_percent": 47.36,
-          "avg_return_60m_percent": 0.0044,
-          "avg_return_240m_percent": -0.0863,
-          "avg_return_720m_percent": -0.0551,
-          "avg_return_1440m_percent": 0.1864,
-          "avg_mfe_240m_percent": 1.3128,
-          "avg_mae_240m_percent": 1.1966
+          "first_0_5_none": 0,
+          "favorable_first_rate_percent": 53.3,
+          "adverse_first_rate_percent": 46.7,
+          "avg_return_60m_percent": 0.025,
+          "avg_return_240m_percent": 0.0141,
+          "avg_return_720m_percent": 0.0105,
+          "avg_return_1440m_percent": 0.0939,
+          "avg_mfe_240m_percent": 1.3844,
+          "avg_mae_240m_percent": 1.1731
         },
         "by_block_code": {
           "ALLOW": {
-            "records": 420,
-            "first_0_5_favorable": 219,
-            "first_0_5_adverse": 197,
+            "records": 457,
+            "first_0_5_favorable": 242,
+            "first_0_5_adverse": 212,
             "first_0_5_ambiguous": 3,
-            "first_0_5_none": 1,
-            "favorable_first_rate_percent": 52.64,
-            "adverse_first_rate_percent": 47.36,
-            "avg_return_60m_percent": 0.0044,
-            "avg_return_240m_percent": -0.0863,
-            "avg_return_720m_percent": -0.0551,
-            "avg_return_1440m_percent": 0.1864,
-            "avg_mfe_240m_percent": 1.3128,
-            "avg_mae_240m_percent": 1.1966,
+            "first_0_5_none": 0,
+            "favorable_first_rate_percent": 53.3,
+            "adverse_first_rate_percent": 46.7,
+            "avg_return_60m_percent": 0.025,
+            "avg_return_240m_percent": 0.0141,
+            "avg_return_720m_percent": 0.0105,
+            "avg_return_1440m_percent": 0.0939,
+            "avg_mfe_240m_percent": 1.3844,
+            "avg_mae_240m_percent": 1.1731,
             "finding": "IZLE"
           },
           "DIRECTION_RISK_LIMIT": {
-            "records": 451,
-            "first_0_5_favorable": 210,
-            "first_0_5_adverse": 241,
+            "records": 460,
+            "first_0_5_favorable": 215,
+            "first_0_5_adverse": 245,
             "first_0_5_ambiguous": 0,
             "first_0_5_none": 0,
-            "favorable_first_rate_percent": 46.56,
-            "adverse_first_rate_percent": 53.44,
-            "avg_return_60m_percent": -0.0643,
-            "avg_return_240m_percent": -0.2576,
-            "avg_return_720m_percent": -0.2472,
-            "avg_return_1440m_percent": -0.0086,
-            "avg_mfe_240m_percent": 0.9298,
-            "avg_mae_240m_percent": 1.0953,
+            "favorable_first_rate_percent": 46.74,
+            "adverse_first_rate_percent": 53.26,
+            "avg_return_60m_percent": -0.0638,
+            "avg_return_240m_percent": -0.2374,
+            "avg_return_720m_percent": -0.2471,
+            "avg_return_1440m_percent": -0.1153,
+            "avg_mfe_240m_percent": 0.9371,
+            "avg_mae_240m_percent": 1.0876,
             "finding": "IZLE"
           },
           "SAME_COIN_SAME_DIRECTION": {
-            "records": 1,
+            "records": 2,
             "first_0_5_favorable": 0,
-            "first_0_5_adverse": 1,
+            "first_0_5_adverse": 2,
             "first_0_5_ambiguous": 0,
             "first_0_5_none": 0,
             "favorable_first_rate_percent": 0.0,
             "adverse_first_rate_percent": 100.0,
-            "avg_return_60m_percent": 0.3371,
-            "avg_return_240m_percent": 0.0632,
-            "avg_return_720m_percent": -0.3476,
-            "avg_return_1440m_percent": -0.8216,
-            "avg_mfe_240m_percent": 0.7584,
-            "avg_mae_240m_percent": 0.6109,
+            "avg_return_60m_percent": 0.0606,
+            "avg_return_240m_percent": 0.0471,
+            "avg_return_720m_percent": -2.4423,
+            "avg_return_1440m_percent": -3.5435,
+            "avg_mfe_240m_percent": 0.5798,
+            "avg_mae_240m_percent": 0.5833,
             "finding": "IZLE"
           }
         }
@@ -673,63 +697,63 @@
       "decision_code": "YONETIM_ALTERNATIFI_GOLGE_TEST",
       "decision_tr": "🟠 İŞLEM YÖNETİMİ ALTERNATİFİNİ GÖLGE TEST ET",
       "confidence": "YUKSEK",
-      "sample_size": 151,
+      "sample_size": 174,
       "auto_apply": false,
       "reasons": [
-        "V3 TP1_DELAY_BE_UNTIL_TP2: 76 örnek, ortalama ek sonuç -0.054R.",
-        "V3 TP1_SOFT_BE_MINUS_0_25R: 76 örnek, ortalama ek sonuç +0.062R.",
-        "V3 TP2_SOFT_BE_MINUS_0_25R: 22 örnek, ortalama ek sonuç +0.104R.",
-        "V3 TP3_RUNNER_TRAIL_0_5R: 53 örnek, ortalama ek sonuç +0.122R.",
-        "V3 TP3_RUNNER_TRAIL_1_0R: 53 örnek, ortalama ek sonuç +0.139R.",
-        "TP1→BE tamamlanmış 76; sonradan TP2 %34.2, TP3 %21.1.",
-        "TP2→BE tamamlanmış 22; sonradan TP3 %27.3.",
-        "TP3 sonrası ortalama ek MFE: 1.614R."
+        "V3 TP1_DELAY_BE_UNTIL_TP2: 86 örnek, ortalama ek sonuç -0.111R.",
+        "V3 TP1_SOFT_BE_MINUS_0_25R: 86 örnek, ortalama ek sonuç +0.032R.",
+        "V3 TP2_SOFT_BE_MINUS_0_25R: 25 örnek, ortalama ek sonuç +0.136R.",
+        "V3 TP3_RUNNER_TRAIL_0_5R: 57 örnek, ortalama ek sonuç +0.113R.",
+        "V3 TP3_RUNNER_TRAIL_1_0R: 57 örnek, ortalama ek sonuç +0.130R.",
+        "TP1→BE tamamlanmış 87; sonradan TP2 %34.5, TP3 %19.5.",
+        "TP2→BE tamamlanmış 26; sonradan TP3 %30.8.",
+        "TP3 sonrası ortalama ek MFE: 1.893R."
       ],
       "next_action": "V3 modellerini karşılaştır; yalnız yeterli örnek ve pozitif net ek R doğrulanırsa canlı kural önerisi üret.",
       "metrics": {
-        "tracked_total": 154,
-        "completed_total": 151,
+        "tracked_total": 178,
+        "completed_total": 174,
         "groups": {
           "TP1_SONRASI_BE": {
-            "tracked": 78,
-            "completed": 76,
-            "tp1_reached_after_close": 45,
-            "tp2_reached_after_close": 26,
-            "tp3_reached_after_close": 16,
-            "tp1_reach_rate_percent": 59.21,
-            "tp2_reach_rate_percent": 34.21,
-            "tp3_reach_rate_percent": 21.05,
-            "avg_max_favorable_r": 1.2968,
-            "median_max_favorable_r": 0.6439,
-            "avg_max_adverse_r": 1.5638,
-            "median_240m_directional_r": -0.1875
+            "tracked": 89,
+            "completed": 87,
+            "tp1_reached_after_close": 54,
+            "tp2_reached_after_close": 30,
+            "tp3_reached_after_close": 17,
+            "tp1_reach_rate_percent": 62.07,
+            "tp2_reach_rate_percent": 34.48,
+            "tp3_reach_rate_percent": 19.54,
+            "avg_max_favorable_r": 1.471,
+            "median_max_favorable_r": 0.752,
+            "avg_max_adverse_r": 1.5048,
+            "median_240m_directional_r": -0.1621
           },
           "TP3": {
-            "tracked": 54,
-            "completed": 53,
+            "tracked": 63,
+            "completed": 61,
             "tp1_reached_after_close": 0,
             "tp2_reached_after_close": 0,
             "tp3_reached_after_close": 0,
             "tp1_reach_rate_percent": 0.0,
             "tp2_reach_rate_percent": 0.0,
             "tp3_reach_rate_percent": 0.0,
-            "avg_max_favorable_r": 1.6138,
-            "median_max_favorable_r": 0.9812,
-            "avg_max_adverse_r": 1.8205,
-            "median_240m_directional_r": -0.8678
+            "avg_max_favorable_r": 1.8928,
+            "median_max_favorable_r": 1.0248,
+            "avg_max_adverse_r": 1.7653,
+            "median_240m_directional_r": -0.6474
           },
           "TP2_SONRASI_BE": {
-            "tracked": 22,
-            "completed": 22,
+            "tracked": 26,
+            "completed": 26,
             "tp1_reached_after_close": 0,
-            "tp2_reached_after_close": 11,
-            "tp3_reached_after_close": 6,
+            "tp2_reached_after_close": 14,
+            "tp3_reached_after_close": 8,
             "tp1_reach_rate_percent": 0.0,
-            "tp2_reach_rate_percent": 50.0,
-            "tp3_reach_rate_percent": 27.27,
-            "avg_max_favorable_r": 1.2017,
-            "median_max_favorable_r": 1.0021,
-            "avg_max_adverse_r": 1.8455,
+            "tp2_reach_rate_percent": 53.85,
+            "tp3_reach_rate_percent": 30.77,
+            "avg_max_favorable_r": 1.465,
+            "median_max_favorable_r": 1.1038,
+            "avg_max_adverse_r": 1.8071,
             "median_240m_directional_r": -0.1304
           }
         },
@@ -737,155 +761,155 @@
           "version": "POST_RESULT_SHADOW_V2_2026_08_14",
           "shadow_only": true,
           "changes_live_rules": false,
-          "generated_at": 1787087125,
+          "generated_at": 1787164600,
           "minimum_sample": 20,
           "data_quality": {
-            "ledger_trades": 753,
-            "completed_post_result_samples": 151,
-            "tracking_samples_excluded": 3
+            "ledger_trades": 780,
+            "completed_post_result_samples": 168,
+            "tracking_samples_excluded": 5
           },
           "overall": {
-            "sample": 151,
-            "complete": 151,
+            "sample": 168,
+            "complete": 168,
             "evidence_gate": "ENOUGH_SAMPLE",
-            "average_mfe_r": 1.3942,
-            "average_mae_r": 1.6949,
-            "extension_0_5r_rate": 66.23,
-            "extension_1r_rate": 41.72,
-            "adverse_0_5r_rate": 74.83,
+            "average_mfe_r": 1.4398,
+            "average_mae_r": 1.6654,
+            "extension_0_5r_rate": 67.86,
+            "extension_1r_rate": 42.26,
+            "adverse_0_5r_rate": 73.21,
             "checkpoint_positive_rate": {
-              "15": 47.02,
-              "30": 48.34,
-              "60": 44.37,
-              "120": 39.07,
-              "240": 39.07
+              "15": 48.21,
+              "30": 48.81,
+              "60": 44.64,
+              "120": 40.48,
+              "240": 39.29
             }
           },
           "by_final_result": {
             "TP1_SONRASI_BE": {
-              "sample": 76,
-              "complete": 76,
+              "sample": 86,
+              "complete": 86,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_mfe_r": 1.2968,
-              "average_mae_r": 1.5638,
-              "extension_0_5r_rate": 64.47,
-              "extension_1r_rate": 35.53,
-              "adverse_0_5r_rate": 73.68,
+              "average_mfe_r": 1.2451,
+              "average_mae_r": 1.5223,
+              "extension_0_5r_rate": 66.28,
+              "extension_1r_rate": 34.88,
+              "adverse_0_5r_rate": 70.93,
               "checkpoint_positive_rate": {
-                "15": 48.68,
+                "15": 50.0,
                 "30": 50.0,
-                "60": 46.05,
-                "120": 40.79,
-                "240": 39.47
+                "60": 46.51,
+                "120": 41.86,
+                "240": 39.53
               },
-              "tp2_recovery_rate": 34.21,
-              "tp3_recovery_rate": 21.05
+              "tp2_recovery_rate": 33.72,
+              "tp3_recovery_rate": 18.6
             },
             "TP2_SONRASI_BE": {
-              "sample": 22,
-              "complete": 22,
+              "sample": 25,
+              "complete": 25,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_mfe_r": 1.2017,
-              "average_mae_r": 1.8455,
-              "extension_0_5r_rate": 63.64,
-              "extension_1r_rate": 50.0,
-              "adverse_0_5r_rate": 68.18,
+              "average_mfe_r": 1.3215,
+              "average_mae_r": 1.859,
+              "extension_0_5r_rate": 68.0,
+              "extension_1r_rate": 52.0,
+              "adverse_0_5r_rate": 68.0,
               "checkpoint_positive_rate": {
-                "15": 59.09,
-                "30": 54.55,
-                "60": 50.0,
-                "120": 40.91,
-                "240": 40.91
+                "15": 60.0,
+                "30": 56.0,
+                "60": 52.0,
+                "120": 44.0,
+                "240": 40.0
               },
-              "tp3_recovery_rate": 27.27
+              "tp3_recovery_rate": 28.0
             },
             "TP3": {
-              "sample": 53,
-              "complete": 53,
+              "sample": 57,
+              "complete": 57,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_mfe_r": 1.6138,
-              "average_mae_r": 1.8205,
-              "extension_0_5r_rate": 69.81,
-              "extension_1r_rate": 47.17,
-              "adverse_0_5r_rate": 79.25,
+              "average_mfe_r": 1.7853,
+              "average_mae_r": 1.7963,
+              "extension_0_5r_rate": 70.18,
+              "extension_1r_rate": 49.12,
+              "adverse_0_5r_rate": 78.95,
               "checkpoint_positive_rate": {
-                "15": 39.62,
-                "30": 43.4,
-                "60": 39.62,
-                "120": 35.85,
-                "240": 37.74
+                "15": 40.35,
+                "30": 43.86,
+                "60": 38.6,
+                "120": 36.84,
+                "240": 38.6
               }
             }
           },
           "by_source": {
             "15M_ENTRY": {
-              "sample": 126,
-              "complete": 126,
+              "sample": 140,
+              "complete": 140,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_mfe_r": 1.2795,
-              "average_mae_r": 1.4192,
-              "extension_0_5r_rate": 65.08,
-              "extension_1r_rate": 38.1,
-              "adverse_0_5r_rate": 74.6,
+              "average_mfe_r": 1.3126,
+              "average_mae_r": 1.4,
+              "extension_0_5r_rate": 66.43,
+              "extension_1r_rate": 38.57,
+              "adverse_0_5r_rate": 72.14,
               "checkpoint_positive_rate": {
-                "15": 45.24,
+                "15": 46.43,
                 "30": 50.0,
-                "60": 46.03,
-                "120": 38.89,
-                "240": 38.89
+                "60": 45.71,
+                "120": 40.0,
+                "240": 39.29
               }
             },
             "5M_RADAR": {
-              "sample": 25,
-              "complete": 25,
+              "sample": 28,
+              "complete": 28,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_mfe_r": 1.9722,
-              "average_mae_r": 3.0848,
-              "extension_0_5r_rate": 72.0,
-              "extension_1r_rate": 60.0,
-              "adverse_0_5r_rate": 76.0,
+              "average_mfe_r": 2.0753,
+              "average_mae_r": 2.992,
+              "extension_0_5r_rate": 75.0,
+              "extension_1r_rate": 60.71,
+              "adverse_0_5r_rate": 78.57,
               "checkpoint_positive_rate": {
-                "15": 56.0,
-                "30": 40.0,
-                "60": 36.0,
-                "120": 40.0,
-                "240": 40.0
+                "15": 57.14,
+                "30": 42.86,
+                "60": 39.29,
+                "120": 42.86,
+                "240": 39.29
               }
             }
           },
           "by_direction": {
             "LONG": {
-              "sample": 78,
-              "complete": 78,
+              "sample": 87,
+              "complete": 87,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_mfe_r": 1.4463,
-              "average_mae_r": 1.7917,
-              "extension_0_5r_rate": 67.95,
-              "extension_1r_rate": 43.59,
-              "adverse_0_5r_rate": 74.36,
+              "average_mfe_r": 1.5521,
+              "average_mae_r": 1.698,
+              "extension_0_5r_rate": 71.26,
+              "extension_1r_rate": 45.98,
+              "adverse_0_5r_rate": 70.11,
               "checkpoint_positive_rate": {
-                "15": 52.56,
-                "30": 46.15,
-                "60": 46.15,
-                "120": 33.33,
-                "240": 43.59
+                "15": 55.17,
+                "30": 47.13,
+                "60": 48.28,
+                "120": 36.78,
+                "240": 44.83
               }
             },
             "SHORT": {
-              "sample": 73,
-              "complete": 73,
+              "sample": 81,
+              "complete": 81,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_mfe_r": 1.3386,
-              "average_mae_r": 1.5915,
-              "extension_0_5r_rate": 64.38,
-              "extension_1r_rate": 39.73,
-              "adverse_0_5r_rate": 75.34,
+              "average_mfe_r": 1.3191,
+              "average_mae_r": 1.6303,
+              "extension_0_5r_rate": 64.2,
+              "extension_1r_rate": 38.27,
+              "adverse_0_5r_rate": 76.54,
               "checkpoint_positive_rate": {
-                "15": 41.1,
-                "30": 50.68,
-                "60": 42.47,
-                "120": 45.21,
-                "240": 34.25
+                "15": 40.74,
+                "30": 50.62,
+                "60": 40.74,
+                "120": 44.44,
+                "240": 33.33
               }
             }
           },
@@ -899,57 +923,57 @@
           "version": "POST_RESULT_SHADOW_V3_2026_08_14",
           "shadow_only": true,
           "changes_live_rules": false,
-          "generated_at": 1787087126,
+          "generated_at": 1787164600,
           "minimum_sample": 20,
-          "modeled_trades": 151,
+          "modeled_trades": 168,
           "baseline": {
             "name": "CURRENT_RULE",
             "incremental_r_after_close": 0.0
           },
           "models": {
             "TP1_DELAY_BE_UNTIL_TP2": {
-              "sample": 76,
+              "sample": 86,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_incremental_r": -0.0541,
-              "net_incremental_r": -4.1152,
-              "positive_rate": 38.16,
-              "zero_rate": 3.95,
-              "negative_rate": 57.89
+              "average_incremental_r": -0.1106,
+              "net_incremental_r": -9.5131,
+              "positive_rate": 33.72,
+              "zero_rate": 6.98,
+              "negative_rate": 59.3
             },
             "TP1_SOFT_BE_MINUS_0_25R": {
-              "sample": 76,
+              "sample": 86,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_incremental_r": 0.062,
-              "net_incremental_r": 4.709,
-              "positive_rate": 19.74,
+              "average_incremental_r": 0.032,
+              "net_incremental_r": 2.7504,
+              "positive_rate": 18.6,
               "zero_rate": 0.0,
-              "negative_rate": 80.26
+              "negative_rate": 81.4
             },
             "TP2_SOFT_BE_MINUS_0_25R": {
-              "sample": 22,
+              "sample": 25,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_incremental_r": 0.1041,
-              "net_incremental_r": 2.2909,
-              "positive_rate": 27.27,
+              "average_incremental_r": 0.1356,
+              "net_incremental_r": 3.3909,
+              "positive_rate": 28.0,
               "zero_rate": 0.0,
-              "negative_rate": 72.73
+              "negative_rate": 72.0
             },
             "TP3_RUNNER_TRAIL_0_5R": {
-              "sample": 53,
+              "sample": 57,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_incremental_r": 0.1219,
+              "average_incremental_r": 0.1133,
               "net_incremental_r": 6.459,
-              "positive_rate": 20.75,
-              "zero_rate": 79.25,
+              "positive_rate": 19.3,
+              "zero_rate": 80.7,
               "negative_rate": 0.0
             },
             "TP3_RUNNER_TRAIL_1_0R": {
-              "sample": 53,
+              "sample": 57,
               "evidence_gate": "ENOUGH_SAMPLE",
-              "average_incremental_r": 0.1393,
+              "average_incremental_r": 0.1295,
               "net_incremental_r": 7.3821,
-              "positive_rate": 13.21,
-              "zero_rate": 86.79,
+              "positive_rate": 12.28,
+              "zero_rate": 87.72,
               "negative_rate": 0.0
             }
           },
