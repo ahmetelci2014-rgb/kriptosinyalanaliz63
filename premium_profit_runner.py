@@ -7,6 +7,7 @@ import opportunity_capture as capture
 import profitability_engine as profit
 import strategy
 import main as bot
+import smart_recovery as recovery
 
 
 def _make_clear_signal_sender(original: Callable[..., Any]) -> Callable[..., Any]:
@@ -55,6 +56,12 @@ def run() -> None:
     bot.send_telegram=_make_clear_signal_sender(bot.send_telegram)
 
     print("PROFIT MODE V2 / PREMIUM | 15M | maliyet-sonrası edge + %5-40 TP1 teyit koridoru | 5M kapalı")
+
+    # Açık Premium işlemler için tek DCA1 fırsatını ana TP/SL motorundan
+    # önce kontrol eder. Emir açmaz; yalnız Telegram uyarısı ve bağımsız
+    # recovery sonucu üretir.
+    recovery.run(bot)
+
     bot.main()
 
     changed=profit.enrich_premium(bot.TRADE_LEDGER_FILE)
