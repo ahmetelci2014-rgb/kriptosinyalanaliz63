@@ -2,8 +2,6 @@ name: Sistem Kontrol Merkezi
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "13 * * * *"
 
 permissions:
   contents: write
@@ -61,12 +59,9 @@ jobs:
           import os
           import system_control_center as center
 
-          # Operasyonel sağlık eşikleri: canlı botlar 5 dakikalık çalıştığı için
-          # 6 saat beklemek yerine 90 dakikada veri kesintisini görünür yap.
           for key in ("PREMIUM", "SCALP", "PUMP_DUMP", "POST_RESULT"):
               center.COMPONENTS[key]["stale_hours"] = 1.5
 
-          # Büyük Hareket saatlik çalışır; sinyal çıkmasa bile state/ledger güncelliği izlenir.
           center.COMPONENTS["BIG_MOVE_ROUTE"] = {
               "label": "Büyük Hareket Fiyat Rotası",
               "kind": "LIVE_SIGNAL",
@@ -76,19 +71,15 @@ jobs:
               "open_paths": [("big_move_route_state.json", "open_routes")],
           }
 
-          # Revize gölge adlarını kontrol merkezinde görünür tut.
           center.COMPONENTS["SWING_V4_SHADOW"]["label"] = "Swing Shadow V5"
           center.COMPONENTS["POSITION_TREND"]["label"] = "Ana Trend Pozisyon Shadow V2"
           center.COMPONENTS["MOMENTUM_SHADOW"]["label"] = "Momentum Shadow V2"
 
-          # Yeni çalışma frekanslarına göre sağlık pencereleri.
           center.COMPONENTS["SWING_V4_SHADOW"]["stale_hours"] = 8.0
           center.COMPONENTS["POSITION_TREND"]["stale_hours"] = 14.0
           center.COMPONENTS["MOMENTUM_SHADOW"]["stale_hours"] = 14.0
           center.COMPONENTS["PORTFOLIO_RISK"]["stale_hours"] = 12.0
 
-          # Range V3 kötü sonuçla arşivde tutulur. V4 ilk ledgerını üretince
-          # kontrol merkezi otomatik olarak temiz V4 örneklemine geçer.
           if os.path.exists("range_shadow_v4.json"):
               center.COMPONENTS["RANGE_SHADOW"]["label"] = "Range Cycle Shadow V4"
               center.COMPONENTS["RANGE_SHADOW"]["files"] = ["range_shadow_v4.json"]
@@ -97,10 +88,7 @@ jobs:
               center.COMPONENTS["RANGE_SHADOW"]["label"] = "Range Cycle Shadow V3 Arşiv"
               center.COMPONENTS["RANGE_SHADOW"]["stale_hours"] = 24.0 * 365.0
 
-          # New Listing 10 dakikada bir çalışıyor; uzun sessizliği daha erken gör.
           center.COMPONENTS["NEW_LISTING"]["stale_hours"] = 2.0
-
-          # System Control içinde workflow=None olan eski kör noktaları bağla.
           center.COMPONENTS["MOMENTUM_SHADOW"]["workflow"] = ".github/workflows/momentum-shadow.yml"
           center.COMPONENTS["RANGE_SHADOW"]["workflow"] = ".github/workflows/range-shadow.yml"
           center.COMPONENTS["PORTFOLIO_RISK"]["workflow"] = ".github/workflows/portfolio-risk-outcomes.yml"
