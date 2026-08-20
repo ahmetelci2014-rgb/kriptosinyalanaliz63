@@ -17,6 +17,7 @@ import strategy
 import main as bot
 import smart_recovery as recovery
 import movement_start_shadow as movement_start
+import movement_start_v2_shadow as movement_start_v2
 
 
 def _make_clear_signal_sender(original: Callable[..., Any]) -> Callable[..., Any]:
@@ -159,10 +160,7 @@ def _make_pending_analyzer(
         df4h: Any,
         current_price: Any = None,
     ) -> Any:
-        # Yeni Hareket Başlangıç Motoru yalnız GÖLGE/ÖĞRENME modundadır.
-        # Canlı Premium kararını hiçbir şekilde değiştirmez. Zaten indirilen
-        # 15M/1H/4H verisini kullanıp taban-sıkışma-yapı dönüşünü kaydeder ve
-        # sonraki 120 dakikada sonucu otomatik etiketler.
+        # V1: 15M taban/sıkışma öğrenmesi. Canlı Premium kararını değiştirmez.
         movement_event = movement_start.observe(
             symbol,
             df15m,
@@ -262,6 +260,51 @@ def _make_pending_analyzer(
     return wrapped
 
 
+def _make_5m_start_observer(original: Callable[..., Any]) -> Callable[..., Any]:
+    """5M verisi indirildikten sonra V2 öğrenmesini çalıştır, canlı sonucu değiştirme."""
+    def wrapped(
+        symbol: str,
+        df5m: Any,
+        df15m: Any,
+        df1h: Any,
+        df4h: Any,
+        current_price: Any = None,
+    ) -> Any:
+        event = movement_start_v2.observe(
+            symbol,
+            df5m,
+            df15m,
+            df1h,
+            df4h,
+            current_price,
+        )
+        if event is not None:
+            result = event.get("result") or {}
+            record = event.get("record") or {}
+            print(
+                "MOVEMENT START V2 5M:",
+                symbol,
+                result.get("direction"),
+                result.get("stage"),
+                "score=",
+                result.get("score"),
+                "risk%=",
+                record.get("risk_percent"),
+                "event=",
+                event.get("event"),
+            )
+        return original(
+            symbol,
+            df5m,
+            df15m,
+            df1h,
+            df4h,
+            current_price,
+        )
+
+    return wrapped
+
+
 def _make_all_coin_scanner(original: Callable[..., Any]) -> Callable[..., Any]:
     def wrapped(exchange: Any):
         expanded = allcoins.build_scan_universe(
@@ -279,8 +322,8 @@ def _make_all_coin_scanner(original: Callable[..., Any]) -> Callable[..., Any]:
 
 def run() -> None:
     # Olgun Premium geçmiş performansı yalnız 15M_ENTRY kaynaklıdır. 5M erken
-    # trade ayrı kanıt oluşana kadar kapalı kalır. TREND_CONTINUATION yeni giriş
-    # üretse de canlı yön için mevcut olgun Premium edge şartını korur.
+    # trade ayrı kanıt oluşana kadar kapalı kalır. V2 5M verisini sadece gölgede
+    # öğrenir; bu satır canlı 5M trade'i bilinçli olarak kapalı tutar.
     strategy.ENABLE_5M_EARLY_TRADE = False
 
     # Canlı loglarda çok sayıda güçlü kurulum %0.25 eşiğinde daha aday olmadan
@@ -292,8 +335,9 @@ def run() -> None:
     gate = profit.PremiumGate(bot.TRADE_LEDGER_FILE)
     pending_gate = confirmation.PendingConfirmationGate(gate)
 
-    # Hareket başlangıç motoru yalnız öğrenme/gölge state'i toplar.
+    # Hareket başlangıç motorları yalnız öğrenme/gölge state'i toplar.
     movement_start.begin()
+    movement_start_v2.begin()
 
     # Her uygun USDT perpetual ticker her tur görülür. Ana TOP300 her tur derin,
     # dışarıda kalanlar sıcak-aday + rotation ile ek derin taranır.
@@ -307,6 +351,10 @@ def run() -> None:
         bot.analyze_mtf_trade,
         pending_gate,
     )
+
+    # main.py 5M verisini normal MTF analizinden sonra indiriyor. Bu wrapper V2'yi
+    # tam o noktada çalıştırır ve mevcut 5M radar dönüşünü aynen geri verir.
+    bot.analyze_5m_radar = _make_5m_start_observer(bot.analyze_5m_radar)
 
     bot.is_entry_still_valid = _make_profit_gate(
         bot.is_entry_still_valid,
@@ -329,9 +377,14 @@ def run() -> None:
         "tüm USDT perpetual + klasik MTF + kontrollü trend devam + adaptif genç/yeni"
     )
     print(
-        "Movement Start Shadow:",
+        "Movement Start Shadow V1:",
         movement_start.VERSION,
         "| canlı sinyal: KAPALI | öğrenme: AKTİF",
+    )
+    print(
+        "Movement Start Shadow V2:",
+        movement_start_v2.VERSION,
+        "| 5M squeeze+sweep+internal break+R öğrenme | canlı sinyal: KAPALI",
     )
     print(
         "Premium aday yakalama | 15M azami bölge uzaklığı:",
@@ -356,11 +409,14 @@ def run() -> None:
     recovery.run(bot)
 
     movement_summary = {}
+    movement_v2_summary = {}
     try:
         bot.main()
     finally:
         movement_summary = movement_start.finish()
-        print("Movement Start Shadow özet:", movement_summary)
+        movement_v2_summary = movement_start_v2.finish()
+        print("Movement Start Shadow V1 özet:", movement_summary)
+        print("Movement Start Shadow V2 özet:", movement_v2_summary)
 
     changed = profit.enrich_premium(bot.TRADE_LEDGER_FILE)
     report = profit.report()
