@@ -23,6 +23,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: En guncel main state ile esitle
+        if: ${{ github.ref_name == 'main' }}
+        run: |
+          set -e
+          git fetch origin main
+          git reset --hard origin/main
+          echo "Premium run SHA: $(git rev-parse HEAD)"
+
       - name: Python kur
         uses: actions/setup-python@v5
         with:
