@@ -47,12 +47,16 @@ jobs:
             main.py \
             strategy.py \
             premium_profit_runner.py \
+            premium_confirmation.py \
             smart_recovery.py \
             profitability_engine.py \
             opportunity_capture.py \
             live_entry_safety.py \
-            test_profitability_engine.py
-          python -m unittest -v test_profitability_engine.py
+            test_profitability_engine.py \
+            test_premium_confirmation.py
+          python -m unittest -v \
+            test_profitability_engine.py \
+            test_premium_confirmation.py
           python premium_profit_runner.py
 
       - name: TP BE sonrasi sessiz takip
@@ -71,6 +75,7 @@ jobs:
             performance.json \
             last_signals.json \
             trade_ledger.json \
+            premium_pending_candidates.json \
             smart_recovery_state.json \
             profit_mode_report.json \
             profit_mode_rejections.json \
