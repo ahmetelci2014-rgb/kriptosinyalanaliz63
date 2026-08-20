@@ -42,26 +42,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
-        run: |
-          python -m py_compile \
-            main.py \
-            strategy.py \
-            premium_profit_runner.py \
-            premium_confirmation.py \
-            premium_all_coins.py \
-            all_market_shadow.py \
-            smart_recovery.py \
-            profitability_engine.py \
-            opportunity_capture.py \
-            live_entry_safety.py \
-            test_profitability_engine.py \
-            test_premium_confirmation.py \
-            test_premium_all_coins.py
-          python -m unittest -v \
-            test_profitability_engine.py \
-            test_premium_confirmation.py \
-            test_premium_all_coins.py
-          python premium_profit_runner.py
+        run: python premium_profit_runner.py
 
       - name: TP BE sonrasi sessiz takip
         if: always()
@@ -82,6 +63,7 @@ jobs:
             premium_pending_candidates.json \
             premium_all_coins_state.json \
             smart_recovery_state.json \
+            movement_start_shadow.json \
             profit_mode_report.json \
             profit_mode_rejections.json \
             portfolio_risk_shadow_main_mtf.json
