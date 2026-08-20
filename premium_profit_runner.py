@@ -1,7 +1,8 @@
-"""Premium Profit Mode V3 - persistent confirmation + cost-aware live gate.
+"""Premium Profit Mode V4 - all-coins, adaptive history and cost-aware live gate.
 
-No exchange orders are opened. The runner only produces Telegram signals,
-tracks them, and manages Smart Recovery notifications.
+No exchange orders are opened. Premium is the only live Telegram trade channel.
+Every eligible OKX USDT perpetual is screened; mature, young and brand-new coins
+use history-appropriate confirmation rules before a trade message can be sent.
 """
 from __future__ import annotations
 from typing import Any, Callable
@@ -9,6 +10,7 @@ from typing import Any, Callable
 import live_entry_safety as safety
 import opportunity_capture as capture
 import premium_confirmation as confirmation
+import premium_all_coins as allcoins
 import profitability_engine as profit
 import strategy
 import main as bot
@@ -23,13 +25,31 @@ def _make_clear_signal_sender(original: Callable[..., Any]) -> Callable[..., Any
             and "✅ İŞLEM GİRİŞİ — PREMIUM" not in text
         ):
             text = (
-                "✅ İŞLEM GİRİŞİ — PREMIUM V3\n"
-                "Sabit aday + canlı fiyat teyidi + maliyet-sonrası geçmiş avantaj geçti.\n\n"
+                "✅ İŞLEM GİRİŞİ — PREMIUM V4\n"
+                "Tüm-piyasa tarama + yaşa uygun teyit + maliyet kontrolü geçti.\n\n"
                 + text
             )
+        elif (
+            ("PREMIUM GENÇ COİN FIRSATI" in text or "PREMIUM YENİ COİN FIRSATI" in text)
+            and "✅ İŞLEM GİRİŞİ — PREMIUM" not in text
+        ):
+            text = "✅ İŞLEM GİRİŞİ — PREMIUM V4\n" + text
         return original(text, *args, **kwargs)
 
     return wrapped
+
+
+def _direct_evidence_allows(gate: profit.PremiumGate, signal: dict) -> bool:
+    source = str(signal.get("source") or "").upper()
+    if source in {"YOUNG_COIN_ENTRY", "NEW_COIN_ENTRY"}:
+        # Bu iki kaynak uzun EMA200 geçmişi olmadığı için kendi daha sıkı
+        # skor/hacim/risk kapılarını kullanır; olgun 15M geçmiş metriğiyle
+        # yanlış biçimde kanıtlanmış sayılmaz.
+        return True
+
+    direction = str(signal.get("direction") or "").upper()
+    evidence = gate.profiles.get(direction, {}) if isinstance(gate.profiles, dict) else {}
+    return bool(evidence.get("live_allowed"))
 
 
 def _make_profit_gate(
@@ -38,6 +58,42 @@ def _make_profit_gate(
     pending_gate: confirmation.PendingConfirmationGate,
 ) -> Callable[..., Any]:
     def wrapped(signal: dict, current_price: Any):
+        # En güçlü olgun A+ adaylar ve daha sıkı eşikten geçen genç/yeni coin
+        # adayları dar 5-dakikalık confirmation penceresinde kaybolmasın.
+        if (
+            _direct_evidence_allows(gate, signal)
+            and allcoins.strong_direct_allowed(
+                signal,
+                current_price,
+                original,
+                profit,
+            )
+        ):
+            signal["premium_confirmation"] = {
+                "version": allcoins.VERSION,
+                "status": "STRONG_DIRECT",
+                "confirmed_at": bot.now_ts(),
+            }
+            signal["profit_mode_v2"] = {
+                "version": profit.VERSION,
+                "decision": "PREMIUM_V4_STRONG_DIRECT",
+                "timing": {"mode": "STRONG_DIRECT"},
+                "evidence": gate.profiles.get(
+                    str(signal.get("direction") or "").upper(),
+                    {},
+                ),
+                "confirmation": signal.get("premium_confirmation"),
+            }
+            print(
+                "PREMIUM V4 DIREKT:",
+                signal.get("symbol"),
+                signal.get("direction"),
+                signal.get("source"),
+                "score=",
+                signal.get("score"),
+            )
+            return True, "Premium V4 güçlü direkt giriş"
+
         ok, reason, result = pending_gate.evaluate(
             signal,
             current_price,
@@ -56,7 +112,7 @@ def _make_profit_gate(
         if not ok:
             label = "BEKLE" if "bekleniyor" in str(reason).lower() else "RED"
             print(
-                f"PROFIT V3 {label}:",
+                f"PROFIT V4 {label}:",
                 signal.get("symbol"),
                 signal.get("direction"),
                 reason,
@@ -79,6 +135,7 @@ def _make_pending_analyzer(
         df4h: Any,
         current_price: Any = None,
     ) -> Any:
+        # 37 gün+ yeterli geçmişte mevcut kanıtlanmış Premium MTF aynen önce gelir.
         fresh = original(
             symbol,
             df15m,
@@ -90,6 +147,26 @@ def _make_pending_analyzer(
         if fresh is not None:
             return fresh
 
+        # Uzun EMA200 geçmişi tamamlanmamış coinleri çöpe atma. Veri yaşına göre
+        # 1H/15M adaptif yol veya çok yeni coinde 1M momentum yolu kullanılır.
+        young = allcoins.analyze_young_coin(
+            symbol,
+            df15m,
+            df1h,
+            df4h,
+            current_price,
+        )
+        if young is not None:
+            print(
+                "PREMIUM V4 YOUNG/NEW:",
+                young.get("symbol"),
+                young.get("direction"),
+                young.get("source"),
+                "score=",
+                young.get("score"),
+            )
+            return young
+
         fallback = pending_gate.fallback_signal(
             symbol=symbol,
             df15m=df15m,
@@ -100,7 +177,7 @@ def _make_pending_analyzer(
 
         if fallback is not None:
             print(
-                "PROFIT V3 PENDING RECHECK:",
+                "PROFIT V4 PENDING RECHECK:",
                 fallback.get("symbol"),
                 fallback.get("direction"),
                 "anchor=",
@@ -112,22 +189,38 @@ def _make_pending_analyzer(
     return wrapped
 
 
+def _make_all_coin_scanner(original: Callable[..., Any]) -> Callable[..., Any]:
+    def wrapped(exchange: Any):
+        expanded = allcoins.build_scan_universe(
+            exchange=exchange,
+            priority_coins=bot.PRIORITY_COINS,
+            min_quote_volume=bot.MIN_24H_QUOTE_VOLUME,
+            max_scan_coins=bot.MAX_SCAN_COINS,
+        )
+        if expanded:
+            return expanded
+        return original(exchange)
+
+    return wrapped
+
+
 def run() -> None:
-    # Premium geçmiş performans profili şu anda yalnız 15M_ENTRY işlemlerinden
-    # oluşuyor. 5M erken trade bu nedenle ayrı kaynak performansı kanıtlanana
-    # kadar Premium runner içinde kapalı tutulur. Ana strategy/config dosyaları
-    # değiştirilmez.
+    # Olgun Premium geçmiş performansı yalnız 15M_ENTRY kaynaklıdır. 5M erken
+    # trade ayrı kanıt oluşana kadar kapalı kalır; yeni/genç coin adaptif yolu
+    # bu ayardan bağımsız ve daha yüksek eşiklidir.
     strategy.ENABLE_5M_EARLY_TRADE = False
 
-    # Burada MAX_TRADE_SIGNALS_PER_RUN, MAX_OPEN_SIGNALS veya
-    # RISK_MODE_STOP_COUNT üzerine gizli override yapılmaz. Ana config.py
-    # değerleri aynen kullanılır.
     gate = profit.PremiumGate(bot.TRADE_LEDGER_FILE)
     pending_gate = confirmation.PendingConfirmationGate(gate)
 
-    # Bekleyen sabit aday, aynı 15M reversal şartı bir sonraki turda yeniden
-    # oluşmasa bile her taramada tekrar ana zincire sokulur. Main market guard,
-    # duplicate, portfolio risk ve son giriş kontrolünü yeniden uygular.
+    # Her uygun USDT perpetual ticker her tur görülür. Ana TOP300 her tur derin,
+    # dışarıda kalanlar sıcak-aday + rotation ile ek derin taranır.
+    bot.get_scan_coins = _make_all_coin_scanner(bot.get_scan_coins)
+
+    # Yeni coinlerde mevcut kısa veri main.py tarafından <120 diye atılmasın.
+    # Olgun strategy.py yine kendi >=220 mum şartını korur.
+    bot.fetch_df = allcoins.make_adaptive_fetcher(bot.fetch_df)
+
     bot.analyze_mtf_trade = _make_pending_analyzer(
         bot.analyze_mtf_trade,
         pending_gate,
@@ -139,7 +232,7 @@ def run() -> None:
         pending_gate,
     )
 
-    # Aynı coinde ters yön fırsatı, eski sinyal yüzünden tamamen kaybolmasın.
+    # Aynı coinde ters yön fırsatı eski sinyal yüzünden tamamen kaybolmasın.
     # Aynı yön çakışması ve toplam/yön portföy risk limitleri korunur.
     bot.has_open_same_symbol = lambda symbol: False
     bot.evaluate_portfolio_risk = capture.make_opposite_direction_evaluator(
@@ -150,8 +243,8 @@ def run() -> None:
     bot.send_telegram = _make_clear_signal_sender(bot.send_telegram)
 
     print(
-        "PROFIT MODE V3 / PREMIUM | 15M | sabit aday + aktif 5dk yeniden teyit | "
-        "5M erken trade kapalı"
+        "PROFIT MODE V4 / PREMIUM ALL-COINS | "
+        "tüm USDT perpetual ticker taraması + olgun/genç/yeni coin adaptif analiz"
     )
     print(
         "Premium canlı limitler | tur:",
@@ -166,16 +259,15 @@ def run() -> None:
         pending_gate.pending_count(),
     )
 
-    # Açık Premium işlemler için tek DCA1 fırsatını ana TP/SL motorundan
-    # önce kontrol eder. Emir açmaz; yalnız Telegram uyarısı ve bağımsız
-    # recovery sonucu üretir.
+    # DCA1 yalnız yeterli 4H/1H/15M/5M geçmiş teyidi alabildiğinde çalışır;
+    # dolayısıyla çok yeni coinlerde otomatik olarak devre dışı kalır.
     recovery.run(bot)
 
     bot.main()
 
     changed = profit.enrich_premium(bot.TRADE_LEDGER_FILE)
     report = profit.report()
-    print("Profit V3 ledger cost enrichment:", changed)
+    print("Profit V4 ledger cost enrichment:", changed)
     print("Premium LONG edge:", report["premium"]["long"])
     print("Premium SHORT edge:", report["premium"]["short"])
     print("Premium teyit bekleyen aday (run sonu):", pending_gate.pending_count())
