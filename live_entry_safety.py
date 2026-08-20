@@ -4,7 +4,8 @@ from typing import Any, Callable
 
 NOTICE = (
     "\n\n🛡️ İŞLEM DİSİPLİNİ\n"
-    "• SL tetiklenirse işlem tezi biter; stop genişletme veya zarara ekleme yok.\n"
+    "• SL tetiklenirse işlem tezi biter; stop genişletilmez.\n"
+    "• Kontrolsüz maliyet düşürme yok; yalnız sistem ayrıca SMART RECOVERY DCA1 UYGUN mesajı verirse tek planlı DCA1 değerlendirilebilir.\n"
     "• Fiyat mesajdaki girişten belirgin uzaklaştıysa peşinden koşma.\n"
     "• Kaldıraç büyütmek sinyal kalitesini artırmaz; risk küçük tutulmalı."
 )
