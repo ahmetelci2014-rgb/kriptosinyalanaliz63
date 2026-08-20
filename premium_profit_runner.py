@@ -11,6 +11,7 @@ import live_entry_safety as safety
 import opportunity_capture as capture
 import premium_confirmation as confirmation
 import premium_all_coins as allcoins
+import premium_continuation as continuation
 import profitability_engine as profit
 import strategy
 import main as bot
@@ -30,7 +31,11 @@ def _make_clear_signal_sender(original: Callable[..., Any]) -> Callable[..., Any
                 + text
             )
         elif (
-            ("PREMIUM GENÇ COİN FIRSATI" in text or "PREMIUM YENİ COİN FIRSATI" in text)
+            (
+                "PREMIUM GENÇ COİN FIRSATI" in text
+                or "PREMIUM YENİ COİN FIRSATI" in text
+                or "PREMIUM TREND DEVAM SİNYALİ" in text
+            )
             and "✅ İŞLEM GİRİŞİ — PREMIUM" not in text
         ):
             text = "✅ İŞLEM GİRİŞİ — PREMIUM V4\n" + text
@@ -47,6 +52,8 @@ def _direct_evidence_allows(gate: profit.PremiumGate, signal: dict) -> bool:
         # yanlış biçimde kanıtlanmış sayılmaz.
         return True
 
+    # TREND_CONTINUATION dahil olgun kaynaklarda canlı yönün mevcut Premium
+    # geçmiş edge'i hâlâ kanıtlı olmalıdır. Yeni yol bu korumayı atlamaz.
     direction = str(signal.get("direction") or "").upper()
     evidence = gate.profiles.get(direction, {}) if isinstance(gate.profiles, dict) else {}
     return bool(evidence.get("live_allowed"))
@@ -58,26 +65,42 @@ def _make_profit_gate(
     pending_gate: confirmation.PendingConfirmationGate,
 ) -> Callable[..., Any]:
     def wrapped(signal: dict, current_price: Any):
-        # En güçlü olgun A+ adaylar ve daha sıkı eşikten geçen genç/yeni coin
-        # adayları dar 5-dakikalık confirmation penceresinde kaybolmasın.
-        if (
-            _direct_evidence_allows(gate, signal)
-            and allcoins.strong_direct_allowed(
+        # En güçlü olgun A+ adaylar, kontrollü trend-devam adayları ve daha sıkı
+        # eşikten geçen genç/yeni coinler dar confirmation penceresinde kaybolmasın.
+        direct_allowed = (
+            allcoins.strong_direct_allowed(
                 signal,
                 current_price,
                 original,
                 profit,
             )
-        ):
+            or continuation.strong_direct_allowed(
+                signal,
+                current_price,
+                original,
+                profit,
+            )
+        )
+        if _direct_evidence_allows(gate, signal) and direct_allowed:
+            source = str(signal.get("source") or "").upper()
+            direct_status = (
+                "TREND_CONTINUATION_DIRECT"
+                if source == continuation.SOURCE
+                else "STRONG_DIRECT"
+            )
             signal["premium_confirmation"] = {
-                "version": allcoins.VERSION,
-                "status": "STRONG_DIRECT",
+                "version": (
+                    continuation.VERSION
+                    if source == continuation.SOURCE
+                    else allcoins.VERSION
+                ),
+                "status": direct_status,
                 "confirmed_at": bot.now_ts(),
             }
             signal["profit_mode_v2"] = {
                 "version": profit.VERSION,
-                "decision": "PREMIUM_V4_STRONG_DIRECT",
-                "timing": {"mode": "STRONG_DIRECT"},
+                "decision": f"PREMIUM_V4_{direct_status}",
+                "timing": {"mode": direct_status},
                 "evidence": gate.profiles.get(
                     str(signal.get("direction") or "").upper(),
                     {},
@@ -135,7 +158,7 @@ def _make_pending_analyzer(
         df4h: Any,
         current_price: Any = None,
     ) -> Any:
-        # 37 gün+ yeterli geçmişte mevcut kanıtlanmış Premium MTF aynen önce gelir.
+        # Mevcut kanıtlanmış Premium MTF kalıbı her zaman ilk tercihtir.
         fresh = original(
             symbol,
             df15m,
@@ -146,6 +169,28 @@ def _make_pending_analyzer(
 
         if fresh is not None:
             return fresh
+
+        # IOTA tipi durum: klasik pullback kalıbı yok ama Pump gölge katmanı
+        # güçlü devamı görmüşse, güncel 1H/4H yapı ve fiyat sapması yeniden
+        # doğrulanarak ikinci Premium işlem yolu üretilebilir.
+        trend_continue = continuation.analyze_continuation(
+            symbol,
+            df15m,
+            df1h,
+            df4h,
+            current_price,
+        )
+        if trend_continue is not None:
+            print(
+                "PREMIUM V4 TREND DEVAM:",
+                trend_continue.get("symbol"),
+                trend_continue.get("direction"),
+                "score=",
+                trend_continue.get("score"),
+                "vol5=",
+                trend_continue.get("confirm_reason"),
+            )
+            return trend_continue
 
         # Uzun EMA200 geçmişi tamamlanmamış coinleri çöpe atma. Veri yaşına göre
         # 1H/15M adaptif yol veya çok yeni coinde 1M momentum yolu kullanılır.
@@ -206,8 +251,8 @@ def _make_all_coin_scanner(original: Callable[..., Any]) -> Callable[..., Any]:
 
 def run() -> None:
     # Olgun Premium geçmiş performansı yalnız 15M_ENTRY kaynaklıdır. 5M erken
-    # trade ayrı kanıt oluşana kadar kapalı kalır; yeni/genç coin adaptif yolu
-    # bu ayardan bağımsız ve daha yüksek eşiklidir.
+    # trade ayrı kanıt oluşana kadar kapalı kalır. TREND_CONTINUATION yeni giriş
+    # üretse de canlı yön için mevcut olgun Premium edge şartını korur.
     strategy.ENABLE_5M_EARLY_TRADE = False
 
     gate = profit.PremiumGate(bot.TRADE_LEDGER_FILE)
@@ -244,7 +289,7 @@ def run() -> None:
 
     print(
         "PROFIT MODE V4 / PREMIUM ALL-COINS | "
-        "tüm USDT perpetual ticker taraması + olgun/genç/yeni coin adaptif analiz"
+        "tüm USDT perpetual + klasik MTF + kontrollü trend devam + adaptif genç/yeni"
     )
     print(
         "Premium canlı limitler | tur:",
