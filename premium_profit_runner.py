@@ -255,6 +255,12 @@ def run() -> None:
     # üretse de canlı yön için mevcut olgun Premium edge şartını korur.
     strategy.ENABLE_5M_EARLY_TRADE = False
 
+    # Canlı loglarda çok sayıda güçlü kurulum %0.25 eşiğinde daha aday olmadan
+    # kayboluyordu. Burada yalnız ADAY YAKALAMA penceresini %0.35'e açıyoruz.
+    # Canlı gönderim filtresi gevşemiyor: aday hâlâ Premium pending/price teyidi,
+    # maliyet, geçmiş edge, market guard ve portföy risk kapılarından geçmek zorunda.
+    strategy.MAX_LATE_ENTRY_DISTANCE_PERCENT = 0.35
+
     gate = profit.PremiumGate(bot.TRADE_LEDGER_FILE)
     pending_gate = confirmation.PendingConfirmationGate(gate)
 
@@ -290,6 +296,11 @@ def run() -> None:
     print(
         "PROFIT MODE V4 / PREMIUM ALL-COINS | "
         "tüm USDT perpetual + klasik MTF + kontrollü trend devam + adaptif genç/yeni"
+    )
+    print(
+        "Premium aday yakalama | 15M azami bölge uzaklığı:",
+        strategy.MAX_LATE_ENTRY_DISTANCE_PERCENT,
+        "% | canlı teyit kapıları korunuyor",
     )
     print(
         "Premium canlı limitler | tur:",
