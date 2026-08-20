@@ -1,4 +1,4 @@
-name: Pump Dump Profit Mode V2
+name: Pump Dump Shadow Data Mode
 
 on:
   workflow_dispatch:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: pump-profit-mode-v2
+  group: pump-shadow-data-mode
   cancel-in-progress: false
 
 jobs:
@@ -35,10 +35,8 @@ jobs:
           PIP_DISABLE_PIP_VERSION_CHECK: "1"
         run: python -m pip install --prefer-binary -r requirements.txt
 
-      - name: Pump Profit Mode V2 calistir
+      - name: Pump Dump shadow veri modunu calistir
         env:
-          TOKEN: ${{ secrets.TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
@@ -55,7 +53,7 @@ jobs:
           python -m unittest -v test_profitability_engine.py test_market_impulse_guard.py
           python pump_profit_runner.py
 
-      - name: Pump durum ve performans kaydet
+      - name: Pump Dump shadow durum ve performans kaydet
         if: always()
         run: |
           set -e
@@ -74,11 +72,11 @@ jobs:
           done
 
           if git diff --cached --quiet; then
-            echo "Kaydedilecek Pump degisikligi yok."
+            echo "Kaydedilecek Pump shadow degisikligi yok."
             exit 0
           fi
 
-          git commit -m "Update Pump Profit Mode V2 state"
+          git commit -m "Update Pump Dump shadow data state"
 
           for attempt in 1 2 3
           do
