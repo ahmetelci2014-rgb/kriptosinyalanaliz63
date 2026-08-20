@@ -16,6 +16,7 @@ import profitability_engine as profit
 import strategy
 import main as bot
 import smart_recovery as recovery
+import movement_start_shadow as movement_start
 
 
 def _make_clear_signal_sender(original: Callable[..., Any]) -> Callable[..., Any]:
@@ -158,6 +159,33 @@ def _make_pending_analyzer(
         df4h: Any,
         current_price: Any = None,
     ) -> Any:
+        # Yeni Hareket Başlangıç Motoru yalnız GÖLGE/ÖĞRENME modundadır.
+        # Canlı Premium kararını hiçbir şekilde değiştirmez. Zaten indirilen
+        # 15M/1H/4H verisini kullanıp taban-sıkışma-yapı dönüşünü kaydeder ve
+        # sonraki 120 dakikada sonucu otomatik etiketler.
+        movement_event = movement_start.observe(
+            symbol,
+            df15m,
+            df1h,
+            df4h,
+            current_price,
+        )
+        if movement_event is not None:
+            record = movement_event.get("record") or {}
+            result = movement_event.get("result") or {}
+            print(
+                "MOVEMENT START SHADOW:",
+                symbol,
+                result.get("direction"),
+                result.get("stage"),
+                "score=",
+                result.get("score"),
+                "entry=",
+                record.get("entry"),
+                "event=",
+                movement_event.get("event"),
+            )
+
         # Mevcut kanıtlanmış Premium MTF kalıbı her zaman ilk tercihtir.
         fresh = original(
             symbol,
@@ -264,6 +292,9 @@ def run() -> None:
     gate = profit.PremiumGate(bot.TRADE_LEDGER_FILE)
     pending_gate = confirmation.PendingConfirmationGate(gate)
 
+    # Hareket başlangıç motoru yalnız öğrenme/gölge state'i toplar.
+    movement_start.begin()
+
     # Her uygun USDT perpetual ticker her tur görülür. Ana TOP300 her tur derin,
     # dışarıda kalanlar sıcak-aday + rotation ile ek derin taranır.
     bot.get_scan_coins = _make_all_coin_scanner(bot.get_scan_coins)
@@ -298,6 +329,11 @@ def run() -> None:
         "tüm USDT perpetual + klasik MTF + kontrollü trend devam + adaptif genç/yeni"
     )
     print(
+        "Movement Start Shadow:",
+        movement_start.VERSION,
+        "| canlı sinyal: KAPALI | öğrenme: AKTİF",
+    )
+    print(
         "Premium aday yakalama | 15M azami bölge uzaklığı:",
         strategy.MAX_LATE_ENTRY_DISTANCE_PERCENT,
         "% | canlı teyit kapıları korunuyor",
@@ -319,7 +355,12 @@ def run() -> None:
     # dolayısıyla çok yeni coinlerde otomatik olarak devre dışı kalır.
     recovery.run(bot)
 
-    bot.main()
+    movement_summary = {}
+    try:
+        bot.main()
+    finally:
+        movement_summary = movement_start.finish()
+        print("Movement Start Shadow özet:", movement_summary)
 
     changed = profit.enrich_premium(bot.TRADE_LEDGER_FILE)
     report = profit.report()
