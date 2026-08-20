@@ -105053,42 +105053,50 @@
       "duration_minutes": 625,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "KURULUM DEVAM ETMEDI",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
-          "Islem yeterli lehe ivme olusturmadan stop oldu."
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Stop sonrasi fiyat TP2 seviyesine dondu."
         ],
         "duration_minutes": 625,
         "best_favorable_r": 0.0924,
         "worst_adverse_r": 1.0547,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "KURULUM_DEVAM_ETMEDI",
-        "preliminary_label": "Kurulum devam etmedi",
+        "primary": "FITIL_DAR_STOP",
+        "label": "Fitil/dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası fiyat TP2 seviyesine 15 dakikada döndü.",
+          "Stop sonrası hedef dönüşü fitil veya giriş zamanlaması ihtimalini güçlendirdi."
         ],
         "metrics": {
           "duration_minutes": 625,
           "mfe_r": 0.0924,
           "mae_r": 1.0547,
           "risk_percent": 1.64,
-          "return_minutes": null
+          "return_minutes": 15.0
         },
-        "updated_at": 1787199369
+        "updated_at": 1787200281
       },
       "gross_r_before_costs": -1.0,
       "estimated_execution_cost_r": 0.0732,
       "net_r_after_costs": -1.0732,
-      "cost_model_version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1"
+      "cost_model_version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
+      "post_stop_follow": {
+        "returned_level": "TP2",
+        "age_minutes": 15,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1787200281
+      }
     },
     "LDOUSDT_LONG_5M_RADAR_1787163669": {
       "trade_id": "LDOUSDT_LONG_5M_RADAR_1787163669",
@@ -105201,7 +105209,17 @@
         "reference_label": "BE_ENTRY",
         "reference_price": 0.3169,
         "timeframe": "1m",
-        "checkpoints": {},
+        "checkpoints": {
+          "15": {
+            "target_at": 1787200273,
+            "candle_time": 1787200200,
+            "close_price": 0.3324,
+            "directional_return_percent": 4.8911,
+            "max_favorable_percent": 5.112,
+            "max_adverse_percent": 0.0,
+            "directional_r_from_reference": 12.7523
+          }
+        },
         "watched_levels": {
           "TP1": 0.3175685053,
           "TP2": 0.3181762375,
@@ -105230,13 +105248,13 @@
         "max_adverse_r": 0.0,
         "best_price": 0.3331,
         "worst_price": 0.3169,
-        "last_checked_at": 1787199696,
+        "last_checked_at": 1787200495,
         "completed_at": 0,
-        "last_price": 0.3326
+        "last_price": 0.3321
       }
     }
   },
-  "last_update": 1787199698,
+  "last_update": 1787200497,
   "profit_mode_v2_last_enriched_at": 1787199695,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
