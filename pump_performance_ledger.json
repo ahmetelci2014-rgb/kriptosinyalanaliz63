@@ -2510,20 +2510,27 @@
       ],
       "diagnosis": {
         "version": "PUMP_DIAGNOSIS_V1",
-        "code": "MOMENTUM_FADED",
-        "primary": "ÖNCE LEHE GİTTİ, SONRA MOMENTUM SÖNDÜ",
-        "confidence": "ORTA",
+        "code": "EARLY_OR_WICK_STOP",
+        "primary": "YÖN DOĞRUYDU, STOP ERKEN / FİTİL STOP",
+        "confidence": "YÜKSEK",
         "factors": [
           "Stop öncesinde işlem en az 0.35R lehe hareket etti.",
-          "Pump kapanış gücü güçlü devam için sınırdaydı."
+          "Pump kapanış gücü güçlü devam için sınırdaydı.",
+          "Stop sonrası fiyat TP3 seviyesine döndü."
         ],
         "duration_minutes": 136,
         "best_favorable_r": 0.7392,
         "worst_adverse_r": 1.0677,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teşhis kesin piyasa sebebi değildir; kayıtlı kırılım, hacim, momentum ve fiyat hareketine dayalı teknik değerlendirmedir."
       },
-      "post_stop_follow": null,
+      "post_stop_follow": {
+        "status": "RETURNED_TO_TARGET",
+        "returned_level": "TP3",
+        "age_minutes": 43,
+        "updated_at": 1787255341,
+        "updated_at_tr": "2026-08-20 22:49:01"
+      },
       "last_updated_at": 1787252710,
       "last_updated_at_tr": "2026-08-20 22:05:10",
       "last_tracking_at": 1787249160,
@@ -2557,10 +2564,10 @@
     "diagnosis_open": 0,
     "diagnosis_success": 7,
     "diagnosis_false_breakout": 0,
-    "diagnosis_early_stop": 1,
-    "diagnosis_momentum_faded": 17,
+    "diagnosis_early_stop": 2,
+    "diagnosis_momentum_faded": 16,
     "diagnosis_no_continuation": 1
   },
-  "updated_at": 1787252711,
-  "updated_at_tr": "2026-08-20 22:05:11"
+  "updated_at": 1787255341,
+  "updated_at_tr": "2026-08-20 22:49:01"
 }
