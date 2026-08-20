@@ -99,7 +99,6 @@ def test_shadow_lifecycle_tracks_2r_without_live_execution(tmp_path):
     assert start and start["event"] == "START"
     assert start["snapshot"]["orderflow_confirmed"] is True
 
-    # Son kapanmış 5M mum 2R üstünü görsün; yeni order-flow sorgusuna gerek yok.
     v3.observe(
         "TESTUSDT",
         None,
@@ -112,6 +111,57 @@ def test_shadow_lifecycle_tracks_2r_without_live_execution(tmp_path):
     assert summary["r2_first"] == 1
     data = json.loads(path.read_text(encoding="utf-8"))
     assert data["records"][0]["status"] == "R2_FIRST"
+
+
+def test_priority_reserves_slots_for_late_trigger_candidates(tmp_path):
+    path = tmp_path / "v3_priority.json"
+    v3.begin(str(path))
+    calls = []
+
+    def fetcher(symbol, now):
+        calls.append(symbol)
+        return _flow(True)
+
+    for i in range(8):
+        v3.observe(
+            f"P{i}USDT",
+            _base(stage="PREP", score=75),
+            _bars(),
+            100.0,
+            now_ts=2_000_000 + i,
+            fetcher=fetcher,
+        )
+
+    for i in range(8):
+        v3.observe(
+            f"A{i}USDT",
+            _base(stage="ARMED", score=80),
+            _bars(),
+            100.0,
+            now_ts=2_000_100 + i,
+            fetcher=fetcher,
+        )
+
+    for i in range(5):
+        result = v3.observe(
+            f"T{i}USDT",
+            _base(stage="TRIGGER", score=91),
+            _bars(),
+            100.0,
+            now_ts=2_000_200 + i,
+            fetcher=fetcher,
+        )
+        assert result is not None
+
+    summary = v3.finish(now_ts=2_000_300)
+    assert summary["queries_this_run"] == 10
+    assert summary["queries_by_stage_this_run"] == {
+        "PREP": 2,
+        "ARMED": 3,
+        "TRIGGER": 5,
+    }
+    assert len(calls) == 10
+    assert all(f"T{i}USDT" in calls for i in range(5))
 
 
 def test_module_declares_shadow_only_and_no_execution_api():
