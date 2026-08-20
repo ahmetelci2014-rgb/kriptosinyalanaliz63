@@ -1,4 +1,5 @@
 import json
+import time
 
 import movement_start_shadow as movement
 
@@ -49,16 +50,19 @@ def test_long_accumulation_scores_as_early_start_candidate():
 
 def test_strong_opposing_one_hour_penalizes_long_candidate():
     features = _long_features()
+    baseline, _ = movement.score_direction(features, "LONG")
     features["one_hour_long_ok"] = False
     score, conditions = movement.score_direction(features, "LONG")
 
     assert not conditions["one_hour_not_opposing"]
-    assert score < movement.TRIGGER_SCORE
+    assert score < baseline
+    assert baseline - score >= 18
 
 
 def test_shadow_record_learns_success_first(tmp_path, monkeypatch):
     state_file = tmp_path / "movement_start_shadow.json"
     movement.begin(str(state_file))
+    now = int(time.time())
 
     result = {
         "direction": "LONG",
@@ -71,7 +75,7 @@ def test_shadow_record_learns_success_first(tmp_path, monkeypatch):
     monkeypatch.setattr(movement, "analyze", lambda *args, **kwargs: result)
 
     event = movement.observe(
-        "RAYUSDT", None, None, None, 100.0, now_ts=1_000_000
+        "RAYUSDT", None, None, None, 100.0, now_ts=now
     )
     assert event is not None
     assert event["event"] == "NEW"
@@ -79,7 +83,7 @@ def test_shadow_record_learns_success_first(tmp_path, monkeypatch):
 
     # Yaklaşık 5 dakika sonra +%2 bariyeri önce görülürse başarılı başlangıç.
     movement.observe(
-        "RAYUSDT", None, None, None, 102.1, now_ts=1_000_300
+        "RAYUSDT", None, None, None, 102.1, now_ts=now + 300
     )
     summary = movement.finish(str(state_file))
 
@@ -93,6 +97,7 @@ def test_shadow_record_learns_success_first(tmp_path, monkeypatch):
 def test_shadow_record_learns_fail_first(tmp_path, monkeypatch):
     state_file = tmp_path / "movement_start_shadow.json"
     movement.begin(str(state_file))
+    now = int(time.time())
 
     result = {
         "direction": "LONG",
@@ -105,10 +110,10 @@ def test_shadow_record_learns_fail_first(tmp_path, monkeypatch):
     monkeypatch.setattr(movement, "analyze", lambda *args, **kwargs: result)
 
     movement.observe(
-        "TESTUSDT", None, None, None, 100.0, now_ts=2_000_000
+        "TESTUSDT", None, None, None, 100.0, now_ts=now
     )
     movement.observe(
-        "TESTUSDT", None, None, None, 98.8, now_ts=2_000_300
+        "TESTUSDT", None, None, None, 98.8, now_ts=now + 300
     )
     movement.finish(str(state_file))
 
