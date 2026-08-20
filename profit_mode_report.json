@@ -1,0 +1,85 @@
+{
+  "version": "PROFIT_MODE_V2_COST_AWARE_2026_08_20",
+  "generated_at": 1787199695,
+  "cost_model": {
+    "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
+    "fee_rate_per_side": 0.0005,
+    "slippage_reserve_rate_per_side": 0.0001,
+    "funding_reserve_rate": 0.0,
+    "round_trip_notional_cost_rate": 0.0012
+  },
+  "thresholds": {
+    "min_progress": 5.0,
+    "max_progress": 40.0,
+    "min_distance": 0.08,
+    "max_distance": 0.25,
+    "min_tp1_be_net_r": 0.05,
+    "min_sample": 20,
+    "min_avg_net_r": 0.03,
+    "min_profit_factor": 1.1,
+    "max_stop_rate": 32.0
+  },
+  "premium": {
+    "all": {
+      "sample": 72,
+      "net_r_after_costs": 16.9118,
+      "avg_net_r_after_costs": 0.2349,
+      "profit_factor_after_costs": 2.382,
+      "stop_rate_percent": 15.28,
+      "positive_rate_percent": 84.72,
+      "basis": "ALL",
+      "direction": "ALL",
+      "eligible_total": 72,
+      "direction_eligible": 0,
+      "live_allowed": true
+    },
+    "long": {
+      "sample": 33,
+      "net_r_after_costs": 9.0769,
+      "avg_net_r_after_costs": 0.2751,
+      "profit_factor_after_costs": 2.656,
+      "stop_rate_percent": 15.15,
+      "positive_rate_percent": 84.85,
+      "basis": "DIRECTION",
+      "direction": "LONG",
+      "eligible_total": 72,
+      "direction_eligible": 33,
+      "live_allowed": true
+    },
+    "short": {
+      "sample": 39,
+      "net_r_after_costs": 7.835,
+      "avg_net_r_after_costs": 0.2009,
+      "profit_factor_after_costs": 2.159,
+      "stop_rate_percent": 15.38,
+      "positive_rate_percent": 84.62,
+      "basis": "DIRECTION",
+      "direction": "SHORT",
+      "eligible_total": 72,
+      "direction_eligible": 39,
+      "live_allowed": true
+    }
+  },
+  "scalp_tepki": {
+    "sample": 0,
+    "net_r_after_costs": 0,
+    "avg_net_r_after_costs": null,
+    "profit_factor_after_costs": 0.0,
+    "stop_rate_percent": 0.0,
+    "positive_rate_percent": 0.0,
+    "basis": "RADAR_COST_ADJUSTED",
+    "setup": "TEPKI_SCALP",
+    "live_allowed": false
+  },
+  "pump_dump": {
+    "sample": 22,
+    "net_r_after_costs": 5.9953,
+    "avg_net_r_after_costs": 0.2725,
+    "profit_factor_after_costs": 2.383,
+    "stop_rate_percent": 18.18,
+    "positive_rate_percent": 81.82,
+    "basis": "RADAR_COST_ADJUSTED",
+    "setup": "ALL",
+    "live_allowed": true
+  }
+}
