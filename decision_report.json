@@ -1,8 +1,8 @@
 {
   "version": "DECISION_ENGINE_V3_LEGACY_SWING_REMOVED_2026_08_14",
   "mode": "ANALYSIS_ONLY_NO_SIGNAL_CHANGE_NO_TELEGRAM_NO_ORDERS",
-  "generated_at": 1787260819,
-  "generated_at_utc": "2026-08-20T21:20:19+00:00",
+  "generated_at": 1787433248,
+  "generated_at_utc": "2026-08-22T21:14:08+00:00",
   "auto_apply": false,
   "thresholds": {
     "confidence": {
@@ -39,7 +39,10 @@
   },
   "data_quality": {
     "warnings": [
-      "swing_v4_ledger: veri 48 saatten eski"
+      "scalp_ledger: veri 48 saatten eski",
+      "swing_v4_ledger: veri 48 saatten eski",
+      "momentum_shadow: veri 48 saatten eski",
+      "range_shadow: veri 48 saatten eski"
     ],
     "source_count": 12,
     "valid_source_count": 12,
@@ -47,21 +50,21 @@
       "premium_performance": {
         "path": "performance.json",
         "exists": true,
-        "bytes": 723480,
+        "bytes": 737163,
         "valid_json": true,
         "error": null,
-        "last_update": 1787260039,
-        "age_hours": 0.22,
+        "last_update": 1787406379,
+        "age_hours": 7.46,
         "stale_over_48h": false
       },
       "premium_trade_ledger": {
         "path": "trade_ledger.json",
         "exists": true,
-        "bytes": 3784780,
+        "bytes": 3886830,
         "valid_json": true,
         "error": null,
-        "last_update": 1787260043,
-        "age_hours": 0.22,
+        "last_update": 1787421100,
+        "age_hours": 3.37,
         "stale_over_48h": false
       },
       "scalp_state": {
@@ -81,13 +84,13 @@
         "valid_json": true,
         "error": null,
         "last_update": 1787244412,
-        "age_hours": 4.56,
-        "stale_over_48h": false
+        "age_hours": 52.45,
+        "stale_over_48h": true
       },
       "pump_state": {
         "path": "pump_radar_state.json",
         "exists": true,
-        "bytes": 325104,
+        "bytes": 319783,
         "valid_json": true,
         "error": null,
         "last_update": 0,
@@ -97,10 +100,10 @@
       "pump_ledger": {
         "path": "pump_performance_ledger.json",
         "exists": true,
-        "bytes": 86617,
+        "bytes": 78328,
         "valid_json": true,
         "error": null,
-        "last_update": 1787260341,
+        "last_update": 1787432781,
         "age_hours": 0.13,
         "stale_over_48h": false
       },
@@ -111,7 +114,7 @@
         "valid_json": true,
         "error": null,
         "last_update": 1787043078,
-        "age_hours": 60.48,
+        "age_hours": 108.38,
         "stale_over_48h": true
       },
       "momentum_shadow": {
@@ -121,8 +124,8 @@
         "valid_json": true,
         "error": null,
         "last_update": 1787149030,
-        "age_hours": 31.05,
-        "stale_over_48h": false
+        "age_hours": 78.95,
+        "stale_over_48h": true
       },
       "range_shadow": {
         "path": "range_shadow_v4.json",
@@ -131,17 +134,17 @@
         "valid_json": true,
         "error": null,
         "last_update": 1787158452,
-        "age_hours": 28.44,
-        "stale_over_48h": false
+        "age_hours": 76.33,
+        "stale_over_48h": true
       },
       "portfolio_risk_outcomes": {
         "path": "portfolio_risk_outcomes.json",
         "exists": true,
-        "bytes": 2930156,
+        "bytes": 3042848,
         "valid_json": true,
         "error": null,
-        "last_update": 1787238027,
-        "age_hours": 6.33,
+        "last_update": 1787409803,
+        "age_hours": 6.51,
         "stale_over_48h": false
       },
       "post_result_v2": {
@@ -184,7 +187,7 @@
         "decision_code": "YONETIM_ALTERNATIFI_GOLGE_TEST",
         "decision_tr": "🟠 İŞLEM YÖNETİMİ ALTERNATİFİNİ GÖLGE TEST ET",
         "confidence": "YUKSEK",
-        "sample_size": 174,
+        "sample_size": 192,
         "next_action": "V3 modellerini karşılaştır; yalnız yeterli örnek ve pozitif net ek R doğrulanırsa canlı kural önerisi üret."
       },
       {
@@ -202,7 +205,7 @@
         "decision_code": "IZLE",
         "decision_tr": "🟡 PORTFÖY RİSKİNİ İZLE",
         "confidence": "YUKSEK",
-        "sample_size": 919,
+        "sample_size": 953,
         "next_action": "Canlı limit değiştirmeden BLOCK/ALLOW ve block_code sonuçlarını toplamaya devam et."
       },
       {
@@ -220,7 +223,7 @@
         "decision_code": "KORU_IZLE",
         "decision_tr": "🟢 KORU / İZLE",
         "confidence": "ORTA",
-        "sample_size": 26,
+        "sample_size": 23,
         "next_action": "Ayarları değiştirme; örnek sayısını büyüt."
       },
       {
@@ -229,7 +232,7 @@
         "decision_code": "KORU",
         "decision_tr": "🟢 KORU",
         "confidence": "YUKSEK",
-        "sample_size": 328,
+        "sample_size": 293,
         "next_action": "Ana giriş mantığını değiştirme."
       },
       {
@@ -250,38 +253,38 @@
       "decision_code": "KORU",
       "decision_tr": "🟢 KORU",
       "confidence": "YUKSEK",
-      "sample_size": 328,
+      "sample_size": 293,
       "auto_apply": false,
       "reasons": [
-        "Ölçülebilir kapanış: 328.",
-        "Stop oranı: %31.1; pozitif kapanış oranı: %68.9.",
-        "Exact-R ortalaması: +0.078R."
+        "Ölçülebilir kapanış: 293.",
+        "Stop oranı: %30.0; pozitif kapanış oranı: %70.0.",
+        "Exact-R ortalaması: +0.098R."
       ],
       "next_action": "Ana giriş mantığını değiştirme.",
       "metrics": {
-        "sample_size": 335,
-        "measurable_closed": 328,
-        "tp3": 82,
-        "be": 144,
-        "sl": 102,
+        "sample_size": 300,
+        "measurable_closed": 293,
+        "tp3": 76,
+        "be": 129,
+        "sl": 88,
         "expired": 7,
-        "tp3_rate_percent": 25.0,
-        "be_rate_percent": 43.9,
-        "stop_rate_percent": 31.1,
-        "positive_close_rate_percent": 68.9,
-        "r_records": 335,
+        "tp3_rate_percent": 25.94,
+        "be_rate_percent": 44.03,
+        "stop_rate_percent": 30.03,
+        "positive_close_rate_percent": 69.97,
+        "r_records": 300,
         "r_coverage_percent": 100.0,
-        "net_r": 25.9914,
-        "avg_r": 0.0776,
+        "net_r": 29.4164,
+        "avg_r": 0.0981,
         "data_basis": "trade_ledger_recent_14d",
         "source_breakdown": {
-          "15M_ENTRY": 285,
-          "5M_RADAR": 48,
-          "TREND_CONTINUATION": 2
+          "15M_ENTRY": 254,
+          "5M_RADAR": 39,
+          "TREND_CONTINUATION": 7
         },
         "direction_breakdown": {
-          "SHORT": 146,
-          "LONG": 189
+          "LONG": 166,
+          "SHORT": 134
         }
       }
     },
@@ -339,24 +342,24 @@
       "decision_code": "KORU_IZLE",
       "decision_tr": "🟢 KORU / İZLE",
       "confidence": "ORTA",
-      "sample_size": 26,
+      "sample_size": 23,
       "auto_apply": false,
       "reasons": [
-        "Pump/Dump örneği 26.",
-        "Stop oranı %20.8, TP3 oranı %29.2."
+        "Pump/Dump örneği 23.",
+        "Stop oranı %14.3, TP3 oranı %33.3."
       ],
       "next_action": "Ayarları değiştirme; örnek sayısını büyüt.",
       "metrics": {
-        "sample_size": 26,
-        "measurable_closed": 24,
+        "sample_size": 23,
+        "measurable_closed": 21,
         "tp3": 7,
-        "be": 12,
-        "sl": 5,
+        "be": 11,
+        "sl": 3,
         "expired": 2,
-        "tp3_rate_percent": 29.17,
-        "be_rate_percent": 50.0,
-        "stop_rate_percent": 20.83,
-        "positive_close_rate_percent": 79.17,
+        "tp3_rate_percent": 33.33,
+        "be_rate_percent": 52.38,
+        "stop_rate_percent": 14.29,
+        "positive_close_rate_percent": 85.71,
         "data_basis": "pump_ledger"
       }
     },
@@ -597,81 +600,81 @@
       "decision_code": "IZLE",
       "decision_tr": "🟡 PORTFÖY RİSKİNİ İZLE",
       "confidence": "YUKSEK",
-      "sample_size": 919,
+      "sample_size": 953,
       "auto_apply": false,
       "reasons": [
-        "Takip edilen portföy karar kaydı: 919; tamamlanan: 910.",
+        "Takip edilen portföy karar kaydı: 953; tamamlanan: 952.",
         "Bu kayıtların bir kısmı aynı adayın farklı zamanlardaki kararlarıdır; benzersiz trade sayısı değildir."
       ],
       "next_action": "Canlı limit değiştirmeden BLOCK/ALLOW ve block_code sonuçlarını toplamaya devam et.",
       "metrics": {
         "sample_unit": "portfolio_decision_records_not_unique_trades",
-        "source_records": 919,
-        "tracked_records": 919,
-        "completed_records": 910,
-        "tracking_records": 9,
+        "source_records": 953,
+        "tracked_records": 953,
+        "completed_records": 952,
+        "tracking_records": 1,
         "data_error_records": 0,
         "block": {
-          "records": 462,
-          "first_0_5_favorable": 215,
-          "first_0_5_adverse": 247,
+          "records": 474,
+          "first_0_5_favorable": 224,
+          "first_0_5_adverse": 250,
           "first_0_5_ambiguous": 0,
           "first_0_5_none": 0,
-          "favorable_first_rate_percent": 46.54,
-          "adverse_first_rate_percent": 53.46,
-          "avg_return_60m_percent": -0.0633,
-          "avg_return_240m_percent": -0.2361,
-          "avg_return_720m_percent": -0.2566,
-          "avg_return_1440m_percent": -0.1301,
-          "avg_mfe_240m_percent": 0.9356,
-          "avg_mae_240m_percent": 1.0854
+          "favorable_first_rate_percent": 47.26,
+          "adverse_first_rate_percent": 52.74,
+          "avg_return_60m_percent": 0.0158,
+          "avg_return_240m_percent": -0.1477,
+          "avg_return_720m_percent": -0.1138,
+          "avg_return_1440m_percent": 0.1134,
+          "avg_mfe_240m_percent": 1.0696,
+          "avg_mae_240m_percent": 1.0667
         },
         "allow": {
-          "records": 457,
-          "first_0_5_favorable": 242,
-          "first_0_5_adverse": 212,
+          "records": 479,
+          "first_0_5_favorable": 257,
+          "first_0_5_adverse": 219,
           "first_0_5_ambiguous": 3,
           "first_0_5_none": 0,
-          "favorable_first_rate_percent": 53.3,
-          "adverse_first_rate_percent": 46.7,
-          "avg_return_60m_percent": 0.025,
-          "avg_return_240m_percent": 0.0141,
-          "avg_return_720m_percent": 0.0105,
-          "avg_return_1440m_percent": 0.0939,
-          "avg_mfe_240m_percent": 1.3844,
-          "avg_mae_240m_percent": 1.1731
+          "favorable_first_rate_percent": 53.99,
+          "adverse_first_rate_percent": 46.01,
+          "avg_return_60m_percent": 0.0366,
+          "avg_return_240m_percent": 0.0739,
+          "avg_return_720m_percent": 0.1486,
+          "avg_return_1440m_percent": 0.4335,
+          "avg_mfe_240m_percent": 1.4413,
+          "avg_mae_240m_percent": 1.1537
         },
         "by_block_code": {
           "ALLOW": {
-            "records": 457,
-            "first_0_5_favorable": 242,
-            "first_0_5_adverse": 212,
+            "records": 479,
+            "first_0_5_favorable": 257,
+            "first_0_5_adverse": 219,
             "first_0_5_ambiguous": 3,
             "first_0_5_none": 0,
-            "favorable_first_rate_percent": 53.3,
-            "adverse_first_rate_percent": 46.7,
-            "avg_return_60m_percent": 0.025,
-            "avg_return_240m_percent": 0.0141,
-            "avg_return_720m_percent": 0.0105,
-            "avg_return_1440m_percent": 0.0939,
-            "avg_mfe_240m_percent": 1.3844,
-            "avg_mae_240m_percent": 1.1731,
+            "favorable_first_rate_percent": 53.99,
+            "adverse_first_rate_percent": 46.01,
+            "avg_return_60m_percent": 0.0366,
+            "avg_return_240m_percent": 0.0739,
+            "avg_return_720m_percent": 0.1486,
+            "avg_return_1440m_percent": 0.4335,
+            "avg_mfe_240m_percent": 1.4413,
+            "avg_mae_240m_percent": 1.1537,
             "finding": "IZLE"
           },
           "DIRECTION_RISK_LIMIT": {
-            "records": 460,
-            "first_0_5_favorable": 215,
-            "first_0_5_adverse": 245,
+            "records": 472,
+            "first_0_5_favorable": 224,
+            "first_0_5_adverse": 248,
             "first_0_5_ambiguous": 0,
             "first_0_5_none": 0,
-            "favorable_first_rate_percent": 46.74,
-            "adverse_first_rate_percent": 53.26,
-            "avg_return_60m_percent": -0.0638,
-            "avg_return_240m_percent": -0.2374,
-            "avg_return_720m_percent": -0.2471,
-            "avg_return_1440m_percent": -0.1153,
-            "avg_mfe_240m_percent": 0.9371,
-            "avg_mae_240m_percent": 1.0876,
+            "favorable_first_rate_percent": 47.46,
+            "adverse_first_rate_percent": 52.54,
+            "avg_return_60m_percent": 0.0156,
+            "avg_return_240m_percent": -0.1485,
+            "avg_return_720m_percent": -0.104,
+            "avg_return_1440m_percent": 0.1289,
+            "avg_mfe_240m_percent": 1.0717,
+            "avg_mae_240m_percent": 1.0687,
             "finding": "IZLE"
           },
           "SAME_COIN_SAME_DIRECTION": {
@@ -697,7 +700,7 @@
       "decision_code": "YONETIM_ALTERNATIFI_GOLGE_TEST",
       "decision_tr": "🟠 İŞLEM YÖNETİMİ ALTERNATİFİNİ GÖLGE TEST ET",
       "confidence": "YUKSEK",
-      "sample_size": 174,
+      "sample_size": 192,
       "auto_apply": false,
       "reasons": [
         "V3 TP1_DELAY_BE_UNTIL_TP2: 86 örnek, ortalama ek sonuç -0.111R.",
@@ -705,56 +708,56 @@
         "V3 TP2_SOFT_BE_MINUS_0_25R: 25 örnek, ortalama ek sonuç +0.136R.",
         "V3 TP3_RUNNER_TRAIL_0_5R: 57 örnek, ortalama ek sonuç +0.113R.",
         "V3 TP3_RUNNER_TRAIL_1_0R: 57 örnek, ortalama ek sonuç +0.130R.",
-        "TP1→BE tamamlanmış 87; sonradan TP2 %34.5, TP3 %19.5.",
-        "TP2→BE tamamlanmış 26; sonradan TP3 %30.8.",
-        "TP3 sonrası ortalama ek MFE: 1.893R."
+        "TP1→BE tamamlanmış 92; sonradan TP2 %34.8, TP3 %20.6.",
+        "TP2→BE tamamlanmış 28; sonradan TP3 %32.1.",
+        "TP3 sonrası ortalama ek MFE: 1.963R."
       ],
       "next_action": "V3 modellerini karşılaştır; yalnız yeterli örnek ve pozitif net ek R doğrulanırsa canlı kural önerisi üret.",
       "metrics": {
-        "tracked_total": 178,
-        "completed_total": 174,
+        "tracked_total": 192,
+        "completed_total": 192,
         "groups": {
           "TP1_SONRASI_BE": {
-            "tracked": 89,
-            "completed": 87,
-            "tp1_reached_after_close": 54,
-            "tp2_reached_after_close": 30,
-            "tp3_reached_after_close": 17,
-            "tp1_reach_rate_percent": 62.07,
-            "tp2_reach_rate_percent": 34.48,
-            "tp3_reach_rate_percent": 19.54,
-            "avg_max_favorable_r": 1.471,
-            "median_max_favorable_r": 0.752,
-            "avg_max_adverse_r": 1.5048,
-            "median_240m_directional_r": -0.1621
+            "tracked": 92,
+            "completed": 92,
+            "tp1_reached_after_close": 58,
+            "tp2_reached_after_close": 32,
+            "tp3_reached_after_close": 19,
+            "tp1_reach_rate_percent": 63.04,
+            "tp2_reach_rate_percent": 34.78,
+            "tp3_reach_rate_percent": 20.65,
+            "avg_max_favorable_r": 1.4837,
+            "median_max_favorable_r": 0.7484,
+            "avg_max_adverse_r": 1.445,
+            "median_240m_directional_r": -0.1502
           },
           "TP3": {
-            "tracked": 63,
-            "completed": 61,
+            "tracked": 72,
+            "completed": 72,
             "tp1_reached_after_close": 0,
             "tp2_reached_after_close": 0,
             "tp3_reached_after_close": 0,
             "tp1_reach_rate_percent": 0.0,
             "tp2_reach_rate_percent": 0.0,
             "tp3_reach_rate_percent": 0.0,
-            "avg_max_favorable_r": 1.8928,
-            "median_max_favorable_r": 1.0248,
-            "avg_max_adverse_r": 1.7653,
-            "median_240m_directional_r": -0.6474
+            "avg_max_favorable_r": 1.9629,
+            "median_max_favorable_r": 1.1673,
+            "avg_max_adverse_r": 1.6505,
+            "median_240m_directional_r": -0.387
           },
           "TP2_SONRASI_BE": {
-            "tracked": 26,
-            "completed": 26,
+            "tracked": 28,
+            "completed": 28,
             "tp1_reached_after_close": 0,
-            "tp2_reached_after_close": 14,
-            "tp3_reached_after_close": 8,
+            "tp2_reached_after_close": 16,
+            "tp3_reached_after_close": 9,
             "tp1_reach_rate_percent": 0.0,
-            "tp2_reach_rate_percent": 53.85,
-            "tp3_reach_rate_percent": 30.77,
-            "avg_max_favorable_r": 1.465,
-            "median_max_favorable_r": 1.1038,
-            "avg_max_adverse_r": 1.8071,
-            "median_240m_directional_r": -0.1304
+            "tp2_reach_rate_percent": 57.14,
+            "tp3_reach_rate_percent": 32.14,
+            "avg_max_favorable_r": 1.8824,
+            "median_max_favorable_r": 1.1225,
+            "avg_max_adverse_r": 1.7792,
+            "median_240m_directional_r": -0.0338
           }
         },
         "v2_report": {
