@@ -56,6 +56,10 @@ jobs:
         if: always()
         run: python post_result_shadow.py
 
+      - name: Golge state dosyalarini kompaktlastir
+        if: always()
+        run: python compact_shadow_states.py
+
       - name: Durum ve karlilik dosyalarini kaydet
         if: ${{ always() && github.ref_name == 'main' }}
         run: |
