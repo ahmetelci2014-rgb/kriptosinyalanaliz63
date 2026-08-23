@@ -19,7 +19,7 @@ def ref(price, scores, rsi=60.0, atr=2.0):
     }
 
 
-def snapshot(ts=10_000, btc=77536, up=62.0, score6=84, score24=86, top=None):
+def snapshot(ts=100_000, btc=77536, up=62.0, score6=84, score24=86, top=None):
     return {
         "ts": ts,
         "references": {
@@ -68,7 +68,7 @@ def snapshot(ts=10_000, btc=77536, up=62.0, score6=84, score24=86, top=None):
 
 
 def sample_state():
-    old3 = snapshot(ts=10_000 - 3 * 3600 - 60, btc=76000, up=42.0, score6=65, score24=70)
+    old3 = snapshot(ts=100_000 - 3 * 3600 - 60, btc=76000, up=42.0, score6=65, score24=70)
     old3["breadth"]["top"] = [
         {"symbol": "ZROUSDT", "change": 12},
         {"symbol": "TRUMPUSDT", "change": 10},
@@ -76,7 +76,7 @@ def sample_state():
         {"symbol": "BBBUSDT", "change": 8},
         {"symbol": "CCCUSDT", "change": 7},
     ]
-    old1 = snapshot(ts=10_000 - 3700, btc=77000, up=55.0, score6=78, score24=80)
+    old1 = snapshot(ts=100_000 - 3700, btc=77000, up=55.0, score6=78, score24=80)
     current = snapshot()
     return {
         "snapshots": [old3, old1, current],
