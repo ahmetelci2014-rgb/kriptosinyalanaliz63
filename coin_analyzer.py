@@ -1,50 +1,86 @@
 # coin_analyzer.py
-# Tek coin detay analiz programı - Futures odaklı güvenli sürüm
+# Coin Detay Analizi V2 — Premium Mikroskop
 #
-# Kullanım:
-#   python coin_analyzer.py BTCUSDT
-# veya GitHub Actions > Coin Detay Analizi > Run workflow.
+# Amaç:
+# - Ayrı bir skor/karar motoru çalıştırmaz.
+# - Canlı Premium sistemin mevcut karar bileşenlerini doğrudan çağırır.
+# - 1D, Market Outlook, Funding/OI ve V3 order-flow'u teşhis bağlamı olarak gösterir.
+# - Reversal Capture / Trend Continuation / young-new coin yollarını canlı Premium sırasıyla kullanır.
+# - Gerçek işlem planını yalnız canlı Premium kapıları geçildiğinde, sinyalin kendi Entry/TP/SL alanlarından gösterir.
 #
-# Emir açmaz. Yalnızca analiz raporu üretir ve TOKEN / CHAT_ID varsa
-# Telegram'a gönderir.
-#
-# Veri önceliği:
-#   1) OKX USDT Perpetual Futures (Swap)
-#   2) Binance USDT Perpetual Futures
-#
-# Spot veri özellikle kullanılmaz. Futures işlemi için futures fiyatı,
-# hacmi ve mum yapısı esas alınır.
+# Emir açmaz. Yalnızca analiz raporu üretir ve TOKEN / CHAT_ID varsa Telegram'a gönderir.
 
 from __future__ import annotations
 
+import json
 import os
+import shutil
 import sys
-from typing import Any
+import tempfile
+import time
+from pathlib import Path
+from typing import Any, Dict, Optional, Tuple
 
-import ccxt
 import pandas as pd
 import requests
-from ta.momentum import RSIIndicator
-from ta.trend import ADXIndicator, EMAIndicator, MACD
-from ta.volatility import AverageTrueRange
 
+import main as bot
+import market_outlook_engine as outlook_engine
+import movement_start_v2_shadow as movement_v2
+import movement_start_v3_orderflow_shadow as movement_v3
+import opportunity_capture
+import portfolio_risk
+import premium_all_coins as allcoins
+import premium_confirmation as confirmation
+import premium_continuation as continuation
+import premium_profit_runner as premium_runner
+import premium_reversal_capture as reversal
+import profitability_engine as profit
+import strategy
+
+
+VERSION = "COIN_ANALYZER_V2_PREMIUM_MICROSCOPE_2026_08_23"
 
 TOKEN = os.getenv("TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 SYMBOL = os.getenv("SYMBOL") or (sys.argv[1] if len(sys.argv) > 1 else "BTCUSDT")
 
-TIMEFRAMES = {
-    "5M": ("5m", 300),
-    "15M": ("15m", 350),
-    "1H": ("1h", 350),
-    "4H": ("4h", 350),
-}
+# Canlı Premium runner bu iki ayarı run() başında böyle kullanıyor.
+PREMIUM_ENABLE_5M_EARLY_TRADE = False
+PREMIUM_MAX_LATE_ENTRY_DISTANCE_PERCENT = 0.35
 
-MIN_TRADE_SCORE = 78
-MIN_STOP_PERCENT = 0.15
-MAX_STOP_PERCENT = 2.50
-MAX_LATE_ENTRY_ATR = 0.40
-INVALIDATION_ATR = 0.20
+OUTLOOK_STALE_SECONDS = 45 * 60
+TARGET_OI_HISTORY_TIMEFRAME = "5m"
+TARGET_OI_HISTORY_LIMIT = 3
+
+
+def normalize_symbol(symbol: Any) -> str:
+    value = (
+        str(symbol or "")
+        .upper()
+        .strip()
+        .replace("/USDT:USDT", "USDT")
+        .replace(":USDT", "")
+        .replace("/", "")
+        .replace("-", "")
+        .replace("_", "")
+        .replace(":", "")
+    )
+    if value and not value.endswith("USDT"):
+        value += "USDT"
+    return value
+
+
+def safe_float(value: Any, default: Optional[float] = None) -> Optional[float]:
+    try:
+        if value in (None, "", "-"):
+            return default
+        number = float(value)
+        if number != number or number in (float("inf"), float("-inf")):
+            return default
+        return number
+    except Exception:
+        return default
 
 
 def send_telegram(message: str) -> bool:
@@ -56,785 +92,1041 @@ def send_telegram(message: str) -> bool:
         response = requests.post(
             f"https://api.telegram.org/bot{TOKEN}/sendMessage",
             data={"chat_id": CHAT_ID, "text": message},
-            timeout=20,
+            timeout=25,
         )
         print("Telegram cevap:", response.status_code)
         return response.status_code == 200
     except Exception as exc:
-        print("Telegram hatası:", exc)
+        print("Telegram hatası:", type(exc).__name__, exc)
         return False
 
 
-def normalize_symbol(symbol: str) -> str:
-    normalized = (
-        str(symbol)
-        .upper()
-        .replace("/", "")
-        .replace("-", "")
-        .replace("_", "")
-        .replace(":", "")
-        .strip()
-    )
-    if not normalized.endswith("USDT"):
-        normalized += "USDT"
-    return normalized
+def _copy_if_exists(source: str, destination: str) -> None:
+    try:
+        if os.path.exists(source):
+            shutil.copyfile(source, destination)
+    except Exception:
+        pass
 
 
-def base_from_symbol(symbol: str) -> str:
-    normalized = normalize_symbol(symbol)
-    return normalized[:-4]
+def _latest_snapshot(value: Any) -> Dict[str, Any]:
+    if isinstance(value, dict):
+        if isinstance(value.get("outlook"), dict):
+            return value
+        snapshot = value.get("snapshot")
+        if isinstance(snapshot, dict):
+            return snapshot
+        snapshots = value.get("snapshots")
+        if isinstance(snapshots, list):
+            for row in reversed(snapshots):
+                if isinstance(row, dict):
+                    return row
+    return {}
 
 
-def pct(current: float, reference: float) -> float:
-    if reference == 0:
-        return 0.0
-    return ((current - reference) / reference) * 100.0
+def _fresh_market_outlook(exchange: Any, temp_dir: str) -> Dict[str, Any]:
+    """Aynı Market Outlook motorunu Telegram kapalı şekilde çalıştır."""
+    temp_state = os.path.join(temp_dir, "market_outlook_state.json")
+    _copy_if_exists(outlook_engine.STATE_FILE, temp_state)
+
+    try:
+        result = outlook_engine.run(
+            exchange,
+            state_file=temp_state,
+            token=None,
+            chat_id=None,
+            allow_telegram=False,
+        )
+        snapshot = _latest_snapshot(result)
+        if snapshot:
+            return snapshot
+
+        try:
+            with open(temp_state, "r", encoding="utf-8") as handle:
+                snapshot = _latest_snapshot(json.load(handle))
+            if snapshot:
+                return snapshot
+        except Exception:
+            pass
+    except Exception as exc:
+        print("Market Outlook canlı hesaplanamadı:", type(exc).__name__, exc)
+
+    # Canlı hesap başarısızsa repo içindeki son snapshot yalnız teşhis için kullanılır.
+    try:
+        state = outlook_engine.load_state(outlook_engine.STATE_FILE)
+        return _latest_snapshot(state)
+    except Exception:
+        return {}
 
 
-def abs_pct(current: float, reference: float) -> float:
-    return abs(pct(current, reference))
+def _outlook_text(snapshot: Dict[str, Any], direction: Optional[str] = None) -> Dict[str, Any]:
+    outlook = snapshot.get("outlook") if isinstance(snapshot, dict) else {}
+    outlook = outlook if isinstance(outlook, dict) else {}
 
+    bias6 = str(outlook.get("bias_6h") or "VERİ YOK")
+    bias24 = str(outlook.get("bias_24h") or "VERİ YOK")
+    dir6 = str(outlook.get("direction_6h") or "").upper()
+    dir24 = str(outlook.get("direction_24h") or "").upper()
+    conf6 = int(safe_float(outlook.get("confidence_6h"), 0) or 0)
+    conf24 = int(safe_float(outlook.get("confidence_24h"), 0) or 0)
+    long_fit = safe_float(outlook.get("long_suitability"))
+    short_fit = safe_float(outlook.get("short_suitability"))
+    flags = outlook.get("risk_flags") if isinstance(outlook.get("risk_flags"), list) else []
 
-def make_exchange(exchange_id: str, market_type: str) -> ccxt.Exchange:
-    common = {
-        "enableRateLimit": True,
-        "timeout": 30000,
-        "options": {"defaultType": market_type},
+    wanted = str(direction or "").upper()
+    aligned: Optional[bool] = None
+    if wanted == "LONG" and dir6:
+        aligned = dir6 == "UP"
+    elif wanted == "SHORT" and dir6:
+        aligned = dir6 == "DOWN"
+
+    return {
+        "bias_6h": bias6,
+        "bias_24h": bias24,
+        "direction_6h": dir6,
+        "direction_24h": dir24,
+        "confidence_6h": conf6,
+        "confidence_24h": conf24,
+        "long_suitability": long_fit,
+        "short_suitability": short_fit,
+        "risk_flags": flags,
+        "aligned_with_signal": aligned,
     }
 
-    if exchange_id == "okx":
-        return ccxt.okx(common)
-    if exchange_id == "binance":
-        return ccxt.binance(common)
-    raise RuntimeError(f"Bilinmeyen borsa: {exchange_id}")
+
+def _target_derivatives(exchange: Any, symbol: str) -> Dict[str, Any]:
+    market_symbol = bot.to_okx_symbol(symbol)
+    funding: Optional[float] = None
+    oi: Optional[float] = None
+    oi_change: Optional[float] = None
+
+    try:
+        item = exchange.fetch_funding_rate(market_symbol) or {}
+        funding = safe_float(
+            item.get("fundingRate")
+            if item.get("fundingRate") is not None
+            else (item.get("info") or {}).get("fundingRate")
+        )
+    except Exception:
+        pass
+
+    try:
+        item = exchange.fetch_open_interest(market_symbol) or {}
+        oi = safe_float(
+            item.get("openInterestValue")
+            if item.get("openInterestValue") is not None
+            else item.get("openInterestAmount")
+        )
+        if oi is None:
+            info = item.get("info") or {}
+            oi = safe_float(info.get("oiUsd") or info.get("oiCcy") or info.get("oi"))
+    except Exception:
+        pass
+
+    # OI değişimi yalnız teşhistir; desteklenmiyorsa karar motoruna etkisi yoktur.
+    try:
+        fetch_history = getattr(exchange, "fetch_open_interest_history", None)
+        if callable(fetch_history):
+            rows = fetch_history(
+                market_symbol,
+                timeframe=TARGET_OI_HISTORY_TIMEFRAME,
+                limit=TARGET_OI_HISTORY_LIMIT,
+            )
+            values = []
+            for row in rows or []:
+                if not isinstance(row, dict):
+                    continue
+                value = safe_float(
+                    row.get("openInterestValue")
+                    if row.get("openInterestValue") is not None
+                    else row.get("openInterestAmount")
+                )
+                if value is None:
+                    info = row.get("info") or {}
+                    value = safe_float(info.get("oiUsd") or info.get("oiCcy") or info.get("oi"))
+                if value and value > 0:
+                    values.append(value)
+            if len(values) >= 2 and values[0] > 0:
+                oi_change = (values[-1] - values[0]) / values[0] * 100.0
+    except Exception:
+        pass
+
+    threshold = float(getattr(outlook_engine, "FUNDING_CROWDING", 0.0005))
+    funding_state = "veri yok"
+    if funding is not None:
+        if abs(funding) < threshold:
+            funding_state = "sağlıklı / aşırı kalabalık değil"
+        elif funding >= threshold:
+            funding_state = "LONG tarafı kalabalık"
+        else:
+            funding_state = "SHORT tarafı kalabalık"
+
+    if oi_change is None:
+        oi_state = "OI değişimi ölçülemedi"
+    elif oi_change >= 3.0:
+        oi_state = f"OI hızlı artıyor (%{oi_change:+.2f})"
+    elif oi_change <= -3.0:
+        oi_state = f"OI hızlı azalıyor (%{oi_change:+.2f})"
+    else:
+        oi_state = f"OI dengeli (%{oi_change:+.2f})"
+
+    return {
+        "funding": funding,
+        "funding_threshold": threshold,
+        "funding_state": funding_state,
+        "open_interest": oi,
+        "oi_change_percent": oi_change,
+        "oi_state": oi_state,
+    }
 
 
-def find_linear_usdt_swap(exchange: ccxt.Exchange, base: str) -> str | None:
-    markets = exchange.load_markets()
-    candidates: list[str] = []
-
-    for market_symbol, market in markets.items():
-        try:
-            if not market.get("active", True):
-                continue
-            if str(market.get("base", "")).upper() != base:
-                continue
-            if str(market.get("quote", "")).upper() != "USDT":
-                continue
-            if not bool(market.get("swap", False)):
-                continue
-            if market.get("linear") is False:
-                continue
-
-            settle = str(market.get("settle", "USDT") or "USDT").upper()
-            if settle != "USDT":
-                continue
-
-            candidates.append(market_symbol)
-        except Exception:
-            continue
-
-    if not candidates:
-        return None
-
-    # CCXT'de genellikle BASE/USDT:USDT biçimi gelir.
-    preferred = f"{base}/USDT:USDT"
-    if preferred in candidates:
-        return preferred
-    return sorted(candidates)[0]
-
-
-def resolve_data_source(symbol: str) -> dict[str, Any]:
-    normalized = normalize_symbol(symbol)
-    base = base_from_symbol(normalized)
-
-    # Spot bilerek yoktur. Kullanıcı futures işlem yaptığı için aynı piyasanın
-    # futures mumları, futures hacmi ve futures son fiyatı kullanılmalıdır.
-    sources = [
-        {
-            "name": "OKX USDT Futures",
-            "exchange_id": "okx",
-            "market_type": "swap",
-            "trade_note": "OKX perpetual futures verisi kullanılıyor.",
-            "execution_note": "OKX üzerinde aynı futures kontratıyla karşılaştırılabilir.",
-        },
-        {
-            "name": "Binance USDT Futures",
-            "exchange_id": "binance",
-            "market_type": "future",
-            "trade_note": "OKX futures bulunamadığı için Binance perpetual futures verisi kullanılıyor.",
-            "execution_note": "OKX'te aynı kontrat yoksa bu raporla OKX işlemi açma.",
-        },
-    ]
-
-    errors: list[str] = []
-    for source in sources:
-        try:
-            exchange = make_exchange(source["exchange_id"], source["market_type"])
-            market_symbol = find_linear_usdt_swap(exchange, base)
-            if market_symbol:
-                return {
-                    "exchange": exchange,
-                    "market_symbol": market_symbol,
-                    "source_name": source["name"],
-                    "trade_note": source["trade_note"],
-                    "execution_note": source["execution_note"],
-                    "symbol": normalized,
-                }
-        except Exception as exc:
-            errors.append(f"{source['name']}: {type(exc).__name__}")
-
-    error_text = ", ".join(errors) if errors else "market bulunamadı"
-    raise RuntimeError(
-        f"{normalized} için OKX veya Binance üzerinde aktif lineer USDT perpetual futures "
-        f"kontratı bulunamadı. Spot veriye düşülmedi. Kontrol: {error_text}"
-    )
-
-
-def fetch_df(
-    exchange: ccxt.Exchange,
-    market_symbol: str,
-    timeframe: str,
-    limit: int,
-) -> pd.DataFrame | None:
-    ohlcv = exchange.fetch_ohlcv(market_symbol, timeframe=timeframe, limit=limit)
-    if not ohlcv or len(ohlcv) < 220:
-        return None
-
-    df = pd.DataFrame(
-        ohlcv,
-        columns=["time", "open", "high", "low", "close", "volume"],
-    )
-    numeric_columns = ["open", "high", "low", "close", "volume"]
-    df[numeric_columns] = df[numeric_columns].apply(pd.to_numeric, errors="coerce")
-    df = df.dropna(subset=numeric_columns).reset_index(drop=True)
-    return df if len(df) >= 220 else None
-
-
-def add_indicators(df: pd.DataFrame | None) -> pd.DataFrame | None:
-    if df is None or df.empty or len(df) < 220:
-        return None
-
-    result = df.copy().reset_index(drop=True)
-    result["rsi"] = RSIIndicator(result["close"], window=14).rsi()
-    result["ema20"] = EMAIndicator(result["close"], window=20).ema_indicator()
-    result["ema50"] = EMAIndicator(result["close"], window=50).ema_indicator()
-    result["ema100"] = EMAIndicator(result["close"], window=100).ema_indicator()
-    result["ema200"] = EMAIndicator(result["close"], window=200).ema_indicator()
-
-    macd = MACD(result["close"])
-    result["macd"] = macd.macd()
-    result["macd_signal"] = macd.macd_signal()
-    result["macd_hist"] = result["macd"] - result["macd_signal"]
-
-    result["atr"] = AverageTrueRange(
-        result["high"], result["low"], result["close"], window=14
-    ).average_true_range()
-    result["adx"] = ADXIndicator(
-        result["high"], result["low"], result["close"], window=14
-    ).adx()
-
-    result["volume_avg"] = result["volume"].rolling(20).mean()
-    result["volume_ratio"] = result["volume"] / result["volume_avg"]
-    result["ema20_slope"] = result["ema20"] - result["ema20"].shift(3)
-
-    required = [
-        "rsi",
-        "ema20",
-        "ema50",
-        "ema100",
-        "ema200",
-        "macd",
-        "macd_signal",
-        "macd_hist",
-        "atr",
-        "adx",
-        "volume_avg",
-        "volume_ratio",
-        "ema20_slope",
-    ]
-    result = result.dropna(subset=required).reset_index(drop=True)
-    return result if len(result) >= 5 else None
-
-
-def trend_status(df: pd.DataFrame | None, label: str) -> dict[str, Any]:
-    if df is None or len(df) < 3:
+def _one_day_context(exchange: Any, symbol: str) -> Dict[str, Any]:
+    try:
+        frame = outlook_engine.fetch_frame(exchange, symbol, "1d", 220)
+        if frame is None or frame.empty:
+            return {"direction": "NEUTRAL", "score": None, "text": "1D veri yetersiz"}
+        score = float(outlook_engine.frame_trend_score(frame))
+        if score > 0:
+            direction = "LONG"
+            text = "1D: Yukarı"
+        elif score < 0:
+            direction = "SHORT"
+            text = "1D: Aşağı"
+        else:
+            direction = "NEUTRAL"
+            text = "1D: Kararsız"
+        return {"direction": direction, "score": round(score, 2), "text": text}
+    except Exception as exc:
         return {
             "direction": "NEUTRAL",
-            "text": f"{label}: veri yetersiz",
-            "rsi": "-",
-            "adx": "-",
-            "volume_ratio": "-",
-            "ema20": 0.0,
-            "ema50": 0.0,
-            "ema200": 0.0,
+            "score": None,
+            "text": f"1D: veri alınamadı ({type(exc).__name__})",
         }
 
-    row = df.iloc[-2]  # Son kapanmış mum
-    close = float(row["close"])
-    ema20 = float(row["ema20"])
-    ema50 = float(row["ema50"])
-    ema200 = float(row["ema200"])
-    slope = float(row["ema20_slope"])
-    macd = float(row["macd"])
-    macd_signal = float(row["macd_signal"])
 
-    if close > ema200 and ema20 > ema50 and slope > 0 and macd >= macd_signal:
-        direction = "LONG"
-        text = f"{label}: Yukarı eğilim"
-    elif close < ema200 and ema20 < ema50 and slope < 0 and macd <= macd_signal:
-        direction = "SHORT"
-        text = f"{label}: Aşağı eğilim"
-    else:
-        direction = "NEUTRAL"
-        text = f"{label}: Kararsız"
-
-    return {
-        "direction": direction,
-        "text": text,
-        "rsi": round(float(row["rsi"]), 2),
-        "adx": round(float(row["adx"]), 2),
-        "volume_ratio": round(float(row["volume_ratio"]), 2),
-        "ema20": ema20,
-        "ema50": ema50,
-        "ema200": ema200,
-    }
-
-
-def candle_signal_15m(df: pd.DataFrame | None) -> tuple[str, str]:
-    if df is None or len(df) < 4:
-        return "NEUTRAL", "15M veri yetersiz"
-
-    last = df.iloc[-2]
-    previous = df.iloc[-3]
-
-    close = float(last["close"])
-    open_price = float(last["open"])
-    ema20 = float(last["ema20"])
-    rsi = float(last["rsi"])
-    macd_hist = float(last["macd_hist"])
-    previous_macd_hist = float(previous["macd_hist"])
-
-    green = close > open_price
-    red = close < open_price
-
-    long_reclaim = (
-        green
-        and close >= ema20
-        and close > float(previous["close"])
-        and macd_hist >= previous_macd_hist
-        and 40 <= rsi <= 70
-    )
-    short_reject = (
-        red
-        and close <= ema20
-        and close < float(previous["close"])
-        and macd_hist <= previous_macd_hist
-        and 30 <= rsi <= 60
-    )
-
-    if long_reclaim:
-        return "LONG", "15M yeşil dönüş / EMA20 üstü"
-    if short_reject:
-        return "SHORT", "15M kırmızı dönüş / EMA20 altı"
-    return "NEUTRAL", "15M net giriş dönüşü yok"
-
-
-def radar_5m(df: pd.DataFrame | None) -> tuple[str, str]:
-    if df is None or len(df) < 25:
-        return "NEUTRAL", "5M veri yetersiz"
-
-    last = df.iloc[-2]
-    move = pct(float(last["close"]), float(last["open"]))
-    volume_average = float(df["volume"].iloc[-22:-2].mean())
-    volume_ratio = float(last["volume"]) / volume_average if volume_average > 0 else 0.0
-
-    if move >= 0.30 and volume_ratio >= 1.15:
-        return "LONG", f"5M yukarı hareket %{move:.2f} / hacim {volume_ratio:.2f}x"
-    if move <= -0.30 and volume_ratio >= 1.15:
-        return "SHORT", f"5M aşağı hareket %{move:.2f} / hacim {volume_ratio:.2f}x"
-    return "NEUTRAL", f"5M sakin / hareket %{move:.2f} / hacim {volume_ratio:.2f}x"
-
-
-def score_direction(
-    direction: str,
-    s4h: dict[str, Any],
-    s1h: dict[str, Any],
-    entry15: tuple[str, str],
-    radar5: tuple[str, str],
-    df15: pd.DataFrame,
-) -> tuple[int, list[str]]:
-    """0-100 aralığında kalite skoru üretir; başarı yüzdesi değildir."""
-    row = df15.iloc[-2]
-    rsi = float(row["rsi"])
-    adx = float(row["adx"])
-    volume_ratio = float(row["volume_ratio"])
-
-    score = 0
-    reasons: list[str] = []
-
-    if s4h["direction"] == direction:
-        score += 25
-        reasons.append("4H aynı yön")
-    elif s4h["direction"] not in ("NEUTRAL", direction):
-        reasons.append("4H ters")
-
-    if s1h["direction"] == direction:
-        score += 25
-        reasons.append("1H aynı yön")
-    elif s1h["direction"] not in ("NEUTRAL", direction):
-        reasons.append("1H ters")
-
-    if entry15[0] == direction:
-        score += 20
-        reasons.append("15M giriş onayı")
-
-    if radar5[0] == direction:
-        score += 10
-        reasons.append("5M momentum destekli")
-    elif radar5[0] not in ("NEUTRAL", direction):
-        reasons.append("5M ters momentum")
-
-    if volume_ratio >= 1.30:
-        score += 8
-        reasons.append("15M hacim güçlü")
-    elif volume_ratio >= 0.75:
-        score += 5
-        reasons.append("15M hacim yeterli")
-    else:
-        reasons.append("15M hacim zayıf")
-
-    if adx >= 25:
-        score += 6
-        reasons.append("15M ADX güçlü")
-    elif adx >= 15:
-        score += 3
-        reasons.append("15M ADX orta")
-    else:
-        reasons.append("15M ADX zayıf")
-
-    if direction == "LONG":
-        if 42 <= rsi <= 68:
-            score += 6
-            reasons.append("RSI LONG için uygun")
-        elif rsi > 72:
-            reasons.append("RSI şişmiş")
-        else:
-            reasons.append("RSI LONG için zayıf")
-    else:
-        if 32 <= rsi <= 58:
-            score += 6
-            reasons.append("RSI SHORT için uygun")
-        elif rsi < 28:
-            reasons.append("RSI çok dip")
-        else:
-            reasons.append("RSI SHORT için zayıf")
-
-    return max(0, min(100, int(score))), reasons
-
-
-def final_verdict(
-    long_score: int,
-    short_score: int,
-    s4h: dict[str, Any],
-    s1h: dict[str, Any],
-    entry15: tuple[str, str],
-    radar5: tuple[str, str],
-) -> tuple[str, str]:
-    # Canlı para için ana yön zorunluluğu.
-    if s4h["direction"] == "NEUTRAL" or s1h["direction"] == "NEUTRAL":
-        return "WAIT", "4H ve 1H yönü net değil"
-
-    if s4h["direction"] != s1h["direction"]:
-        return "WAIT", "4H ve 1H aynı yönde değil"
-
-    direction = s4h["direction"]
-    selected_score = long_score if direction == "LONG" else short_score
-    opposite_score = short_score if direction == "LONG" else long_score
-
-    if entry15[0] != direction:
-        return "WAIT", f"Ana yön {direction}, fakat 15M giriş onayı yok"
-
-    if radar5[0] not in ("NEUTRAL", direction):
-        return "WAIT", "5M momentum ana yöne ters"
-
-    if selected_score < MIN_TRADE_SCORE:
-        return "WAIT", f"{direction} kalite skoru yetersiz: {selected_score}/100"
-
-    if selected_score < opposite_score + 10:
-        return "WAIT", "LONG ve SHORT tarafı yeterince ayrışmadı"
-
-    return direction, f"4H + 1H + 15M {direction} uyumu var"
-
-
-def _cluster_levels(levels: list[float], tolerance: float) -> list[float]:
-    if not levels:
-        return []
-
-    ordered = sorted(levels)
-    clusters: list[list[float]] = [[ordered[0]]]
-    for level in ordered[1:]:
-        current_average = sum(clusters[-1]) / len(clusters[-1])
-        if abs(level - current_average) <= tolerance:
-            clusters[-1].append(level)
-        else:
-            clusters.append([level])
-
-    # Daha çok dokunulan kümeler önce; eşitlikte fiyat sırası korunur.
-    weighted = sorted(
-        ((sum(cluster) / len(cluster), len(cluster)) for cluster in clusters),
-        key=lambda item: (-item[1], item[0]),
-    )
-    return [item[0] for item in weighted]
-
-
-def pivot_support_resistance(
-    df: pd.DataFrame | None,
-    price: float,
-    lookback: int = 120,
-) -> dict[str, float]:
-    if df is None or len(df) < 15:
-        return {
-            "support1": price,
-            "support2": price,
-            "resistance1": price,
-            "resistance2": price,
-            "support_distance": 0.0,
-            "resistance_distance": 0.0,
-        }
-
-    # Tamamlanmamış son mumu dışarıda bırak.
-    recent = df.iloc[:-1].tail(lookback).reset_index(drop=True)
-    atr = float(recent["atr"].iloc[-1])
-    tolerance = max(atr * 0.25, price * 0.0003)
-
-    pivot_lows: list[float] = []
-    pivot_highs: list[float] = []
-
-    for index in range(2, len(recent) - 2):
-        window = recent.iloc[index - 2 : index + 3]
-        low = float(recent.iloc[index]["low"])
-        high = float(recent.iloc[index]["high"])
-        if low <= float(window["low"].min()):
-            pivot_lows.append(low)
-        if high >= float(window["high"].max()):
-            pivot_highs.append(high)
-
-    supports = [level for level in _cluster_levels(pivot_lows, tolerance) if level < price]
-    resistances = [level for level in _cluster_levels(pivot_highs, tolerance) if level > price]
-
-    supports = sorted(supports, reverse=True)
-    resistances = sorted(resistances)
-
-    fallback_low = float(recent["low"].min())
-    fallback_high = float(recent["high"].max())
-
-    support1 = supports[0] if supports else min(fallback_low, price)
-    support2 = supports[1] if len(supports) > 1 else support1
-    resistance1 = resistances[0] if resistances else max(fallback_high, price)
-    resistance2 = resistances[1] if len(resistances) > 1 else resistance1
-
-    return {
-        "support1": support1,
-        "support2": support2,
-        "resistance1": resistance1,
-        "resistance2": resistance2,
-        "support_distance": abs_pct(price, support1),
-        "resistance_distance": abs_pct(resistance1, price),
-    }
-
-
-def leverage_suggestion(risk_percent: float) -> str:
-    if risk_percent <= 0.85:
-        return "3x"
-    if risk_percent <= 1.60:
-        return "2x"
-    if risk_percent <= 2.50:
-        return "1x-2x"
-    return "PAS GEÇ"
-
-
-def build_trade_plan(
-    direction: str,
-    price: float,
-    df15: pd.DataFrame,
-) -> tuple[dict[str, float | str] | None, str | None]:
-    if len(df15) < 20:
-        return None, "15M işlem planı için veri yetersiz"
-
-    row = df15.iloc[-2]
-    signal_close = float(row["close"])
-    ema20 = float(row["ema20"])
-    atr = float(row["atr"])
-    recent = df15.iloc[-14:-2]
-
-    if recent.empty or atr <= 0 or price <= 0:
-        return None, "ATR veya fiyat verisi geçersiz"
-
-    if direction == "LONG":
-        if price > signal_close + atr * MAX_LATE_ENTRY_ATR:
-            return None, "LONG girişi kaçmış; fiyat 15M sinyal mumundan fazla uzaklaştı"
-        if price < ema20 - atr * INVALIDATION_ATR:
-            return None, "LONG kurulumu bozulmuş; fiyat EMA20 altına indi"
-
-        swing_low = float(recent["low"].min())
-        stop = min(swing_low - atr * 0.10, price - atr * 1.10)
-        risk = price - stop
-        tp1 = price + risk * 0.75
-        tp2 = price + risk * 1.35
-        tp3 = price + risk * 2.00
-
-    elif direction == "SHORT":
-        if price < signal_close - atr * MAX_LATE_ENTRY_ATR:
-            return None, "SHORT girişi kaçmış; fiyat 15M sinyal mumundan fazla uzaklaştı"
-        if price > ema20 + atr * INVALIDATION_ATR:
-            return None, "SHORT kurulumu bozulmuş; fiyat EMA20 üstüne çıktı"
-
-        swing_high = float(recent["high"].max())
-        stop = max(swing_high + atr * 0.10, price + atr * 1.10)
-        risk = stop - price
-        tp1 = price - risk * 0.75
-        tp2 = price - risk * 1.35
-        tp3 = price - risk * 2.00
-
-        if min(tp1, tp2, tp3) <= 0:
-            return None, "Hedef fiyatlardan biri geçersiz"
-    else:
-        return None, "Yön geçersiz"
-
-    if risk <= 0:
-        return None, "Stop mesafesi geçersiz"
-
-    risk_percent = (risk / price) * 100.0
-    if risk_percent < MIN_STOP_PERCENT:
-        return None, f"Stop çok dar: %{risk_percent:.2f}"
-    if risk_percent > MAX_STOP_PERCENT:
-        return None, f"Stop çok geniş: %{risk_percent:.2f}"
-
-    return {
-        "entry": price,
-        "sl": stop,
-        "tp1": tp1,
-        "tp2": tp2,
-        "tp3": tp3,
-        "risk_percent": risk_percent,
-        "rr1": 0.75,
-        "rr2": 1.35,
-        "rr3": 2.00,
-        "leverage": leverage_suggestion(risk_percent),
-    }, None
-
-
-def format_price(exchange: ccxt.Exchange, market_symbol: str, value: float) -> str:
+def _frame_context(df: Any, label: str) -> Dict[str, Any]:
+    """Raporlama özeti; işlem kararı üretmez."""
     try:
-        return exchange.price_to_precision(market_symbol, float(value))
+        frame = strategy.add_indicators(df)
+        if frame is None or len(frame) < 3:
+            return {"direction": "NEUTRAL", "text": f"{label}: veri/indikatör yetersiz"}
+        row = frame.iloc[-2]
+        close = float(row["close"])
+        ema20 = float(row["ema20"])
+        ema50 = float(row["ema50"])
+        slope = float(row["ema20_slope"])
+        rsi = float(row["rsi"])
+        adx = float(row["adx"])
+
+        if close > ema20 >= ema50 and slope > 0:
+            direction = "LONG"
+            text = f"{label}: Yukarı / toparlanma"
+        elif close < ema20 <= ema50 and slope < 0:
+            direction = "SHORT"
+            text = f"{label}: Aşağı / zayıflama"
+        else:
+            direction = "NEUTRAL"
+            text = f"{label}: Kararsız / geçiş"
+
+        return {
+            "direction": direction,
+            "text": text,
+            "rsi": round(rsi, 2),
+            "adx": round(adx, 2),
+            "volume_ratio": round(float(row["volume_ratio"]), 2),
+        }
     except Exception:
-        number = float(value)
-        if number >= 100:
-            return f"{number:.2f}"
-        if number >= 1:
-            return f"{number:.4f}"
-        if number >= 0.01:
-            return f"{number:.6f}"
-        return f"{number:.10f}"
+        return {"direction": "NEUTRAL", "text": f"{label}: özet üretilemedi"}
 
 
-def plan_text(
+def _movement_v2_context(
+    symbol: str,
+    df5m: Any,
+    df15m: Any,
+    df1h: Any,
+    df4h: Any,
+    current_price: Any,
+) -> Optional[Dict[str, Any]]:
+    try:
+        return movement_v2.analyze(
+            symbol,
+            df5m,
+            df15m,
+            df1h,
+            df4h,
+            current_price,
+        )
+    except Exception as exc:
+        print("Movement V2 analiz hatası:", type(exc).__name__, exc)
+        return None
+
+
+def _orderflow_context(
+    symbol: str,
+    base_result: Optional[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Canlı V3 ile aynı sorgulama koşulunu kullanır; karar değiştirmez."""
+    if not movement_v3.should_query(base_result):
+        return {
+            "queried": False,
+            "reason": "V2 PREP/ARMED/TRIGGER adayı yok; canlı V3 de order-flow sorgulamaz.",
+        }
+
+    direction = str((base_result or {}).get("direction") or "").upper()
+    try:
+        flow = movement_v3.fetch_order_flow(symbol)
+    except Exception:
+        flow = None
+
+    if not isinstance(flow, dict):
+        return {
+            "queried": True,
+            "direction": direction,
+            "available": False,
+            "reason": "OKX order-flow snapshot alınamadı.",
+        }
+
+    long_score, long_conditions, _ = movement_v3.score_order_flow(flow, "LONG")
+    short_score, short_conditions, _ = movement_v3.score_order_flow(flow, "SHORT")
+
+    selected_score = long_score if direction == "LONG" else short_score
+    selected_conditions = long_conditions if direction == "LONG" else short_conditions
+    confirm_score = int(getattr(movement_v3, "CONFIRM_SCORE", 65))
+
+    if long_score >= short_score + 10:
+        pressure = "Alıcı baskısı"
+    elif short_score >= long_score + 10:
+        pressure = "Satıcı baskısı"
+    else:
+        pressure = "Dengeli / karışık"
+
+    return {
+        "queried": True,
+        "available": True,
+        "direction": direction,
+        "pressure": pressure,
+        "long_score": int(long_score),
+        "short_score": int(short_score),
+        "selected_score": int(selected_score),
+        "confirmed": bool(selected_score >= confirm_score),
+        "confirm_score": confirm_score,
+        "conditions": selected_conditions,
+        "spread_bps": safe_float(flow.get("spread_bps")),
+        "book_imbalance": safe_float(flow.get("book_imbalance")),
+        "trade_imbalance": safe_float(flow.get("trade_imbalance")),
+        "recent_trade_imbalance": safe_float(flow.get("recent_trade_imbalance")),
+    }
+
+
+def _route_name(signal: Optional[Dict[str, Any]]) -> str:
+    if not isinstance(signal, dict):
+        return "YOK"
+    source = str(signal.get("source") or "15M_ENTRY").upper()
+    mapping = {
+        "15M_ENTRY": "Klasik Premium MTF",
+        continuation.SOURCE: "Trend Continuation",
+        reversal.SOURCE: "Reversal Capture",
+        "YOUNG_COIN_ENTRY": "Young Coin",
+        "NEW_COIN_ENTRY": "New Coin",
+    }
+    return mapping.get(source, source)
+
+
+def _copy_pending_state(temp_state: str) -> None:
+    source = getattr(confirmation, "DEFAULT_STATE_FILE", "premium_pending_candidates.json")
+    _copy_if_exists(source, temp_state)
+
+
+def _build_preview_gates(temp_dir: str):
+    """Canlı Premium gate'lerini temp state ile çalıştır; repo state'ini kirletme."""
+    reject_file = os.path.join(temp_dir, "profit_mode_rejections.json")
+    pending_file = os.path.join(temp_dir, "premium_pending_candidates.json")
+    _copy_pending_state(pending_file)
+
+    gate = profit.PremiumGate(bot.TRADE_LEDGER_FILE, rejects=reject_file)
+    pending_gate = confirmation.PendingConfirmationGate(
+        gate,
+        state_file=pending_file,
+    )
+
+    class RunnerProxy:
+        pass
+
+    proxy = RunnerProxy()
+    proxy.bot = bot
+    proxy.profit = profit
+
+    gate_factory = reversal.make_profit_gate_factory(
+        proxy,
+        premium_runner._make_profit_gate,
+    )
+    entry_gate = gate_factory(
+        bot.is_entry_still_valid,
+        gate,
+        pending_gate,
+    )
+    return gate, pending_gate, entry_gate
+
+
+def _premium_base_candidate(
+    exchange: Any,
+    symbol: str,
+    df15m: Any,
+    df1h: Any,
+    df4h: Any,
+    current_price: Any,
+    pending_gate: Any,
+) -> Optional[Dict[str, Any]]:
+    """Canlı Premium V4 aday sırası; burada yeni teknik skor/formül yoktur."""
+    try:
+        fresh = bot.analyze_mtf_trade(
+            symbol,
+            df15m,
+            df1h,
+            df4h,
+            current_price,
+        )
+    except Exception as exc:
+        print("Klasik Premium analiz hatası:", type(exc).__name__, exc)
+        fresh = None
+
+    if isinstance(fresh, dict):
+        return fresh
+
+    try:
+        trend_continue = continuation.analyze_continuation(
+            symbol,
+            df15m,
+            df1h,
+            df4h,
+            current_price,
+        )
+    except Exception as exc:
+        print("Trend Continuation analiz hatası:", type(exc).__name__, exc)
+        trend_continue = None
+
+    if isinstance(trend_continue, dict):
+        return trend_continue
+
+    # premium_all_coins ultra-new yolu exchange referansını live taramada
+    # build_scan_universe üzerinden alır. Tek coin mikroskopta aynı referansı
+    # yalnızca adapter olarak bağlarız; karar formülü değişmez.
+    try:
+        allcoins._EXCHANGE = exchange
+        young = allcoins.analyze_young_coin(
+            symbol,
+            df15m,
+            df1h,
+            df4h,
+            current_price,
+        )
+    except Exception as exc:
+        print("Young/New coin analiz hatası:", type(exc).__name__, exc)
+        young = None
+
+    if isinstance(young, dict):
+        return young
+
+    try:
+        return pending_gate.fallback_signal(
+            symbol=symbol,
+            df15m=df15m,
+            df1h=df1h,
+            df4h=df4h,
+            strategy_module=strategy,
+        )
+    except Exception:
+        return None
+
+
+def _premium_candidate(
+    exchange: Any,
+    symbol: str,
+    df15m: Any,
+    df1h: Any,
+    df4h: Any,
+    current_price: Any,
+    pending_gate: Any,
+) -> Tuple[Optional[Dict[str, Any]], Dict[str, Any]]:
+    """Reversal Capture wrapper ile aynı yön-duyarlı aday seçimi."""
+    context: Optional[Dict[str, Any]] = None
+    try:
+        context = reversal.recent_tp3_context(bot, symbol)
+    except Exception:
+        context = None
+
+    base_signal = _premium_base_candidate(
+        exchange,
+        symbol,
+        df15m,
+        df1h,
+        df4h,
+        current_price,
+        pending_gate,
+    )
+
+    if context is None:
+        return base_signal, {"eligible": False, "status": "Yok"}
+
+    promoted = None
+    try:
+        promoted = reversal._promote_existing_reversal(base_signal, context)
+    except Exception:
+        promoted = None
+
+    if isinstance(promoted, dict):
+        return promoted, {
+            "eligible": True,
+            "status": "Mevcut Premium kurulumu ters yön olarak yeniden doğrulandı",
+            "previous_direction": context.get("direction"),
+            "direction": promoted.get("direction"),
+        }
+
+    try:
+        captured = reversal.analyze_reversal(
+            bot,
+            symbol,
+            df15m,
+            df1h,
+            df4h,
+            current_price,
+        )
+    except Exception as exc:
+        print("Reversal Capture analiz hatası:", type(exc).__name__, exc)
+        captured = None
+
+    if isinstance(captured, dict):
+        return captured, {
+            "eligible": True,
+            "status": "TP3 sonrası güçlü ters yön yakalandı",
+            "previous_direction": context.get("direction"),
+            "direction": captured.get("direction"),
+        }
+
+    # Canlı reversal wrapper'ın davranışı: TP3 cooldown bağlamında yeni ters
+    # yön doğrulanmadıysa aynı coin için aday döndürülmez.
+    return None, {
+        "eligible": True,
+        "status": "TP3 sonrası ters yön şartları henüz tamam değil",
+        "previous_direction": context.get("direction"),
+        "direction": context.get("opposite_direction"),
+    }
+
+
+def _portfolio_context(symbol: str, direction: str) -> Dict[str, Any]:
+    try:
+        result = portfolio_risk.evaluate_portfolio_risk(
+            symbol,
+            direction,
+            "MAIN_MTF",
+            record_shadow=False,
+        )
+        # Canlı Premium runner'daki opportunity-capture override aynen uygulanır.
+        return opportunity_capture.allow_opposite_direction_result(result)
+    except Exception as exc:
+        return {
+            "hard_block": True,
+            "block_code": "PORTFOLIO_CHECK_ERROR",
+            "block_reason": f"Portfolio risk kontrolü çalışmadı: {type(exc).__name__}",
+            "warnings": [],
+        }
+
+
+def _contextual_leverage(
+    core_leverage: Any,
+    *,
+    portfolio: Dict[str, Any],
+    derivatives: Dict[str, Any],
+    orderflow: Dict[str, Any],
     direction: str,
-    plan: dict[str, float | str],
-    exchange: ccxt.Exchange,
-    market_symbol: str,
 ) -> str:
-    icon = "🟢" if direction == "LONG" else "🔴"
-    return f"""
-{icon} ONAYLI {direction} İŞLEM PLANI
-Giriş: {format_price(exchange, market_symbol, float(plan['entry']))}
-TP1: {format_price(exchange, market_symbol, float(plan['tp1']))}
-TP2: {format_price(exchange, market_symbol, float(plan['tp2']))}
-TP3: {format_price(exchange, market_symbol, float(plan['tp3']))}
-SL: {format_price(exchange, market_symbol, float(plan['sl']))}
-Stop Mesafesi: %{float(plan['risk_percent']):.2f}
-R/R TP1: {float(plan['rr1']):.2f}
-R/R TP2: {float(plan['rr2']):.2f}
-R/R TP3: {float(plan['rr3']):.2f}
-Kaldıraç Önerisi: {plan['leverage']}
-"""
+    """Ana sinyalin kaldıraç önerisini asla yükseltmez; yalnız risk bağlamıyla kısar."""
+    core = str(core_leverage or "1x").lower().replace(" ", "")
+    if "3x" in core:
+        cap = 3
+    elif "2x" in core:
+        cap = 2
+    else:
+        cap = 1
+
+    if portfolio.get("hard_block") or portfolio.get("has_soft_warning"):
+        cap = 1
+
+    funding = safe_float(derivatives.get("funding"))
+    threshold = safe_float(derivatives.get("funding_threshold"), 0.0005) or 0.0005
+    wanted = str(direction or "").upper()
+    if funding is not None:
+        crowded = (
+            wanted == "LONG" and funding >= threshold
+        ) or (
+            wanted == "SHORT" and funding <= -threshold
+        )
+        if crowded:
+            cap = 1
+
+    if orderflow.get("queried") and orderflow.get("available") and not orderflow.get("confirmed"):
+        cap = 1
+
+    return f"{cap}x"
 
 
-def waiting_conditions(
-    s4h: dict[str, Any],
-    s1h: dict[str, Any],
-    entry15: tuple[str, str],
-    radar5: tuple[str, str],
-) -> str:
-    conditions: list[str] = []
+def _decision(
+    signal: Optional[Dict[str, Any]],
+    *,
+    direction_allowed: bool,
+    entry_ok: bool,
+    entry_reason: str,
+    portfolio: Dict[str, Any],
+    duplicate: bool,
+    recent_closed_blocked: bool,
+    open_capacity_blocked: bool,
+) -> Tuple[str, str]:
+    if not isinstance(signal, dict):
+        return "BEKLE", "Canlı Premium karar yollarının hiçbiri işlem adayı üretmedi."
 
-    if s4h["direction"] == "NEUTRAL":
-        conditions.append("4H yönünün netleşmesi")
-    if s1h["direction"] == "NEUTRAL":
-        conditions.append("1H yönünün netleşmesi")
-    if (
-        s4h["direction"] != "NEUTRAL"
-        and s1h["direction"] != "NEUTRAL"
-        and s4h["direction"] != s1h["direction"]
-    ):
-        conditions.append("4H ve 1H yönlerinin aynı tarafa dönmesi")
-    if entry15[0] == "NEUTRAL":
-        conditions.append("15M kapanmış mum giriş onayı")
-    if radar5[0] == "NEUTRAL":
-        conditions.append("5M hacimli momentum desteği")
+    direction = str(signal.get("direction") or "").upper()
+    if direction not in {"LONG", "SHORT"}:
+        return "BEKLE", "Premium adayı geçerli LONG/SHORT yönü üretmedi."
 
-    if not conditions:
-        conditions.append("skor, giriş uzaklığı ve stop mesafesinin uygunlaşması")
+    if str(signal.get("signal_class") or "TRADE").upper() != "TRADE":
+        return "BEKLE", "Premium adayı işlem sınıfında değil; radar/bekleme durumunda."
 
-    return "\n".join(f"• {condition}" for condition in conditions[:4])
+    if recent_closed_blocked and str(signal.get("source") or "").upper() != reversal.SOURCE:
+        return "BEKLE", "Yakın zamanda kapanan işlem cooldown koruması aktif."
+
+    if duplicate:
+        return "BEKLE", "Aynı coin + aynı yön için canlı duplicate koruması aktif."
+
+    if open_capacity_blocked:
+        return "BEKLE", "Riskli açık Premium sinyal limiti dolu."
+
+    if not direction_allowed:
+        return "BEKLE", "Canlı Premium market guard bu yönü şu anda onaylamıyor."
+
+    if not entry_ok:
+        return "BEKLE", entry_reason or "Premium giriş / maliyet / teyit kapısı geçilmedi."
+
+    if bool(portfolio.get("hard_block")):
+        return "BEKLE", str(
+            portfolio.get("block_reason")
+            or portfolio.get("block_code")
+            or "Portfolio Risk adayı engelledi."
+        )
+
+    return direction, entry_reason or "Canlı Premium kapıları geçti."
+
+
+def _format_price(value: Any) -> str:
+    number = safe_float(value)
+    if number is None:
+        return "-"
+    return strategy.format_price(number)
+
+
+def _plan_text(signal: Dict[str, Any], contextual_leverage: str) -> str:
+    direction = str(signal.get("direction") or "")
+    return (
+        "\n\n✅ PREMIUM ONAYLI İŞLEM PLANI\n"
+        f"Yön: {direction}\n"
+        f"Giriş: {_format_price(signal.get('entry'))}\n"
+        f"TP1: {_format_price(signal.get('tp1'))}\n"
+        f"TP2: {_format_price(signal.get('tp2'))}\n"
+        f"TP3: {_format_price(signal.get('tp3'))}\n"
+        f"SL: {_format_price(signal.get('sl'))}\n"
+        f"Stop Mesafesi: %{float(safe_float(signal.get('risk_percent'), 0.0) or 0.0):.2f}\n"
+        f"R/R: {signal.get('rr_tp1', '-')} / {signal.get('rr_tp2', '-')} / {signal.get('rr_tp3', '-')}\n"
+        f"Çekirdek Kaldıraç: {signal.get('leverage', '-')}\n"
+        f"Bağlamsal Kaldıraç Tavanı: {contextual_leverage}"
+    )
+
+
+def _short_status(value: Any, default: str = "-") -> str:
+    text = str(value or "").strip()
+    return text if text else default
+
+
+def _funding_text(derivatives: Dict[str, Any]) -> str:
+    funding = safe_float(derivatives.get("funding"))
+    value = "-" if funding is None else f"{funding:+.6f}"
+    return f"{derivatives.get('funding_state', 'veri yok')} | funding {value}"
+
+
+def _oi_text(derivatives: Dict[str, Any]) -> str:
+    oi = safe_float(derivatives.get("open_interest"))
+    oi_value = "-" if oi is None else f"{oi:,.0f}"
+    return f"{derivatives.get('oi_state', 'veri yok')} | OI {oi_value}"
+
+
+def _orderflow_text(orderflow: Dict[str, Any]) -> str:
+    if not orderflow.get("queried"):
+        return str(orderflow.get("reason") or "Sorgulanmadı")
+    if not orderflow.get("available"):
+        return str(orderflow.get("reason") or "Veri alınamadı")
+    return (
+        f"{orderflow.get('pressure')} | LONG {orderflow.get('long_score')}/100 "
+        f"| SHORT {orderflow.get('short_score')}/100 "
+        f"| seçili yön teyidi: {'EVET' if orderflow.get('confirmed') else 'HAYIR'} "
+        f"| spread {float(safe_float(orderflow.get('spread_bps'), 0.0) or 0.0):.2f} bps"
+    )
+
+
+def _market_outlook_line(outlook: Dict[str, Any]) -> str:
+    fit_long = outlook.get("long_suitability")
+    fit_short = outlook.get("short_suitability")
+    fit = ""
+    if fit_long is not None or fit_short is not None:
+        fit = f" | LONG uygunluk {fit_long if fit_long is not None else '-'} / SHORT {fit_short if fit_short is not None else '-'}"
+    return (
+        f"6s: {outlook.get('bias_6h')} (%{outlook.get('confidence_6h')}) "
+        f"| 24s: {outlook.get('bias_24h')} (%{outlook.get('confidence_24h')})"
+        + fit
+    )
 
 
 def analyze_coin(symbol: str) -> str:
     normalized = normalize_symbol(symbol)
-    source = resolve_data_source(normalized)
+    if not normalized or len(normalized) <= 4:
+        raise RuntimeError("Geçerli bir USDT coin sembolü girilmedi.")
 
-    exchange: ccxt.Exchange = source["exchange"]
-    market_symbol: str = source["market_symbol"]
+    # Canlı Premium runner ile aynı strateji runtime ayarları.
+    strategy.ENABLE_5M_EARLY_TRADE = PREMIUM_ENABLE_5M_EARLY_TRADE
+    strategy.MAX_LATE_ENTRY_DISTANCE_PERCENT = PREMIUM_MAX_LATE_ENTRY_DISTANCE_PERCENT
 
-    dfs: dict[str, pd.DataFrame] = {}
-    for label, (timeframe, limit) in TIMEFRAMES.items():
-        raw_df = fetch_df(exchange, market_symbol, timeframe, limit)
-        if raw_df is None:
-            raise RuntimeError(
-                f"{normalized} için {label} futures verisi yetersiz. En az 220 mum gerekli."
-            )
+    exchange = bot.get_exchange()
+    market_symbol = bot.to_okx_symbol(normalized)
 
-        df = add_indicators(raw_df)
-        if df is None:
-            raise RuntimeError(
-                f"{normalized} için {label} indikatör verisi üretilemedi. Coin çok yeni olabilir."
-            )
-        dfs[label] = df
+    markets = exchange.load_markets()
+    market = markets.get(market_symbol)
+    if not isinstance(market, dict) or not market.get("active", True) or not market.get("swap", False):
+        raise RuntimeError(f"{normalized} için aktif OKX USDT perpetual futures kontratı bulunamadı.")
 
-    ticker = exchange.fetch_ticker(market_symbol)
-    price_value = ticker.get("last")
-    if price_value is None:
-        raise RuntimeError(f"{normalized} futures güncel fiyatı alınamadı.")
-    price = float(price_value)
+    adaptive_fetch = allcoins.make_adaptive_fetcher(bot.fetch_df)
 
-    df5 = dfs["5M"]
-    df15 = dfs["15M"]
-    df1h = dfs["1H"]
-    df4h = dfs["4H"]
-
-    s4h = trend_status(df4h, "4H")
-    s1h = trend_status(df1h, "1H")
-    s15 = trend_status(df15, "15M")
-    s5 = trend_status(df5, "5M")
-
-    entry15 = candle_signal_15m(df15)
-    radar5 = radar_5m(df5)
-
-    sr15 = pivot_support_resistance(df15, price, lookback=120)
-    sr1h = pivot_support_resistance(df1h, price, lookback=120)
-    sr4h = pivot_support_resistance(df4h, price, lookback=120)
-
-    long_score, long_reasons = score_direction("LONG", s4h, s1h, entry15, radar5, df15)
-    short_score, short_reasons = score_direction("SHORT", s4h, s1h, entry15, radar5, df15)
-
-    verdict, verdict_reason = final_verdict(
-        long_score,
-        short_score,
-        s4h,
-        s1h,
-        entry15,
-        radar5,
+    df5m = adaptive_fetch(
+        exchange,
+        normalized,
+        getattr(bot, "RADAR_TIMEFRAME", "5m"),
+        int(getattr(bot, "RADAR_LIMIT", 300)),
+        min_len=120,
+    )
+    df15m = adaptive_fetch(
+        exchange,
+        normalized,
+        getattr(bot, "ENTRY_TIMEFRAME", "15m"),
+        int(getattr(bot, "ENTRY_LIMIT", 300)),
+        min_len=120,
+    )
+    df1h = adaptive_fetch(
+        exchange,
+        normalized,
+        getattr(bot, "CONFIRM_TIMEFRAME", "1h"),
+        int(getattr(bot, "CONFIRM_LIMIT", 300)),
+        min_len=120,
+    )
+    df4h = adaptive_fetch(
+        exchange,
+        normalized,
+        getattr(bot, "TREND_TIMEFRAME", "4h"),
+        int(getattr(bot, "TREND_LIMIT", 300)),
+        min_len=120,
     )
 
-    plan: dict[str, float | str] | None = None
-    plan_error: str | None = None
-    if verdict in ("LONG", "SHORT"):
-        plan, plan_error = build_trade_plan(verdict, price, df15)
-        if plan is None:
-            verdict = "WAIT"
-            verdict_reason = plan_error or "Giriş veya stop şartı uygun değil"
+    if df15m is None:
+        raise RuntimeError(f"{normalized} için 15M futures verisi yetersiz.")
+    if df1h is None and len(df15m) >= allcoins.MATURE_MIN_CANDLES:
+        raise RuntimeError(f"{normalized} için 1H futures verisi yetersiz.")
+    if df4h is None and len(df15m) >= allcoins.MATURE_MIN_CANDLES:
+        raise RuntimeError(f"{normalized} için 4H futures verisi yetersiz.")
 
-    row15 = df15.iloc[-2]
-    report = f"""
-📊 TEK COIN DETAY ANALİZİ
+    current_price = bot.get_current_price(exchange, normalized)
+    if not current_price or current_price <= 0:
+        raise RuntimeError(f"{normalized} güncel futures fiyatı alınamadı.")
+
+    one_day = _one_day_context(exchange, normalized)
+
+    trend4, trend4_reason, trend4_info = strategy.get_4h_trend(df4h)
+    confirm1, confirm1_reason, confirm1_info = strategy.get_1h_confirm(df1h)
+    context15 = _frame_context(df15m, "15M")
+    context5 = _frame_context(df5m, "5M")
+
+    movement = _movement_v2_context(
+        normalized,
+        df5m,
+        df15m,
+        df1h,
+        df4h,
+        current_price,
+    )
+    orderflow = _orderflow_context(normalized, movement)
+
+    with tempfile.TemporaryDirectory(prefix="coin_analyzer_v2_") as temp_dir:
+        outlook_snapshot = _fresh_market_outlook(exchange, temp_dir)
+        _, pending_gate, entry_gate = _build_preview_gates(temp_dir)
+
+        signal, reversal_context = _premium_candidate(
+            exchange,
+            normalized,
+            df15m,
+            df1h,
+            df4h,
+            current_price,
+            pending_gate,
+        )
+
+        signal_direction = str((signal or {}).get("direction") or "").upper()
+        outlook = _outlook_text(outlook_snapshot, signal_direction or None)
+        derivatives = _target_derivatives(exchange, normalized)
+
+        try:
+            market_guard = bot.get_market_direction_status(exchange)
+        except Exception as exc:
+            market_guard = {
+                "LONG": False,
+                "SHORT": False,
+                "reason": f"Market guard çalışmadı: {type(exc).__name__}",
+            }
+
+        direction_allowed = bool(
+            market_guard.get(signal_direction, False)
+            if signal_direction in {"LONG", "SHORT"}
+            else False
+        )
+
+        entry_ok = False
+        entry_reason = "Premium adayı yok."
+        gate_result: Optional[Dict[str, Any]] = None
+        base_entry_ok = False
+        base_entry_reason = "Premium adayı yok."
+        cost_result: Dict[str, Any] = {"ok": False, "reason": "SIGNAL_MISSING"}
+
+        if isinstance(signal, dict):
+            # Teşhis alanları; canlı gate de aynı base validator + maliyet motorunu kullanır.
+            try:
+                base_entry_ok, base_entry_reason = bot.is_entry_still_valid(
+                    signal,
+                    current_price,
+                )
+            except Exception as exc:
+                base_entry_ok = False
+                base_entry_reason = f"Giriş doğrulama hatası: {type(exc).__name__}"
+
+            try:
+                cost_result = profit.cost_viability(signal)
+            except Exception:
+                cost_result = {"ok": False, "reason": "COST_CHECK_ERROR"}
+
+            signal_for_gate = dict(signal)
+            if (
+                str(signal_for_gate.get("signal_class") or "TRADE").upper() == "TRADE"
+                and signal_direction in {"LONG", "SHORT"}
+                and not direction_allowed
+            ):
+                # PendingConfirmationGate'in canlı yorumuyla uyumlu: market guard
+                # tersse aday TRADE olarak gönderilmez, bekleme/radar bağlamına düşer.
+                signal_for_gate["signal_class"] = "RADAR"
+
+            try:
+                entry_ok, entry_reason, gate_result = entry_gate(
+                    signal_for_gate,
+                    current_price,
+                )
+                # Gate anchor sinyali güncellerse canlı seviyeleri koru.
+                if entry_ok and isinstance(signal_for_gate, dict):
+                    signal = signal_for_gate
+                    signal_direction = str(signal.get("direction") or "").upper()
+            except Exception as exc:
+                entry_ok = False
+                entry_reason = f"Premium gate hatası: {type(exc).__name__}"
+
+        portfolio = (
+            _portfolio_context(normalized, signal_direction)
+            if signal_direction in {"LONG", "SHORT"}
+            else {
+                "hard_block": False,
+                "warnings": [],
+                "open_signal_count": len(portfolio_risk.collect_open_portfolio()),
+            }
+        )
+
+        duplicate = False
+        recent_closed_blocked = False
+        if isinstance(signal, dict):
+            try:
+                duplicate = bool(bot.is_duplicate(signal, radar=False))
+            except Exception:
+                duplicate = False
+
+            try:
+                recent_filter = reversal.make_recent_closed_prefilter(
+                    bot,
+                    bot.has_recent_closed_signal,
+                )
+                recent_closed_blocked = bool(recent_filter(normalized))
+            except Exception:
+                recent_closed_blocked = False
+
+        risky_open = reduced_open = total_open = 0
+        open_capacity_blocked = False
+        try:
+            risky_open, reduced_open, total_open = bot.count_open_signal_risk()
+            open_capacity_blocked = risky_open >= int(getattr(bot, "MAX_OPEN_SIGNALS", 6))
+        except Exception:
+            pass
+
+        if signal_direction == "LONG" and not bool(getattr(bot, "ALLOW_LONG", True)):
+            direction_allowed = False
+            market_guard["reason"] = "Config LONG işlemleri kapalı."
+        if signal_direction == "SHORT" and not bool(getattr(bot, "ALLOW_SHORT", True)):
+            direction_allowed = False
+            market_guard["reason"] = "Config SHORT işlemleri kapalı."
+
+        final_decision, final_reason = _decision(
+            signal,
+            direction_allowed=direction_allowed,
+            entry_ok=entry_ok,
+            entry_reason=entry_reason,
+            portfolio=portfolio,
+            duplicate=duplicate,
+            recent_closed_blocked=recent_closed_blocked,
+            open_capacity_blocked=open_capacity_blocked,
+        )
+
+        contextual_leverage = _contextual_leverage(
+            (signal or {}).get("leverage"),
+            portfolio=portfolio,
+            derivatives=derivatives,
+            orderflow=orderflow,
+            direction=signal_direction,
+        )
+
+        movement_text = "V2 5M adayı yok"
+        if isinstance(movement, dict):
+            movement_text = (
+                f"{movement.get('direction', '-')} "
+                f"{movement.get('stage', '-')} "
+                f"| skor {movement.get('score', '-')}/100"
+            )
+
+        reversal_text = _short_status(reversal_context.get("status"), "Yok")
+        continuation_text = (
+            "UYGUN — canlı Trend Continuation adayı"
+            if isinstance(signal, dict)
+            and str(signal.get("source") or "").upper() == continuation.SOURCE
+            else "Aktif canlı aday yok"
+        )
+
+        score_text = (
+            f"{int(safe_float((signal or {}).get('score'), 0) or 0)}/100"
+            if isinstance(signal, dict)
+            else "Aday oluşmadı"
+        )
+        source_text = _route_name(signal)
+
+        portfolio_status = "UYGUN"
+        if portfolio.get("hard_block"):
+            portfolio_status = f"ENGEL — {portfolio.get('block_reason') or portfolio.get('block_code')}"
+        elif portfolio.get("warnings"):
+            portfolio_status = "UYARI — " + " | ".join(str(x) for x in portfolio.get("warnings")[:2])
+
+        cost_text = (
+            f"{'UYGUN' if cost_result.get('ok') else 'UYGUN DEĞİL'}"
+            f" | neden {cost_result.get('reason')}"
+        )
+        if cost_result.get("estimated_cost_r") is not None:
+            cost_text += (
+                f" | tahmini maliyet {cost_result.get('estimated_cost_r')}R"
+                f" | TP1/BE net {cost_result.get('tp1_be_net_r')}R"
+            )
+
+        risk_flags = outlook.get("risk_flags") or []
+        risk_flags_text = "Yok" if not risk_flags else "; ".join(str(x) for x in risk_flags[:3])
+
+        report = f"""
+🔬 COIN DETAY ANALİZİ V2 — PREMIUM MİKROSKOP
 
 Coin: {normalized}
-Veri Kaynağı: {source['source_name']}
 Market: {market_symbol}
-Güncel Futures Fiyatı: {format_price(exchange, market_symbol, price)}
-Not: {source['trade_note']}
-Uygulama: {source['execution_note']}
+Fiyat: {_format_price(current_price)}
+Sürüm: {VERSION}
 
-🧭 Çoklu Zaman Dilimi
-• {s4h['text']} | RSI: {s4h['rsi']} | ADX: {s4h['adx']}
-• {s1h['text']} | RSI: {s1h['rsi']} | ADX: {s1h['adx']}
-• {s15['text']} | RSI: {s15['rsi']} | ADX: {s15['adx']}
-• {s5['text']} | RSI: {s5['rsi']} | ADX: {s5['adx']}
+🧭 ÇOKLU ZAMAN DİLİMİ
+• {one_day.get('text')} | skor: {one_day.get('score') if one_day.get('score') is not None else '-'}
+• 4H: {trend4_reason} | ADX: {trend4_info.get('adx_4h', '-') if isinstance(trend4_info, dict) else '-'} | RSI: {trend4_info.get('rsi_4h', '-') if isinstance(trend4_info, dict) else '-'}
+• 1H: {confirm1_reason} | ADX: {confirm1_info.get('adx_1h', '-') if isinstance(confirm1_info, dict) else '-'} | RSI: {confirm1_info.get('rsi_1h', '-') if isinstance(confirm1_info, dict) else '-'}
+• {context15.get('text')} | RSI: {context15.get('rsi', '-')} | ADX: {context15.get('adx', '-')} | Hacim: {context15.get('volume_ratio', '-')}x
+• {context5.get('text')} | Movement Start V2: {movement_text}
 
-📌 Giriş / Radar
-• 15M: {entry15[1]}
-• 5M: {radar5[1]}
+🌍 GENEL PİYASA / MARKET OUTLOOK
+• {_market_outlook_line(outlook)}
+• Risk bayrakları: {risk_flags_text}
+• Canlı legacy market guard: LONG={'AÇIK' if market_guard.get('LONG') else 'KAPALI'} | SHORT={'AÇIK' if market_guard.get('SHORT') else 'KAPALI'}
+• Market guard nedeni: {_short_status(market_guard.get('reason'))}
+Not: Market Outlook V1 teşhis katmanıdır; kendi başına Premium hard-gate değildir.
 
-📊 Hacim
-• 15M Hacim Oranı: {float(row15['volume_ratio']):.2f}x
+📈 FUNDING / OPEN INTEREST — {normalized}
+• Funding: {_funding_text(derivatives)}
+• Open Interest: {_oi_text(derivatives)}
+Not: Coin özel Funding/OI bu raporda teşhistir; canlı Premium'un mevcut hard-gate kuralları değiştirilmez.
 
-🟢 Destek Bölgeleri
-• 15M Destek 1: {format_price(exchange, market_symbol, sr15['support1'])} | Uzaklık: %{sr15['support_distance']:.2f}
-• 15M Destek 2: {format_price(exchange, market_symbol, sr15['support2'])}
-• 1H Destek: {format_price(exchange, market_symbol, sr1h['support1'])}
-• 4H Destek: {format_price(exchange, market_symbol, sr4h['support1'])}
+🧬 ORDER-FLOW V3
+• {_orderflow_text(orderflow)}
+Not: V3 şu an gölge/öğrenme katmanıdır; canlı Premium kararı tek başına değiştirmez.
 
-🔴 Direnç Bölgeleri
-• 15M Direnç 1: {format_price(exchange, market_symbol, sr15['resistance1'])} | Uzaklık: %{sr15['resistance_distance']:.2f}
-• 15M Direnç 2: {format_price(exchange, market_symbol, sr15['resistance2'])}
-• 1H Direnç: {format_price(exchange, market_symbol, sr1h['resistance1'])}
-• 4H Direnç: {format_price(exchange, market_symbol, sr4h['resistance1'])}
+🔄 REVERSAL CAPTURE
+• {reversal_text}
 
-🟢 LONG Kalite Skoru: {long_score}/100
-Nedenler: {', '.join(long_reasons) if long_reasons else 'Yeterli neden yok'}
+🚀 TREND CONTINUATION
+• {continuation_text}
 
-🔴 SHORT Kalite Skoru: {short_score}/100
-Nedenler: {', '.join(short_reasons) if short_reasons else 'Yeterli neden yok'}
+💎 PREMIUM KARAR
+• Kaynak: {source_text}
+• Premium skor: {score_text}
+• Base giriş güvenliği: {'UYGUN' if base_entry_ok else 'UYGUN DEĞİL'} — {base_entry_reason}
+• Maliyet kontrolü: {cost_text}
+• Portfolio Risk: {portfolio_status}
+• Açık Premium risk: {risky_open}/{getattr(bot, 'MAX_OPEN_SIGNALS', 6)} riskli | {reduced_open} TP1 azaltılmış | toplam {total_open}
+• Duplicate: {'VAR' if duplicate else 'YOK'}
+• Yakın kapanış cooldown: {'AKTİF' if recent_closed_blocked else 'YOK / istisna uygun'}
+• Çekirdek kaldıraç: {(signal or {}).get('leverage', '-')}
+• Bağlamsal kaldıraç tavanı: {contextual_leverage}
 
-📌 Genel Karar
-{verdict} → {verdict_reason}
-"""
+📌 KARAR: {final_decision}
+Neden: {final_reason}
+""".strip()
 
-    if verdict in ("LONG", "SHORT") and plan is not None:
-        report += plan_text(verdict, plan, exchange, market_symbol)
-    else:
-        report += f"""
+        if final_decision in {"LONG", "SHORT"} and isinstance(signal, dict):
+            report += _plan_text(signal, contextual_leverage)
+        else:
+            report += (
+                "\n\n⏳ İŞLEM PLANI ÜRETİLMEDİ\n"
+                "Entry–TP–SL yalnız canlı Premium karar kapıları gerçekten geçtiğinde gösterilir."
+            )
 
-⏳ İŞLEM PLANI ÜRETİLMEDİ
-WAIT kararında giriş, TP ve SL gösterilmez.
+        report += (
+            "\n\n🛡️ NOT\n"
+            "Bu ekran ayrı bir sinyal motoru değildir. Klasik Premium MTF, Trend Continuation, "
+            "Reversal Capture, Premium teyit/maliyet ve Portfolio Risk bileşenlerini doğrudan kullanır. "
+            "1D, Market Outlook, Funding/OI ve V3 order-flow kararın nedenini görünür kılan ek teşhis bağlamıdır.\n"
+            "Emir açılmaz; rapor yalnız analiz amaçlıdır."
+        )
 
-Beklenen Onaylar
-{waiting_conditions(s4h, s1h, entry15, radar5)}
-"""
-
-    report += """
-
-📌 Risk Notu
-Bu rapor işlem emri değildir.
-Grafikte kontrol etmeden işlem açma.
-Fiyat girişten uzaklaşmışsa peşinden koşma.
-TP1 gelirse yaklaşık %50 kâr alıp kalan stopu girişe çekmek daha güvenlidir.
-"""
-
-    return report.strip()
+        return report
 
 
 def main() -> None:
     symbol = normalize_symbol(SYMBOL)
-    print("Futures coin analizi yapılıyor:", symbol)
+    print("Coin Detay Analizi V2 çalışıyor:", symbol)
 
     try:
         report = analyze_coin(symbol)
         print(report)
         send_telegram(report)
     except Exception as exc:
-        message = f"❌ Coin analiz hatası\n\nCoin: {symbol}\nHata: {exc}"
+        message = (
+            "❌ Coin Detay Analizi V2 hatası\n\n"
+            f"Coin: {symbol}\n"
+            f"Hata: {type(exc).__name__}: {exc}"
+        )
         print(message)
         send_telegram(message)
         raise
