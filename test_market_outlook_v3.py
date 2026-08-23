@@ -68,18 +68,19 @@ def snapshot(ts=100_000, btc=77536, up=62.0, score6=84, score24=86, top=None):
 
 
 def sample_state():
-    old3 = snapshot(ts=100_000 - 3 * 3600 - 60, btc=76000, up=42.0, score6=65, score24=70)
-    old3["breadth"]["top"] = [
+    old12 = snapshot(ts=100_000 - 12 * 3600 - 60, btc=74800, up=38.0, score6=58, score24=64)
+    old6 = snapshot(ts=100_000 - 6 * 3600 - 60, btc=76000, up=42.0, score6=65, score24=70)
+    old6["breadth"]["top"] = [
         {"symbol": "ZROUSDT", "change": 12},
         {"symbol": "TRUMPUSDT", "change": 10},
         {"symbol": "AAAUSDT", "change": 9},
         {"symbol": "BBBUSDT", "change": 8},
         {"symbol": "CCCUSDT", "change": 7},
     ]
-    old1 = snapshot(ts=100_000 - 3700, btc=77000, up=55.0, score6=78, score24=80)
+    old2 = snapshot(ts=100_000 - 2 * 3600 - 60, btc=77000, up=55.0, score6=78, score24=80)
     current = snapshot()
     return {
-        "snapshots": [old3, old1, current],
+        "snapshots": [old12, old6, old2, current],
         "accuracy": {
             "6h": {"sample": 8, "accuracy_percent": 75.0},
             "24h": {"sample": 7, "accuracy_percent": 71.4},
@@ -91,9 +92,11 @@ def test_research_uses_history_and_detects_expanding_risk_on():
     state, current = sample_state()
     research = derive_research(current, state)
     assert research["pulse"] == "YÜKSELİŞ GENİŞ TABANA YAYILIYOR"
-    assert research["changes"]["breadth_3h"] is not None
-    assert research["changes"]["breadth_3h"] > 0
-    assert research["changes"]["btc_3h"] > 0
+    assert research["sampling_hours"] == 2
+    assert research["changes"]["breadth_6h"] is not None
+    assert research["changes"]["breadth_6h"] > 0
+    assert research["changes"]["btc_6h"] > 0
+    assert research["changes"]["btc_12h"] > 0
     assert research["alignment"]["up"] == 12
     assert research["heat"]["label"] == "ısınmış"
     assert len(research["evidence"]) >= 4
@@ -114,6 +117,7 @@ def test_v3_report_is_clear_detailed_and_under_telegram_limit():
         "BUGÜNÜN YAKLAŞIMI",
         "MODEL TAKİBİ",
         "Arka plan araştırması",
+        "tarama 2 saatte bir",
     ):
         assert text in message
     assert "ZRO %+24.80" in message

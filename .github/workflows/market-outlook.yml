@@ -3,7 +3,9 @@ name: Market Outlook Daily
 on:
   workflow_dispatch:
   schedule:
-    - cron: "7,37 * * * *"
+    # Genel piyasa raporu icin 30 dakikalik tarama gereksiz Actions tuketiyordu.
+    # 2 saatte bir calisma; trend/breadth degisimini izlemek icin yeterli, maliyeti dusuk.
+    - cron: "7 */2 * * *"
 
 permissions:
   contents: write
