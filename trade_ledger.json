@@ -110062,9 +110062,9 @@
       "worst_adverse_r": 0.8046,
       "best_favorable_price": 78054.2,
       "worst_adverse_price": 76770.0,
-      "last_market_price": 77819.9,
+      "last_market_price": 77725.8,
       "tp1_hit_at": 1787519760,
-      "last_tracking_at": 1787521980
+      "last_tracking_at": 1787522460
     },
     "LPTUSDT_LONG_TREND_CONTINUATION_1787499346": {
       "trade_id": "LPTUSDT_LONG_TREND_CONTINUATION_1787499346",
@@ -110464,17 +110464,22 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "SL",
+      "r_result": -1.0,
+      "exit_price": 0.07829,
+      "closed_at": 1787522520,
+      "closed_day": "2026-08-24",
       "events": [
         {
           "time": 1787515042,
           "event": "OPENED",
           "price": 0.07899
+        },
+        {
+          "time": 1787522520,
+          "event": "SL",
+          "price": 0.07829
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -110512,18 +110517,63 @@
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %-0.06 | ETHUSDT: 15M EMA20 üstü, 5M %0.08 | SOLUSDT: 15M EMA20 üstü, 5M %-0.06",
       "best_favorable_percent": 0.2405,
-      "worst_adverse_percent": 0.8229,
+      "worst_adverse_percent": 0.8862,
       "best_favorable_r": 0.2832,
-      "worst_adverse_r": 0.969,
+      "worst_adverse_r": 1.0435,
       "best_favorable_price": 0.07918,
-      "worst_adverse_price": 0.07834,
-      "last_market_price": 0.0785,
+      "worst_adverse_price": 0.07829,
+      "last_market_price": 0.07829,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1787521980
+      "last_tracking_at": 1787522340,
+      "duration_minutes": 124,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "KURULUM DEVAM ETMEDI",
+        "confidence": "ORTA",
+        "factors": [
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Giris ideal bolgeden goreceli olarak uzakti.",
+          "15M hacim kendi ortalamasinin altinda veya sinirdaydi."
+        ],
+        "duration_minutes": 124,
+        "best_favorable_r": 0.2832,
+        "worst_adverse_r": 1.0435,
+        "provisional": true,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "stop_root_cause": {
+        "version": "STOP_ROOT_CAUSE_V1",
+        "primary": "TAKIP_SURUYOR",
+        "label": "Takip sürüyor",
+        "preliminary": "GEC_UZAK_GIRIS",
+        "preliminary_label": "Geç/uzak giriş",
+        "secondary": [
+          "GEC_UZAK_GIRIS"
+        ],
+        "confidence": "DUSUK",
+        "provisional": true,
+        "factors": [
+          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "15M hacim oranı sınırın altındaydı.",
+          "Giriş ideal bölgeden veya gönderim fiyatından uzaktı."
+        ],
+        "metrics": {
+          "duration_minutes": 124,
+          "mfe_r": 0.2832,
+          "mae_r": 1.0435,
+          "risk_percent": 0.849,
+          "return_minutes": null
+        },
+        "updated_at": 1787522520
+      },
+      "gross_r_before_costs": -1.0,
+      "estimated_execution_cost_r": 0.1413,
+      "net_r_after_costs": -1.1413,
+      "cost_model_version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1"
     }
   },
-  "last_update": 1787522023,
-  "profit_mode_v2_last_enriched_at": 1787502112,
+  "last_update": 1787522520,
+  "profit_mode_v2_last_enriched_at": 1787522845,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
     "fee_rate_per_side": 0.0005,
