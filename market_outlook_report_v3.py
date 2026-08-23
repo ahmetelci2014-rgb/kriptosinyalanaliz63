@@ -7,7 +7,7 @@ from typing import Any, Dict, Iterable
 from market_outlook_research_v3 import derive_research
 from market_outlook_report_v2 import scenario_weights
 
-VERSION = "MARKET_OUTLOOK_REPORT_V3_2026_08_23"
+VERSION = "MARKET_OUTLOOK_REPORT_V3_1_2026_08_23"
 
 
 def sf(value: Any, default: float = 0.0) -> float:
@@ -94,18 +94,18 @@ def build_message(snapshot: Dict[str, Any], state: Dict[str, Any]) -> str:
 
     up_w, flat_w, down_w = scenario_weights(outlook)
     price = sf(btc.get("price"))
-    b3 = (research.get("changes") or {}).get("breadth_3h")
-    btc3 = (research.get("changes") or {}).get("btc_3h")
+    b6 = (research.get("changes") or {}).get("breadth_6h")
+    btc6 = (research.get("changes") or {}).get("btc_6h")
     history_note = (
         f"{research.get('snapshot_count', 0)} snapshot / ~{research.get('history_hours', 0):.1f}s geçmiş"
         if research.get("snapshot_count") else "geçmiş veri birikiyor"
     )
 
     change_parts = []
-    if btc3 is not None:
-        change_parts.append(f"BTC ~3S {btc3:+.2f}%")
-    if b3 is not None:
-        change_parts.append(f"yükselen coin oranı ~3S {b3:+.1f} puan")
+    if btc6 is not None:
+        change_parts.append(f"BTC ~6S {btc6:+.2f}%")
+    if b6 is not None:
+        change_parts.append(f"yükselen coin oranı ~6S {b6:+.1f} puan")
     change_text = " | ".join(change_parts) if change_parts else "zaman karşılaştırması için veri birikiyor"
 
     risks = research.get("risks") or []
@@ -141,7 +141,7 @@ def build_message(snapshot: Dict[str, Any], state: Dict[str, Any]) -> str:
         f"{strategy}\n\n"
         "🧪 MODEL TAKİBİ\n"
         f"6S isabet: {_accuracy(state, '6h')} | 24S isabet: {_accuracy(state, '24h')}\n"
-        f"Arka plan araştırması: {history_note}\n\n"
+        f"Arka plan araştırması: {history_note} | tarama 2 saatte bir\n\n"
         f"💰 BTC {fmt_price(btc.get('price'))} | ETH {fmt_price(eth.get('price'))} | SOL {fmt_price(sol.get('price'))}\n"
         "📌 Senaryo yüzdeleri model ağırlığıdır; kesin fiyat olasılığı değildir."
     )
