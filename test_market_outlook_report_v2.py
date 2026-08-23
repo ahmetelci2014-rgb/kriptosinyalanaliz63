@@ -93,8 +93,8 @@ def test_detailed_report_has_decision_sections():
     ):
         assert text in message
     assert "SEÇİCİ MAJÖR RALLİSİ" in message
-    assert "AAA +8.20%" in message
-    assert "XXX -7.40%" in message
+    assert "AAA %+8.20" in message
+    assert "XXX %-7.40" in message
     assert len(message) < 4096
 
 
