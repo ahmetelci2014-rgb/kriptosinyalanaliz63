@@ -1,4 +1,4 @@
-"""Standalone runner for Market Outlook Engine with detailed V2 Telegram report."""
+"""Standalone runner for Market Outlook V3 research + clear Telegram summary."""
 from __future__ import annotations
 
 import os
@@ -6,8 +6,13 @@ import os
 import ccxt
 
 import market_outlook_engine as outlook
-from market_outlook_report_v2 import build_message as build_message_v2
+from market_outlook_report_v3 import build_message as build_message_v3
+from market_outlook_research_v3 import derive_research
 from telegram_delivery import send_telegram_once
+
+# Backward-compatible alias for the existing manual-run regression tests and any
+# older imports. The implementation now renders the V3 report.
+build_message_v2 = build_message_v3
 
 
 def build_exchange():
@@ -29,13 +34,25 @@ def manual_delivery_key(snapshot) -> str:
     return f"MANUAL_{run_id or ts or 'LOCAL'}"
 
 
-def send_manual_report_if_needed(result, token, chat_id) -> bool:
-    """Send a fresh V2 report on manual dispatch even if today's daily report already exists.
+def persist_research(result):
+    """Attach deep V3 research to the current snapshot so the background evidence is retained."""
+    snapshot = (result or {}).get("snapshot") or {}
+    state = outlook.load_state()
+    if not snapshot:
+        return state, {}
 
-    Scheduled runs keep the one-report-per-day rule in market_outlook_engine. A manual
-    workflow is an explicit request for an additional current snapshot, so it gets its
-    own delivery key. Re-running the same GitHub run remains duplicate-protected.
-    """
+    research = derive_research(snapshot, state)
+    ts = int(snapshot.get("ts") or 0)
+    for row in reversed(state.get("snapshots") or []):
+        if isinstance(row, dict) and int(row.get("ts") or 0) == ts:
+            row["research_v3"] = research
+            break
+    outlook.atomic_save(outlook.STATE_FILE, state)
+    return state, research
+
+
+def send_manual_report_if_needed(result, token, chat_id, state_view=None) -> bool:
+    """Send a fresh V3 report on manual dispatch even if today's daily report already exists."""
     if not is_manual_workflow() or bool((result or {}).get("sent")):
         return False
     if not token or not chat_id:
@@ -45,8 +62,10 @@ def send_manual_report_if_needed(result, token, chat_id) -> bool:
     if not snapshot:
         return False
 
-    state_view = {"accuracy": (result or {}).get("accuracy") or {}}
-    message = build_message_v2(snapshot, state_view)
+    if state_view is None:
+        state_view = {"accuracy": (result or {}).get("accuracy") or {}}
+
+    message = build_message_v2(snapshot, state_view or {})
     return bool(
         send_telegram_once(
             message=message,
@@ -59,9 +78,9 @@ def send_manual_report_if_needed(result, token, chat_id) -> bool:
 
 
 def main() -> None:
-    # V2 changes only the daily Telegram explanation. The scoring/forecast engine
-    # remains untouched so historical accuracy stays comparable.
-    outlook.build_message = build_message_v2
+    # V3 changes explanation + background historical interpretation only. The
+    # direction/forecast score engine remains untouched so accuracy stays comparable.
+    outlook.build_message = build_message_v3
 
     token = os.getenv("TOKEN")
     chat_id = os.getenv("CHAT_ID")
@@ -72,17 +91,20 @@ def main() -> None:
         chat_id=chat_id,
     )
 
-    manual_sent = send_manual_report_if_needed(result, token, chat_id)
+    state_view, research = persist_research(result)
+    manual_sent = send_manual_report_if_needed(result, token, chat_id, state_view)
     if manual_sent:
         result["sent"] = True
 
     snapshot = result.get("snapshot") or {}
     regime = snapshot.get("outlook") or {}
     print(
-        "Market Outlook V2 tamamlandı | 6H:",
+        "Market Outlook V3 tamamlandı | 6H:",
         regime.get("bias_6h"),
         "| 24H:",
         regime.get("bias_24h"),
+        "| Pulse:",
+        research.get("pulse"),
         "| Telegram:",
         result.get("sent"),
         "| Manuel:",
