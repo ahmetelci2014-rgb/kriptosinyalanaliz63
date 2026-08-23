@@ -8,9 +8,13 @@ on:
         required: true
         default: "BTCUSDT"
 
+permissions:
+  contents: read
+
 jobs:
   coin-analysis:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Repo indir
@@ -22,12 +26,86 @@ jobs:
           python-version: "3.11"
 
       - name: Paketleri kur
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
-      - name: Coin analizi çalıştır
+      - name: Coin analizini çalıştır ve Telegram'a güvenli gönder
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
           SYMBOL: ${{ github.event.inputs.symbol }}
-        run: python coin_analyzer.py
+          PYTHONUNBUFFERED: "1"
+        run: |
+          python - <<'PY'
+          import os
+          import traceback
+          import requests
+          import coin_analyzer
+
+          token = os.getenv("TOKEN")
+          chat_id = os.getenv("CHAT_ID")
+          symbol = coin_analyzer.normalize_symbol(os.getenv("SYMBOL") or "BTCUSDT")
+
+          def telegram_send(text):
+              if not token or not chat_id:
+                  print("TOKEN / CHAT_ID yok. Telegram gönderimi yapılamadı.")
+                  return
+              response = requests.post(
+                  f"https://api.telegram.org/bot{token}/sendMessage",
+                  data={"chat_id": chat_id, "text": text},
+                  timeout=25,
+              )
+              print("Telegram cevap:", response.status_code, response.text[:300])
+              response.raise_for_status()
+
+          def split_message(text, limit=3800):
+              text = str(text or "")
+              if len(text) <= limit:
+                  return [text]
+              parts = []
+              current = ""
+              for line in text.splitlines(keepends=True):
+                  if len(line) > limit:
+                      if current:
+                          parts.append(current.rstrip())
+                          current = ""
+                      while len(line) > limit:
+                          parts.append(line[:limit])
+                          line = line[limit:]
+                  if len(current) + len(line) > limit:
+                      if current:
+                          parts.append(current.rstrip())
+                      current = line
+                  else:
+                      current += line
+              if current:
+                  parts.append(current.rstrip())
+              return parts or [text[:limit]]
+
+          print("Coin Detay Analizi başlatıldı:", symbol)
+
+          try:
+              report = coin_analyzer.analyze_coin(symbol)
+              print(report)
+          except Exception as exc:
+              traceback.print_exc()
+              error_message = (
+                  "❌ COIN DETAY ANALİZİ HATASI\n\n"
+                  f"Coin: {symbol}\n"
+                  f"Hata: {type(exc).__name__}: {exc}\n\n"
+                  "GitHub Actions çalıştı ancak analiz motoru hata verdi."
+              )
+              try:
+                  telegram_send(error_message)
+              finally:
+                  raise
+
+          parts = split_message(report)
+          total = len(parts)
+          for index, part in enumerate(parts, start=1):
+              prefix = f"📊 COIN DETAY ANALİZİ — {symbol}"
+              if total > 1:
+                  prefix += f" ({index}/{total})"
+              telegram_send(prefix + "\n\n" + part)
+
+          print(f"Coin Detay Analizi tamamlandı. Telegram parça sayısı: {total}")
+          PY
