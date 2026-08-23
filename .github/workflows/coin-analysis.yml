@@ -47,7 +47,7 @@ jobs:
 
       - name: Coin Analyzer import ve syntax kontrolü
         run: |
-          python -m py_compile coin_analyzer.py coin_analysis_runtime.py
+          python -m py_compile coin_analyzer.py coin_analysis_runtime.py coin_analysis_runtime_v2.py
           python -c "import coin_analyzer; print('Coin Analyzer import OK:', coin_analyzer.VERSION)"
 
       - name: Coin Detay Analizi çalıştır
@@ -56,4 +56,4 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
           SYMBOL: ${{ github.event.inputs.symbol }}
           PYTHONUNBUFFERED: "1"
-        run: python coin_analysis_runtime.py
+        run: python coin_analysis_runtime_v2.py
