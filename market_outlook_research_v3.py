@@ -3,13 +3,17 @@
 Uses the current OKX snapshot plus the rolling Market Outlook snapshot history to
 measure *change through time*, not only the current market picture. It does not
 alter Premium trade filters, TP/SL, forecasts, or exchange-order behavior.
+
+The workflow runs every two hours to keep GitHub Actions usage low. Therefore the
+historical comparisons are aligned to roughly 2H / 6H / 12H windows instead of
+short noisy intervals.
 """
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, List, Optional
 
-VERSION = "MARKET_OUTLOOK_RESEARCH_V3_2026_08_23"
+VERSION = "MARKET_OUTLOOK_RESEARCH_V3_1_2026_08_23"
 
 
 def sf(value: Any, default: float = 0.0) -> float:
@@ -52,7 +56,11 @@ def _pct_change(now: Optional[float], old: Optional[float]) -> Optional[float]:
 def _breadth_up(snapshot: Optional[Dict[str, Any]]) -> Optional[float]:
     if not snapshot:
         return None
-    return sf((snapshot.get("breadth") or {}).get("up_pct"), float("nan"))
+    try:
+        value = float((snapshot.get("breadth") or {}).get("up_pct"))
+        return value if math.isfinite(value) else None
+    except Exception:
+        return None
 
 
 def _score(snapshot: Optional[Dict[str, Any]], key: str) -> Optional[float]:
@@ -121,11 +129,17 @@ def _derivatives(snapshot: Dict[str, Any]) -> Dict[str, Any]:
     funding_avg = derivatives.get("funding_average")
     funding = None if funding_avg is None else sf(funding_avg)
     oi = derivatives.get("oi_change_since_last_run_percent") or {}
-    oi_values = [
-        sf(oi.get(symbol), float("nan"))
-        for symbol in ("BTCUSDT", "ETHUSDT", "SOLUSDT")
-    ]
-    oi_values = [value for value in oi_values if math.isfinite(value)]
+    oi_values = []
+    for symbol in ("BTCUSDT", "ETHUSDT", "SOLUSDT"):
+        value = oi.get(symbol)
+        if value is None:
+            continue
+        try:
+            number = float(value)
+            if math.isfinite(number):
+                oi_values.append(number)
+        except Exception:
+            continue
     oi_avg = round(sum(oi_values) / len(oi_values), 3) if oi_values else None
 
     if funding is None:
@@ -181,9 +195,9 @@ def derive_research(snapshot: Dict[str, Any], state: Dict[str, Any]) -> Dict[str
     """Return structured deep-research context derived from current + historical snapshots."""
     current_ts = int(snapshot.get("ts") or 0)
     rows = _history(state, current_ts)
-    p1 = _past_snapshot(rows, current_ts, 1.0)
-    p3 = _past_snapshot(rows, current_ts, 3.0)
+    p2 = _past_snapshot(rows, current_ts, 2.0)
     p6 = _past_snapshot(rows, current_ts, 6.0)
+    p12 = _past_snapshot(rows, current_ts, 12.0)
 
     btc_now = _price(snapshot, "BTCUSDT")
     breadth_now = sf((snapshot.get("breadth") or {}).get("up_pct"))
@@ -191,42 +205,42 @@ def derive_research(snapshot: Dict[str, Any], state: Dict[str, Any]) -> Dict[str
     score24_now = _score(snapshot, "score_24h")
 
     changes = {
-        "btc_1h": _pct_change(btc_now, _price(p1, "BTCUSDT")),
-        "btc_3h": _pct_change(btc_now, _price(p3, "BTCUSDT")),
+        "btc_2h": _pct_change(btc_now, _price(p2, "BTCUSDT")),
         "btc_6h": _pct_change(btc_now, _price(p6, "BTCUSDT")),
-        "breadth_1h": _delta(breadth_now, _breadth_up(p1)),
-        "breadth_3h": _delta(breadth_now, _breadth_up(p3)),
+        "btc_12h": _pct_change(btc_now, _price(p12, "BTCUSDT")),
+        "breadth_2h": _delta(breadth_now, _breadth_up(p2)),
         "breadth_6h": _delta(breadth_now, _breadth_up(p6)),
-        "score6_3h": _delta(score6_now, _score(p3, "score_6h")),
-        "score24_3h": _delta(score24_now, _score(p3, "score_24h")),
+        "breadth_12h": _delta(breadth_now, _breadth_up(p12)),
+        "score6_6h": _delta(score6_now, _score(p6, "score_6h")),
+        "score24_6h": _delta(score24_now, _score(p6, "score_24h")),
     }
 
     counts = _direction_counts(snapshot)
     derivatives = _derivatives(snapshot)
     heat = _heat(snapshot)
-    leadership = _leadership(snapshot, p3 or p1)
+    leadership = _leadership(snapshot, p6 or p2)
     breadth = snapshot.get("breadth") or {}
     median = sf(breadth.get("median_change"))
     weighted = sf(breadth.get("volume_weighted_change"))
     down_pct = sf(breadth.get("down_pct"))
     direction24 = str((snapshot.get("outlook") or {}).get("direction_24h") or "FLAT").upper()
-    b3 = changes.get("breadth_3h")
+    b6 = changes.get("breadth_6h")
 
     if direction24 == "UP":
-        if breadth_now >= 55 and (b3 is None or b3 >= -3):
+        if breadth_now >= 55 and (b6 is None or b6 >= -3):
             pulse = "YÜKSELİŞ GENİŞ TABANA YAYILIYOR"
             narrative = "Majör trend ile altcoin breadth aynı yönde; yükseliş yalnız BTC'ye bağlı değil."
         elif breadth_now < 45:
             pulse = "MAJÖRLER GÜÇLÜ, ALTCOINLER GERİDE"
             narrative = "BTC/ETH/SOL güçlü olsa da piyasanın çoğu aynı ölçüde katılmıyor; coin seçimi kritik."
-        elif b3 is not None and b3 <= -10:
+        elif b6 is not None and b6 <= -10:
             pulse = "YÜKSELİŞ SÜRÜYOR AMA BREADTH DARALIYOR"
             narrative = "Fiyat yapısı yukarı kalırken katılım azalıyor; kısa vadeli yorulma uyarısı var."
         else:
             pulse = "YUKARI EĞİLİM KORUNUYOR"
             narrative = "Majör yapı pozitif, piyasa katılımı ise orta kuvvette."
     elif direction24 == "DOWN":
-        if down_pct >= 55 and (b3 is None or b3 <= 3):
+        if down_pct >= 55 and (b6 is None or b6 <= 3):
             pulse = "SATIŞ GENİŞ TABANA YAYILIYOR"
             narrative = "Majör zayıflık ve altcoin breadth aynı yönde; düşüş yalnız BTC'ye özgü değil."
         elif breadth_now > 55:
@@ -243,10 +257,10 @@ def derive_research(snapshot: Dict[str, Any], state: Dict[str, Any]) -> Dict[str
     if counts["total"]:
         evidence.append(f"Majör MTF uyumu: {counts['up']}/{counts['total']} yukarı, {counts['down']}/{counts['total']} aşağı.")
     evidence.append(f"Breadth: %{breadth_now:.1f} yükselen, medyan 24S %{median:+.2f}, hacim ağırlıklı %{weighted:+.2f}.")
-    if changes["breadth_3h"] is not None:
-        evidence.append(f"Son ~3 saatte yükselen coin oranı {changes['breadth_3h']:+.1f} puan değişti.")
-    if changes["btc_3h"] is not None:
-        evidence.append(f"BTC son ~3 saatte %{changes['btc_3h']:+.2f} değişti.")
+    if changes["breadth_6h"] is not None:
+        evidence.append(f"Son ~6 saatte yükselen coin oranı {changes['breadth_6h']:+.1f} puan değişti.")
+    if changes["btc_6h"] is not None:
+        evidence.append(f"BTC son ~6 saatte %{changes['btc_6h']:+.2f} değişti.")
     evidence.append(leadership["label"].capitalize() + ".")
     evidence.append(derivatives["funding_label"].capitalize() + "; " + derivatives["oi_label"] + ".")
 
@@ -255,7 +269,7 @@ def derive_research(snapshot: Dict[str, Any], state: Dict[str, Any]) -> Dict[str
         risks.append(f"BTC 4H RSI {heat['rsi_4h']:.1f}: trend güçlü ama kısa vadede geri test/düzeltme riski yükselmiş.")
     if direction24 == "UP" and breadth_now < 45:
         risks.append("Yükseliş altcoin geneline yayılmıyor; geniş piyasa LONG iştahını sınırlamak gerekir.")
-    if direction24 == "UP" and b3 is not None and b3 <= -10:
+    if direction24 == "UP" and b6 is not None and b6 <= -10:
         risks.append("Breadth son saatlerde hızlı daralıyor; fiyat yükselse bile iç yapı zayıflıyor olabilir.")
     if derivatives["funding_average"] is not None and abs(derivatives["funding_average"]) >= 0.0005:
         risks.append("Funding kalabalığı ters yönlü squeeze riskini artırıyor.")
@@ -270,6 +284,7 @@ def derive_research(snapshot: Dict[str, Any], state: Dict[str, Any]) -> Dict[str
 
     return {
         "version": VERSION,
+        "sampling_hours": 2,
         "snapshot_count": len(rows),
         "history_hours": history_hours,
         "pulse": pulse,
