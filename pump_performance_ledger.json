@@ -2586,30 +2586,56 @@
       "break_level": 0.11097,
       "entry_drift_percent": 0.14321518080915993,
       "break_level_distance_percent": 0.531675227538981,
-      "snapshots": {},
-      "latest_price": 0.11156,
-      "latest_directional_move_percent": 0.0,
-      "best_favorable_percent": 0.0,
-      "worst_adverse_percent": 0.0,
-      "best_favorable_r": 0.0,
-      "worst_adverse_r": 0.0,
-      "best_favorable_price": 0.11156,
-      "worst_adverse_price": 0.11156,
-      "last_market_price": 0.11156,
+      "snapshots": {
+        "5m": 1.4342,
+        "15m": 1.4342
+      },
+      "latest_price": 0.11316,
+      "latest_directional_move_percent": 1.4342,
+      "best_favorable_percent": 1.7812,
+      "worst_adverse_percent": 0.179,
+      "best_favorable_r": 1.2148,
+      "worst_adverse_r": 0.1221,
+      "best_favorable_price": 0.11371,
+      "worst_adverse_price": 0.11152,
+      "last_market_price": 0.11316,
       "direction_status": "OPEN",
       "direction_reason": "Gönderim sonrası yön performansı izleniyor",
-      "trade_outcome": "OPEN",
-      "trade_result_r": null,
-      "milestones": [],
+      "trade_outcome": "TP1",
+      "trade_result_r": 0.75,
+      "milestones": [
+        {
+          "outcome": "TP1",
+          "time": 1787493828,
+          "time_tr": "2026-08-23 17:03:48",
+          "price": 0.112948602,
+          "result_r": 0.75
+        }
+      ],
       "diagnosis": {
         "version": "PUMP_DIAGNOSIS_V1",
-        "code": "OPEN",
-        "primary": "İşlem sonucu bekleniyor",
-        "confidence": "DÜŞÜK",
-        "factors": [],
-        "provisional": true
+        "code": "DIRECTION_CORRECT",
+        "primary": "YÖN DOĞRU, İŞLEM DEVAM EDİYOR",
+        "confidence": "YÜKSEK",
+        "factors": [
+          "İşlem TP1 seviyesine ulaştı."
+        ],
+        "duration_minutes": 20,
+        "best_favorable_r": 0.7814,
+        "worst_adverse_r": 0.1221,
+        "provisional": true,
+        "note": "Bu teşhis kesin piyasa sebebi değildir; kayıtlı kırılım, hacim, momentum ve fiyat hareketine dayalı teknik değerlendirmedir."
       },
-      "post_stop_follow": null
+      "post_stop_follow": null,
+      "last_updated_at": 1787493828,
+      "last_updated_at_tr": "2026-08-23 17:03:48",
+      "last_tracking_at": 1787493780,
+      "tp1_hit_at": 1787493660,
+      "tp1_hit": true,
+      "tp2_hit": false,
+      "tp3_hit": false,
+      "trade_last_updated_at": 1787493828,
+      "trade_last_updated_at_tr": "2026-08-23 17:03:48"
     }
   ],
   "summary": {
@@ -2618,8 +2644,8 @@
     "direction_correct": 13,
     "direction_wrong": 9,
     "direction_mixed": 4,
-    "trade_open": 1,
-    "tp1": 0,
+    "trade_open": 0,
+    "tp1": 1,
     "tp2": 0,
     "tp3": 8,
     "stop": 3,
@@ -2627,13 +2653,13 @@
     "expired": 2,
     "long": 21,
     "short": 6,
-    "diagnosis_open": 1,
+    "diagnosis_open": 0,
     "diagnosis_success": 8,
     "diagnosis_false_breakout": 0,
     "diagnosis_early_stop": 2,
     "diagnosis_momentum_faded": 16,
     "diagnosis_no_continuation": 0
   },
-  "updated_at": 1787492606,
-  "updated_at_tr": "2026-08-23 16:43:26"
+  "updated_at": 1787493828,
+  "updated_at_tr": "2026-08-23 17:03:48"
 }
