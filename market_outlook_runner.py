@@ -1,4 +1,4 @@
-"""Standalone runner for Market Outlook Engine V1."""
+"""Standalone runner for Market Outlook Engine with detailed V2 Telegram report."""
 from __future__ import annotations
 
 import os
@@ -6,6 +6,7 @@ import os
 import ccxt
 
 import market_outlook_engine as outlook
+from market_outlook_report_v2 import build_message as build_message_v2
 
 
 def build_exchange():
@@ -16,6 +17,10 @@ def build_exchange():
 
 
 def main() -> None:
+    # V2 changes only the daily Telegram explanation. The scoring/forecast engine
+    # remains untouched so historical accuracy stays comparable.
+    outlook.build_message = build_message_v2
+
     exchange = build_exchange()
     result = outlook.run(
         exchange,
@@ -25,7 +30,7 @@ def main() -> None:
     snapshot = result.get("snapshot") or {}
     regime = snapshot.get("outlook") or {}
     print(
-        "Market Outlook tamamlandı | 6H:",
+        "Market Outlook V2 tamamlandı | 6H:",
         regime.get("bias_6h"),
         "| 24H:",
         regime.get("bias_24h"),
