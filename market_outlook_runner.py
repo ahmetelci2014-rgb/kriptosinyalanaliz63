@@ -10,6 +10,10 @@ from market_outlook_report_v3 import build_message as build_message_v3
 from market_outlook_research_v3 import derive_research
 from telegram_delivery import send_telegram_once
 
+# Backward-compatible alias for the existing manual-run regression tests and any
+# older imports. The implementation now renders the V3 report.
+build_message_v2 = build_message_v3
+
 
 def build_exchange():
     return ccxt.okx({
@@ -47,7 +51,7 @@ def persist_research(result):
     return state, research
 
 
-def send_manual_report_if_needed(result, token, chat_id, state_view) -> bool:
+def send_manual_report_if_needed(result, token, chat_id, state_view=None) -> bool:
     """Send a fresh V3 report on manual dispatch even if today's daily report already exists."""
     if not is_manual_workflow() or bool((result or {}).get("sent")):
         return False
@@ -58,7 +62,10 @@ def send_manual_report_if_needed(result, token, chat_id, state_view) -> bool:
     if not snapshot:
         return False
 
-    message = build_message_v3(snapshot, state_view or {})
+    if state_view is None:
+        state_view = {"accuracy": (result or {}).get("accuracy") or {}}
+
+    message = build_message_v2(snapshot, state_view or {})
     return bool(
         send_telegram_once(
             message=message,
