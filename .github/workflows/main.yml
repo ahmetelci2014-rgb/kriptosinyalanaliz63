@@ -44,6 +44,10 @@ jobs:
         run: python -m pip install --prefer-binary -r requirements.txt
 
       - name: Kullanici arayuzunde acilamayan futures sinyallerini temizle
+        env:
+          OKX_API_KEY: ${{ secrets.OKX_API_KEY }}
+          OKX_SECRET_KEY: ${{ secrets.OKX_SECRET_KEY }}
+          OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
         run: python untradable_futures_cleanup.py
 
       - name: Acik islemleri sonuc kontrolunden once devam gucu shadow
@@ -56,6 +60,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
+          OKX_API_KEY: ${{ secrets.OKX_API_KEY }}
+          OKX_SECRET_KEY: ${{ secrets.OKX_SECRET_KEY }}
+          OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
         run: python premium_crypto_profit_runner.py
 
       - name: Yeni acilan islemleri devam gucu shadow
