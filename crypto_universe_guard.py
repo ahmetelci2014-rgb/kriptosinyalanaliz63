@@ -1,36 +1,41 @@
-"""Crypto-only and user-tradable market universe guard for Premium live scanning.
+"""Strict crypto + user-tradable futures universe guard for Premium live scanning.
 
-OKX public/global market metadata can expose instruments that are not actually
-available in the user's trading interface/region. The Premium bot must only send
-signals for USDT perpetuals the user can manually open.
+Safety goal
+-----------
+The live Telegram bot must never promote a symbol merely because global/public
+OKX data happens to expose price history. A live candidate is accepted only
+when its current market metadata positively identifies an active, live, USDT-
+settled perpetual crypto contract. Ambiguous derivative metadata fails closed.
 
-This module therefore applies three defensive layers before the existing market
-scanner runs:
-1) reject explicit non-crypto/RWA instruments,
-2) reject inactive/non-live swap metadata when OKX exposes that state,
-3) reject user-confirmed unavailable futures symbols.
-
-The explicit unavailable-symbol set is intentionally small and evidence based.
-A symbol is added only after its absence from the user's actual futures interface
-is confirmed; this avoids broadly shrinking the live universe from assumptions.
+Account/region note
+-------------------
+Public/global OKX metadata cannot prove every account-specific regional product
+restriction. User-confirmed unavailable symbols are therefore also blocked.
+When read-only account instrument credentials are connected in the future,
+/api/v5/account/instruments?instType=SWAP should be treated as the strongest
+allowlist. This module is intentionally order-free and credential-free today.
 """
 from __future__ import annotations
 
 from functools import wraps
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Set, Tuple
+
+VERSION = "PREMIUM_FUTURES_UNIVERSE_GUARD_V2_2026_08_24"
 
 CRYPTO_INST_CATEGORY = "1"
-NON_CRYPTO_INST_CATEGORIES = {"3", "4", "5", "6"}  # stocks, commodities, forex, bonds
+NON_CRYPTO_INST_CATEGORIES = {"3", "4", "5", "6"}
+CRYPTO_SWAP_GROUP_IDS = {"4", "5"}
 RWA_SWAP_GROUP_IDS = {"6", "7"}
+LIVE_OKX_STATES = {"live"}
 
-# User-confirmed futures that are not available in the actual OKX trading
-# interface used for manual execution. Public/global OKX data may still expose
-# market metadata or historical/live-looking data for these instruments.
+# Confirmed from the user's actual OKX interface. Keep this evidence-based.
 USER_UNTRADABLE_FUTURES_SYMBOLS = {
     "ETHWUSDT",
 }
 
-LIVE_OKX_STATES = {"live"}
+# Populated every time the current OKX market universe is filtered. This is a
+# runtime safety registry only; it is never persisted as a trading signal.
+VERIFIED_LIVE_FUTURES_SYMBOLS: Set[str] = set()
 
 
 def _text(value: Any) -> str:
@@ -43,7 +48,6 @@ def _info(market: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def market_asset_category(market: Dict[str, Any]) -> str:
-    """Return OKX instCategory when CCXT/raw metadata exposes it."""
     if not isinstance(market, dict):
         return ""
     info = _info(market)
@@ -58,7 +62,6 @@ def market_group_id(market: Dict[str, Any]) -> str:
 
 
 def market_state(market: Dict[str, Any]) -> str:
-    """Return raw OKX instrument state when available."""
     if not isinstance(market, dict):
         return ""
     info = _info(market)
@@ -66,7 +69,6 @@ def market_state(market: Dict[str, Any]) -> str:
 
 
 def canonical_bot_symbol(value: Any) -> str:
-    """Convert CCXT/OKX/bot symbol shapes to e.g. ETHWUSDT."""
     raw = _text(value).upper()
     if not raw:
         return ""
@@ -92,48 +94,74 @@ def is_user_tradable_futures_symbol(symbol: Any) -> bool:
     return bool(canonical and canonical not in USER_UNTRADABLE_FUTURES_SYMBOLS)
 
 
-def is_crypto_market(market: Dict[str, Any]) -> bool:
-    """Keep crypto markets; reject explicitly identified OKX non-crypto/RWA swaps.
+def has_positive_crypto_swap_evidence(market: Dict[str, Any]) -> bool:
+    """Require positive crypto evidence instead of the old fail-open behavior.
 
-    instCategory is authoritative when present:
-      1 crypto, 3 stocks, 4 commodities, 5 forex, 6 bonds.
-
-    Some adapters may temporarily omit instCategory. In that case OKX swap RWA
-    fee groups 6/7 are used as a defensive fallback. If neither field exists we
-    keep the market so legacy crypto symbols are not accidentally removed.
+    OKX documents crypto perpetual fee groups as 4/5 and RWA swap groups as 6/7.
+    instCategory=1 is also accepted when exposed. If neither positive signal is
+    present, the derivative is ambiguous and is excluded from live Telegram.
     """
     category = market_asset_category(market)
+    group_id = market_group_id(market)
+
     if category:
         return category == CRYPTO_INST_CATEGORY
+    if group_id:
+        return group_id in CRYPTO_SWAP_GROUP_IDS
+    return False
+
+
+def is_crypto_market(market: Dict[str, Any]) -> bool:
+    if not isinstance(market, dict):
+        return False
+
+    category = market_asset_category(market)
+    if category in NON_CRYPTO_INST_CATEGORIES:
+        return False
 
     group_id = market_group_id(market)
     if group_id in RWA_SWAP_GROUP_IDS:
         return False
 
-    return True
+    # Spot/non-swap markets are not part of the live futures decision here.
+    if not market.get("swap", False):
+        return True
+
+    return has_positive_crypto_swap_evidence(market)
 
 
 def market_exclusion_reason(market: Dict[str, Any], fallback: Any = "") -> str:
-    """Return a live-universe rejection code, or empty string when allowed."""
+    """Return a strict live-universe rejection code, or empty when allowed."""
     if not isinstance(market, dict):
-        return ""
+        return "INVALID_MARKET_METADATA"
+
+    if not market.get("swap", False):
+        return ""  # downstream eligible_markets ignores spot itself
+
+    if str(market.get("quote") or "").upper() != "USDT":
+        return "NOT_USDT_QUOTED_SWAP"
+    if str(market.get("settle") or "").upper() != "USDT":
+        return "NOT_USDT_SETTLED_SWAP"
+
+    # Fail closed: active must be positively true, not merely 'not false'.
+    if market.get("active") is not True:
+        return "ACTIVE_SWAP_NOT_CONFIRMED"
+
+    # Fail closed: current OKX raw instrument state must explicitly be live.
+    state = market_state(market)
+    if state not in LIVE_OKX_STATES:
+        return "OKX_STATE_NOT_CONFIRMED" if not state else f"OKX_STATE_{state.upper()}"
 
     if not is_crypto_market(market):
-        return "NON_CRYPTO_OR_RWA"
-
-    # Tradability checks matter only for derivatives. Spot markets are left
-    # untouched because the downstream eligible_markets function ignores them.
-    if not market.get("swap", False):
-        return ""
-
-    if market.get("active") is False:
-        return "INACTIVE_SWAP"
-
-    state = market_state(market)
-    if state and state not in LIVE_OKX_STATES:
-        return f"OKX_STATE_{state.upper()}"
+        if market_asset_category(market) in NON_CRYPTO_INST_CATEGORIES:
+            return "NON_CRYPTO_CATEGORY"
+        if market_group_id(market) in RWA_SWAP_GROUP_IDS:
+            return "RWA_SWAP_GROUP"
+        return "CRYPTO_SWAP_METADATA_UNVERIFIED"
 
     bot_symbol = market_bot_symbol(market, fallback)
+    if not bot_symbol:
+        return "BOT_SYMBOL_UNRESOLVED"
     if bot_symbol in USER_UNTRADABLE_FUTURES_SYMBOLS:
         return "USER_INTERFACE_UNTRADABLE"
 
@@ -143,18 +171,31 @@ def market_exclusion_reason(market: Dict[str, Any], fallback: Any = "") -> str:
 def filter_crypto_markets(
     markets: Dict[str, Dict[str, Any]],
 ) -> Tuple[Dict[str, Dict[str, Any]], List[Dict[str, str]]]:
-    """Filter to crypto markets that are also usable by the live futures bot."""
+    """Filter and refresh the exact runtime futures allow-registry."""
     kept: Dict[str, Dict[str, Any]] = {}
     excluded: List[Dict[str, str]] = []
+    verified: Set[str] = set()
 
     for key, market in (markets or {}).items():
         if not isinstance(market, dict):
-            kept[key] = market
+            excluded.append({
+                "key": _text(key),
+                "symbol": _text(key),
+                "bot_symbol": canonical_bot_symbol(key),
+                "inst_category": "",
+                "group_id": "",
+                "state": "",
+                "reason": "INVALID_MARKET_METADATA",
+            })
             continue
 
         reason = market_exclusion_reason(market, key)
         if not reason:
             kept[key] = market
+            if market.get("swap", False):
+                symbol = market_bot_symbol(market, key)
+                if symbol:
+                    verified.add(symbol)
             continue
 
         info = _info(market)
@@ -168,7 +209,18 @@ def filter_crypto_markets(
             "reason": reason,
         })
 
+    VERIFIED_LIVE_FUTURES_SYMBOLS.clear()
+    VERIFIED_LIVE_FUTURES_SYMBOLS.update(verified)
     return kept, excluded
+
+
+def is_verified_live_futures_symbol(symbol: Any) -> bool:
+    canonical = canonical_bot_symbol(symbol)
+    return bool(
+        canonical
+        and canonical not in USER_UNTRADABLE_FUTURES_SYMBOLS
+        and canonical in VERIFIED_LIVE_FUTURES_SYMBOLS
+    )
 
 
 def install_crypto_only_guard(market_scan_module: Any) -> None:
@@ -188,8 +240,10 @@ def install_crypto_only_guard(market_scan_module: Any) -> None:
             )
             suffix = " ..." if len(excluded) > 12 else ""
             print(
-                "PREMIUM FUTURES UNIVERSE GUARD | excluded:",
+                "PREMIUM STRICT FUTURES GUARD | excluded:",
                 len(excluded),
+                "| verified live crypto USDT swaps:",
+                len(VERIFIED_LIVE_FUTURES_SYMBOLS),
                 "|",
                 symbols + suffix,
             )
