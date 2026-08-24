@@ -63,7 +63,7 @@ jobs:
           OKX_API_KEY: ${{ secrets.OKX_API_KEY }}
           OKX_SECRET_KEY: ${{ secrets.OKX_SECRET_KEY }}
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
-        run: python premium_crypto_profit_runner.py
+        run: python premium_regime_profit_runner.py
 
       - name: Yeni acilan islemleri devam gucu shadow
         if: always()
@@ -121,6 +121,7 @@ jobs:
             movement_start_v2_shadow.json \
             movement_start_v3_orderflow_shadow.json \
             premium_early_breakout_state.json \
+            premium_regime_transition_state.json \
             multi_day_trend_shadow.json \
             big_move_hunter_shadow.json \
             early_breakout_direction_diagnostics.json \
