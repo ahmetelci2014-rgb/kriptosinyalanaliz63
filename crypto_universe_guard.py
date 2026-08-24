@@ -7,35 +7,40 @@ OKX data happens to expose price history. A live candidate is accepted only
 when its current market metadata positively identifies an active, live, USDT-
 settled perpetual crypto contract. Ambiguous derivative metadata fails closed.
 
-Account/region note
--------------------
-Public/global OKX metadata cannot prove every account-specific regional product
-restriction. User-confirmed unavailable symbols are therefore also blocked.
-When read-only account instrument credentials are connected in the future,
-/api/v5/account/instruments?instType=SWAP should be treated as the strongest
-allowlist. This module is intentionally order-free and credential-free today.
+Account/region safety
+---------------------
+OKX public/global data can still expose a perpetual that is unavailable to a
+specific account/region. If read-only OKX credentials are present in environment
+variables, this module also reads /api/v5/account/instruments?instType=SWAP and
+uses that account-specific list as the strongest allowlist. It never places,
+changes or cancels orders.
 """
 from __future__ import annotations
 
+import os
+import time
 from functools import wraps
 from typing import Any, Dict, List, Set, Tuple
 
-VERSION = "PREMIUM_FUTURES_UNIVERSE_GUARD_V2_2026_08_24"
+VERSION = "PREMIUM_FUTURES_UNIVERSE_GUARD_V3_2026_08_24"
 
 CRYPTO_INST_CATEGORY = "1"
 NON_CRYPTO_INST_CATEGORIES = {"3", "4", "5", "6"}
 CRYPTO_SWAP_GROUP_IDS = {"4", "5"}
 RWA_SWAP_GROUP_IDS = {"6", "7"}
 LIVE_OKX_STATES = {"live"}
+ACCOUNT_ALLOWLIST_REFRESH_SECONDS = 10 * 60
 
 # Confirmed from the user's actual OKX interface. Keep this evidence-based.
 USER_UNTRADABLE_FUTURES_SYMBOLS = {
     "ETHWUSDT",
 }
 
-# Populated every time the current OKX market universe is filtered. This is a
-# runtime safety registry only; it is never persisted as a trading signal.
+# Runtime-only registries. They are never trading orders/signals.
 VERIFIED_LIVE_FUTURES_SYMBOLS: Set[str] = set()
+ACCOUNT_TRADABLE_FUTURES_SYMBOLS: Set[str] = set()
+ACCOUNT_ALLOWLIST_ACTIVE = False
+ACCOUNT_ALLOWLIST_LAST_REFRESH = 0
 
 
 def _text(value: Any) -> str:
@@ -72,9 +77,17 @@ def canonical_bot_symbol(value: Any) -> str:
     raw = _text(value).upper()
     if not raw:
         return ""
+
+    # Raw OKX account/public instrument id: BTC-USDT-SWAP.
+    if raw.endswith("-USDT-SWAP"):
+        base = raw[: -len("-USDT-SWAP")]
+        return f"{base}USDT" if base else ""
+
+    # Unified CCXT market id: BTC/USDT:USDT.
     if "/" in raw:
         base = raw.split("/", 1)[0]
         return f"{base}USDT"
+
     compact = raw.replace("-", "").replace(":", "")
     if compact.endswith("USDTUSDT"):
         compact = compact[:-4]
@@ -94,21 +107,135 @@ def is_user_tradable_futures_symbol(symbol: Any) -> bool:
     return bool(canonical and canonical not in USER_UNTRADABLE_FUTURES_SYMBOLS)
 
 
-def has_positive_crypto_swap_evidence(market: Dict[str, Any]) -> bool:
-    """Require positive crypto evidence instead of the old fail-open behavior.
-
-    OKX documents crypto perpetual fee groups as 4/5 and RWA swap groups as 6/7.
-    instCategory=1 is also accepted when exposed. If neither positive signal is
-    present, the derivative is ambiguous and is excluded from live Telegram.
-    """
-    category = market_asset_category(market)
-    group_id = market_group_id(market)
-
+def _positive_crypto_fields(category: str, group_id: str) -> bool:
     if category:
         return category == CRYPTO_INST_CATEGORY
     if group_id:
         return group_id in CRYPTO_SWAP_GROUP_IDS
     return False
+
+
+def has_positive_crypto_swap_evidence(market: Dict[str, Any]) -> bool:
+    """Require positive crypto evidence instead of old fail-open behavior."""
+    return _positive_crypto_fields(
+        market_asset_category(market),
+        market_group_id(market),
+    )
+
+
+def _parse_account_instruments(payload: Any) -> Set[str]:
+    """Parse OKX account/instruments SWAP response into bot symbols."""
+    if not isinstance(payload, dict):
+        return set()
+    rows = payload.get("data")
+    if not isinstance(rows, list):
+        return set()
+
+    out: Set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("instType") or "").upper() != "SWAP":
+            continue
+        if str(row.get("state") or "").lower() != "live":
+            continue
+        inst_id = str(row.get("instId") or "").upper()
+        if not inst_id.endswith("-USDT-SWAP"):
+            continue
+        category = _text(row.get("instCategory"))
+        group_id = _text(row.get("groupId"))
+        if not _positive_crypto_fields(category, group_id):
+            continue
+        symbol = canonical_bot_symbol(inst_id)
+        if symbol and symbol not in USER_UNTRADABLE_FUTURES_SYMBOLS:
+            out.add(symbol)
+    return out
+
+
+def set_account_tradable_futures(symbols: Set[str] | List[str] | Tuple[str, ...]) -> None:
+    """Test/runtime helper: activate an explicit account-level allowlist."""
+    global ACCOUNT_ALLOWLIST_ACTIVE, ACCOUNT_ALLOWLIST_LAST_REFRESH
+    normalized = {
+        canonical_bot_symbol(symbol)
+        for symbol in symbols
+        if canonical_bot_symbol(symbol)
+    }
+    ACCOUNT_TRADABLE_FUTURES_SYMBOLS.clear()
+    ACCOUNT_TRADABLE_FUTURES_SYMBOLS.update(normalized)
+    ACCOUNT_ALLOWLIST_ACTIVE = bool(normalized)
+    ACCOUNT_ALLOWLIST_LAST_REFRESH = int(time.time()) if normalized else 0
+
+
+def clear_account_tradable_futures() -> None:
+    global ACCOUNT_ALLOWLIST_ACTIVE, ACCOUNT_ALLOWLIST_LAST_REFRESH
+    ACCOUNT_TRADABLE_FUTURES_SYMBOLS.clear()
+    ACCOUNT_ALLOWLIST_ACTIVE = False
+    ACCOUNT_ALLOWLIST_LAST_REFRESH = 0
+
+
+def refresh_account_tradable_futures_from_env(*, force: bool = False) -> bool:
+    """Load exact account-available SWAP instruments when read-only keys exist.
+
+    Required environment variables:
+      OKX_API_KEY, OKX_SECRET_KEY, OKX_PASSPHRASE
+
+    Failure never opens the universe. It simply leaves account allowlisting
+    inactive and the strict public-metadata gate remains in force.
+    """
+    global ACCOUNT_ALLOWLIST_ACTIVE, ACCOUNT_ALLOWLIST_LAST_REFRESH
+
+    now = int(time.time())
+    if (
+        not force
+        and ACCOUNT_ALLOWLIST_ACTIVE
+        and ACCOUNT_ALLOWLIST_LAST_REFRESH > 0
+        and now - ACCOUNT_ALLOWLIST_LAST_REFRESH < ACCOUNT_ALLOWLIST_REFRESH_SECONDS
+    ):
+        return True
+
+    api_key = _text(os.getenv("OKX_API_KEY"))
+    secret = _text(os.getenv("OKX_SECRET_KEY"))
+    passphrase = _text(os.getenv("OKX_PASSPHRASE"))
+    if not (api_key and secret and passphrase):
+        return False
+
+    try:
+        import ccxt
+
+        exchange = ccxt.okx({
+            "apiKey": api_key,
+            "secret": secret,
+            "password": passphrase,
+            "enableRateLimit": True,
+            "options": {"defaultType": "swap"},
+        })
+        method = getattr(exchange, "privateGetAccountInstruments", None)
+        if method is None:
+            method = getattr(exchange, "private_get_account_instruments", None)
+        if method is None:
+            raise RuntimeError("CCXT account instruments endpoint unavailable")
+
+        payload = method({"instType": "SWAP"})
+        symbols = _parse_account_instruments(payload)
+        if not symbols:
+            raise RuntimeError("Account SWAP allowlist returned empty")
+
+        ACCOUNT_TRADABLE_FUTURES_SYMBOLS.clear()
+        ACCOUNT_TRADABLE_FUTURES_SYMBOLS.update(symbols)
+        ACCOUNT_ALLOWLIST_ACTIVE = True
+        ACCOUNT_ALLOWLIST_LAST_REFRESH = now
+        print(
+            "PREMIUM ACCOUNT FUTURES ALLOWLIST | verified:",
+            len(symbols),
+        )
+        return True
+    except Exception as exc:
+        print(
+            "PREMIUM ACCOUNT FUTURES ALLOWLIST | unavailable, strict public fallback:",
+            type(exc).__name__,
+            str(exc)[:180],
+        )
+        return False
 
 
 def is_crypto_market(market: Dict[str, Any]) -> bool:
@@ -123,7 +250,6 @@ def is_crypto_market(market: Dict[str, Any]) -> bool:
     if group_id in RWA_SWAP_GROUP_IDS:
         return False
 
-    # Spot/non-swap markets are not part of the live futures decision here.
     if not market.get("swap", False):
         return True
 
@@ -136,18 +262,15 @@ def market_exclusion_reason(market: Dict[str, Any], fallback: Any = "") -> str:
         return "INVALID_MARKET_METADATA"
 
     if not market.get("swap", False):
-        return ""  # downstream eligible_markets ignores spot itself
+        return ""
 
     if str(market.get("quote") or "").upper() != "USDT":
         return "NOT_USDT_QUOTED_SWAP"
     if str(market.get("settle") or "").upper() != "USDT":
         return "NOT_USDT_SETTLED_SWAP"
-
-    # Fail closed: active must be positively true, not merely 'not false'.
     if market.get("active") is not True:
         return "ACTIVE_SWAP_NOT_CONFIRMED"
 
-    # Fail closed: current OKX raw instrument state must explicitly be live.
     state = market_state(market)
     if state not in LIVE_OKX_STATES:
         return "OKX_STATE_NOT_CONFIRMED" if not state else f"OKX_STATE_{state.upper()}"
@@ -164,6 +287,8 @@ def market_exclusion_reason(market: Dict[str, Any], fallback: Any = "") -> str:
         return "BOT_SYMBOL_UNRESOLVED"
     if bot_symbol in USER_UNTRADABLE_FUTURES_SYMBOLS:
         return "USER_INTERFACE_UNTRADABLE"
+    if ACCOUNT_ALLOWLIST_ACTIVE and bot_symbol not in ACCOUNT_TRADABLE_FUTURES_SYMBOLS:
+        return "ACCOUNT_FUTURES_UNAVAILABLE"
 
     return ""
 
@@ -216,11 +341,13 @@ def filter_crypto_markets(
 
 def is_verified_live_futures_symbol(symbol: Any) -> bool:
     canonical = canonical_bot_symbol(symbol)
-    return bool(
-        canonical
-        and canonical not in USER_UNTRADABLE_FUTURES_SYMBOLS
-        and canonical in VERIFIED_LIVE_FUTURES_SYMBOLS
-    )
+    if not canonical or canonical in USER_UNTRADABLE_FUTURES_SYMBOLS:
+        return False
+    if canonical not in VERIFIED_LIVE_FUTURES_SYMBOLS:
+        return False
+    if ACCOUNT_ALLOWLIST_ACTIVE and canonical not in ACCOUNT_TRADABLE_FUTURES_SYMBOLS:
+        return False
+    return True
 
 
 def install_crypto_only_guard(market_scan_module: Any) -> None:
@@ -232,6 +359,9 @@ def install_crypto_only_guard(market_scan_module: Any) -> None:
 
     @wraps(original)
     def guarded(markets: Dict[str, Dict[str, Any]]):
+        # If read-only account credentials exist, account availability wins over
+        # global/public availability. Otherwise strict public metadata is used.
+        refresh_account_tradable_futures_from_env()
         filtered, excluded = filter_crypto_markets(markets)
         if excluded:
             symbols = ", ".join(
@@ -244,6 +374,8 @@ def install_crypto_only_guard(market_scan_module: Any) -> None:
                 len(excluded),
                 "| verified live crypto USDT swaps:",
                 len(VERIFIED_LIVE_FUTURES_SYMBOLS),
+                "| account_allowlist:",
+                "ON" if ACCOUNT_ALLOWLIST_ACTIVE else "OFF",
                 "|",
                 symbols + suffix,
             )
