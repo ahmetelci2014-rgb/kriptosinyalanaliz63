@@ -110148,9 +110148,9 @@
         "max_adverse_r": 0.6978,
         "best_price": 77825.1,
         "worst_price": 76855.1,
-        "last_checked_at": 1787536755,
+        "last_checked_at": 1787537287,
         "completed_at": 0,
-        "last_price": 76986.9
+        "last_price": 77074.9
       }
     },
     "LPTUSDT_LONG_TREND_CONTINUATION_1787499346": {
@@ -110620,27 +110620,28 @@
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
           "Giris ideal bolgeden goreceli olarak uzakti.",
-          "15M hacim kendi ortalamasinin altinda veya sinirdaydi."
+          "15M hacim kendi ortalamasinin altinda veya sinirdaydi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 124,
         "best_favorable_r": 0.2832,
         "worst_adverse_r": 1.0435,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "GEC_UZAK_GIRIS",
-        "preliminary_label": "Geç/uzak giriş",
+        "primary": "GEC_UZAK_GIRIS",
+        "label": "Geç/uzak giriş",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [
           "GEC_UZAK_GIRIS"
         ],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
           "15M hacim oranı sınırın altındaydı.",
           "Giriş ideal bölgeden veya gönderim fiyatından uzaktı."
         ],
@@ -110649,14 +110650,20 @@
           "mfe_r": 0.2832,
           "mae_r": 1.0435,
           "risk_percent": 0.849,
-          "return_minutes": null
+          "return_minutes": 241.0
         },
-        "updated_at": 1787522520
+        "updated_at": 1787536984
       },
       "gross_r_before_costs": -1.0,
       "estimated_execution_cost_r": 0.1413,
       "net_r_after_costs": -1.1413,
-      "cost_model_version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1"
+      "cost_model_version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 241,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1787536984
+      }
     },
     "SAPIENUSDT_LONG_15M_ENTRY_1787526405": {
       "trade_id": "SAPIENUSDT_LONG_15M_ENTRY_1787526405",
@@ -110814,14 +110821,14 @@
         },
         "reached_levels": {},
         "max_favorable_percent": 0.3592,
-        "max_adverse_percent": 3.8673,
+        "max_adverse_percent": 4.6097,
         "max_favorable_r": 0.3536,
-        "max_adverse_r": 3.807,
+        "max_adverse_r": 4.5378,
         "best_price": 0.08382,
-        "worst_price": 0.08029,
-        "last_checked_at": 1787536755,
+        "worst_price": 0.07967,
+        "last_checked_at": 1787537287,
         "completed_at": 0,
-        "last_price": 0.08041
+        "last_price": 0.08015
       }
     },
     "BIGTIMEUSDT_LONG_15M_ENTRY_1787526847": {
@@ -111064,7 +111071,7 @@
       "cost_model_version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1"
     }
   },
-  "last_update": 1787536757,
+  "last_update": 1787537289,
   "profit_mode_v2_last_enriched_at": 1787531843,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
