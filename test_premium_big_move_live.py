@@ -31,7 +31,7 @@ def base(direction="LONG", stage="ARMED", score=88, opposite=35):
         "score": score,
         "opposite_score": opposite,
         "entry": 1.0,
-        "stop": 0.988 if direction == "LONG" else 1.012,
+        "stop": 0.988 if direction == "LONG" else 0.992,
         "features": {
             "volume_ratio": 1.85,
             "volume_wake": 1.40,
@@ -56,7 +56,6 @@ def test_long_big_move_breakout_promotes():
     df15 = make_frame("LONG", start=0.985, end=1.0)
     df1 = make_frame("LONG", start=0.97, end=1.0)
     df4 = make_frame("LONG", start=0.94, end=1.0)
-    # Reference-channel high is close to 1.0; stay near the break, not chased.
     signal = big.analyze_live_candidate(
         "TESTUSDT",
         base("LONG"),
