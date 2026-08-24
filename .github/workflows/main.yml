@@ -63,6 +63,10 @@ jobs:
         if: always()
         run: python multi_day_trend_shadow.py
 
+      - name: Buyuk hareket erken yakalama ve tasima shadow
+        if: always()
+        run: python big_move_hunter_shadow.py
+
       - name: TP3 sonrasi runner degeri 6 saat shadow
         if: always()
         run: python tp3_runner_shadow.py
@@ -103,6 +107,7 @@ jobs:
             movement_start_v3_orderflow_shadow.json \
             premium_early_breakout_state.json \
             multi_day_trend_shadow.json \
+            big_move_hunter_shadow.json \
             profit_mode_report.json \
             profit_mode_rejections.json \
             portfolio_risk_shadow_main_mtf.json
