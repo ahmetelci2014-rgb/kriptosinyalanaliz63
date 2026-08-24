@@ -588,3 +588,20 @@ def monitor_open_positions(
         "statuses": dict(status_counter),
         "version": VERSION,
     }
+
+
+def main() -> None:
+    try:
+        import ccxt
+        exchange = ccxt.okx({
+            "enableRateLimit": True,
+            "options": {"defaultType": "swap"},
+        })
+        summary = monitor_open_positions(exchange)
+        print("Açık işlem devam gücü shadow özet:", summary)
+    except Exception as exc:
+        print("Açık işlem devam gücü shadow ana hata:", exc)
+
+
+if __name__ == "__main__":
+    main()
