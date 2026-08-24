@@ -26,6 +26,10 @@ def market(symbol, inst_category="", group_id="", *, state="live", active=True):
 class CryptoUniverseGuardTests(unittest.TestCase):
     def setUp(self):
         guard.VERIFIED_LIVE_FUTURES_SYMBOLS.clear()
+        guard.clear_account_tradable_futures()
+
+    def tearDown(self):
+        guard.clear_account_tradable_futures()
 
     def test_explicit_crypto_is_kept(self):
         self.assertTrue(guard.is_crypto_market(market("BTC/USDT:USDT", "1", "4")))
@@ -79,6 +83,32 @@ class CryptoUniverseGuardTests(unittest.TestCase):
         self.assertEqual(
             guard.market_exclusion_reason(row),
             "ACTIVE_SWAP_NOT_CONFIRMED",
+        )
+
+    def test_account_instrument_parser_keeps_only_live_crypto_usdt_swaps(self):
+        payload = {
+            "data": [
+                {"instType": "SWAP", "instId": "BTC-USDT-SWAP", "state": "live", "instCategory": "1", "groupId": "4"},
+                {"instType": "SWAP", "instId": "DOGE-USDT-SWAP", "state": "live", "instCategory": "", "groupId": "5"},
+                {"instType": "SWAP", "instId": "ETHW-USDT-SWAP", "state": "live", "instCategory": "1", "groupId": "4"},
+                {"instType": "SWAP", "instId": "MRVL-USDT-SWAP", "state": "live", "instCategory": "3", "groupId": "6"},
+                {"instType": "SWAP", "instId": "SUSP-USDT-SWAP", "state": "suspend", "instCategory": "1", "groupId": "4"},
+                {"instType": "SPOT", "instId": "BTC-USDT", "state": "live", "instCategory": "1", "groupId": "4"},
+            ]
+        }
+        self.assertEqual(
+            guard._parse_account_instruments(payload),
+            {"BTCUSDT", "DOGEUSDT"},
+        )
+
+    def test_account_allowlist_blocks_publicly_live_but_account_unavailable_swap(self):
+        guard.set_account_tradable_futures({"BTCUSDT"})
+        btc = market("BTC/USDT:USDT", "1", "4")
+        doge = market("DOGE/USDT:USDT", "1", "4")
+        self.assertEqual(guard.market_exclusion_reason(btc), "")
+        self.assertEqual(
+            guard.market_exclusion_reason(doge),
+            "ACCOUNT_FUTURES_UNAVAILABLE",
         )
 
     def test_filter_only_keeps_verified_live_crypto_futures(self):
