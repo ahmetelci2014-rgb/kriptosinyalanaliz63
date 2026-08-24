@@ -109,6 +109,12 @@ jobs:
             post_result_shadow.py \
             result_diagnostics.py
 
+      - name: Regime Transition regresyonunu calistir
+        env:
+          TOKEN: ""
+          CHAT_ID: ""
+        run: python -m pytest -q test_premium_regime_transition.py
+
       - name: Mevcut regresyon testlerini calistir
         env:
           TOKEN: ""
