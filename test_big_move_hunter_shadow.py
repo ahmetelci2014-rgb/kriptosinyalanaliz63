@@ -47,6 +47,7 @@ class BigMoveHunterShadowTests(unittest.TestCase):
         }
         result = hunter.evaluate_record(record)
         self.assertIsNotNone(result)
+        self.assertTrue(result["origin_compatible"])
         self.assertEqual(result["capture_stage"], "COK_ERKEN")
         self.assertEqual(result["move_class"], "BUYUK_20P")
         self.assertEqual(result["research_label"], "BUYUK_HAREKET_ADAYI_GUCLU")
@@ -73,9 +74,41 @@ class BigMoveHunterShadowTests(unittest.TestCase):
         }
         result = hunter.evaluate_record(record)
         self.assertIsNotNone(result)
+        self.assertTrue(result["origin_compatible"])
         self.assertEqual(result["capture_stage"], "COK_GEC")
         self.assertNotEqual(result["research_label"], "BUYUK_HAREKET_ADAYI_GUCLU")
         self.assertLess(result["available_share_of_observed_trend_percent"], 20.0)
+
+    def test_wrong_side_short_origin_is_not_fake_early(self):
+        record = {
+            "symbol": "BADSHORTUSDT",
+            "direction": "SHORT",
+            "movement_entry": 110.0,
+            "current_price": 108.0,
+            "status": "4H_DEVAM_GUCLU",
+            "score": 90,
+            "confidence": "YUKSEK",
+            "initial_stage": "TRIGGER",
+            "initial_base_score": 99,
+            "best_base_score": 99,
+            "trend_origin": {
+                "price": 100.0,
+                "at": 1_000_000,
+                "method": "OLD_SHORT_REGIME",
+                "life_hours": 48.0,
+            },
+        }
+        result = hunter.evaluate_record(record)
+        self.assertIsNotNone(result)
+        self.assertFalse(result["origin_compatible"])
+        self.assertEqual(result["capture_stage"], "ORIGIN_UYUMSUZ")
+        self.assertIsNone(result["detection_delay_from_4h_origin_percent"])
+        self.assertEqual(result["hunter_score"], 0)
+        self.assertEqual(result["research_label"], "ORIGIN_UYUMSUZ_GOLGE")
+
+    def test_small_wrong_side_noise_is_tolerated(self):
+        self.assertTrue(hunter.origin_compatible("SHORT", 100.0, 100.5))
+        self.assertTrue(hunter.origin_compatible("LONG", 100.0, 99.5))
 
 
 if __name__ == "__main__":
