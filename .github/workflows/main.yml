@@ -83,6 +83,10 @@ jobs:
         if: always()
         run: python result_diagnostics.py
 
+      - name: Early Breakout LONG SHORT neden ayrimi shadow
+        if: always()
+        run: python early_breakout_direction_diagnostics.py
+
       - name: Golge state dosyalarini kompaktlastir
         if: always()
         run: python compact_shadow_states.py
@@ -108,6 +112,7 @@ jobs:
             premium_early_breakout_state.json \
             multi_day_trend_shadow.json \
             big_move_hunter_shadow.json \
+            early_breakout_direction_diagnostics.json \
             profit_mode_report.json \
             profit_mode_rejections.json \
             portfolio_risk_shadow_main_mtf.json
