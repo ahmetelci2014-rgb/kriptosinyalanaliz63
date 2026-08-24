@@ -53,7 +53,7 @@ jobs:
       - name: Acik islemleri sonuc kontrolunden once devam gucu shadow
         run: python position_continuation_shadow.py
 
-      - name: Premium Quality + Regime Profit Mode calistir
+      - name: Premium Big Move + Quality + Regime Profit Mode calistir
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -63,7 +63,7 @@ jobs:
           OKX_API_KEY: ${{ secrets.OKX_API_KEY }}
           OKX_SECRET_KEY: ${{ secrets.OKX_SECRET_KEY }}
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
-        run: python premium_quality_profit_runner.py
+        run: python premium_big_move_profit_runner.py
 
       - name: Yeni acilan islemleri devam gucu shadow
         if: always()
@@ -123,6 +123,7 @@ jobs:
             premium_early_breakout_state.json \
             premium_regime_transition_state.json \
             premium_quality_state.json \
+            premium_big_move_state.json \
             multi_day_trend_shadow.json \
             big_move_hunter_shadow.json \
             early_breakout_direction_diagnostics.json \

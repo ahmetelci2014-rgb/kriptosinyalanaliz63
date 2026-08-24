@@ -46,6 +46,8 @@ jobs:
           test -f premium_crypto_profit_runner.py
           test -f premium_regime_profit_runner.py
           test -f premium_quality_profit_runner.py
+          test -f premium_big_move_profit_runner.py
+          test -f premium_big_move_live.py
           test -f premium_quality_layer.py
           test -f premium_global_quality_guard.py
           test -f premium_profit_runner.py
@@ -85,6 +87,8 @@ jobs:
             premium_crypto_profit_runner.py \
             premium_regime_profit_runner.py \
             premium_quality_profit_runner.py \
+            premium_big_move_profit_runner.py \
+            premium_big_move_live.py \
             premium_quality_layer.py \
             premium_global_quality_guard.py \
             premium_profit_runner.py \
@@ -114,6 +118,12 @@ jobs:
             movement_start_v3_orderflow_shadow.py \
             post_result_shadow.py \
             result_diagnostics.py
+
+      - name: Big Move regresyonunu calistir
+        env:
+          TOKEN: ""
+          CHAT_ID: ""
+        run: python -m pytest -q test_premium_big_move_live.py
 
       - name: Regime Transition regresyonunu calistir
         env:
