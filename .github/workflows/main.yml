@@ -59,6 +59,10 @@ jobs:
         if: always()
         run: python position_continuation_shadow.py
 
+      - name: Tum coin adaylarinda 4H cok gunluk trend omru shadow
+        if: always()
+        run: python multi_day_trend_shadow.py
+
       - name: TP3 sonrasi runner degeri 6 saat shadow
         if: always()
         run: python tp3_runner_shadow.py
@@ -94,6 +98,7 @@ jobs:
             movement_start_v2_shadow.json \
             movement_start_v3_orderflow_shadow.json \
             premium_early_breakout_state.json \
+            multi_day_trend_shadow.json \
             profit_mode_report.json \
             profit_mode_rejections.json \
             portfolio_risk_shadow_main_mtf.json
