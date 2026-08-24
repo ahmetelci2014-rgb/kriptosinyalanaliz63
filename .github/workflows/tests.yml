@@ -1,14 +1,7 @@
-name: Profit Mode V2 Core Tests
+name: Premium Core Tests
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - "*.py"
-      - "requirements.txt"
-      - ".github/workflows/tests.yml"
   pull_request:
     branches:
       - main
@@ -21,7 +14,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: profit-mode-v2-core-tests-${{ github.ref }}
+  group: premium-core-tests-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -45,46 +38,50 @@ jobs:
           python -m pip install --prefer-binary -r requirements.txt
           python -m pip install "pytest>=8,<10"
 
-      - name: Profit Mode V2 cekirdek dosyalarini kontrol et
+      - name: Premium cekirdek dosyalarini kontrol et
         run: |
           test -f main.py
           test -f strategy.py
           test -f config.py
+          test -f premium_crypto_profit_runner.py
           test -f premium_profit_runner.py
-          test -f scalp_profit_runner.py
-          test -f pump_profit_runner.py
+          test -f premium_all_coins.py
+          test -f premium_confirmation.py
+          test -f premium_continuation.py
+          test -f premium_reversal_capture.py
           test -f profitability_engine.py
-          test -f test_profitability_engine.py
-          test -f big_move_shadow_runner.py
-          test -f market_impulse_guard.py
+          test -f portfolio_risk.py
           test -f opportunity_capture.py
           test -f live_entry_safety.py
-          test -f portfolio_risk.py
           test -f coin_analyzer.py
-          test -f test_coin_analyzer.py
+          test -f coin_analysis_runtime.py
+          test -f coin_analysis_runtime_v2.py
+          test -f movement_start_shadow.py
+          test -f movement_start_v2_shadow.py
+          test -f movement_start_v3_orderflow_shadow.py
 
-      - name: Profit Mode V2 cekirdegini derle
+      - name: Premium cekirdegi derle
         run: |
           python -m py_compile \
             main.py \
             strategy.py \
             config.py \
+            premium_crypto_profit_runner.py \
             premium_profit_runner.py \
-            scalp_radar.py \
-            scalp_profit_runner.py \
-            pump_radar.py \
-            pump_profit_runner.py \
+            premium_all_coins.py \
+            premium_confirmation.py \
+            premium_continuation.py \
+            premium_reversal_capture.py \
             profitability_engine.py \
-            test_profitability_engine.py \
-            big_move_route.py \
-            big_move_route_runner.py \
-            big_move_shadow_runner.py \
-            market_impulse_guard.py \
+            portfolio_risk.py \
             opportunity_capture.py \
             live_entry_safety.py \
-            portfolio_risk.py \
             coin_analyzer.py \
-            test_coin_analyzer.py
+            coin_analysis_runtime.py \
+            coin_analysis_runtime_v2.py \
+            movement_start_shadow.py \
+            movement_start_v2_shadow.py \
+            movement_start_v3_orderflow_shadow.py
 
       - name: Mevcut regresyon testlerini calistir
         env:
