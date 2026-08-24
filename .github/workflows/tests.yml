@@ -59,6 +59,8 @@ jobs:
           test -f movement_start_shadow.py
           test -f movement_start_v2_shadow.py
           test -f movement_start_v3_orderflow_shadow.py
+          test -f post_result_shadow.py
+          test -f result_diagnostics.py
 
       - name: Premium cekirdegi derle
         run: |
@@ -81,7 +83,9 @@ jobs:
             coin_analysis_runtime_v2.py \
             movement_start_shadow.py \
             movement_start_v2_shadow.py \
-            movement_start_v3_orderflow_shadow.py
+            movement_start_v3_orderflow_shadow.py \
+            post_result_shadow.py \
+            result_diagnostics.py
 
       - name: Mevcut regresyon testlerini calistir
         env:
