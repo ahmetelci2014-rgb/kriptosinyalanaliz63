@@ -1,6 +1,7 @@
 """Premium live runner with crypto-only, reversal and early-breakout guards."""
 from __future__ import annotations
 
+import json
 import time
 from typing import Any, Callable, Dict, Optional
 
@@ -26,7 +27,51 @@ def _latest_flow_snapshot(runner: Any, symbol: str, direction: str) -> Optional[
     return None
 
 
-def _install_early_breakout(runner: Any, early: Any) -> None:
+def _install_movement_reversal_probe(runner: Any, reversal: Any) -> None:
+    """Use current Movement Start V2 state when the removed Pump state is absent."""
+    original_should_probe = reversal.should_probe_reversal
+
+    def should_probe(bot: Any, symbol: str, **kwargs: Any) -> bool:
+        try:
+            if original_should_probe(bot, symbol, **kwargs):
+                return True
+        except Exception:
+            pass
+        context = reversal.recent_tp3_context(
+            bot,
+            symbol,
+            now_ts=kwargs.get("now_ts"),
+        )
+        if not isinstance(context, dict):
+            return False
+        wanted = str(context.get("opposite_direction") or "").upper()
+        if wanted not in {"LONG", "SHORT"}:
+            return False
+        try:
+            with open(runner.movement_start_v2.STATE_FILE, "r", encoding="utf-8") as handle:
+                state = json.load(handle)
+        except Exception:
+            return False
+        active = (state.get("open") or {}).get(
+            f"{str(symbol or '').upper()}_{wanted}"
+        )
+        if not isinstance(active, dict):
+            return False
+        stage = str(active.get("best_stage") or active.get("initial_stage") or "").upper()
+        score = int(active.get("best_score") or active.get("initial_score") or 0)
+        updated = int(active.get("last_updated_at") or active.get("started_at") or 0)
+        now = int(kwargs.get("now_ts") or time.time())
+        return bool(
+            stage in {"ARMED", "TRIGGER"}
+            and score >= 76
+            and updated > 0
+            and now - updated <= 45 * 60
+        )
+
+    reversal.should_probe_reversal = should_probe
+
+
+def _install_early_breakout(runner: Any, early: Any, reversal: Any) -> None:
     """Attach the early route without changing the legacy strategy functions."""
     original_5m_factory = runner._make_5m_start_observer
     original_profit_factory = runner._make_profit_gate
@@ -85,6 +130,19 @@ def _install_early_breakout(runner: Any, early: Any) -> None:
             except Exception as exc:
                 print(symbol, "Early Breakout canlı aday hatası:", exc)
                 promoted = None
+
+            if isinstance(promoted, dict):
+                try:
+                    recent_tp3 = reversal.recent_tp3_context(runner.bot, symbol)
+                except Exception:
+                    recent_tp3 = None
+                if (
+                    isinstance(recent_tp3, dict)
+                    and str(promoted.get("direction") or "").upper()
+                    != str(recent_tp3.get("opposite_direction") or "").upper()
+                ):
+                    print(symbol, "Early Breakout aynı yön TP3 cooldown nedeniyle reddedildi.")
+                    promoted = None
 
             if isinstance(promoted, dict):
                 print(
@@ -149,8 +207,6 @@ def _install_early_breakout(runner: Any, early: Any) -> None:
 
 
 def run() -> None:
-    # Patch before premium_profit_runner imports premium_all_coins so every live
-    # universe build in this process sees crypto-only market metadata.
     import all_market_shadow as market_scan
     from crypto_universe_guard import install_crypto_only_guard
 
@@ -158,14 +214,15 @@ def run() -> None:
 
     import premium_early_breakout as early
     import premium_profit_runner
-    from premium_reversal_capture import install as install_reversal_capture
+    import premium_reversal_capture as reversal
 
-    # Keep the legacy same-direction cooldown, but allow a strict opposite-side
-    # Premium route after TP3 when fresh reversal structure is confirmed.
-    install_reversal_capture(premium_profit_runner)
+    # The old Pump state was removed during repo cleanup. Reuse fresh V2
+    # ARMED/TRIGGER state to open only the opposite-direction TP3 scan exception.
+    _install_movement_reversal_probe(premium_profit_runner, reversal)
+    reversal.install(premium_profit_runner)
 
     early.begin()
-    _install_early_breakout(premium_profit_runner, early)
+    _install_early_breakout(premium_profit_runner, early, reversal)
 
     print(
         "Premium Early Breakout:",
