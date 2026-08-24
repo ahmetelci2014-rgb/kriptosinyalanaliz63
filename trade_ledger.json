@@ -110933,39 +110933,47 @@
         "primary": "ONCE LEHE GITTI, SONRA TERS DONDU",
         "confidence": "ORTA",
         "factors": [
-          "Stop oncesinde islem en az 0.35R lehe hareket etti."
+          "Stop oncesinde islem en az 0.35R lehe hareket etti.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 54,
         "best_favorable_r": 0.5034,
         "worst_adverse_r": 1.5251,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ONCE_LEHE_SONRA_TERS",
-        "preliminary_label": "Önce lehe, sonra ters",
+        "primary": "ONCE_LEHE_SONRA_TERS",
+        "label": "Önce lehe, sonra ters",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "İşlem stop öncesinde anlamlı lehe hareket üretmişti."
         ],
         "metrics": {
           "duration_minutes": 54,
           "mfe_r": 0.5034,
           "mae_r": 1.5251,
           "risk_percent": 1.022,
-          "return_minutes": null
+          "return_minutes": 248.0
         },
-        "updated_at": 1787530107
+        "updated_at": 1787545019
       },
       "gross_r_before_costs": -1.0,
       "estimated_execution_cost_r": 0.1174,
       "net_r_after_costs": -1.1174,
-      "cost_model_version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1"
+      "cost_model_version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 248,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1787545019
+      }
     },
     "BERAUSDT_LONG_15M_ENTRY_1787530365": {
       "trade_id": "BERAUSDT_LONG_15M_ENTRY_1787530365",
@@ -111089,7 +111097,7 @@
       "cost_model_version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1"
     }
   },
-  "last_update": 1787542654,
+  "last_update": 1787545019,
   "profit_mode_v2_last_enriched_at": 1787531843,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
