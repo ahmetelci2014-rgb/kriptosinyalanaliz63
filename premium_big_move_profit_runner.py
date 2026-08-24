@@ -41,8 +41,6 @@ def _install_big_move(runner: Any, big: Any) -> None:
             df4h: Any,
             current_price: Any = None,
         ) -> Any:
-            # Run the existing observer first so the newest V2/V3 order-flow
-            # snapshot is available for Big Move without extra REST requests.
             legacy_signal = legacy(
                 symbol,
                 df5m,
@@ -166,8 +164,21 @@ def _install_big_move(runner: Any, big: Any) -> None:
 
 def run() -> None:
     import premium_big_move_live as big
+    import premium_market_outlook_refresh as outlook_refresh
     import premium_profit_runner as base_runner
     import premium_quality_profit_runner as quality_runner
+
+    refresh = outlook_refresh.ensure_fresh()
+    print(
+        "Premium inline Market Outlook:",
+        refresh.get("reason"),
+        "| fresh=",
+        refresh.get("ok"),
+        "| refreshed=",
+        refresh.get("refreshed"),
+        "| age_s=",
+        refresh.get("age_seconds"),
+    )
 
     big.begin()
     _install_big_move(base_runner, big)
