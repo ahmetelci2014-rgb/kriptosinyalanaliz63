@@ -136,8 +136,8 @@ def _elite_early_fast_send(text: str) -> bool:
     """Reserve immediate per-run slots for genuinely top early candidates.
 
     Lower-tier but still valid Early Breakout candidates are not rejected; they
-    simply fall back to the normal end-of-scan quality ranking. This prevents an
-    early ARMED/weak-flow candidate from consuming both live slots before a later
+    fall back to the normal end-of-scan quality ranking. This prevents an early
+    ARMED/weak-flow candidate from consuming both live slots before a later
     ONT-like TRIGGER reaches much stronger evidence in the same scan.
     """
     metrics = _early_fast_metrics(text)
@@ -175,6 +175,60 @@ def _called_from_early_fast_send(max_depth: int = 10) -> bool:
     return False
 
 
+def _release_fast_probe_duplicate_claim(max_depth: int = 12) -> bool:
+    """Undo only the provisional same-run duplicate claim made by fast-send.
+
+    The Early Breakout duplicate guard intentionally prevents two live routes
+    from claiming the same symbol+direction. During a fast-send *probe* that
+    later gets quality-deferred, however, the candidate must remain eligible for
+    the normal end-of-scan ranking. The wrapper's in-memory ``claimed`` set is
+    therefore released only for that provisional probe. Persistent duplicate
+    state in last_signals.json is never touched.
+    """
+    frame = sys._getframe(1)
+    depth = 0
+    runner = None
+    signal = None
+    try:
+        while frame is not None and depth < max_depth:
+            if frame.f_code.co_name == "_try_fast_send":
+                runner = frame.f_locals.get("runner")
+                signal = frame.f_locals.get("signal")
+                break
+            frame = frame.f_back
+            depth += 1
+    finally:
+        del frame
+
+    if runner is None or not isinstance(signal, dict):
+        return False
+
+    duplicate_fn = getattr(getattr(runner, "bot", None), "is_duplicate", None)
+    code = getattr(duplicate_fn, "__code__", None)
+    closure = getattr(duplicate_fn, "__closure__", None)
+    if code is None or not closure:
+        return False
+
+    key = (
+        str(signal.get("symbol") or "").upper(),
+        str(signal.get("direction") or "").upper(),
+    )
+
+    for name, cell in zip(code.co_freevars, closure):
+        if name != "claimed":
+            continue
+        try:
+            claimed = cell.cell_contents
+        except ValueError:
+            return False
+        if not isinstance(claimed, set):
+            return False
+        claimed.discard(key)
+        return True
+
+    return False
+
+
 def make_entry_safety_sender(original: Callable[..., Any]) -> Callable[..., Any]:
     if getattr(original, "_entry_safety_wrapped", False):
         return original
@@ -185,16 +239,20 @@ def make_entry_safety_sender(original: Callable[..., Any]) -> Callable[..., Any]
         # Quality-ranked fast-send policy: only elite Early Breakout candidates
         # consume the immediate slots. A non-elite candidate returns False only
         # during _try_fast_send; the caller then keeps it for the normal batch
-        # ranking, where this wrapper will allow it if selected.
+        # ranking. Release the provisional in-memory duplicate claim first so
+        # that the same candidate remains eligible later in this scan.
         if (
             text.startswith(EARLY_ENTRY_PREFIX)
             and _called_from_early_fast_send()
             and not _elite_early_fast_send(text)
         ):
             metrics = _early_fast_metrics(text)
+            released = _release_fast_probe_duplicate_claim()
             print(
                 "EARLY QUALITY DEFER | normal kalite sıralamasına bırakıldı:",
                 metrics,
+                "| duplicate_claim_released=",
+                released,
             )
             return False
 
