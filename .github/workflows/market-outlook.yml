@@ -1,17 +1,13 @@
-name: Market Outlook Daily
+name: Market Outlook Manual
 
 on:
   workflow_dispatch:
-  schedule:
-    # Genel piyasa raporu icin 30 dakikalik tarama gereksiz Actions tuketiyordu.
-    # 2 saatte bir calisma; trend/breadth degisimini izlemek icin yeterli, maliyeti dusuk.
-    - cron: "7 */2 * * *"
 
 permissions:
   contents: write
 
 concurrency:
-  group: market-outlook-daily
+  group: market-outlook-manual
   cancel-in-progress: false
 
 jobs:
@@ -52,11 +48,7 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-
-          # Telegram delivery claim main'e ayrı commit atmış olabilir.
-          # Onu ve aynı anda oluşan Premium state commitlerini önce al.
           git pull --rebase origin main || true
-
           git add market_outlook_state.json 2>/dev/null || true
 
           if git diff --cached --quiet; then
@@ -70,10 +62,8 @@ jobs:
             if git push origin HEAD:main; then
               exit 0
             fi
-            echo "Push çakıştı; main yeniden alınıyor (${attempt}/4)."
             git pull --rebase origin main || true
             sleep 2
           done
 
-          echo "Market Outlook state push başarısız."
           exit 1
