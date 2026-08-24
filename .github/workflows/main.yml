@@ -43,6 +43,9 @@ jobs:
           PIP_DISABLE_PIP_VERSION_CHECK: "1"
         run: python -m pip install --prefer-binary -r requirements.txt
 
+      - name: Acik islemleri sonuc kontrolunden once devam gucu shadow
+        run: python position_continuation_shadow.py
+
       - name: Premium Profit Mode V4 All Coins calistir
         env:
           TOKEN: ${{ secrets.TOKEN }}
@@ -52,7 +55,7 @@ jobs:
           GITHUB_REF_NAME: ${{ github.ref_name }}
         run: python premium_crypto_profit_runner.py
 
-      - name: Acik islem devam gucu shadow
+      - name: Yeni acilan islemleri devam gucu shadow
         if: always()
         run: python position_continuation_shadow.py
 
