@@ -75,8 +75,8 @@ def test_long_big_move_breakout_promotes():
 
 def test_short_big_move_breakout_is_symmetric():
     df15 = make_frame("SHORT", start=0.98, end=1.0)
-    df1 = make_frame("SHORT", start=0.97, end=1.0)
-    df4 = make_frame("SHORT", start=0.94, end=1.0)
+    df1 = make_frame("SHORT", start=0.98, end=1.0)
+    df4 = make_frame("SHORT", start=0.98, end=1.0)
     signal = big.analyze_live_candidate(
         "TESTUSDT",
         base("SHORT"),
