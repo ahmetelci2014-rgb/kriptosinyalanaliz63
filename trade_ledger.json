@@ -111061,43 +111061,51 @@
         "factors": [
           "Islem ilk 20 dakikada anlamli lehe hareket yapmadan stop oldu.",
           "Ust zaman dilimi trend gucu sinirdaydi.",
-          "Stop mesafesi cok kisa surede tamamen tuketildi."
+          "Stop mesafesi cok kisa surede tamamen tuketildi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 19,
         "best_favorable_r": 0.1493,
         "worst_adverse_r": 1.1941,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "MUHTEMEL_YANLIS_YON",
-        "preliminary_label": "Muhtemel yanlış yön",
+        "primary": "MUHTEMEL_YANLIS_YON",
+        "label": "Muhtemel yanlış yön",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
-          "Üst zaman dilimi trend gücü sınırdaydı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "Üst zaman dilimi trend gücü sınırdaydı.",
+          "İşlem çok kısa sürede anlamlı lehe hareket üretmeden stop oldu."
         ],
         "metrics": {
           "duration_minutes": 19,
           "mfe_r": 0.1493,
           "mae_r": 1.1941,
           "risk_percent": 1.419,
-          "return_minutes": null
+          "return_minutes": 244.0
         },
-        "updated_at": 1787531519
+        "updated_at": 1787546212
       },
       "gross_r_before_costs": -1.0,
       "estimated_execution_cost_r": 0.0845,
       "net_r_after_costs": -1.0845,
-      "cost_model_version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1"
+      "cost_model_version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 244,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1787546212
+      }
     }
   },
-  "last_update": 1787545019,
+  "last_update": 1787546212,
   "profit_mode_v2_last_enriched_at": 1787531843,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
