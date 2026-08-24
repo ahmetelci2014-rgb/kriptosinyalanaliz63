@@ -59,10 +59,11 @@ def ensure_fresh(
         }
 
     try:
-        import ccxt
         import market_outlook_engine as outlook
 
         if exchange is None:
+            import ccxt
+
             exchange = ccxt.okx({
                 "enableRateLimit": True,
                 "options": {"defaultType": "swap"},
