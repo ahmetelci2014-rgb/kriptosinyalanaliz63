@@ -1,19 +1,17 @@
-"""Remove user-untradable futures from live Premium state.
+"""Remove futures that the user cannot actually trade from live Premium state.
 
 Safety purpose
 --------------
-The signal bot uses public OKX market data, while the user executes trades
-manually in the OKX interface available to their account/region. Public/global
-metadata can occasionally contain a perpetual that the user cannot actually
-open. Such a signal must not consume open-risk capacity or become a fake TP/SL
-result in performance research.
+The live signal bot may see global/public OKX market data that is broader than
+what the user's account/region can manually trade. Such symbols must not consume
+risk capacity, remain pending, or contaminate performance research.
 
-This module:
-- removes blocked symbols from open_signals.json,
-- removes them from premium_pending_candidates.json,
-- marks matching OPEN ledger trades INVALID_MARKET_UNTRADABLE,
-- writes a small audit file,
-- sends no Telegram messages and opens/closes no exchange orders.
+This module always removes user-confirmed unavailable symbols. If read-only OKX
+credentials are configured, it also activates the account-level SWAP allowlist
+from /api/v5/account/instruments and removes every live-state symbol that the
+account itself does not report as available.
+
+No Telegram messages are sent and no exchange orders are opened/changed/cancelled.
 """
 from __future__ import annotations
 
@@ -24,12 +22,9 @@ import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict
 
-from crypto_universe_guard import (
-    USER_UNTRADABLE_FUTURES_SYMBOLS,
-    canonical_bot_symbol,
-)
+import crypto_universe_guard as guard
 
-VERSION = "UNTRADABLE_FUTURES_CLEANUP_V1_2026_08_24"
+VERSION = "UNTRADABLE_FUTURES_CLEANUP_V2_2026_08_24"
 MODE = "STATE_SAFETY_NO_TELEGRAM_NO_ORDERS"
 OPEN_FILE = "open_signals.json"
 LEDGER_FILE = "trade_ledger.json"
@@ -79,8 +74,18 @@ def _save(path: str, data: Dict[str, Any]) -> None:
                 pass
 
 
-def _blocked(symbol: Any) -> bool:
-    return canonical_bot_symbol(symbol) in USER_UNTRADABLE_FUTURES_SYMBOLS
+def _blocked(symbol: Any) -> tuple[bool, str]:
+    canonical = guard.canonical_bot_symbol(symbol)
+    if not canonical:
+        return False, ""
+    if canonical in guard.USER_UNTRADABLE_FUTURES_SYMBOLS:
+        return True, "USER_INTERFACE_FUTURES_NOT_AVAILABLE"
+    if (
+        guard.ACCOUNT_ALLOWLIST_ACTIVE
+        and canonical not in guard.ACCOUNT_TRADABLE_FUTURES_SYMBOLS
+    ):
+        return True, "ACCOUNT_FUTURES_NOT_AVAILABLE"
+    return False, ""
 
 
 def _day(ts: int) -> str:
@@ -89,16 +94,26 @@ def _day(ts: int) -> str:
 
 def cleanup(*, now_ts: int | None = None) -> Dict[str, Any]:
     now = int(now_ts if now_ts is not None else time.time())
+
+    # If read-only account credentials exist, this turns account availability
+    # into the strongest allowlist. Missing credentials simply leave it OFF.
+    account_allowlist = guard.refresh_account_tradable_futures_from_env(force=True)
+
     removed_open: Dict[str, Dict[str, Any]] = {}
+    removed_open_reason: Dict[str, str] = {}
     removed_pending: Dict[str, Dict[str, Any]] = {}
     invalidated_ledger = []
 
     open_state = _load(OPEN_FILE)
     if open_state:
         for key, signal in list(open_state.items()):
-            if not isinstance(signal, dict) or not _blocked(signal.get("symbol")):
+            if not isinstance(signal, dict):
+                continue
+            blocked, reason = _blocked(signal.get("symbol"))
+            if not blocked:
                 continue
             removed_open[str(key)] = signal
+            removed_open_reason[str(key)] = reason
             open_state.pop(key, None)
         if removed_open:
             _save(OPEN_FILE, open_state)
@@ -107,7 +122,8 @@ def cleanup(*, now_ts: int | None = None) -> Dict[str, Any]:
     pending = pending_state.get("pending") if isinstance(pending_state.get("pending"), dict) else {}
     for key, row in list(pending.items()):
         signal = row.get("signal") if isinstance(row, dict) and isinstance(row.get("signal"), dict) else {}
-        if not _blocked(signal.get("symbol")):
+        blocked, _ = _blocked(signal.get("symbol"))
+        if not blocked:
             continue
         removed_pending[str(key)] = row
         pending.pop(key, None)
@@ -122,7 +138,8 @@ def cleanup(*, now_ts: int | None = None) -> Dict[str, Any]:
     for trade_id, trade in trades.items():
         if not isinstance(trade, dict):
             continue
-        if not _blocked(trade.get("symbol")):
+        blocked, reason = _blocked(trade.get("symbol"))
+        if not blocked:
             continue
         if str(trade.get("status") or "").upper() not in {"OPEN", ""}:
             continue
@@ -136,15 +153,17 @@ def cleanup(*, now_ts: int | None = None) -> Dict[str, Any]:
         trade["invalid_market"] = {
             "version": VERSION,
             "at": now,
-            "reason": "USER_INTERFACE_FUTURES_NOT_AVAILABLE",
+            "reason": reason,
             "performance_eligible": False,
-            "blocked_symbol": canonical_bot_symbol(trade.get("symbol")),
+            "blocked_symbol": guard.canonical_bot_symbol(trade.get("symbol")),
+            "account_allowlist_active": bool(guard.ACCOUNT_ALLOWLIST_ACTIVE),
         }
         events = trade.get("events") if isinstance(trade.get("events"), list) else []
         events.append({
             "time": now,
             "event": "INVALID_MARKET_UNTRADABLE",
             "price": None,
+            "reason": reason,
         })
         trade["events"] = events
         invalidated_ledger.append(str(trade_id))
@@ -168,11 +187,12 @@ def cleanup(*, now_ts: int | None = None) -> Dict[str, Any]:
         rows.append({
             "at": now,
             "trade_id": trade_id,
-            "symbol": canonical_bot_symbol(signal.get("symbol")),
+            "symbol": guard.canonical_bot_symbol(signal.get("symbol")),
             "direction": signal.get("direction"),
             "source": signal.get("source"),
-            "reason": "USER_INTERFACE_FUTURES_NOT_AVAILABLE",
+            "reason": removed_open_reason.get(key) or "FUTURES_NOT_AVAILABLE",
             "performance_eligible": False,
+            "account_allowlist_active": bool(guard.ACCOUNT_ALLOWLIST_ACTIVE),
         })
         known.add(trade_id)
 
@@ -180,7 +200,10 @@ def cleanup(*, now_ts: int | None = None) -> Dict[str, Any]:
         "version": VERSION,
         "mode": MODE,
         "updated_at": now,
-        "blocked_symbols": sorted(USER_UNTRADABLE_FUTURES_SYMBOLS),
+        "blocked_symbols": sorted(guard.USER_UNTRADABLE_FUTURES_SYMBOLS),
+        "account_allowlist_active": bool(guard.ACCOUNT_ALLOWLIST_ACTIVE),
+        "account_allowlist_refresh_ok": bool(account_allowlist),
+        "account_tradable_futures_count": len(guard.ACCOUNT_TRADABLE_FUTURES_SYMBOLS),
         "records": rows[-500:],
         "last_run": {
             "removed_open": sorted(removed_open),
@@ -194,7 +217,12 @@ def cleanup(*, now_ts: int | None = None) -> Dict[str, Any]:
 
 def main() -> None:
     result = cleanup()
-    print("UNTRADABLE FUTURES CLEANUP:", result)
+    print(
+        "UNTRADABLE FUTURES CLEANUP:",
+        result,
+        "| account_allowlist=",
+        "ON" if guard.ACCOUNT_ALLOWLIST_ACTIVE else "OFF",
+    )
 
 
 if __name__ == "__main__":
