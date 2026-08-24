@@ -37,17 +37,17 @@ def _compact_premium_entry(text: str) -> str:
 
     kept = []
     for line in lines:
-        upper = line.upper()
+        folded = line.casefold()
         if line.startswith(PREMIUM_ENTRY_PREFIX) or line.startswith("🚀 PREMIUM FUTURES"):
             kept.append(line)
             continue
 
         if (
-            ("LONG" in upper or "SHORT" in upper)
+            ("long" in folded or "short" in folded)
             and (
                 "|" in line
-                or "YÖN:" in upper
-                or "YON:" in upper
+                or "yön:" in folded
+                or "yon:" in folded
                 or line.startswith(("🟢", "🔴"))
             )
         ):
@@ -55,29 +55,27 @@ def _compact_premium_entry(text: str) -> str:
             continue
 
         if any(
-            token in upper
+            token in folded
             for token in (
-                "GİRİŞ:",
-                "GIRIS:",
-                "ENTRY:",
-                "TP1:",
-                "TP2:",
-                "TP3:",
-                "SL:",
+                "giriş:",
+                "giris:",
+                "entry:",
+                "tp1:",
+                "tp2:",
+                "tp3:",
+                "sl:",
             )
         ):
             kept.append(line)
             continue
 
         if any(
-            upper.startswith(prefix)
+            folded.startswith(prefix)
             for prefix in (
-                "COIN:",
-                "COİN:",
-                "PARİTE:",
-                "PARITE:",
-                "SEMBOL:",
-                "SYMBOL:",
+                "coin:",
+                "parite:",
+                "sembol:",
+                "symbol:",
             )
         ):
             kept.append(line)
@@ -85,13 +83,11 @@ def _compact_premium_entry(text: str) -> str:
     # If an unforeseen legacy formatter does not expose enough structured
     # lines, do not risk sending a mutilated message.
     has_entry = any(
-        ("GİRİŞ:" in line.upper())
-        or ("GIRIS:" in line.upper())
-        or ("ENTRY:" in line.upper())
+        any(token in line.casefold() for token in ("giriş:", "giris:", "entry:"))
         for line in kept
     )
-    has_tp = any("TP1:" in line.upper() for line in kept)
-    has_sl = any("SL:" in line.upper() for line in kept)
+    has_tp = any("tp1:" in line.casefold() for line in kept)
+    has_sl = any("sl:" in line.casefold() for line in kept)
     if not (has_entry and has_tp and has_sl):
         return text
 
