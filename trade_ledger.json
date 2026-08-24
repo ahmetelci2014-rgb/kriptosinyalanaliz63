@@ -110134,14 +110134,14 @@
         },
         "reached_levels": {},
         "max_favorable_percent": 0.5349,
-        "max_adverse_percent": 0.0581,
+        "max_adverse_percent": 0.2339,
         "max_favorable_r": 0.5198,
-        "max_adverse_r": 0.0565,
+        "max_adverse_r": 0.2273,
         "best_price": 77825.1,
-        "worst_price": 77366.0,
-        "last_checked_at": 1787530913,
+        "worst_price": 77229.9,
+        "last_checked_at": 1787531844,
         "completed_at": 0,
-        "last_price": 77512.6
+        "last_price": 77460.1
       }
     },
     "LPTUSDT_LONG_TREND_CONTINUATION_1787499346": {
@@ -110778,6 +110778,15 @@
             "max_favorable_percent": 0.3592,
             "max_adverse_percent": 0.886,
             "directional_r_from_reference": -0.4715
+          },
+          "60": {
+            "target_at": 1787531508,
+            "candle_time": 1787531400,
+            "close_price": 0.08182,
+            "directional_return_percent": -2.0354,
+            "max_favorable_percent": 0.3592,
+            "max_adverse_percent": 2.4186,
+            "directional_r_from_reference": -2.0037
           }
         },
         "watched_levels": {
@@ -110787,14 +110796,14 @@
         },
         "reached_levels": {},
         "max_favorable_percent": 0.3592,
-        "max_adverse_percent": 1.9875,
+        "max_adverse_percent": 2.4186,
         "max_favorable_r": 0.3536,
-        "max_adverse_r": 1.9565,
+        "max_adverse_r": 2.3809,
         "best_price": 0.08382,
-        "worst_price": 0.08186,
-        "last_checked_at": 1787530913,
+        "worst_price": 0.0815,
+        "last_checked_at": 1787531844,
         "completed_at": 0,
-        "last_price": 0.08196
+        "last_price": 0.08171
       }
     },
     "BIGTIMEUSDT_LONG_15M_ENTRY_1787526847": {
@@ -110932,17 +110941,22 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "SL",
+      "r_result": -1.0,
+      "exit_price": 0.186,
+      "closed_at": 1787531519,
+      "closed_day": "2026-08-24",
       "events": [
         {
           "time": 1787530365,
           "event": "OPENED",
           "price": 0.1888
+        },
+        {
+          "time": 1787531519,
+          "event": "SL",
+          "price": 0.186
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -110980,18 +110994,60 @@
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %-0.16 | ETHUSDT: 15M EMA20 üstü, 5M %-0.25 | SOLUSDT: 15M EMA20 üstü, 5M %-0.36",
       "best_favorable_percent": 0.2119,
-      "worst_adverse_percent": 0.5297,
+      "worst_adverse_percent": 1.6949,
       "best_favorable_r": 0.1493,
-      "worst_adverse_r": 0.3732,
+      "worst_adverse_r": 1.1941,
       "best_favorable_price": 0.1892,
-      "worst_adverse_price": 0.1878,
-      "last_market_price": 0.1879,
+      "worst_adverse_price": 0.1856,
+      "last_market_price": 0.186,
       "tp1_hit_at": 0,
-      "last_tracking_at": 1787530560
+      "last_tracking_at": 1787531220,
+      "duration_minutes": 19,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "HIZLI TERS HAREKET / YON UYUMSUZLUGU",
+        "confidence": "ORTA",
+        "factors": [
+          "Islem ilk 20 dakikada anlamli lehe hareket yapmadan stop oldu.",
+          "Ust zaman dilimi trend gucu sinirdaydi.",
+          "Stop mesafesi cok kisa surede tamamen tuketildi."
+        ],
+        "duration_minutes": 19,
+        "best_favorable_r": 0.1493,
+        "worst_adverse_r": 1.1941,
+        "provisional": true,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "stop_root_cause": {
+        "version": "STOP_ROOT_CAUSE_V1",
+        "primary": "TAKIP_SURUYOR",
+        "label": "Takip sürüyor",
+        "preliminary": "MUHTEMEL_YANLIS_YON",
+        "preliminary_label": "Muhtemel yanlış yön",
+        "secondary": [],
+        "confidence": "DUSUK",
+        "provisional": true,
+        "factors": [
+          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Üst zaman dilimi trend gücü sınırdaydı."
+        ],
+        "metrics": {
+          "duration_minutes": 19,
+          "mfe_r": 0.1493,
+          "mae_r": 1.1941,
+          "risk_percent": 1.419,
+          "return_minutes": null
+        },
+        "updated_at": 1787531519
+      },
+      "gross_r_before_costs": -1.0,
+      "estimated_execution_cost_r": 0.0845,
+      "net_r_after_costs": -1.0845,
+      "cost_model_version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1"
     }
   },
-  "last_update": 1787530914,
-  "profit_mode_v2_last_enriched_at": 1787530367,
+  "last_update": 1787531846,
+  "profit_mode_v2_last_enriched_at": 1787531843,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
     "fee_rate_per_side": 0.0005,
