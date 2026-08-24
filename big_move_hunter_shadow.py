@@ -22,10 +22,11 @@ import time
 from collections import Counter
 from typing import Any, Dict, Optional
 
-VERSION = "BIG_MOVE_HUNTER_SHADOW_V1_2026_08_24"
+VERSION = "BIG_MOVE_HUNTER_SHADOW_V2_2026_08_24"
 MODE = "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_LIVE_RULE_MUTATION"
 INPUT_FILE = "multi_day_trend_shadow.json"
 STATE_FILE = "big_move_hunter_shadow.json"
+ORIGIN_DIRECTION_TOLERANCE_PERCENT = 0.75
 
 
 def _sf(value: Any, default: Optional[float] = None) -> Optional[float]:
@@ -80,6 +81,19 @@ def directional_percent(direction: str, start: float, end: float) -> float:
         return 0.0
     raw = (end - start) / start * 100.0
     return raw if str(direction or "").upper() == "LONG" else -raw
+
+
+def origin_compatible(direction: str, origin_price: float, detection_price: float) -> bool:
+    """Reject an origin that lies materially on the wrong side of detection.
+
+    Example: a SHORT origin below the later SHORT detection price is not the
+    beginning of that decline. V1 clamped such negative delays to zero and could
+    falsely label them COK_ERKEN. A small tolerance is kept for wick/noise.
+    """
+    if min(origin_price, detection_price) <= 0:
+        return False
+    raw_delay = directional_percent(direction, origin_price, detection_price)
+    return raw_delay >= -ORIGIN_DIRECTION_TOLERANCE_PERCENT
 
 
 def capture_stage(delay_percent: float) -> str:
@@ -186,22 +200,45 @@ def evaluate_record(record: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     if min(origin_price, detection_price, current_price) <= 0:
         return None
 
-    delay = max(0.0, directional_percent(direction, origin_price, detection_price))
-    total_move = max(0.0, directional_percent(direction, origin_price, current_price))
-    after_detection = max(0.0, directional_percent(direction, detection_price, current_price))
-    share = available_share_percent(direction, origin_price, detection_price, current_price)
-    stage = capture_stage(delay)
+    raw_delay = directional_percent(direction, origin_price, detection_price)
+    raw_total_move = directional_percent(direction, origin_price, current_price)
+    raw_after_detection = directional_percent(direction, detection_price, current_price)
+    compatible = origin_compatible(direction, origin_price, detection_price)
+
     status = str(record.get("status") or "")
     base_score = int(record.get("best_base_score") or record.get("initial_base_score") or 0)
-    score = hunter_score(delay, status, base_score)
+
+    if compatible:
+        delay = max(0.0, raw_delay)
+        total_move = max(0.0, raw_total_move)
+        after_detection = max(0.0, raw_after_detection)
+        share = available_share_percent(direction, origin_price, detection_price, current_price)
+        stage = capture_stage(delay)
+        score = hunter_score(delay, status, base_score)
+        label = research_label(score, stage, status)
+    else:
+        # Do not let a wrong-side historical origin become a fake zero-delay
+        # COK_ERKEN candidate. Keep the record for research, but exclude it from
+        # early-capture ranking until the upstream origin estimate becomes valid.
+        delay = None
+        total_move = max(0.0, raw_total_move)
+        after_detection = max(0.0, raw_after_detection)
+        share = 0.0
+        stage = "ORIGIN_UYUMSUZ"
+        score = 0
+        label = "ORIGIN_UYUMSUZ_GOLGE"
 
     return {
         "symbol": symbol,
         "direction": direction,
         "hunter_score": score,
-        "research_label": research_label(score, stage, status),
+        "research_label": label,
         "capture_stage": stage,
-        "detection_delay_from_4h_origin_percent": round(delay, 4),
+        "origin_compatible": compatible,
+        "origin_direction_tolerance_percent": ORIGIN_DIRECTION_TOLERANCE_PERCENT,
+        "raw_detection_delay_from_4h_origin_percent": round(raw_delay, 4),
+        "detection_delay_from_4h_origin_percent": round(delay, 4) if delay is not None else None,
+        "raw_observed_move_from_4h_origin_percent": round(raw_total_move, 4),
         "observed_move_from_4h_origin_percent": round(total_move, 4),
         "move_after_detection_percent": round(after_detection, 4),
         "available_share_of_observed_trend_percent": round(share, 2),
@@ -235,6 +272,7 @@ def build_snapshot(
     capture_counter: Counter[str] = Counter()
     move_counter: Counter[str] = Counter()
     label_counter: Counter[str] = Counter()
+    compatibility_counter: Counter[str] = Counter()
 
     for key, record in rows.items():
         result = evaluate_record(record)
@@ -245,9 +283,10 @@ def build_snapshot(
         capture_counter[result["capture_stage"]] += 1
         move_counter[result["move_class"]] += 1
         label_counter[result["research_label"]] += 1
+        compatibility_counter["VALID" if result.get("origin_compatible") else "INVALID"] += 1
 
     ranked = sorted(
-        records.values(),
+        [row for row in records.values() if row.get("origin_compatible")],
         key=lambda row: (
             int(row.get("hunter_score") or 0),
             float(row.get("available_share_of_observed_trend_percent") or 0.0),
@@ -262,6 +301,7 @@ def build_snapshot(
         "records": records,
         "summary": {
             "tracked": len(records),
+            "origin_compatibility": dict(compatibility_counter),
             "capture_stages": dict(capture_counter),
             "move_classes": dict(move_counter),
             "research_labels": dict(label_counter),
