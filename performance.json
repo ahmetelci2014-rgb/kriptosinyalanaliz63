@@ -32497,7 +32497,7 @@
       "tp1": 2,
       "tp2": 0,
       "tp3": 0,
-      "sl": 3,
+      "sl": 4,
       "be": 2,
       "expired": 0,
       "long": 5,
@@ -32521,7 +32521,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -32588,12 +32588,13 @@
       },
       "direction_stops": {
         "SHORT": 1,
-        "LONG": 2
+        "LONG": 3
       },
       "stop_times": {
         "AAVEUSDT": 1787605393,
         "CROUSDT": 1787610634,
-        "WUSDT": 1787610635
+        "WUSDT": 1787610635,
+        "WALUSDT": 1787611082
       },
       "closed_times": {
         "SOONUSDT": 1787606531,
@@ -32673,16 +32674,26 @@
           "exit": 0.009539,
           "source": "EARLY_BREAKOUT_ENTRY",
           "score": 99
+        },
+        {
+          "time": "01:38:02",
+          "symbol": "WALUSDT",
+          "direction": "LONG",
+          "result": "SL",
+          "entry": 0.02316,
+          "exit": 0.02294,
+          "source": "EARLY_BREAKOUT_ENTRY",
+          "score": 99
         }
       ],
       "sl_after_tp1": 1,
       "sl_after_tp2": 0,
-      "sl_after_no_return": 0
+      "sl_after_no_return": 1
     }
   },
-  "last_update": 1787610677,
+  "last_update": 1787611085,
   "last_open_summary": 1787606533,
-  "last_status_message": 1787607649,
+  "last_status_message": 1787611429,
   "last_daily_report": "2026-08-24",
   "sl_after_follow": {
     "RECALLUSDT_SHORT_1787596631": {
@@ -32703,12 +32714,15 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-08-25"
     },
     "GIGGLEUSDT_SHORT_1787604152": {
       "trade_id": "GIGGLEUSDT_SHORT_EARLY_BREAKOUT_ENTRY_1787601970",
@@ -32789,6 +32803,26 @@
       "risk_percent": 1.0183,
       "stopped_at": 1787610635,
       "stop_exit": 0.009539,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "WALUSDT_LONG_1787611082": {
+      "trade_id": "WALUSDT_LONG_EARLY_BREAKOUT_ENTRY_1787605618",
+      "symbol": "WALUSDT",
+      "direction": "LONG",
+      "source": "EARLY_BREAKOUT_ENTRY",
+      "entry": 0.02316,
+      "tp1": 0.023277192811,
+      "tp2": 0.02338373173,
+      "tp3": 0.023500924541,
+      "sl": 0.022946922162,
+      "score": 99,
+      "risk_percent": 0.92,
+      "stopped_at": 1787611082,
+      "stop_exit": 0.02294,
       "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
