@@ -47,8 +47,8 @@ jobs:
 
       - name: Coin Analyzer import ve syntax kontrolü
         run: |
-          python -m py_compile coin_analyzer.py coin_analysis_runtime.py coin_analysis_runtime_v2.py
-          python -c "import coin_analyzer; print('Coin Analyzer import OK:', coin_analyzer.VERSION)"
+          python -m py_compile coin_analyzer.py coin_analysis_runtime.py coin_analysis_runtime_v2.py premium_early_breakout.py
+          python -c "import coin_analyzer; import premium_early_breakout; print('Coin Analyzer import OK:', coin_analyzer.VERSION, '| Early:', premium_early_breakout.VERSION)"
 
       - name: Coin Detay Analizi çalıştır
         env:
