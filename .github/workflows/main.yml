@@ -43,6 +43,9 @@ jobs:
           PIP_DISABLE_PIP_VERSION_CHECK: "1"
         run: python -m pip install --prefer-binary -r requirements.txt
 
+      - name: Kullanici arayuzunde acilamayan futures sinyallerini temizle
+        run: python untradable_futures_cleanup.py
+
       - name: Acik islemleri sonuc kontrolunden once devam gucu shadow
         run: python position_continuation_shadow.py
 
@@ -104,6 +107,7 @@ jobs:
             last_signals.json \
             trade_ledger.json \
             premium_pending_candidates.json \
+            invalid_market_signals.json \
             premium_all_coins_state.json \
             smart_recovery_state.json \
             movement_start_shadow.json \
