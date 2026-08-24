@@ -32492,17 +32492,17 @@
       "sl_after_no_return": 5
     },
     "2026-08-25": {
-      "opened": 5,
+      "opened": 7,
       "radar": 0,
       "tp1": 2,
       "tp2": 0,
       "tp3": 0,
-      "sl": 1,
+      "sl": 3,
       "be": 2,
       "expired": 0,
       "long": 5,
-      "short": 0,
-      "normal": 5,
+      "short": 2,
+      "normal": 7,
       "radar_trade": 0,
       "coins": {
         "AAVEUSDT": {
@@ -32551,11 +32551,31 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
         "WUSDT": {
+          "opened": 1,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 1,
+          "be": 0,
+          "expired": 0
+        },
+        "FILUSDT": {
+          "opened": 1,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 0,
+          "be": 0,
+          "expired": 0
+        },
+        "UNIUSDT": {
           "opened": 1,
           "radar": 0,
           "tp1": 0,
@@ -32567,10 +32587,13 @@
         }
       },
       "direction_stops": {
-        "SHORT": 1
+        "SHORT": 1,
+        "LONG": 2
       },
       "stop_times": {
-        "AAVEUSDT": 1787605393
+        "AAVEUSDT": 1787605393,
+        "CROUSDT": 1787610634,
+        "WUSDT": 1787610635
       },
       "closed_times": {
         "SOONUSDT": 1787606531,
@@ -32630,6 +32653,26 @@
           "exit": 0.3723,
           "source": "EARLY_BREAKOUT_ENTRY",
           "score": 99
+        },
+        {
+          "time": "01:30:34",
+          "symbol": "CROUSDT",
+          "direction": "LONG",
+          "result": "SL",
+          "entry": 0.06102,
+          "exit": 0.06042,
+          "source": "EARLY_BREAKOUT_ENTRY",
+          "score": 92
+        },
+        {
+          "time": "01:30:35",
+          "symbol": "WUSDT",
+          "direction": "LONG",
+          "result": "SL",
+          "entry": 0.009636,
+          "exit": 0.009539,
+          "source": "EARLY_BREAKOUT_ENTRY",
+          "score": 99
         }
       ],
       "sl_after_tp1": 1,
@@ -32637,7 +32680,7 @@
       "sl_after_no_return": 0
     }
   },
-  "last_update": 1787609340,
+  "last_update": 1787610677,
   "last_open_summary": 1787606533,
   "last_status_message": 1787607649,
   "last_daily_report": "2026-08-24",
@@ -32711,6 +32754,46 @@
       "after_sl_tp2": false,
       "after_sl_tp3": false,
       "resolved": true
+    },
+    "CROUSDT_LONG_1787610634": {
+      "trade_id": "CROUSDT_LONG_EARLY_BREAKOUT_ENTRY_1787606864",
+      "symbol": "CROUSDT",
+      "direction": "LONG",
+      "source": "EARLY_BREAKOUT_ENTRY",
+      "entry": 0.06102,
+      "tp1": 0.061349035943,
+      "tp2": 0.061648159527,
+      "tp3": 0.061977195469,
+      "sl": 0.060421752832,
+      "score": 92,
+      "risk_percent": 0.9804,
+      "stopped_at": 1787610634,
+      "stop_exit": 0.06042,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "WUSDT_LONG_1787610635": {
+      "trade_id": "WUSDT_LONG_EARLY_BREAKOUT_ENTRY_1787608947",
+      "symbol": "WUSDT",
+      "direction": "LONG",
+      "source": "EARLY_BREAKOUT_ENTRY",
+      "entry": 0.009636,
+      "tp1": 0.009689966901,
+      "tp2": 0.009739027719,
+      "tp3": 0.00979299462,
+      "sl": 0.009537878363,
+      "score": 99,
+      "risk_percent": 1.0183,
+      "stopped_at": 1787610635,
+      "stop_exit": 0.009539,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
     }
   },
   "telegram_result_guard": {
