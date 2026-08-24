@@ -145,32 +145,6 @@ def premium_profile(path="trade_ledger.json",direction=None):
     out.update({"basis":"DIRECTION" if chosen is sub and sub else "ALL","direction":dn or "ALL","eligible_total":len(good),"direction_eligible":len(sub)})
     out["live_allowed"]=passes(out); return out
 
-def radar_gross(r):
-    o=str(r.get("trade_outcome") or "").upper()
-    if o=="STOP":
-        x=sf(r.get("trade_result_r")); return x if x is not None and x<0 else -1.0
-    a=target_r(r.get("entry"),r.get("sl"),r.get("tp1"))
-    b=target_r(r.get("entry"),r.get("sl"),r.get("tp3"))
-    if a is None:return None
-    if o=="BREAKEVEN":return .5*a
-    if o=="TP3" and b is not None:return .5*a+.5*b
-    return None
-
-def radar_profile(path,setup=None):
-    data=load(path,{}); recs=data.get("records") or []; rows=[]; key=str(setup or "").upper()
-    for r in recs if isinstance(recs,list) else []:
-        if not isinstance(r,dict) or str(r.get("stage") or "").upper()!="REAL_SIGNAL":continue
-        setupv=str(r.get("setup") or r.get("setup_name") or r.get("source") or "").upper()
-        if key and key not in setupv:continue
-        g=radar_gross(r)
-        if g is None:continue
-        n=net_r(g,r.get("entry"),r.get("sl"))
-        if n is not None:rows.append((n,r.get("trade_outcome")))
-    out=metrics(rows); out.update({"basis":"RADAR_COST_ADJUSTED","setup":key or "ALL"}); out["live_allowed"]=passes(out); return out
-
-def scalp_profile():return radar_profile("scalp_performance_ledger.json","TEPKI_SCALP")
-def pump_profile():return radar_profile("pump_performance_ledger.json")
-
 def enrich_premium(path="trade_ledger.json"):
     data=load(path,{}); trades=data.get("trades") or {}; changed=0
     if not isinstance(trades,dict):return 0
@@ -192,8 +166,7 @@ def report():
     x={"version":VERSION,"generated_at":int(time.time()),"cost_model":cost_meta(),
        "thresholds":{"min_progress":MIN_PROG,"max_progress":MAX_PROG,"min_distance":MIN_DIST,"max_distance":MAX_DIST,
                      "min_tp1_be_net_r":MIN_TP1_BE_NET,"min_sample":MIN_SAMPLE,"min_avg_net_r":MIN_AVG,"min_profit_factor":MIN_PF,"max_stop_rate":MAX_STOP},
-       "premium":{"all":premium_profile(),"long":premium_profile(direction="LONG"),"short":premium_profile(direction="SHORT")},
-       "scalp_tepki":scalp_profile(),"pump_dump":pump_profile()}
+       "premium":{"all":premium_profile(),"long":premium_profile(direction="LONG"),"short":premium_profile(direction="SHORT")}}
     save(REPORT_FILE,x);return x
 
 class PremiumGate:
