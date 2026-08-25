@@ -193,6 +193,25 @@ def run() -> None:
 
     tracking_backfill.install(base_runner.bot)
 
+    # Refresh the canonical source + direction truth BEFORE any new live entry
+    # is evaluated. This lets the global quality guard use the latest closed
+    # trade ledger immediately instead of waiting until the next workflow run.
+    try:
+        pre_scan_breakdown = source_report.attach_to_profit_report(
+            base_runner.bot.TRADE_LEDGER_FILE,
+            base_runner.profit.REPORT_FILE,
+        )
+        print(
+            "Pre-scan source performance truth:",
+            source_report.VERSION,
+            "| 7d=",
+            pre_scan_breakdown.get("windows", {}).get("7d", {}),
+        )
+    except Exception as exc:
+        # Fail-open here: the global guard independently refuses to trust a
+        # missing/stale report, while the normal strategy continues safely.
+        print("Pre-scan kaynak performans raporu hatası:", exc)
+
     false_positive_shadow.begin()
     try:
         false_positive_shadow.update_outcomes()
