@@ -42,11 +42,16 @@ class MultiDayTrendShadowTests(unittest.TestCase):
         f1 = make_frame("SHORT", True, 120.0, 0.08)
         f4 = make_frame("SHORT", True, 120.0, 0.30)
         now = int(f4.iloc[-1]["time"] / 1000) + 3600
+        # Runtime receives one live market price for all timeframes. Use the 4H
+        # fixture's latest price because trend_origin is deliberately derived
+        # from the 4H series; mixing the independently-scaled 1H fixture price
+        # creates an impossible synthetic market state.
+        current_price = float(f4.iloc[-1]["close"])
         result = md.evaluate_frames(
             "SHORT",
             f1,
             f4,
-            float(f1.iloc[-1]["close"]),
+            current_price,
             now_ts=now,
         )
         self.assertIn(result["status"], {md.STATUS_START, md.STATUS_STRONG})
@@ -61,7 +66,7 @@ class MultiDayTrendShadowTests(unittest.TestCase):
             "SHORT",
             f1,
             f4,
-            float(f1.iloc[-1]["close"]),
+            float(f4.iloc[-1]["close"]),
             now_ts=now,
         )
         self.assertEqual(result["status"], md.STATUS_EXIT)
