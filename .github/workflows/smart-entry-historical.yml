@@ -1,0 +1,77 @@
+name: Smart Entry Historical Bootstrap
+
+on:
+  workflow_dispatch:
+    inputs:
+      symbols:
+        description: "Virgülle semboller (boşsa varsayılan majör grup)"
+        required: false
+        default: ""
+      lookback_days:
+        description: "Geçmiş gün sayısı"
+        required: false
+        default: "120"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: smart-entry-historical-bootstrap
+  cancel-in-progress: false
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Repo indir
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: En güncel main ile eşitle
+        run: |
+          git fetch origin main
+          git reset --hard origin/main
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Bağımlılıkları kur
+        run: python -m pip install --prefer-binary -r requirements.txt
+
+      - name: Tarihsel Smart Entry bootstrap çalıştır
+        env:
+          SMART_ENTRY_SYMBOLS: ${{ github.event.inputs.symbols }}
+          SMART_ENTRY_HISTORY_DAYS: ${{ github.event.inputs.lookback_days }}
+        run: python smart_entry_historical_runner.py
+
+      - name: Araştırma state kaydet
+        if: always()
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git pull --rebase origin main || true
+          git add smart_entry_historical_bootstrap.json 2>/dev/null || true
+
+          if git diff --cached --quiet; then
+            echo "Smart Entry historical state değişmedi."
+            exit 0
+          fi
+
+          git commit -m "Update Smart Entry historical bootstrap"
+
+          for attempt in 1 2 3 4; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            git pull --rebase origin main || true
+            sleep 2
+          done
+
+          exit 1
