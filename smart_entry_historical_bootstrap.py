@@ -52,6 +52,7 @@ MIN_IMPULSE_PERCENT = float(os.getenv("SMART_ENTRY_MIN_IMPULSE_PERCENT", "1.25")
 MIN_IMPULSE_ATR = float(os.getenv("SMART_ENTRY_MIN_IMPULSE_ATR", "2.0"))
 STOP_ATR_BUFFER = float(os.getenv("SMART_ENTRY_STOP_ATR_BUFFER", "0.15"))
 FLIP_TOLERANCE_ATR = float(os.getenv("SMART_ENTRY_FLIP_TOLERANCE_ATR", "0.25"))
+FLIP_STOP_ATR = float(os.getenv("SMART_ENTRY_FLIP_STOP_ATR", "1.25"))
 TRAIN_SHARE = float(os.getenv("SMART_ENTRY_TRAIN_SHARE", "0.70"))
 MIN_TRAIN_SAMPLE = int(os.getenv("SMART_ENTRY_MIN_TRAIN_SAMPLE", "20"))
 MIN_HOLDOUT_SAMPLE = int(os.getenv("SMART_ENTRY_MIN_HOLDOUT_SAMPLE", "8"))
@@ -310,7 +311,9 @@ def evaluate_event(event: ImpulseEvent, df: pd.DataFrame) -> List[Dict[str, Any]
             }
         )
 
-    # S/R flip is evaluated independently from Fibonacci zones.
+    # S/R flip is evaluated independently from Fibonacci zones. Its research stop
+    # stays local to the retest instead of stretching back to the whole impulse
+    # origin, otherwise the R comparison would be artificially diluted.
     tolerance = max(event.atr * FLIP_TOLERANCE_ATR, abs(event.breakout_level) * 0.0005)
     flip_idx: Optional[int] = None
     for idx, candle in future.iterrows():
@@ -322,9 +325,9 @@ def evaluate_event(event: ImpulseEvent, df: pd.DataFrame) -> List[Dict[str, Any]
     if flip_idx is not None:
         entry = event.breakout_level
         if event.direction == "LONG":
-            stop = min(event.origin_price, entry - event.atr * 1.25)
+            stop = max(event.origin_price, entry - event.atr * FLIP_STOP_ATR)
         else:
-            stop = max(event.origin_price, entry + event.atr * 1.25)
+            stop = min(event.origin_price, entry + event.atr * FLIP_STOP_ATR)
         outcome = _first_hit(event.direction, entry, stop, future.iloc[flip_idx:].reset_index(drop=True))
         rows.append(
             {
