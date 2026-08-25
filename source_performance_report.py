@@ -1,7 +1,9 @@
 """Source-level Premium performance audit.
 
-Reads the canonical ``trade_ledger.json`` and attaches a source breakdown to
-``profit_mode_report.json``. It changes no live gate and sends no Telegram.
+Reads the canonical ``trade_ledger.json`` and attaches source and
+source+direction breakdowns to ``profit_mode_report.json``. The report itself
+sends no Telegram message and opens no order; the global live guard may consume
+its evidence on a later run.
 """
 from __future__ import annotations
 
@@ -11,7 +13,7 @@ from typing import Any, Dict, Iterable, List, Optional
 
 import profitability_engine as profit
 
-VERSION = "SOURCE_PERFORMANCE_REPORT_V1_2026_08_25"
+VERSION = "SOURCE_PERFORMANCE_REPORT_V2_2026_08_25"
 
 DEFAULT_LIVE_SOURCES = (
     "15M_ENTRY",
@@ -145,6 +147,21 @@ def metrics(trades: Iterable[Dict[str, Any]]) -> Dict[str, Any]:
     return out
 
 
+def metrics_with_direction(trades: Iterable[Dict[str, Any]]) -> Dict[str, Any]:
+    """Return route metrics plus independent LONG and SHORT performance truth."""
+    rows = list(trades)
+    out = metrics(rows)
+    out["by_direction"] = {
+        direction: metrics(
+            trade
+            for trade in rows
+            if canonical_source(trade.get("direction")) == direction
+        )
+        for direction in ("LONG", "SHORT")
+    }
+    return out
+
+
 def _window_filter(
     trades: Iterable[Dict[str, Any]],
     now_value: int,
@@ -188,13 +205,14 @@ def generate(
         ]
         by_source = {}
         for source in sources:
-            by_source[source] = metrics(
+            source_rows = [
                 trade
                 for trade in in_window
                 if canonical_source(trade.get("source")) == source
-            )
+            ]
+            by_source[source] = metrics_with_direction(source_rows)
         windows[window_name] = {
-            "combined_live": metrics(live_rows),
+            "combined_live": metrics_with_direction(live_rows),
             "sources": by_source,
         }
 
@@ -203,8 +221,8 @@ def generate(
         "generated_at": now_value,
         "basis": "CLOSED trade_ledger trades; one final result per trade_id; execution-cost adjusted R",
         "note": (
-            "This is reporting only. It does not change Premium live admission. "
-            "Evidence status uses the same minimum sample/avg R/profit-factor/stop-rate thresholds as Profit Mode."
+            "Source and source+direction evidence report. It does not itself send or close a trade; "
+            "the Premium Global Quality Guard can consume fresh 7d evidence before admitting a new entry."
         ),
         "thresholds": {
             "min_sample": profit.MIN_SAMPLE,
