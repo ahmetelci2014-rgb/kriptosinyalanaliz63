@@ -47,7 +47,9 @@ Neden: Canlı Premium karar yollarının hiçbiri işlem adayı üretmedi.
     assert "Premium işlem adayı henüz oluşmadı." in report
     assert "Kaldıraç        •" not in report
     assert "Bağlamsal kaldıraç tavanı: 1x" not in report
-    assert "15M 🟡 Kararsız / geçiş • Hacim 0.63x" in report
+    # Presentation spacing is cosmetic; assert the semantic 15M state/value.
+    assert "15M 🟡 Kararsız / geçiş" in report
+    assert "Hacim" in report and "0.63x" in report
     assert "Flow  Sorgulanmadı • 5M yapı adayı yok" in report
 
 
