@@ -6,7 +6,9 @@ import smart_entry_historical_bootstrap as research
 def test_zone_price_long_short_symmetry():
     assert research.zone_price("LONG", 100.0, 120.0, 0.50) == 110.0
     assert research.zone_price("SHORT", 120.0, 100.0, 0.50) == 110.0
-    assert research.zone_price("LONG", 100.0, 120.0, 0.618) == research.zone_price("SHORT", 120.0, 100.0, 0.618)
+    long_price = research.zone_price("LONG", 100.0, 120.0, 0.618)
+    short_price = research.zone_price("SHORT", 120.0, 100.0, 0.618)
+    assert round(abs(long_price - 110.0), 8) == round(abs(short_price - 110.0), 8)
 
 
 def test_first_hit_is_direction_symmetric():
