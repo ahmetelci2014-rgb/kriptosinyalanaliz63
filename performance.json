@@ -32492,17 +32492,17 @@
       "sl_after_no_return": 5
     },
     "2026-08-25": {
-      "opened": 11,
+      "opened": 12,
       "radar": 0,
       "tp1": 6,
       "tp2": 1,
       "tp3": 0,
-      "sl": 7,
-      "be": 4,
+      "sl": 8,
+      "be": 5,
       "expired": 0,
-      "long": 7,
+      "long": 8,
       "short": 4,
-      "normal": 11,
+      "normal": 12,
       "radar_trade": 0,
       "coins": {
         "AAVEUSDT": {
@@ -32622,12 +32622,32 @@
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
+          "be": 1,
+          "expired": 0
+        },
+        "ZENUSDT": {
+          "opened": 0,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 1,
+          "be": 0,
+          "expired": 0
+        },
+        "BTCUSDT": {
+          "opened": 1,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 0,
           "be": 0,
           "expired": 0
         }
       },
       "direction_stops": {
-        "SHORT": 3,
+        "SHORT": 4,
         "LONG": 4
       },
       "stop_times": {
@@ -32637,19 +32657,22 @@
         "WALUSDT": 1787611082,
         "NOTUSDT": 1787617115,
         "ICXUSDT": 1787618010,
-        "FILUSDT": 1787618896
+        "FILUSDT": 1787618896,
+        "ZENUSDT": 1787620096
       },
       "closed_times": {
         "SOONUSDT": 1787606531,
         "LDOUSDT": 1787608854,
         "UNIUSDT": 1787613451,
-        "DYDXUSDT": 1787616378
+        "DYDXUSDT": 1787616378,
+        "CELOUSDT": 1787620098
       },
       "closed_results": {
         "SOONUSDT": "BE",
         "LDOUSDT": "BE",
         "UNIUSDT": "BE",
-        "DYDXUSDT": "BE"
+        "DYDXUSDT": "BE",
+        "CELOUSDT": "BE"
       },
       "closed_history": [
         {
@@ -32831,14 +32854,34 @@
           "exit": 0.078409055148,
           "source": "EARLY_BREAKOUT_ENTRY",
           "score": 99
+        },
+        {
+          "time": "04:08:16",
+          "symbol": "ZENUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 5.361,
+          "exit": 5.481,
+          "source": "BIG_MOVE_ENTRY",
+          "score": 96
+        },
+        {
+          "time": "04:08:18",
+          "symbol": "CELOUSDT",
+          "direction": "LONG",
+          "result": "BE",
+          "entry": 0.07801,
+          "exit": 0.07801,
+          "source": "EARLY_BREAKOUT_ENTRY",
+          "score": 99
         }
       ],
-      "sl_after_tp1": 3,
-      "sl_after_tp2": 2,
+      "sl_after_tp1": 4,
+      "sl_after_tp2": 3,
       "sl_after_no_return": 2
     }
   },
-  "last_update": 1787619604,
+  "last_update": 1787620433,
   "last_open_summary": 1787618014,
   "last_status_message": 1787617496,
   "last_daily_report": "2026-08-24",
@@ -32912,10 +32955,10 @@
         60,
         120
       ],
-      "after_sl_tp1": false,
-      "after_sl_tp2": false,
+      "after_sl_tp1": true,
+      "after_sl_tp2": true,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true
     },
     "WUSDT_LONG_1787610635": {
       "trade_id": "WUSDT_LONG_EARLY_BREAKOUT_ENTRY_1787608947",
@@ -33000,7 +33043,9 @@
       "risk_percent": 1.2313,
       "stopped_at": 1787618010,
       "stop_exit": 0.01683,
-      "reported_checkpoints": [],
+      "reported_checkpoints": [
+        30
+      ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
@@ -33020,6 +33065,26 @@
       "risk_percent": 1.0728,
       "stopped_at": 1787618896,
       "stop_exit": 0.759,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "ZENUSDT_SHORT_1787620097": {
+      "trade_id": "ZENUSDT_SHORT_BIG_MOVE_ENTRY_1787603147",
+      "symbol": "ZENUSDT",
+      "direction": "SHORT",
+      "source": "BIG_MOVE_ENTRY",
+      "entry": 5.361,
+      "tp1": 5.265738128681,
+      "tp2": 5.170476257362,
+      "tp3": 5.003767982555,
+      "sl": 5.480077339148,
+      "score": 96,
+      "risk_percent": 2.2212,
+      "stopped_at": 1787620097,
+      "stop_exit": 5.481,
       "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
