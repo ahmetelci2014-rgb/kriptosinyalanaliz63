@@ -21,7 +21,10 @@ jobs:
       - name: Repo indir
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          # Full history fetched every branch and cost ~3 minutes before the
+          # live scan even started. A short main history is enough for the
+          # state commit/rebase cycle and keeps the 5-minute radar responsive.
+          fetch-depth: 5
 
       - name: En guncel main state ile esitle
         if: ${{ github.ref_name == 'main' }}
