@@ -32494,10 +32494,10 @@
     "2026-08-25": {
       "opened": 11,
       "radar": 0,
-      "tp1": 5,
+      "tp1": 6,
       "tp2": 1,
       "tp3": 0,
-      "sl": 6,
+      "sl": 7,
       "be": 4,
       "expired": 0,
       "long": 7,
@@ -32571,7 +32571,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -32618,7 +32618,7 @@
         "CELOUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
+          "tp1": 1,
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
@@ -32627,7 +32627,7 @@
         }
       },
       "direction_stops": {
-        "SHORT": 2,
+        "SHORT": 3,
         "LONG": 4
       },
       "stop_times": {
@@ -32636,7 +32636,8 @@
         "WUSDT": 1787610635,
         "WALUSDT": 1787611082,
         "NOTUSDT": 1787617115,
-        "ICXUSDT": 1787618010
+        "ICXUSDT": 1787618010,
+        "FILUSDT": 1787618896
       },
       "closed_times": {
         "SOONUSDT": 1787606531,
@@ -32810,14 +32811,34 @@
           "exit": 0.01683,
           "source": "EARLY_BREAKOUT_ENTRY",
           "score": 99
+        },
+        {
+          "time": "03:48:16",
+          "symbol": "FILUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 0.7494,
+          "exit": 0.759,
+          "source": "EARLY_BREAKOUT_ENTRY",
+          "score": 99
+        },
+        {
+          "time": "03:48:17",
+          "symbol": "CELOUSDT",
+          "direction": "LONG",
+          "result": "TP1",
+          "entry": 0.07801,
+          "exit": 0.078409055148,
+          "source": "EARLY_BREAKOUT_ENTRY",
+          "score": 99
         }
       ],
-      "sl_after_tp1": 1,
-      "sl_after_tp2": 0,
-      "sl_after_no_return": 1
+      "sl_after_tp1": 3,
+      "sl_after_tp2": 2,
+      "sl_after_no_return": 2
     }
   },
-  "last_update": 1787618013,
+  "last_update": 1787618900,
   "last_open_summary": 1787618014,
   "last_status_message": 1787617496,
   "last_daily_report": "2026-08-24",
@@ -32840,12 +32861,15 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-08-25"
     },
     "AAVEUSDT_SHORT_1787605393": {
       "trade_id": "AAVEUSDT_SHORT_EARLY_BREAKOUT_ENTRY_1787603646",
@@ -32912,10 +32936,10 @@
         60,
         120
       ],
-      "after_sl_tp1": false,
-      "after_sl_tp2": false,
-      "after_sl_tp3": false,
-      "resolved": false
+      "after_sl_tp1": true,
+      "after_sl_tp2": true,
+      "after_sl_tp3": true,
+      "resolved": true
     },
     "WALUSDT_LONG_1787611082": {
       "trade_id": "WALUSDT_LONG_EARLY_BREAKOUT_ENTRY_1787605618",
@@ -32935,10 +32959,10 @@
         30,
         60
       ],
-      "after_sl_tp1": false,
-      "after_sl_tp2": false,
+      "after_sl_tp1": true,
+      "after_sl_tp2": true,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true
     },
     "NOTUSDT_SHORT_1787617116": {
       "trade_id": "NOTUSDT_SHORT_EARLY_BREAKOUT_ENTRY_1787612842",
@@ -32974,6 +32998,26 @@
       "risk_percent": 1.2313,
       "stopped_at": 1787618010,
       "stop_exit": 0.01683,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "FILUSDT_SHORT_1787618896": {
+      "trade_id": "FILUSDT_SHORT_EARLY_BREAKOUT_ENTRY_1787610673",
+      "symbol": "FILUSDT",
+      "direction": "SHORT",
+      "source": "EARLY_BREAKOUT_ENTRY",
+      "entry": 0.7494,
+      "tp1": 0.744978248719,
+      "tp2": 0.740958474827,
+      "tp3": 0.736536723545,
+      "sl": 0.757439547784,
+      "score": 99,
+      "risk_percent": 1.0728,
+      "stopped_at": 1787618896,
+      "stop_exit": 0.759,
       "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
