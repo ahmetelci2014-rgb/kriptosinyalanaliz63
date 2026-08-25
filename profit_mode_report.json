@@ -1,6 +1,6 @@
 {
   "version": "PROFIT_MODE_V2_COST_AWARE_2026_08_20",
-  "generated_at": 1787645761,
+  "generated_at": 1787646301,
   "cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
     "fee_rate_per_side": 0.0005,
@@ -58,6 +58,670 @@
       "eligible_total": 87,
       "direction_eligible": 39,
       "live_allowed": true
+    }
+  },
+  "live_source_breakdown": {
+    "version": "SOURCE_PERFORMANCE_REPORT_V1_2026_08_25",
+    "generated_at": 1787646301,
+    "basis": "CLOSED trade_ledger trades; one final result per trade_id; execution-cost adjusted R",
+    "note": "This is reporting only. It does not change Premium live admission. Evidence status uses the same minimum sample/avg R/profit-factor/stop-rate thresholds as Profit Mode.",
+    "thresholds": {
+      "min_sample": 20,
+      "min_avg_net_r": 0.03,
+      "min_profit_factor": 1.1,
+      "max_stop_rate_percent": 32.0
+    },
+    "sources": [
+      "15M_ENTRY",
+      "BIG_MOVE_ENTRY",
+      "EARLY_BREAKOUT_ENTRY",
+      "NEW_COIN_ENTRY",
+      "REGIME_TRANSITION_ENTRY",
+      "TREND_CONTINUATION_ENTRY",
+      "YOUNG_COIN_ENTRY"
+    ],
+    "windows": {
+      "24h": {
+        "combined_live": {
+          "sample": 46,
+          "gross_r": -8.85,
+          "net_r_after_costs": -14.2008,
+          "avg_net_r_after_costs": -0.3087,
+          "profit_factor_after_costs": 0.36,
+          "positive_rate_percent": 56.52,
+          "stop_rate_percent": 43.48,
+          "tp3_rate_percent": 10.87,
+          "be_family_rate_percent": 45.65,
+          "result_counts": {
+            "TP2_SONRASI_BE": 5,
+            "TP3": 5,
+            "SL": 20,
+            "TP1_SONRASI_BE": 16
+          },
+          "direction_counts": {
+            "LONG": 29,
+            "SHORT": 17
+          },
+          "evidence_status": "EDGE_NOT_PROVEN"
+        },
+        "sources": {
+          "15M_ENTRY": {
+            "sample": 1,
+            "gross_r": 1.075,
+            "net_r_after_costs": 0.9702,
+            "avg_net_r_after_costs": 0.9702,
+            "profit_factor_after_costs": 999.0,
+            "positive_rate_percent": 100.0,
+            "stop_rate_percent": 0.0,
+            "tp3_rate_percent": 100.0,
+            "be_family_rate_percent": 0.0,
+            "result_counts": {
+              "TP3": 1
+            },
+            "direction_counts": {
+              "LONG": 1,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          },
+          "BIG_MOVE_ENTRY": {
+            "sample": 3,
+            "gross_r": -3.0,
+            "net_r_after_costs": -3.1901,
+            "avg_net_r_after_costs": -1.0634,
+            "profit_factor_after_costs": 0.0,
+            "positive_rate_percent": 0.0,
+            "stop_rate_percent": 100.0,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 0.0,
+            "result_counts": {
+              "SL": 3
+            },
+            "direction_counts": {
+              "LONG": 2,
+              "SHORT": 1
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          },
+          "EARLY_BREAKOUT_ENTRY": {
+            "sample": 40,
+            "gross_r": -8.275,
+            "net_r_after_costs": -13.1519,
+            "avg_net_r_after_costs": -0.3288,
+            "profit_factor_after_costs": 0.308,
+            "positive_rate_percent": 57.5,
+            "stop_rate_percent": 42.5,
+            "tp3_rate_percent": 7.5,
+            "be_family_rate_percent": 50.0,
+            "result_counts": {
+              "TP2_SONRASI_BE": 4,
+              "TP3": 3,
+              "SL": 17,
+              "TP1_SONRASI_BE": 16
+            },
+            "direction_counts": {
+              "LONG": 24,
+              "SHORT": 16
+            },
+            "evidence_status": "EDGE_NOT_PROVEN"
+          },
+          "NEW_COIN_ENTRY": {
+            "sample": 0,
+            "gross_r": 0,
+            "net_r_after_costs": 0,
+            "avg_net_r_after_costs": null,
+            "profit_factor_after_costs": 0.0,
+            "positive_rate_percent": 0.0,
+            "stop_rate_percent": 0.0,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 0.0,
+            "result_counts": {},
+            "direction_counts": {
+              "LONG": 0,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          },
+          "REGIME_TRANSITION_ENTRY": {
+            "sample": 2,
+            "gross_r": 1.35,
+            "net_r_after_costs": 1.171,
+            "avg_net_r_after_costs": 0.5855,
+            "profit_factor_after_costs": 999.0,
+            "positive_rate_percent": 100.0,
+            "stop_rate_percent": 0.0,
+            "tp3_rate_percent": 50.0,
+            "be_family_rate_percent": 50.0,
+            "result_counts": {
+              "TP2_SONRASI_BE": 1,
+              "TP3": 1
+            },
+            "direction_counts": {
+              "LONG": 2,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          },
+          "TREND_CONTINUATION_ENTRY": {
+            "sample": 0,
+            "gross_r": 0,
+            "net_r_after_costs": 0,
+            "avg_net_r_after_costs": null,
+            "profit_factor_after_costs": 0.0,
+            "positive_rate_percent": 0.0,
+            "stop_rate_percent": 0.0,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 0.0,
+            "result_counts": {},
+            "direction_counts": {
+              "LONG": 0,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          },
+          "YOUNG_COIN_ENTRY": {
+            "sample": 0,
+            "gross_r": 0,
+            "net_r_after_costs": 0,
+            "avg_net_r_after_costs": null,
+            "profit_factor_after_costs": 0.0,
+            "positive_rate_percent": 0.0,
+            "stop_rate_percent": 0.0,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 0.0,
+            "result_counts": {},
+            "direction_counts": {
+              "LONG": 0,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          }
+        }
+      },
+      "7d": {
+        "combined_live": {
+          "sample": 113,
+          "gross_r": -1.525,
+          "net_r_after_costs": -15.9404,
+          "avg_net_r_after_costs": -0.1411,
+          "profit_factor_after_costs": 0.647,
+          "positive_rate_percent": 62.83,
+          "stop_rate_percent": 35.4,
+          "tp3_rate_percent": 20.35,
+          "be_family_rate_percent": 44.25,
+          "result_counts": {
+            "TP2_SONRASI_BE": 8,
+            "SL": 40,
+            "TP1_SONRASI_BE": 42,
+            "TP3": 23
+          },
+          "direction_counts": {
+            "LONG": 73,
+            "SHORT": 40
+          },
+          "evidence_status": "EDGE_NOT_PROVEN"
+        },
+        "sources": {
+          "15M_ENTRY": {
+            "sample": 58,
+            "gross_r": 7.075,
+            "net_r_after_costs": -0.8649,
+            "avg_net_r_after_costs": -0.0149,
+            "profit_factor_after_costs": 0.956,
+            "positive_rate_percent": 67.24,
+            "stop_rate_percent": 29.31,
+            "tp3_rate_percent": 27.59,
+            "be_family_rate_percent": 43.1,
+            "result_counts": {
+              "TP2_SONRASI_BE": 3,
+              "SL": 17,
+              "TP1_SONRASI_BE": 22,
+              "TP3": 16
+            },
+            "direction_counts": {
+              "LONG": 37,
+              "SHORT": 21
+            },
+            "evidence_status": "EDGE_NOT_PROVEN"
+          },
+          "BIG_MOVE_ENTRY": {
+            "sample": 3,
+            "gross_r": -3.0,
+            "net_r_after_costs": -3.1901,
+            "avg_net_r_after_costs": -1.0634,
+            "profit_factor_after_costs": 0.0,
+            "positive_rate_percent": 0.0,
+            "stop_rate_percent": 100.0,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 0.0,
+            "result_counts": {
+              "SL": 3
+            },
+            "direction_counts": {
+              "LONG": 2,
+              "SHORT": 1
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          },
+          "EARLY_BREAKOUT_ENTRY": {
+            "sample": 50,
+            "gross_r": -6.95,
+            "net_r_after_costs": -13.0564,
+            "avg_net_r_after_costs": -0.2611,
+            "profit_factor_after_costs": 0.416,
+            "positive_rate_percent": 60.0,
+            "stop_rate_percent": 40.0,
+            "tp3_rate_percent": 12.0,
+            "be_family_rate_percent": 48.0,
+            "result_counts": {
+              "TP2_SONRASI_BE": 4,
+              "TP3": 6,
+              "TP1_SONRASI_BE": 20,
+              "SL": 20
+            },
+            "direction_counts": {
+              "LONG": 32,
+              "SHORT": 18
+            },
+            "evidence_status": "EDGE_NOT_PROVEN"
+          },
+          "NEW_COIN_ENTRY": {
+            "sample": 0,
+            "gross_r": 0,
+            "net_r_after_costs": 0,
+            "avg_net_r_after_costs": null,
+            "profit_factor_after_costs": 0.0,
+            "positive_rate_percent": 0.0,
+            "stop_rate_percent": 0.0,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 0.0,
+            "result_counts": {},
+            "direction_counts": {
+              "LONG": 0,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          },
+          "REGIME_TRANSITION_ENTRY": {
+            "sample": 2,
+            "gross_r": 1.35,
+            "net_r_after_costs": 1.171,
+            "avg_net_r_after_costs": 0.5855,
+            "profit_factor_after_costs": 999.0,
+            "positive_rate_percent": 100.0,
+            "stop_rate_percent": 0.0,
+            "tp3_rate_percent": 50.0,
+            "be_family_rate_percent": 50.0,
+            "result_counts": {
+              "TP2_SONRASI_BE": 1,
+              "TP3": 1
+            },
+            "direction_counts": {
+              "LONG": 2,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          },
+          "TREND_CONTINUATION_ENTRY": {
+            "sample": 0,
+            "gross_r": 0,
+            "net_r_after_costs": 0,
+            "avg_net_r_after_costs": null,
+            "profit_factor_after_costs": 0.0,
+            "positive_rate_percent": 0.0,
+            "stop_rate_percent": 0.0,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 0.0,
+            "result_counts": {},
+            "direction_counts": {
+              "LONG": 0,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          },
+          "YOUNG_COIN_ENTRY": {
+            "sample": 0,
+            "gross_r": 0,
+            "net_r_after_costs": 0,
+            "avg_net_r_after_costs": null,
+            "profit_factor_after_costs": 0.0,
+            "positive_rate_percent": 0.0,
+            "stop_rate_percent": 0.0,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 0.0,
+            "result_counts": {},
+            "direction_counts": {
+              "LONG": 0,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          }
+        }
+      },
+      "30d": {
+        "combined_live": {
+          "sample": 690,
+          "gross_r": 20.0543,
+          "net_r_after_costs": -72.1529,
+          "avg_net_r_after_costs": -0.1046,
+          "profit_factor_after_costs": 0.732,
+          "positive_rate_percent": 64.93,
+          "stop_rate_percent": 33.19,
+          "tp3_rate_percent": 22.46,
+          "be_family_rate_percent": 43.04,
+          "result_counts": {
+            "TP1_SONRASI_BE": 222,
+            "TP3": 155,
+            "SL": 229,
+            "TP2_SONRASI_BE": 75,
+            "EXPIRED": 9
+          },
+          "direction_counts": {
+            "LONG": 288,
+            "SHORT": 402
+          },
+          "evidence_status": "EDGE_NOT_PROVEN"
+        },
+        "sources": {
+          "15M_ENTRY": {
+            "sample": 635,
+            "gross_r": 28.6543,
+            "net_r_after_costs": -57.0774,
+            "avg_net_r_after_costs": -0.0899,
+            "profit_factor_after_costs": 0.766,
+            "positive_rate_percent": 65.51,
+            "stop_rate_percent": 32.44,
+            "tp3_rate_percent": 23.31,
+            "be_family_rate_percent": 42.83,
+            "result_counts": {
+              "TP1_SONRASI_BE": 202,
+              "TP3": 148,
+              "SL": 206,
+              "TP2_SONRASI_BE": 70,
+              "EXPIRED": 9
+            },
+            "direction_counts": {
+              "LONG": 252,
+              "SHORT": 383
+            },
+            "evidence_status": "EDGE_NOT_PROVEN"
+          },
+          "BIG_MOVE_ENTRY": {
+            "sample": 3,
+            "gross_r": -3.0,
+            "net_r_after_costs": -3.1901,
+            "avg_net_r_after_costs": -1.0634,
+            "profit_factor_after_costs": 0.0,
+            "positive_rate_percent": 0.0,
+            "stop_rate_percent": 100.0,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 0.0,
+            "result_counts": {
+              "SL": 3
+            },
+            "direction_counts": {
+              "LONG": 2,
+              "SHORT": 1
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          },
+          "EARLY_BREAKOUT_ENTRY": {
+            "sample": 50,
+            "gross_r": -6.95,
+            "net_r_after_costs": -13.0564,
+            "avg_net_r_after_costs": -0.2611,
+            "profit_factor_after_costs": 0.416,
+            "positive_rate_percent": 60.0,
+            "stop_rate_percent": 40.0,
+            "tp3_rate_percent": 12.0,
+            "be_family_rate_percent": 48.0,
+            "result_counts": {
+              "TP2_SONRASI_BE": 4,
+              "TP3": 6,
+              "TP1_SONRASI_BE": 20,
+              "SL": 20
+            },
+            "direction_counts": {
+              "LONG": 32,
+              "SHORT": 18
+            },
+            "evidence_status": "EDGE_NOT_PROVEN"
+          },
+          "NEW_COIN_ENTRY": {
+            "sample": 0,
+            "gross_r": 0,
+            "net_r_after_costs": 0,
+            "avg_net_r_after_costs": null,
+            "profit_factor_after_costs": 0.0,
+            "positive_rate_percent": 0.0,
+            "stop_rate_percent": 0.0,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 0.0,
+            "result_counts": {},
+            "direction_counts": {
+              "LONG": 0,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          },
+          "REGIME_TRANSITION_ENTRY": {
+            "sample": 2,
+            "gross_r": 1.35,
+            "net_r_after_costs": 1.171,
+            "avg_net_r_after_costs": 0.5855,
+            "profit_factor_after_costs": 999.0,
+            "positive_rate_percent": 100.0,
+            "stop_rate_percent": 0.0,
+            "tp3_rate_percent": 50.0,
+            "be_family_rate_percent": 50.0,
+            "result_counts": {
+              "TP2_SONRASI_BE": 1,
+              "TP3": 1
+            },
+            "direction_counts": {
+              "LONG": 2,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          },
+          "TREND_CONTINUATION_ENTRY": {
+            "sample": 0,
+            "gross_r": 0,
+            "net_r_after_costs": 0,
+            "avg_net_r_after_costs": null,
+            "profit_factor_after_costs": 0.0,
+            "positive_rate_percent": 0.0,
+            "stop_rate_percent": 0.0,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 0.0,
+            "result_counts": {},
+            "direction_counts": {
+              "LONG": 0,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          },
+          "YOUNG_COIN_ENTRY": {
+            "sample": 0,
+            "gross_r": 0,
+            "net_r_after_costs": 0,
+            "avg_net_r_after_costs": null,
+            "profit_factor_after_costs": 0.0,
+            "positive_rate_percent": 0.0,
+            "stop_rate_percent": 0.0,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 0.0,
+            "result_counts": {},
+            "direction_counts": {
+              "LONG": 0,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          }
+        }
+      },
+      "lifetime": {
+        "combined_live": {
+          "sample": 742,
+          "gross_r": 11.3473,
+          "net_r_after_costs": -88.0022,
+          "avg_net_r_after_costs": -0.1186,
+          "profit_factor_after_costs": 0.701,
+          "positive_rate_percent": 64.15,
+          "stop_rate_percent": 33.83,
+          "tp3_rate_percent": 21.7,
+          "be_family_rate_percent": 42.99,
+          "result_counts": {
+            "SL": 251,
+            "TP3": 161,
+            "TP1_SONRASI_BE": 239,
+            "TP2_SONRASI_BE": 80,
+            "EXPIRED": 11
+          },
+          "direction_counts": {
+            "LONG": 301,
+            "SHORT": 441
+          },
+          "evidence_status": "EDGE_NOT_PROVEN"
+        },
+        "sources": {
+          "15M_ENTRY": {
+            "sample": 687,
+            "gross_r": 19.9473,
+            "net_r_after_costs": -72.9267,
+            "avg_net_r_after_costs": -0.1062,
+            "profit_factor_after_costs": 0.729,
+            "positive_rate_percent": 64.63,
+            "stop_rate_percent": 33.19,
+            "tp3_rate_percent": 22.42,
+            "be_family_rate_percent": 42.79,
+            "result_counts": {
+              "SL": 228,
+              "TP3": 154,
+              "TP1_SONRASI_BE": 219,
+              "TP2_SONRASI_BE": 75,
+              "EXPIRED": 11
+            },
+            "direction_counts": {
+              "LONG": 265,
+              "SHORT": 422
+            },
+            "evidence_status": "EDGE_NOT_PROVEN"
+          },
+          "BIG_MOVE_ENTRY": {
+            "sample": 3,
+            "gross_r": -3.0,
+            "net_r_after_costs": -3.1901,
+            "avg_net_r_after_costs": -1.0634,
+            "profit_factor_after_costs": 0.0,
+            "positive_rate_percent": 0.0,
+            "stop_rate_percent": 100.0,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 0.0,
+            "result_counts": {
+              "SL": 3
+            },
+            "direction_counts": {
+              "LONG": 2,
+              "SHORT": 1
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          },
+          "EARLY_BREAKOUT_ENTRY": {
+            "sample": 50,
+            "gross_r": -6.95,
+            "net_r_after_costs": -13.0564,
+            "avg_net_r_after_costs": -0.2611,
+            "profit_factor_after_costs": 0.416,
+            "positive_rate_percent": 60.0,
+            "stop_rate_percent": 40.0,
+            "tp3_rate_percent": 12.0,
+            "be_family_rate_percent": 48.0,
+            "result_counts": {
+              "TP2_SONRASI_BE": 4,
+              "TP3": 6,
+              "TP1_SONRASI_BE": 20,
+              "SL": 20
+            },
+            "direction_counts": {
+              "LONG": 32,
+              "SHORT": 18
+            },
+            "evidence_status": "EDGE_NOT_PROVEN"
+          },
+          "NEW_COIN_ENTRY": {
+            "sample": 0,
+            "gross_r": 0,
+            "net_r_after_costs": 0,
+            "avg_net_r_after_costs": null,
+            "profit_factor_after_costs": 0.0,
+            "positive_rate_percent": 0.0,
+            "stop_rate_percent": 0.0,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 0.0,
+            "result_counts": {},
+            "direction_counts": {
+              "LONG": 0,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          },
+          "REGIME_TRANSITION_ENTRY": {
+            "sample": 2,
+            "gross_r": 1.35,
+            "net_r_after_costs": 1.171,
+            "avg_net_r_after_costs": 0.5855,
+            "profit_factor_after_costs": 999.0,
+            "positive_rate_percent": 100.0,
+            "stop_rate_percent": 0.0,
+            "tp3_rate_percent": 50.0,
+            "be_family_rate_percent": 50.0,
+            "result_counts": {
+              "TP2_SONRASI_BE": 1,
+              "TP3": 1
+            },
+            "direction_counts": {
+              "LONG": 2,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          },
+          "TREND_CONTINUATION_ENTRY": {
+            "sample": 0,
+            "gross_r": 0,
+            "net_r_after_costs": 0,
+            "avg_net_r_after_costs": null,
+            "profit_factor_after_costs": 0.0,
+            "positive_rate_percent": 0.0,
+            "stop_rate_percent": 0.0,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 0.0,
+            "result_counts": {},
+            "direction_counts": {
+              "LONG": 0,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          },
+          "YOUNG_COIN_ENTRY": {
+            "sample": 0,
+            "gross_r": 0,
+            "net_r_after_costs": 0,
+            "avg_net_r_after_costs": null,
+            "profit_factor_after_costs": 0.0,
+            "positive_rate_percent": 0.0,
+            "stop_rate_percent": 0.0,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 0.0,
+            "result_counts": {},
+            "direction_counts": {
+              "LONG": 0,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE"
+          }
+        }
+      }
     }
   }
 }
