@@ -25,7 +25,7 @@ def _latest_flow_snapshot(runner: Any, symbol: str, direction: str) -> Optional[
     return None
 
 
-def _install_big_move(runner: Any, big: Any) -> None:
+def _install_big_move(runner: Any, big: Any, false_positive_shadow: Any = None) -> None:
     """Insert Big Move before Regime/Early routes without removing old systems."""
     original_5m_factory = runner._make_5m_start_observer
     original_profit_factory = runner._make_profit_gate
@@ -87,6 +87,14 @@ def _install_big_move(runner: Any, big: Any) -> None:
 
             if not isinstance(promoted, dict):
                 return legacy_signal
+
+            # Prospective audit sees every Big Move PROMOTE candidate before a
+            # later legacy/portfolio/slot decision can hide a false positive.
+            if false_positive_shadow is not None:
+                try:
+                    false_positive_shadow.observe(promoted)
+                except Exception as exc:
+                    print(symbol, "Big Move false-positive shadow kayıt hatası:", exc)
 
             if (
                 isinstance(legacy_signal, dict)
@@ -163,10 +171,13 @@ def _install_big_move(runner: Any, big: Any) -> None:
 
 
 def run() -> None:
+    import big_move_false_positive_shadow as false_positive_shadow
     import premium_big_move_live as big
     import premium_market_outlook_refresh as outlook_refresh
     import premium_profit_runner as base_runner
     import premium_quality_profit_runner as quality_runner
+    import source_performance_report as source_report
+    import tracking_backfill
 
     refresh = outlook_refresh.ensure_fresh()
     print(
@@ -180,8 +191,16 @@ def run() -> None:
         refresh.get("age_seconds"),
     )
 
+    tracking_backfill.install(base_runner.bot)
+
+    false_positive_shadow.begin()
+    try:
+        false_positive_shadow.update_outcomes()
+    except Exception as exc:
+        print("Big Move false-positive shadow güncelleme hatası:", exc)
+
     big.begin()
-    _install_big_move(base_runner, big)
+    _install_big_move(base_runner, big, false_positive_shadow)
 
     print(
         "Premium Big Move Start:",
@@ -191,6 +210,11 @@ def run() -> None:
     print(
         "Big Move önceliği: mevcut Regime/Early/Premium yolları kaldırılmadı; büyük hareket başlangıcı önce aday olabilir",
     )
+    print(
+        "Big Move false-positive shadow:",
+        false_positive_shadow.VERSION,
+        "| tüm PROMOTE adaylar 24s prospectif takip",
+    )
 
     try:
         quality_runner.run()
@@ -199,6 +223,24 @@ def run() -> None:
             print("Premium Big Move özet:", big.finish())
         except Exception as exc:
             print("Premium Big Move state kaydetme hatası:", exc)
+        try:
+            print(
+                "Big Move false-positive özet:",
+                false_positive_shadow.finish(),
+            )
+        except Exception as exc:
+            print("Big Move false-positive state kaydetme hatası:", exc)
+        try:
+            breakdown = source_report.attach_to_profit_report(
+                base_runner.bot.TRADE_LEDGER_FILE,
+                base_runner.profit.REPORT_FILE,
+            )
+            print(
+                "Kaynak bazlı 24s performans:",
+                breakdown.get("windows", {}).get("24h", {}),
+            )
+        except Exception as exc:
+            print("Kaynak bazlı performans raporu hatası:", exc)
 
 
 if __name__ == "__main__":
