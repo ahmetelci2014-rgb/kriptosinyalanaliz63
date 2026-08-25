@@ -40,11 +40,15 @@ def test_generate_keeps_live_sources_separate(tmp_path):
     lifetime = result["windows"]["lifetime"]
 
     assert lifetime["combined_live"]["sample"] == 3
+    assert lifetime["combined_live"]["by_direction"]["LONG"]["sample"] == 2
+    assert lifetime["combined_live"]["by_direction"]["SHORT"]["sample"] == 1
     assert lifetime["sources"]["15M_ENTRY"]["sample"] == 1
     assert lifetime["sources"]["BIG_MOVE_ENTRY"]["sample"] == 1
     assert lifetime["sources"]["REGIME_TRANSITION_ENTRY"]["sample"] == 1
     assert lifetime["sources"]["BIG_MOVE_ENTRY"]["result_counts"]["SL"] == 1
     assert lifetime["sources"]["REGIME_TRANSITION_ENTRY"]["direction_counts"]["SHORT"] == 1
+    assert lifetime["sources"]["REGIME_TRANSITION_ENTRY"]["by_direction"]["SHORT"]["sample"] == 1
+    assert lifetime["sources"]["REGIME_TRANSITION_ENTRY"]["by_direction"]["LONG"]["sample"] == 0
     assert lifetime["sources"]["15M_ENTRY"]["evidence_status"] == "INSUFFICIENT_SAMPLE"
 
 
@@ -70,3 +74,4 @@ def test_attach_preserves_existing_profit_report(tmp_path):
     assert stored["premium"]["all"]["sample"] == 99
     assert stored["live_source_breakdown"]["version"] == report.VERSION
     assert breakdown["windows"]["lifetime"]["sources"]["EARLY_BREAKOUT_ENTRY"]["sample"] == 1
+    assert breakdown["windows"]["lifetime"]["sources"]["EARLY_BREAKOUT_ENTRY"]["by_direction"]["LONG"]["sample"] == 1
