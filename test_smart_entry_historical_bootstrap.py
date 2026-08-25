@@ -35,8 +35,10 @@ def test_same_candle_stop_and_target_is_conservative():
 def _rows(zone: str, count: int, hit2_count: int, sl_count: int, start_ts: int):
     rows = []
     for i in range(count):
-        hit2 = i < hit2_count
-        sl = i >= count - sl_count
+        # Spread wins/losses over the whole chronology so train and holdout both
+        # contain representative outcomes.
+        hit2 = ((i * hit2_count) % count) < hit2_count if hit2_count else False
+        sl = ((i * sl_count) % count) < sl_count if sl_count else False
         rows.append({
             "symbol": "TESTUSDT",
             "direction": "LONG" if i % 2 == 0 else "SHORT",
