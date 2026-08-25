@@ -125749,7 +125749,7 @@
         },
         "max_favorable_r": 0.3443,
         "max_adverse_r": 0.7474,
-        "last_checked_at": 1787625204,
+        "last_checked_at": 1787625741,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -125771,7 +125771,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 5.541
+        "last_price": 5.562
       }
     },
     "AAVEUSDT_SHORT_EARLY_BREAKOUT_ENTRY_1787603646": {
@@ -126101,13 +126101,13 @@
       "opened_day": "2026-08-24",
       "tp1_hit": true,
       "tp2_hit": true,
-      "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "tp3_hit": true,
+      "status": "CLOSED",
+      "final_result": "TP3",
+      "r_result": 1.075,
+      "exit_price": 0.000428734224,
+      "closed_at": 1787625380,
+      "closed_day": "2026-08-25",
       "events": [
         {
           "time": 1787604879,
@@ -126123,6 +126123,11 @@
           "time": 1787624857,
           "event": "TP2",
           "price": 0.00042507871
+        },
+        {
+          "time": 1787625380,
+          "event": "TP3",
+          "price": 0.000428734224
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -126155,13 +126160,13 @@
       "market_guard_long_allowed": true,
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 2/3 | SHORT uygun: 1/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %-0.06 | ETHUSDT: 15M EMA20 altı, 5M %-0.07 | SOLUSDT: 15M EMA20 üstü, 5M %-0.14",
-      "best_favorable_percent": 1.9852,
+      "best_favorable_percent": 2.5592,
       "worst_adverse_percent": 0.3827,
-      "best_favorable_r": 1.2488,
+      "best_favorable_r": 1.6099,
       "worst_adverse_r": 0.2407,
-      "best_favorable_price": 0.0004264,
+      "best_favorable_price": 0.0004288,
       "worst_adverse_price": 0.0004165,
-      "last_market_price": 0.0004263,
+      "last_market_price": 0.0004288,
       "tp1_hit_at": 1787616480,
       "continuation_shadow": {
         "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
@@ -126679,7 +126684,116 @@
         "min_score": 19,
         "status_changed": false
       },
-      "last_tracking_at": 1787624820
+      "last_tracking_at": 1787625060,
+      "duration_minutes": 341,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "KURULUM BASARILI",
+        "confidence": "YUKSEK",
+        "factors": [
+          "Sinyal maksimum hedef TP3'e ulasti."
+        ],
+        "duration_minutes": 341,
+        "best_favorable_r": 1.6099,
+        "worst_adverse_r": 0.2407,
+        "provisional": false,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "tp3_post_follow": {
+        "version": "TP3_POST_FOLLOW_V1_2026_08_08",
+        "status": "TRACKING",
+        "started_at": 1787625380,
+        "tp3_price": 0.000428734224,
+        "timeframe": "1m",
+        "checkpoints": {},
+        "max_favorable_percent": 0.0,
+        "max_adverse_percent": 0.0,
+        "best_price": 0.000428734224,
+        "worst_price": 0.000428734224,
+        "last_checked_at": 0,
+        "completed_at": 0,
+        "shadow_only": true
+      },
+      "gross_r_before_costs": 1.075,
+      "estimated_execution_cost_r": 0.0755,
+      "net_r_after_costs": 0.9995,
+      "cost_model_version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
+      "tp3_runner_shadow": {
+        "version": "TP3_RUNNER_SHADOW_V1_2026_08_24",
+        "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_EXIT_MUTATION",
+        "status": "TRACKING",
+        "started_at": 1787625380,
+        "reference_tp3_price": 0.000428734224,
+        "timeframe": "5m",
+        "max_minutes": 360,
+        "continuation_at_tp3": {
+          "available": true,
+          "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
+          "updated_at": 1787625186,
+          "status": "DEVAM_GUCLU",
+          "score": 91,
+          "confidence": "ORTA",
+          "action_shadow": "HOLD_SHADOW",
+          "move_from_entry_percent": 2.1287,
+          "trend_origin": {
+            "price": 0.0004165,
+            "at": 1787612400,
+            "method": "EMA20_REGIME_CROSS",
+            "move_so_far_percent": 2.521
+          },
+          "remaining_move_shadow": {
+            "low_percent": 0.8406,
+            "high_percent": 2.2417,
+            "method": "15M_ATR_HEURISTIC_UNCALIBRATED",
+            "estimated_total_move_low_percent": 3.3616,
+            "estimated_total_move_high_percent": 4.7627
+          },
+          "metrics": {
+            "trend_5m": 1,
+            "trend_15m": 1,
+            "trend_1h": 0,
+            "structure_5m": 1,
+            "adx_15m": 18.2,
+            "adx_1h": 18.36,
+            "rsi_15m": 67.87,
+            "volume_ratio_5m": 0.311,
+            "volume_ratio_15m": 2.426,
+            "atr_15m_percent": 0.7005
+          },
+          "runner_candidate": "RUNNER_STRONG_SHADOW"
+        },
+        "runner_candidate": "RUNNER_STRONG_SHADOW",
+        "checkpoints": {},
+        "max_favorable_r": 0.0,
+        "max_adverse_r": 0.0,
+        "max_favorable_percent": 0.0,
+        "max_adverse_percent": 0.0,
+        "extension_class": "PENDING",
+        "shadow_only": true
+      },
+      "post_result_shadow": {
+        "version": "POST_RESULT_SHADOW_V1_2026_08_10",
+        "shadow_only": true,
+        "status": "TRACKING",
+        "final_result": "TP3",
+        "started_at": 1787625380,
+        "measurement_start_at": 1787625420,
+        "reference_label": "TP3",
+        "reference_price": 0.000428734224,
+        "timeframe": "1m",
+        "checkpoints": {},
+        "watched_levels": {},
+        "reached_levels": {},
+        "max_favorable_percent": 0.0,
+        "max_adverse_percent": 0.6144,
+        "max_favorable_r": 0.0,
+        "max_adverse_r": 0.3963,
+        "best_price": 0.000428734224,
+        "worst_price": 0.0004261,
+        "last_checked_at": 1787625738,
+        "completed_at": 0,
+        "last_price": 0.0004279
+      }
     },
     "WALUSDT_LONG_EARLY_BREAKOUT_ENTRY_1787605618": {
       "trade_id": "WALUSDT_LONG_EARLY_BREAKOUT_ENTRY_1787605618",
@@ -126933,7 +127047,7 @@
       "result_diagnostics": {
         "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
         "shadow_only": true,
-        "status": "TRACKING",
+        "status": "COMPLETED",
         "final_result": "SL",
         "started_at": 1787611082,
         "measurement_start_at": 1787611140,
@@ -126985,14 +127099,20 @@
             "candle_time": 1787618220,
             "close_price": 0.02311,
             "directional_r_from_reference": 0.7978
+          },
+          "240": {
+            "target_at": 1787625482,
+            "candle_time": 1787625420,
+            "close_price": 0.02365,
+            "directional_r_from_reference": 3.3321
           }
         },
         "max_favorable_r": 3.8484,
         "max_adverse_r": 1.3141,
-        "last_checked_at": 1787625204,
-        "completed_at": 0,
+        "last_checked_at": 1787625741,
+        "completed_at": 1787625741,
         "diagnosis": {
-          "status": "PROVISIONAL",
+          "status": "FINAL",
           "code": "SL_SONRASI_GUCLU_TOPARLANMA",
           "likely_cause": "ERKEN_GIRIS_OLASILIGI",
           "confidence": "HIGH",
@@ -127011,7 +127131,7 @@
             "tp3_minutes_after_close": 220
           }
         },
-        "last_price": 0.02371
+        "last_price": 0.02365
       },
       "post_stop_follow": {
         "returned_level": "TP2",
@@ -128765,7 +128885,7 @@
         },
         "max_favorable_r": 0.7712,
         "max_adverse_r": 1.5299,
-        "last_checked_at": 1787625204,
+        "last_checked_at": 1787625741,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -128787,7 +128907,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.7686
+        "last_price": 0.7702
       }
     },
     "UNIUSDT_SHORT_EARLY_BREAKOUT_ENTRY_1787610676": {
@@ -129060,9 +129180,9 @@
         "max_adverse_r": 5.9003,
         "best_price": 4.28,
         "worst_price": 4.472,
-        "last_checked_at": 1787625202,
+        "last_checked_at": 1787625738,
         "completed_at": 0,
-        "last_price": 4.439
+        "last_price": 4.438
       },
       "result_diagnostics": {
         "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
@@ -129106,7 +129226,7 @@
         },
         "max_favorable_r": 0.2902,
         "max_adverse_r": 5.9003,
-        "last_checked_at": 1787625204,
+        "last_checked_at": 1787625741,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -129128,7 +129248,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 4.439
+        "last_price": 4.438
       }
     },
     "DYDXUSDT_SHORT_EARLY_BREAKOUT_ENTRY_1787611691": {
@@ -129423,9 +129543,9 @@
         "max_adverse_r": 3.724,
         "best_price": 0.11552,
         "worst_price": 0.11976,
-        "last_checked_at": 1787625202,
+        "last_checked_at": 1787625738,
         "completed_at": 0,
-        "last_price": 0.11944
+        "last_price": 0.1195
       },
       "result_diagnostics": {
         "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
@@ -129468,7 +129588,7 @@
         },
         "max_favorable_r": 0.532,
         "max_adverse_r": 3.724,
-        "last_checked_at": 1787625204,
+        "last_checked_at": 1787625741,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -129490,7 +129610,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.11944
+        "last_price": 0.1195
       }
     },
     "NOTUSDT_SHORT_EARLY_BREAKOUT_ENTRY_1787612842": {
@@ -129815,7 +129935,7 @@
         },
         "max_favorable_r": 0.4858,
         "max_adverse_r": 3.3634,
-        "last_checked_at": 1787625204,
+        "last_checked_at": 1787625741,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -129837,7 +129957,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.000427
+        "last_price": 0.0004279
       }
     },
     "ICXUSDT_LONG_EARLY_BREAKOUT_ENTRY_1787615022": {
@@ -130133,11 +130253,17 @@
             "candle_time": 1787621520,
             "close_price": 0.01686,
             "directional_r_from_reference": 0.1439
+          },
+          "120": {
+            "target_at": 1787625210,
+            "candle_time": 1787625120,
+            "close_price": 0.01694,
+            "directional_r_from_reference": 0.5277
           }
         },
         "max_favorable_r": 0.7195,
         "max_adverse_r": 0.9594,
-        "last_checked_at": 1787625204,
+        "last_checked_at": 1787625741,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -130159,7 +130285,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.01694
+        "last_price": 0.01696
       }
     },
     "CELOUSDT_LONG_EARLY_BREAKOUT_ENTRY_1787615088": {
@@ -130502,9 +130628,9 @@
         "max_adverse_r": 0.8683,
         "best_price": 0.07885,
         "worst_price": 0.07738,
-        "last_checked_at": 1787625202,
+        "last_checked_at": 1787625738,
         "completed_at": 0,
-        "last_price": 0.07838
+        "last_price": 0.07825
       },
       "result_diagnostics": {
         "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
@@ -130548,7 +130674,7 @@
         },
         "max_favorable_r": 1.1577,
         "max_adverse_r": 0.8683,
-        "last_checked_at": 1787625204,
+        "last_checked_at": 1787625741,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -130570,7 +130696,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.07838
+        "last_price": 0.07825
       }
     },
     "BTCUSDT_LONG_REGIME_TRANSITION_ENTRY_1787620433": {
@@ -130649,39 +130775,39 @@
       "worst_adverse_r": 0.2811,
       "best_favorable_price": 81084.2,
       "worst_adverse_price": 79436.1,
-      "last_market_price": 80794.2,
+      "last_market_price": 80814.0,
       "tp1_hit_at": 1787624220,
       "continuation_shadow": {
         "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
         "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_EXIT_MUTATION",
         "status": "DEVAM_GUCLU",
-        "score": 94,
+        "score": 86,
         "action_shadow": "HOLD_SHADOW",
-        "confidence": "YUKSEK",
-        "current_price": 80830.6,
-        "move_from_entry_percent": 1.3635,
+        "confidence": "ORTA",
+        "current_price": 81152.1,
+        "move_from_entry_percent": 1.7667,
         "trend_origin": {
           "price": 78680.0,
           "at": 1787616900,
           "method": "EMA20_REGIME_CROSS",
-          "move_so_far_percent": 2.7334
+          "move_so_far_percent": 3.142
         },
         "remaining_move_shadow": {
           "low_percent": 0.5589,
           "high_percent": 1.4905,
           "method": "15M_ATR_HEURISTIC_UNCALIBRATED",
-          "estimated_total_move_low_percent": 3.2923,
-          "estimated_total_move_high_percent": 4.2238
+          "estimated_total_move_low_percent": 3.7009,
+          "estimated_total_move_high_percent": 4.6325
         },
         "metrics": {
           "trend_5m": 1,
           "trend_15m": 1,
           "trend_1h": 1,
-          "structure_5m": 0,
+          "structure_5m": -1,
           "adx_15m": 22.55,
           "adx_1h": 22.39,
           "rsi_15m": 80.51,
-          "volume_ratio_5m": 1.379,
+          "volume_ratio_5m": 0.746,
           "volume_ratio_15m": 8.237,
           "atr_15m_percent": 0.4658
         },
@@ -130689,9 +130815,10 @@
           "5M trend yönü destekliyor",
           "15M trend yönü destekliyor",
           "1H trend yönü destekliyor",
+          "5M mikro yapı ters kırılıyor",
           "15M RSI devam için sağlıksız bölgede"
         ],
-        "updated_at": 1787625186,
+        "updated_at": 1787625723,
         "trade_id": "BTCUSDT_LONG_REGIME_TRANSITION_ENTRY_1787620433",
         "symbol": "BTCUSDT",
         "direction": "LONG",
@@ -130780,10 +130907,10 @@
           }
         ],
         "peak_score": 100,
-        "min_score": 90,
+        "min_score": 86,
         "status_changed": false
       },
-      "last_tracking_at": 1787624820
+      "last_tracking_at": 1787625360
     },
     "AIXBTUSDT_LONG_15M_ENTRY_1787622826": {
       "trade_id": "AIXBTUSDT_LONG_15M_ENTRY_1787622826",
@@ -131027,11 +131154,11 @@
         "tp3_price": 0.0219346746,
         "timeframe": "1m",
         "checkpoints": {},
-        "max_favorable_percent": 0.0,
+        "max_favorable_percent": 0.9361,
         "max_adverse_percent": 0.0,
-        "best_price": 0.0219346746,
+        "best_price": 0.02214,
         "worst_price": 0.0219346746,
-        "last_checked_at": 0,
+        "last_checked_at": 1787625383,
         "completed_at": 0,
         "shadow_only": true
       },
@@ -131085,12 +131212,15 @@
         },
         "runner_candidate": "RUNNER_POSSIBLE_SHADOW",
         "checkpoints": {},
-        "max_favorable_r": 0.0,
+        "max_favorable_r": 1.3999,
         "max_adverse_r": 0.0,
-        "max_favorable_percent": 0.0,
+        "max_favorable_percent": 1.5743,
         "max_adverse_percent": 0.0,
-        "extension_class": "PENDING",
-        "shadow_only": true
+        "extension_class": "STRONG_EXTENSION",
+        "shadow_only": true,
+        "last_checked_at": 1787625732,
+        "best_price": 0.02228,
+        "worst_price": 0.0219346746
       },
       "post_result_shadow": {
         "version": "POST_RESULT_SHADOW_V1_2026_08_10",
@@ -131105,15 +131235,15 @@
         "checkpoints": {},
         "watched_levels": {},
         "reached_levels": {},
-        "max_favorable_percent": 0.9361,
+        "max_favorable_percent": 1.5743,
         "max_adverse_percent": 0.0,
-        "max_favorable_r": 0.8324,
+        "max_favorable_r": 1.3999,
         "max_adverse_r": 0.0,
-        "best_price": 0.02214,
+        "best_price": 0.02228,
         "worst_price": 0.0219346746,
-        "last_checked_at": 1787625202,
+        "last_checked_at": 1787625738,
         "completed_at": 0,
-        "last_price": 0.02209
+        "last_price": 0.02218
       }
     },
     "BNBUSDT_LONG_BIG_MOVE_ENTRY_1787625183": {
@@ -131175,45 +131305,45 @@
       "market_guard_long_allowed": true,
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %-0.07 | ETHUSDT: 15M EMA20 üstü, 5M %-0.15 | SOLUSDT: 15M EMA20 üstü, 5M %-0.39",
-      "best_favorable_percent": 0.0,
-      "worst_adverse_percent": 0.0,
-      "best_favorable_r": 0.0,
-      "worst_adverse_r": 0.0,
-      "best_favorable_price": 717.6,
-      "worst_adverse_price": 717.6,
-      "last_market_price": 718.0,
+      "best_favorable_percent": 0.1115,
+      "worst_adverse_percent": 0.0836,
+      "best_favorable_r": 0.0569,
+      "worst_adverse_r": 0.0427,
+      "best_favorable_price": 718.4,
+      "worst_adverse_price": 717.0,
+      "last_market_price": 717.0,
       "tp1_hit_at": 0,
       "continuation_shadow": {
         "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
         "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_EXIT_MUTATION",
         "status": "DEVAM_GUCLU",
-        "score": 97,
+        "score": 82,
         "action_shadow": "HOLD_SHADOW",
         "confidence": "YUKSEK",
-        "current_price": 717.9,
-        "move_from_entry_percent": 0.0418,
+        "current_price": 717.5,
+        "move_from_entry_percent": -0.0139,
         "trend_origin": {
           "price": 700.5,
           "at": 1787603400,
           "method": "EMA20_REGIME_CROSS",
-          "move_so_far_percent": 2.4839
+          "move_so_far_percent": 2.4268
         },
         "remaining_move_shadow": {
           "low_percent": 0.5228,
           "high_percent": 1.3941,
           "method": "15M_ATR_HEURISTIC_UNCALIBRATED",
-          "estimated_total_move_low_percent": 3.0067,
-          "estimated_total_move_high_percent": 3.8781
+          "estimated_total_move_low_percent": 2.9496,
+          "estimated_total_move_high_percent": 3.821
         },
         "metrics": {
           "trend_5m": 1,
           "trend_15m": 1,
           "trend_1h": 1,
-          "structure_5m": 1,
+          "structure_5m": -1,
           "adx_15m": 24.32,
           "adx_1h": 11.64,
           "rsi_15m": 77.6,
-          "volume_ratio_5m": 3.739,
+          "volume_ratio_5m": 1.274,
           "volume_ratio_15m": 5.755,
           "atr_15m_percent": 0.4357
         },
@@ -131221,11 +131351,10 @@
           "5M trend yönü destekliyor",
           "15M trend yönü destekliyor",
           "1H trend yönü destekliyor",
-          "5M mikro yapı devam yönünde",
-          "15M RSI devam için sağlıksız bölgede",
-          "5M hacim devamı destekliyor"
+          "5M mikro yapı ters kırılıyor",
+          "15M RSI devam için sağlıksız bölgede"
         ],
-        "updated_at": 1787625186,
+        "updated_at": 1787625723,
         "trade_id": "BNBUSDT_LONG_BIG_MOVE_ENTRY_1787625183",
         "symbol": "BNBUSDT",
         "direction": "LONG",
@@ -131250,13 +131379,14 @@
           }
         ],
         "peak_score": 97,
-        "min_score": 97,
-        "status_changed": true
-      }
+        "min_score": 82,
+        "status_changed": false
+      },
+      "last_tracking_at": 1787625360
     }
   },
-  "last_update": 1787625208,
-  "profit_mode_v2_last_enriched_at": 1787625185,
+  "last_update": 1787625744,
+  "profit_mode_v2_last_enriched_at": 1787625721,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
     "fee_rate_per_side": 0.0005,
@@ -131267,7 +131397,7 @@
   "result_diagnostics_summary": {
     "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
     "tracked_total": 53,
-    "completed_total": 45,
+    "completed_total": 46,
     "diagnosis_counts": {
       "BE_SONRASI_TP3": 11,
       "BE_KORUMASI_DOGRU": 8,
@@ -131290,26 +131420,29 @@
     "sl_recovery_total": 20,
     "be_maybe_early_total": 13,
     "be_protection_correct_total": 8,
-    "updated_at": 1787625208
+    "updated_at": 1787625744
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
     "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_EXIT_MUTATION",
-    "updated_at": 1787625186,
-    "checked": 3,
+    "updated_at": 1787625723,
+    "checked": 2,
     "statuses": {
-      "DEVAM_GUCLU": 3
+      "DEVAM_GUCLU": 2
     }
   },
   "tp3_runner_shadow_summary": {
     "version": "TP3_RUNNER_SHADOW_V1_2026_08_24",
     "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_EXIT_MUTATION",
-    "updated_at": 1787625197,
-    "checked": 0,
+    "updated_at": 1787625732,
+    "checked": 1,
     "candidate_classes": {
+      "RUNNER_STRONG_SHADOW": 1,
       "RUNNER_POSSIBLE_SHADOW": 1
     },
-    "extension_classes": {}
+    "extension_classes": {
+      "STRONG_EXTENSION": 1
+    }
   },
   "tp3_multi_day_runner_shadow_summary": {
     "version": "TP3_MULTI_DAY_RUNNER_SHADOW_V1_2026_08_24",
