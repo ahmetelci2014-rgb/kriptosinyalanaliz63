@@ -1,7 +1,8 @@
-"""All-coins runner for Market Structure AI shadow learning.
+"""All-coins runner for Market Structure AI shadow learning + early warnings.
 
-No Telegram messages and no exchange orders. Scans active OKX USDT perpetuals with
-closed 5M candles and records WATCH/READY structure reversals.
+Scans active OKX USDT perpetuals with closed 5M candles and records WATCH/READY
+structure reversals. Optional Telegram messages are informational early warnings
+only; this runner never creates exchange orders or Premium trade entries.
 """
 from __future__ import annotations
 
@@ -13,10 +14,15 @@ import ccxt
 import pandas as pd
 
 import market_structure_ai_shadow as structure
+import market_structure_early_alerts as alerts
 
 MAX_COINS = int(os.getenv("MARKET_STRUCTURE_MAX_COINS", "300"))
 MIN_QUOTE_VOLUME = float(os.getenv("MARKET_STRUCTURE_MIN_QUOTE_VOLUME", "100000"))
 FETCH_LIMIT = int(os.getenv("MARKET_STRUCTURE_FETCH_LIMIT", "90"))
+ALERTS_ENABLED = str(os.getenv("MARKET_STRUCTURE_ALERTS_ENABLED", "0")).strip() == "1"
+MAX_ALERTS_PER_RUN = int(os.getenv("MARKET_STRUCTURE_MAX_ALERTS_PER_RUN", "4"))
+TOKEN = os.getenv("TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
 
 def _sf(value: Any, default: float = 0.0) -> float:
@@ -85,13 +91,18 @@ def run() -> None:
     started = time.time()
     events: List[Dict[str, Any]] = []
     errors = 0
+    sent_alerts = 0
 
     print(
         "MARKET STRUCTURE AI SHADOW START:",
         structure.VERSION,
         "| coins=",
         len(universe),
-        "| telegram=OFF | orders=OFF",
+        "| early_alerts=",
+        "ON" if ALERTS_ENABLED else "OFF",
+        "| max_alerts=",
+        MAX_ALERTS_PER_RUN,
+        "| orders=OFF",
     )
 
     try:
@@ -135,6 +146,36 @@ def run() -> None:
                     "event=",
                     event.get("event"),
                 )
+
+                if ALERTS_ENABLED and sent_alerts < MAX_ALERTS_PER_RUN:
+                    sent, reason = alerts.send_event(event, TOKEN, CHAT_ID)
+                    if sent:
+                        sent_alerts += 1
+                        print(
+                            "MARKET STRUCTURE EARLY ALERT SENT:",
+                            raw_symbol,
+                            result.get("direction"),
+                            result.get("stage"),
+                            "reason=",
+                            reason,
+                        )
+                    elif reason not in {
+                        "WATCH_SCORE_LOW",
+                        "WATCH_DIRECTION_AMBIGUOUS",
+                        "WATCH_TOO_FAR_FROM_ORIGIN",
+                        "WATCH_15M_OPPOSING",
+                        "WATCH_ORIGIN_EVIDENCE_WEAK",
+                        "WATCH_TURN_NOT_STARTED",
+                        "READY_SCORE_LOW",
+                        "READY_DIRECTION_AMBIGUOUS",
+                        "READY_TOO_FAR_FROM_ORIGIN",
+                        "NOT_ALERT_STAGE",
+                    }:
+                        print(
+                            "MARKET STRUCTURE EARLY ALERT NOT SENT:",
+                            raw_symbol,
+                            reason,
+                        )
             except Exception as exc:
                 errors += 1
                 if errors <= 12:
@@ -155,6 +196,8 @@ def run() -> None:
         round(time.time() - started, 2),
         "| events=",
         len(events),
+        "| alerts_sent=",
+        sent_alerts,
         "| errors=",
         errors,
         "| summary=",
