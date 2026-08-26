@@ -1,0 +1,51 @@
+name: Smart Structure Historical Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "smart_structure_adapter.py"
+      - "smart_structure_historical_runner.py"
+      - "test_smart_structure_adapter.py"
+      - ".github/workflows/smart-structure-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Repo indir
+        uses: actions/checkout@v4
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: requirements.txt
+
+      - name: Bagimliliklari kur
+        run: |
+          python -m pip install --prefer-binary -r requirements.txt
+          python -m pip install "pytest>=8,<10"
+
+      - name: Adapter testleri
+        run: python -m pytest -q test_smart_structure_adapter.py
+
+      - name: OKX 5M historical validation
+        env:
+          SMART_STRUCTURE_HISTORY_DAYS: "14"
+          SMART_STRUCTURE_RESULT_FILE: "smart_structure_validation.json"
+        run: python smart_structure_historical_runner.py
+
+      - name: Sonucu artifact olarak kaydet
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smart-structure-validation
+          path: smart_structure_validation.json
+          if-no-files-found: warn
