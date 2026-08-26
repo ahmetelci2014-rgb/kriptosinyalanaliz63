@@ -8,6 +8,7 @@ on:
       - "smart_structure_adapter.py"
       - "smart_structure_combined_validation.py"
       - "smart_structure_combined_fast.py"
+      - "smart_structure_combined_quick.py"
       - "test_smart_structure_adapter.py"
       - ".github/workflows/smart-structure-validation.yml"
 
@@ -17,7 +18,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
       - name: Repo indir
         uses: actions/checkout@v4
@@ -37,11 +38,10 @@ jobs:
       - name: Adapter testleri
         run: python -m pytest -q test_smart_structure_adapter.py
 
-      - name: Mevcut Market Structure ile birlikte hizli test et
+      - name: BTC ETH SOL 2 gun hizli kombine test
         env:
-          SMART_STRUCTURE_COMBINED_DAYS: "5"
           SMART_STRUCTURE_COMBINED_RESULT_FILE: "smart_structure_combined_validation.json"
-        run: python smart_structure_combined_fast.py
+        run: python smart_structure_combined_quick.py
 
       - name: Sonucu artifact olarak kaydet
         if: always()
