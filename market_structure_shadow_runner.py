@@ -1,8 +1,9 @@
 """All-coins runner for Market Structure AI shadow learning + early warnings.
 
-Scans active OKX USDT perpetuals with closed 5M candles and records WATCH/READY
-structure reversals. Optional Telegram messages are informational early warnings
-only; this runner never creates exchange orders or Premium trade entries.
+Scans verified live OKX crypto USDT perpetuals with closed 5M candles and records
+WATCH/READY structure reversals. Optional Telegram messages are informational
+early warnings only; this runner never creates exchange orders or Premium trade
+entries.
 """
 from __future__ import annotations
 
@@ -13,6 +14,7 @@ from typing import Any, Dict, List, Tuple
 import ccxt
 import pandas as pd
 
+import crypto_universe_guard as universe_guard
 import market_structure_ai_shadow as structure
 import market_structure_early_alerts as alerts
 
@@ -44,7 +46,7 @@ def _exchange() -> ccxt.okx:
 
 def _is_usdt_swap(market: Dict[str, Any]) -> bool:
     return bool(
-        market.get("active", True)
+        market.get("active") is True
         and market.get("swap")
         and str(market.get("quote") or "").upper() == "USDT"
         and str(market.get("settle") or "").upper() == "USDT"
@@ -62,18 +64,43 @@ def _quote_volume(ticker: Dict[str, Any]) -> float:
 
 def build_universe(exchange: ccxt.okx) -> List[Tuple[str, str, Dict[str, Any]]]:
     markets = exchange.load_markets()
+
+    # Reuse the same strict universe policy as the Premium crypto bot. Positive
+    # crypto metadata is required; RWA/stock/index-style swaps fail closed. When
+    # read-only OKX credentials are available, the account-specific instrument
+    # allowlist is also applied.
+    universe_guard.refresh_account_tradable_futures_from_env()
+    filtered_markets, excluded = universe_guard.filter_crypto_markets(markets)
+    if excluded:
+        counts: Dict[str, int] = {}
+        for row in excluded:
+            reason = str(row.get("reason") or "UNKNOWN")
+            counts[reason] = counts.get(reason, 0) + 1
+        print(
+            "MARKET STRUCTURE CRYPTO-ONLY GUARD | excluded=",
+            len(excluded),
+            "| verified_crypto_swaps=",
+            len(universe_guard.VERIFIED_LIVE_FUTURES_SYMBOLS),
+            "| account_allowlist=",
+            "ON" if universe_guard.ACCOUNT_ALLOWLIST_ACTIVE else "OFF",
+            "| reasons=",
+            counts,
+        )
+
     tickers = exchange.fetch_tickers()
     rows: List[Tuple[str, str, Dict[str, Any], float]] = []
-    for ccxt_symbol, market in markets.items():
+    for ccxt_symbol, market in filtered_markets.items():
         if not _is_usdt_swap(market):
             continue
         ticker = tickers.get(ccxt_symbol) or {}
         volume = _quote_volume(ticker)
         if volume < MIN_QUOTE_VOLUME:
             continue
-        raw_symbol = str(market.get("id") or "").replace("-USDT-SWAP", "USDT")
+        raw_symbol = universe_guard.market_bot_symbol(market, ccxt_symbol)
         if not raw_symbol:
-            raw_symbol = str(market.get("base") or "").upper() + "USDT"
+            continue
+        if not universe_guard.is_verified_live_futures_symbol(raw_symbol):
+            continue
         rows.append((ccxt_symbol, raw_symbol, ticker, volume))
     rows.sort(key=lambda item: item[3], reverse=True)
     return [(a, b, c) for a, b, c, _ in rows[:MAX_COINS]]
@@ -102,7 +129,7 @@ def run() -> None:
         "ON" if ALERTS_ENABLED else "OFF",
         "| max_alerts=",
         MAX_ALERTS_PER_RUN,
-        "| orders=OFF",
+        "| crypto_only=ON | orders=OFF",
     )
 
     try:
