@@ -148053,7 +148053,7 @@
       "tp3_runner_shadow": {
         "version": "TP3_RUNNER_SHADOW_V1_2026_08_24",
         "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_EXIT_MUTATION",
-        "status": "TRACKING",
+        "status": "COMPLETED",
         "started_at": 1787745094,
         "reference_tp3_price": 0.065564203574,
         "timeframe": "5m",
@@ -148125,6 +148125,12 @@
             "price": 0.06624,
             "directional_r_from_tp3": -0.8091,
             "directional_percent_from_tp3": -1.0307
+          },
+          "360": {
+            "minute": 360,
+            "price": 0.06647,
+            "directional_r_from_tp3": -1.0844,
+            "directional_percent_from_tp3": -1.3815
           }
         },
         "max_favorable_r": 1.0466,
@@ -148133,9 +148139,10 @@
         "max_adverse_percent": 2.1136,
         "extension_class": "STRONG_EXTENSION",
         "shadow_only": true,
-        "last_checked_at": 1787766636,
+        "last_checked_at": 1787767541,
         "best_price": 0.06469,
-        "worst_price": 0.06695
+        "worst_price": 0.06695,
+        "completed_at": 1787767541
       },
       "post_result_shadow": {
         "version": "POST_RESULT_SHADOW_V1_2026_08_10",
@@ -151258,7 +151265,13 @@
           "TP2": 0.013041054577,
           "TP3": 0.013150477333
         },
-        "reached_levels": {},
+        "reached_levels": {
+          "TP1": {
+            "first_reached_at": 1787767440,
+            "minutes_after_close": 183,
+            "level_price": 0.012978527289
+          }
+        },
         "checkpoints": {
           "15": {
             "target_at": 1787757316,
@@ -151285,9 +151298,9 @@
             "directional_r_from_reference": 0.2047
           }
         },
-        "max_favorable_r": 0.8316,
+        "max_favorable_r": 1.9192,
         "max_adverse_r": 1.1899,
-        "last_checked_at": 1787766643,
+        "last_checked_at": 1787767544,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -151296,20 +151309,20 @@
           "confidence": "MEDIUM",
           "summary": "Stop sonrasi anlamli toparlanma var; giris/stop zamanlamasi incelenmeli.",
           "evidence": {
-            "max_favorable_r_after_close": 0.8316,
+            "max_favorable_r_after_close": 1.9192,
             "max_adverse_r_after_close": 1.1899,
             "risk_percent": 0.6051,
             "tp1_progress_at_send_percent": 0.0,
             "entry_distance_at_send_percent": 0.0,
-            "reached_tp1_after_close": false,
+            "reached_tp1_after_close": true,
             "reached_tp2_after_close": false,
             "reached_tp3_after_close": false,
-            "tp1_minutes_after_close": null,
+            "tp1_minutes_after_close": 183,
             "tp2_minutes_after_close": null,
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.012835
+        "last_price": 0.012953
       }
     },
     "RAYUSDT_SHORT_BIG_MOVE_ENTRY_1787736142": {
@@ -152217,50 +152230,50 @@
       "worst_adverse_r": 0.6009,
       "best_favorable_price": 2.929,
       "worst_adverse_price": 2.866,
-      "last_market_price": 2.916,
+      "last_market_price": 2.898,
       "tp1_hit_at": 1787754240,
       "continuation_shadow": {
         "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
         "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_EXIT_MUTATION",
-        "status": "DEVAM_GUCLU",
-        "score": 97,
+        "status": "DEVAM",
+        "score": 64,
         "action_shadow": "HOLD_SHADOW",
         "confidence": "ORTA",
-        "current_price": 2.912,
-        "move_from_entry_percent": 0.9359,
+        "current_price": 2.898,
+        "move_from_entry_percent": 0.4506,
         "trend_origin": {
           "price": 2.866,
           "at": 1787748300,
           "method": "EMA20_REGIME_CROSS",
-          "move_so_far_percent": 1.605
+          "move_so_far_percent": 1.1165
         },
         "remaining_move_shadow": {
-          "low_percent": 0.4187,
-          "high_percent": 1.2842,
+          "low_percent": 0.2717,
+          "high_percent": 0.8929,
           "method": "15M_ATR_HEURISTIC_UNCALIBRATED",
-          "estimated_total_move_low_percent": 2.0238,
-          "estimated_total_move_high_percent": 2.8892
+          "estimated_total_move_low_percent": 1.3883,
+          "estimated_total_move_high_percent": 2.0094
         },
         "metrics": {
-          "trend_5m": 0,
-          "trend_15m": 1,
+          "trend_5m": -1,
+          "trend_15m": 0,
           "trend_1h": 1,
           "structure_5m": -1,
-          "adx_15m": 36.92,
-          "adx_1h": 36.81,
-          "rsi_15m": 65.34,
-          "volume_ratio_5m": 4.709,
-          "volume_ratio_15m": 2.477,
-          "atr_15m_percent": 0.349
+          "adx_15m": 34.69,
+          "adx_1h": 37.92,
+          "rsi_15m": 47.67,
+          "volume_ratio_5m": 2.421,
+          "volume_ratio_15m": 2.974,
+          "atr_15m_percent": 0.3882
         },
         "reasons": [
-          "15M trend yönü destekliyor",
+          "5M trend yönün tersine dönüyor",
           "1H trend yönü destekliyor",
           "5M mikro yapı ters kırılıyor",
           "15M ADX güçlü",
           "5M hacim devamı destekliyor"
         ],
-        "updated_at": 1787766628,
+        "updated_at": 1787767533,
         "trade_id": "NGUSDT_LONG_15M_ENTRY_1787742500",
         "symbol": "NGUSDT",
         "direction": "LONG",
@@ -152650,16 +152663,32 @@
               "estimated_total_move_low_percent": 2.0238,
               "estimated_total_move_high_percent": 2.8892
             }
+          },
+          {
+            "at": 1787767285,
+            "status": "DEVAM",
+            "score": 65,
+            "action_shadow": "HOLD_SHADOW",
+            "current_price": 2.898,
+            "move_from_entry_percent": 0.4506,
+            "origin_move_percent": 1.1165,
+            "remaining_move_shadow": {
+              "low_percent": 0.2717,
+              "high_percent": 0.7764,
+              "method": "15M_ATR_HEURISTIC_UNCALIBRATED",
+              "estimated_total_move_low_percent": 1.3883,
+              "estimated_total_move_high_percent": 1.893
+            }
           }
         ],
         "peak_score": 100,
         "min_score": 34,
         "status_changed": false
       },
-      "last_tracking_at": 1787766300
+      "last_tracking_at": 1787767260
     }
   },
-  "last_update": 1787766645,
+  "last_update": 1787767546,
   "profit_mode_v2_last_enriched_at": 1787756769,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -152700,16 +152729,16 @@
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
     "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_EXIT_MUTATION",
-    "updated_at": 1787766628,
+    "updated_at": 1787767533,
     "checked": 1,
     "statuses": {
-      "DEVAM_GUCLU": 1
+      "DEVAM": 1
     }
   },
   "tp3_runner_shadow_summary": {
     "version": "TP3_RUNNER_SHADOW_V1_2026_08_24",
     "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_EXIT_MUTATION",
-    "updated_at": 1787766636,
+    "updated_at": 1787767541,
     "checked": 1,
     "candidate_classes": {
       "RUNNER_STRONG_SHADOW": 1
