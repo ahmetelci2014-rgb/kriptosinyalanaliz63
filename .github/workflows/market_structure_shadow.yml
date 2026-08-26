@@ -42,11 +42,24 @@ jobs:
           PIP_DISABLE_PIP_VERSION_CHECK: "1"
         run: python -m pip install --prefer-binary -r requirements.txt
 
-      - name: Market Structure AI shadow tara
+      - name: Market Structure AI shadow tara ve erken uyari ver
         env:
+          TOKEN: ${{ secrets.TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
           MARKET_STRUCTURE_MAX_COINS: "300"
           MARKET_STRUCTURE_MIN_QUOTE_VOLUME: "100000"
           MARKET_STRUCTURE_FETCH_LIMIT: "90"
+          MARKET_STRUCTURE_ALERTS_ENABLED: "1"
+          MARKET_STRUCTURE_MAX_ALERTS_PER_RUN: "4"
+          MARKET_STRUCTURE_WATCH_ALERT_SCORE: "64"
+          MARKET_STRUCTURE_WATCH_DIRECTION_GAP: "14"
+          MARKET_STRUCTURE_WATCH_MAX_ORIGIN_ATR: "1.80"
+          MARKET_STRUCTURE_READY_ALERT_SCORE: "72"
+          MARKET_STRUCTURE_READY_DIRECTION_GAP: "10"
+          MARKET_STRUCTURE_READY_MAX_ORIGIN_ATR: "2.80"
         run: python market_structure_shadow_runner.py
 
       - name: Shadow state kaydet
