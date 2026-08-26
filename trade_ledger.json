@@ -144501,7 +144501,7 @@
         },
         "max_favorable_r": 1.3515,
         "max_adverse_r": 0.2229,
-        "last_checked_at": 1787724476,
+        "last_checked_at": 1787724770,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -144523,7 +144523,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 7.387
+        "last_price": 7.386
       }
     },
     "COREUSDT_LONG_REGIME_TRANSITION_ENTRY_1787710062": {
@@ -144933,7 +144933,7 @@
         "max_adverse_percent": 1.0128,
         "extension_class": "STRONG_EXTENSION",
         "shadow_only": true,
-        "last_checked_at": 1787724471,
+        "last_checked_at": 1787724767,
         "best_price": 0.02608,
         "worst_price": 0.02519
       },
@@ -144993,7 +144993,7 @@
         "max_adverse_r": 0.7814,
         "best_price": 0.02608,
         "worst_price": 0.02519,
-        "last_checked_at": 1787724474,
+        "last_checked_at": 1787724769,
         "completed_at": 0,
         "last_price": 0.02573
       },
@@ -145399,37 +145399,39 @@
       "duration_minutes": 166,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "KURULUM DEVAM ETMEDI",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
-          "Islem yeterli lehe ivme olusturmadan stop oldu."
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Stop sonrasi fiyat TP1 seviyesine dondu."
         ],
         "duration_minutes": 166,
         "best_favorable_r": 0.0571,
         "worst_adverse_r": 1.0649,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "KURULUM_DEVAM_ETMEDI",
-        "preliminary_label": "Kurulum devam etmedi",
+        "primary": "FITIL_DAR_STOP",
+        "label": "Fitil/dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası fiyat TP1 seviyesine 37 dakikada döndü.",
+          "Stop sonrası hedef dönüşü fitil veya giriş zamanlaması ihtimalini güçlendirdi."
         ],
         "metrics": {
           "duration_minutes": 166,
           "mfe_r": 0.0571,
           "mae_r": 1.0649,
           "risk_percent": 1.0189,
-          "return_minutes": null
+          "return_minutes": 37.0
         },
-        "updated_at": 1787722282
+        "updated_at": 1787724532
       },
       "gross_r_before_costs": -1.0,
       "estimated_execution_cost_r": 0.1178,
@@ -145472,7 +145474,7 @@
         },
         "max_favorable_r": 1.7876,
         "max_adverse_r": 0.0,
-        "last_checked_at": 1787724476,
+        "last_checked_at": 1787724770,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -145494,7 +145496,13 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.05193
+        "last_price": 0.0518
+      },
+      "post_stop_follow": {
+        "returned_level": "TP1",
+        "age_minutes": 37,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1787724532
       }
     },
     "FUSDT_LONG_REGIME_TRANSITION_ENTRY_1787712281": {
@@ -145922,7 +145930,7 @@
         },
         "max_favorable_r": 0.9613,
         "max_adverse_r": 0.2236,
-        "last_checked_at": 1787724476,
+        "last_checked_at": 1787724770,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -145944,7 +145952,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.003177
+        "last_price": 0.003172
       }
     },
     "JELLYJELLYUSDT_LONG_REGIME_TRANSITION_ENTRY_1787713587": {
@@ -146260,9 +146268,9 @@
             "directional_r_from_reference": 0.4605
           }
         },
-        "max_favorable_r": 0.7932,
+        "max_favorable_r": 1.049,
         "max_adverse_r": 0.5117,
-        "last_checked_at": 1787724476,
+        "last_checked_at": 1787724770,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -146271,7 +146279,7 @@
           "confidence": "MEDIUM",
           "summary": "Stop sonrasi anlamli toparlanma var; giris/stop zamanlamasi incelenmeli.",
           "evidence": {
-            "max_favorable_r_after_close": 0.7932,
+            "max_favorable_r_after_close": 1.049,
             "max_adverse_r_after_close": 0.5117,
             "risk_percent": 0.7144,
             "tp1_progress_at_send_percent": 0.0,
@@ -146284,7 +146292,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.05461
+        "last_price": 0.05457
       }
     },
     "SUSHIUSDT_LONG_REGIME_TRANSITION_ENTRY_1787716253": {
@@ -146357,55 +146365,56 @@
       "market_guard_long_allowed": true,
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %0.01 | ETHUSDT: 15M EMA20 üstü, 5M %-0.01 | SOLUSDT: 15M EMA20 üstü, 5M %0.04",
-      "best_favorable_percent": 1.9608,
+      "best_favorable_percent": 2.1619,
       "worst_adverse_percent": 0.905,
-      "best_favorable_r": 1.4404,
+      "best_favorable_r": 1.5882,
       "worst_adverse_r": 0.6648,
-      "best_favorable_price": 0.2028,
+      "best_favorable_price": 0.2032,
       "worst_adverse_price": 0.1971,
-      "last_market_price": 0.2023,
+      "last_market_price": 0.201,
       "tp1_hit_at": 1787722200,
       "continuation_shadow": {
         "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
         "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_EXIT_MUTATION",
         "status": "DEVAM_GUCLU",
-        "score": 93,
+        "score": 87,
         "action_shadow": "HOLD_SHADOW",
         "confidence": "ORTA",
-        "current_price": 0.2013,
-        "move_from_entry_percent": 1.2066,
+        "current_price": 0.2017,
+        "move_from_entry_percent": 1.4077,
         "trend_origin": {
           "price": 0.1971,
           "at": 1787719500,
           "method": "EMA20_REGIME_CROSS",
-          "move_so_far_percent": 2.1309
+          "move_so_far_percent": 2.3338
         },
         "remaining_move_shadow": {
           "low_percent": 0.8364,
           "high_percent": 2.565,
           "method": "15M_ATR_HEURISTIC_UNCALIBRATED",
-          "estimated_total_move_low_percent": 2.9673,
-          "estimated_total_move_high_percent": 4.6959
+          "estimated_total_move_low_percent": 3.1703,
+          "estimated_total_move_high_percent": 4.8989
         },
         "metrics": {
           "trend_5m": 1,
           "trend_15m": 1,
           "trend_1h": 0,
-          "structure_5m": 0,
+          "structure_5m": -1,
           "adx_15m": 28.83,
           "adx_1h": 29.01,
           "rsi_15m": 70.51,
-          "volume_ratio_5m": 1.502,
+          "volume_ratio_5m": 1.51,
           "volume_ratio_15m": 0.626,
           "atr_15m_percent": 0.697
         },
         "reasons": [
           "5M trend yönü destekliyor",
           "15M trend yönü destekliyor",
+          "5M mikro yapı ters kırılıyor",
           "15M ADX güçlü",
           "5M hacim devamı destekliyor"
         ],
-        "updated_at": 1787724458,
+        "updated_at": 1787724758,
         "trade_id": "SUSHIUSDT_LONG_REGIME_TRANSITION_ENTRY_1787716253",
         "symbol": "SUSHIUSDT",
         "direction": "LONG",
@@ -146571,13 +146580,29 @@
               "estimated_total_move_low_percent": 3.2377,
               "estimated_total_move_high_percent": 4.6595
             }
+          },
+          {
+            "at": 1787724758,
+            "status": "DEVAM_GUCLU",
+            "score": 87,
+            "action_shadow": "HOLD_SHADOW",
+            "current_price": 0.2017,
+            "move_from_entry_percent": 1.4077,
+            "origin_move_percent": 2.3338,
+            "remaining_move_shadow": {
+              "low_percent": 0.8364,
+              "high_percent": 2.565,
+              "method": "15M_ATR_HEURISTIC_UNCALIBRATED",
+              "estimated_total_move_low_percent": 3.1703,
+              "estimated_total_move_high_percent": 4.8989
+            }
           }
         ],
         "peak_score": 100,
         "min_score": 54,
         "status_changed": false
       },
-      "last_tracking_at": 1787724060
+      "last_tracking_at": 1787724480
     },
     "HUMAUSDT_LONG_REGIME_TRANSITION_ENTRY_1787719850": {
       "trade_id": "HUMAUSDT_LONG_REGIME_TRANSITION_ENTRY_1787719850",
@@ -146639,55 +146664,56 @@
       "market_guard_long_allowed": true,
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 3/3 | SHORT uygun: 0/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %0.03 | ETHUSDT: 15M EMA20 üstü, 5M %0.02 | SOLUSDT: 15M EMA20 üstü, 5M %0.03",
-      "best_favorable_percent": 0.1361,
+      "best_favorable_percent": 0.2269,
       "worst_adverse_percent": 0.5445,
-      "best_favorable_r": 0.241,
+      "best_favorable_r": 0.4017,
       "worst_adverse_r": 0.9641,
-      "best_favorable_price": 0.02207,
+      "best_favorable_price": 0.02209,
       "worst_adverse_price": 0.02192,
-      "last_market_price": 0.02202,
+      "last_market_price": 0.02209,
       "tp1_hit_at": 0,
       "continuation_shadow": {
         "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
         "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_EXIT_MUTATION",
         "status": "DEVAM_GUCLU",
-        "score": 99,
+        "score": 100,
         "action_shadow": "HOLD_SHADOW",
-        "confidence": "ORTA",
-        "current_price": 0.02209,
-        "move_from_entry_percent": 0.2269,
+        "confidence": "YUKSEK",
+        "current_price": 0.02199,
+        "move_from_entry_percent": -0.2269,
         "trend_origin": {
           "price": 0.02193,
           "at": 1787720400,
           "method": "EMA20_REGIME_CROSS",
-          "move_so_far_percent": 0.7296
+          "move_so_far_percent": 0.2736
         },
         "remaining_move_shadow": {
           "low_percent": 0.7991,
           "high_percent": 2.131,
           "method": "15M_ATR_HEURISTIC_UNCALIBRATED",
-          "estimated_total_move_low_percent": 1.5287,
-          "estimated_total_move_high_percent": 2.8606
+          "estimated_total_move_low_percent": 1.0727,
+          "estimated_total_move_high_percent": 2.4046
         },
         "metrics": {
-          "trend_5m": 0,
+          "trend_5m": 1,
           "trend_15m": 1,
           "trend_1h": 1,
           "structure_5m": 1,
           "adx_15m": 30.68,
           "adx_1h": 25.27,
           "rsi_15m": 54.78,
-          "volume_ratio_5m": 0.687,
+          "volume_ratio_5m": 0.703,
           "volume_ratio_15m": 0.522,
           "atr_15m_percent": 0.6659
         },
         "reasons": [
+          "5M trend yönü destekliyor",
           "15M trend yönü destekliyor",
           "1H trend yönü destekliyor",
           "5M mikro yapı devam yönünde",
           "15M ADX güçlü"
         ],
-        "updated_at": 1787724458,
+        "updated_at": 1787724758,
         "trade_id": "HUMAUSDT_LONG_REGIME_TRANSITION_ENTRY_1787719850",
         "symbol": "HUMAUSDT",
         "direction": "LONG",
@@ -146789,13 +146815,29 @@
               "estimated_total_move_low_percent": 1.0379,
               "estimated_total_move_high_percent": 2.3879
             }
+          },
+          {
+            "at": 1787724758,
+            "status": "DEVAM_GUCLU",
+            "score": 100,
+            "action_shadow": "HOLD_SHADOW",
+            "current_price": 0.02199,
+            "move_from_entry_percent": -0.2269,
+            "origin_move_percent": 0.2736,
+            "remaining_move_shadow": {
+              "low_percent": 0.7991,
+              "high_percent": 2.131,
+              "method": "15M_ATR_HEURISTIC_UNCALIBRATED",
+              "estimated_total_move_low_percent": 1.0727,
+              "estimated_total_move_high_percent": 2.4046
+            }
           }
         ],
         "peak_score": 100,
         "min_score": 56,
         "status_changed": false
       },
-      "last_tracking_at": 1787724060
+      "last_tracking_at": 1787724480
     },
     "SLXUSDT_SHORT_BIG_MOVE_ENTRY_1787721222": {
       "trade_id": "SLXUSDT_SHORT_BIG_MOVE_ENTRY_1787721222",
@@ -146857,54 +146899,54 @@
       "market_guard_short_allowed": true,
       "market_guard_reason": "LONG uygun: 0/3 | SHORT uygun: 3/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 altı, 5M %-0.08 | ETHUSDT: 15M EMA20 altı, 5M %-0.01 | SOLUSDT: 15M EMA20 altı, 5M %-0.08",
       "best_favorable_percent": 0.3526,
-      "worst_adverse_percent": 0.7786,
+      "worst_adverse_percent": 1.0577,
       "best_favorable_r": 0.2873,
-      "worst_adverse_r": 0.6345,
+      "worst_adverse_r": 0.862,
       "best_favorable_price": 0.06783,
-      "worst_adverse_price": 0.0686,
-      "last_market_price": 0.0686,
+      "worst_adverse_price": 0.06879,
+      "last_market_price": 0.0687,
       "tp1_hit_at": 0,
       "continuation_shadow": {
         "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
         "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_EXIT_MUTATION",
         "status": "DEVAM",
-        "score": 64,
+        "score": 67,
         "action_shadow": "HOLD_SHADOW",
         "confidence": "DUSUK",
-        "current_price": 0.06865,
-        "move_from_entry_percent": -0.8521,
+        "current_price": 0.06857,
+        "move_from_entry_percent": -0.7345,
         "trend_origin": {
           "price": 0.07107,
           "at": 1787698800,
           "method": "EMA20_REGIME_CROSS",
-          "move_so_far_percent": 3.4051
+          "move_so_far_percent": 3.5177
         },
         "remaining_move_shadow": {
           "low_percent": 0.5373,
           "high_percent": 1.5351,
           "method": "15M_ATR_HEURISTIC_UNCALIBRATED",
-          "estimated_total_move_low_percent": 3.9424,
-          "estimated_total_move_high_percent": 4.9402
+          "estimated_total_move_low_percent": 4.0549,
+          "estimated_total_move_high_percent": 5.0527
         },
         "metrics": {
           "trend_5m": -1,
           "trend_15m": 1,
           "trend_1h": 0,
-          "structure_5m": -1,
+          "structure_5m": 0,
           "adx_15m": 44.13,
           "adx_1h": 21.42,
           "rsi_15m": 45.73,
-          "volume_ratio_5m": 0.791,
+          "volume_ratio_5m": 0.337,
           "volume_ratio_15m": 0.274,
           "atr_15m_percent": 0.7675
         },
         "reasons": [
           "5M trend yönün tersine dönüyor",
           "15M trend yönü destekliyor",
-          "5M mikro yapı ters kırılıyor",
-          "15M ADX güçlü"
+          "15M ADX güçlü",
+          "5M hacim sönüyor"
         ],
-        "updated_at": 1787724458,
+        "updated_at": 1787724758,
         "trade_id": "SLXUSDT_SHORT_BIG_MOVE_ENTRY_1787721222",
         "symbol": "SLXUSDT",
         "direction": "SHORT",
@@ -146994,9 +147036,9 @@
         ],
         "peak_score": 100,
         "min_score": 61,
-        "status_changed": true
+        "status_changed": false
       },
-      "last_tracking_at": 1787724060
+      "last_tracking_at": 1787724480
     },
     "SNXUSDT_LONG_REGIME_TRANSITION_ENTRY_1787722566": {
       "trade_id": "SNXUSDT_LONG_REGIME_TRANSITION_ENTRY_1787722566",
@@ -147059,52 +147101,53 @@
       "market_guard_short_allowed": false,
       "market_guard_reason": "LONG uygun: 2/3 | SHORT uygun: 1/3 | Sert kırmızı: 0 | Sert yeşil: 0 | BTCUSDT: 15M EMA20 üstü, 5M %-0.0 | ETHUSDT: 15M EMA20 üstü, 5M %0.03 | SOLUSDT: 15M EMA20 altı, 5M %-0.07",
       "best_favorable_percent": 0.1723,
-      "worst_adverse_percent": 0.3878,
+      "worst_adverse_percent": 0.6032,
       "best_favorable_r": 0.1323,
-      "worst_adverse_r": 0.2977,
+      "worst_adverse_r": 0.4631,
       "best_favorable_price": 0.2325,
-      "worst_adverse_price": 0.2312,
-      "last_market_price": 0.2312,
+      "worst_adverse_price": 0.2307,
+      "last_market_price": 0.2309,
       "tp1_hit_at": 0,
       "continuation_shadow": {
         "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
         "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_EXIT_MUTATION",
-        "status": "DEVAM_GUCLU",
-        "score": 81,
-        "action_shadow": "HOLD_SHADOW",
+        "status": "ZAYIFLIYOR",
+        "score": 63,
+        "action_shadow": "PROTECT_PROFIT_SHADOW",
         "confidence": "DUSUK",
-        "current_price": 0.2309,
-        "move_from_entry_percent": -0.517,
+        "current_price": 0.2305,
+        "move_from_entry_percent": -0.6894,
         "trend_origin": {
           "price": 0.2279,
           "at": 1787705100,
           "method": "EMA20_REGIME_CROSS",
-          "move_so_far_percent": 1.3164
+          "move_so_far_percent": 1.1409
         },
         "remaining_move_shadow": {
-          "low_percent": 0.6391,
-          "high_percent": 1.7043,
+          "low_percent": 0.1065,
+          "high_percent": 0.4261,
           "method": "15M_ATR_HEURISTIC_UNCALIBRATED",
-          "estimated_total_move_low_percent": 1.9555,
-          "estimated_total_move_high_percent": 3.0206
+          "estimated_total_move_low_percent": 1.2474,
+          "estimated_total_move_high_percent": 1.5669
         },
         "metrics": {
-          "trend_5m": 0,
+          "trend_5m": -1,
           "trend_15m": 1,
           "trend_1h": 0,
           "structure_5m": 0,
           "adx_15m": 16.59,
           "adx_1h": 16.67,
           "rsi_15m": 55.0,
-          "volume_ratio_5m": 3.301,
+          "volume_ratio_5m": 0.157,
           "volume_ratio_15m": 1.81,
           "atr_15m_percent": 0.5326
         },
         "reasons": [
+          "5M trend yönün tersine dönüyor",
           "15M trend yönü destekliyor",
-          "5M hacim devamı destekliyor"
+          "5M hacim sönüyor"
         ],
-        "updated_at": 1787724458,
+        "updated_at": 1787724758,
         "trade_id": "SNXUSDT_LONG_REGIME_TRANSITION_ENTRY_1787722566",
         "symbol": "SNXUSDT",
         "direction": "LONG",
@@ -147158,13 +147201,29 @@
               "estimated_total_move_low_percent": 2.0871,
               "estimated_total_move_high_percent": 3.1523
             }
+          },
+          {
+            "at": 1787724758,
+            "status": "ZAYIFLIYOR",
+            "score": 63,
+            "action_shadow": "PROTECT_PROFIT_SHADOW",
+            "current_price": 0.2305,
+            "move_from_entry_percent": -0.6894,
+            "origin_move_percent": 1.1409,
+            "remaining_move_shadow": {
+              "low_percent": 0.1065,
+              "high_percent": 0.4261,
+              "method": "15M_ATR_HEURISTIC_UNCALIBRATED",
+              "estimated_total_move_low_percent": 1.2474,
+              "estimated_total_move_high_percent": 1.5669
+            }
           }
         ],
         "peak_score": 97,
-        "min_score": 65,
-        "status_changed": false
+        "min_score": 63,
+        "status_changed": true
       },
-      "last_tracking_at": 1787724060
+      "last_tracking_at": 1787724480
     },
     "NOTUSDT_LONG_REGIME_TRANSITION_ENTRY_1787723160": {
       "trade_id": "NOTUSDT_LONG_REGIME_TRANSITION_ENTRY_1787723160",
@@ -147232,7 +147291,7 @@
       "worst_adverse_r": 0.3016,
       "best_favorable_price": 0.0004156,
       "worst_adverse_price": 0.0004136,
-      "last_market_price": 0.0004148,
+      "last_market_price": 0.0004147,
       "tp1_hit_at": 0,
       "continuation_shadow": {
         "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
@@ -147241,20 +147300,20 @@
         "score": 86,
         "action_shadow": "HOLD_SHADOW",
         "confidence": "ORTA",
-        "current_price": 0.0004148,
-        "move_from_entry_percent": -0.0241,
+        "current_price": 0.0004138,
+        "move_from_entry_percent": -0.2651,
         "trend_origin": {
           "price": 0.0004108,
           "at": 1787721300,
           "method": "EMA20_REGIME_CROSS",
-          "move_so_far_percent": 0.9737
+          "move_so_far_percent": 0.7303
         },
         "remaining_move_shadow": {
           "low_percent": 0.6372,
           "high_percent": 1.6993,
           "method": "15M_ATR_HEURISTIC_UNCALIBRATED",
-          "estimated_total_move_low_percent": 1.6109,
-          "estimated_total_move_high_percent": 2.673
+          "estimated_total_move_low_percent": 1.3675,
+          "estimated_total_move_high_percent": 2.4295
         },
         "metrics": {
           "trend_5m": 1,
@@ -147264,7 +147323,7 @@
           "adx_15m": 13.15,
           "adx_1h": 21.27,
           "rsi_15m": 57.92,
-          "volume_ratio_5m": 0.439,
+          "volume_ratio_5m": 0.385,
           "volume_ratio_15m": 1.27,
           "atr_15m_percent": 0.531
         },
@@ -147275,7 +147334,7 @@
           "15M trend gücü zayıf",
           "5M hacim sönüyor"
         ],
-        "updated_at": 1787724458,
+        "updated_at": 1787724758,
         "trade_id": "NOTUSDT_LONG_REGIME_TRANSITION_ENTRY_1787723160",
         "symbol": "NOTUSDT",
         "direction": "LONG",
@@ -147319,10 +147378,10 @@
         "min_score": 82,
         "status_changed": false
       },
-      "last_tracking_at": 1787724060
+      "last_tracking_at": 1787724480
     }
   },
-  "last_update": 1787724479,
+  "last_update": 1787724772,
   "profit_mode_v2_last_enriched_at": 1787722568,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -147362,17 +147421,18 @@
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
     "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_EXIT_MUTATION",
-    "updated_at": 1787724458,
+    "updated_at": 1787724758,
     "checked": 5,
     "statuses": {
-      "DEVAM_GUCLU": 4,
+      "DEVAM_GUCLU": 3,
+      "ZAYIFLIYOR": 1,
       "DEVAM": 1
     }
   },
   "tp3_runner_shadow_summary": {
     "version": "TP3_RUNNER_SHADOW_V1_2026_08_24",
     "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_EXIT_MUTATION",
-    "updated_at": 1787724471,
+    "updated_at": 1787724767,
     "checked": 1,
     "candidate_classes": {
       "RUNNER_STRONG_SHADOW": 1
