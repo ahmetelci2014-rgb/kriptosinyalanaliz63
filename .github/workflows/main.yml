@@ -1,4 +1,4 @@
-name: Premium Profit Mode V4 All Coins
+name: Premium Core-Only V4 All Coins
 
 on:
   workflow_dispatch:
@@ -21,9 +21,8 @@ jobs:
       - name: Repo indir
         uses: actions/checkout@v4
         with:
-          # Full history fetched every branch and cost ~3 minutes before the
-          # live scan even started. A short main history is enough for the
-          # state commit/rebase cycle and keeps the 5-minute radar responsive.
+          # Short history is enough for the state commit/rebase cycle and keeps
+          # the 5-minute live scan responsive.
           fetch-depth: 5
 
       - name: En guncel main state ile esitle
@@ -56,7 +55,7 @@ jobs:
       - name: Acik islemleri sonuc kontrolunden once devam gucu shadow
         run: python position_continuation_shadow.py
 
-      - name: Premium Big Move + Quality + Regime Profit Mode calistir
+      - name: Premium Core-Only 15M_ENTRY calistir
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -66,7 +65,7 @@ jobs:
           OKX_API_KEY: ${{ secrets.OKX_API_KEY }}
           OKX_SECRET_KEY: ${{ secrets.OKX_SECRET_KEY }}
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
-        run: python premium_big_move_profit_runner.py
+        run: python premium_core_only_runner.py
 
       - name: Yeni acilan islemleri devam gucu shadow
         if: always()
@@ -146,7 +145,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update Premium Profit Mode V4 All Coins state"
+          git commit -m "Update Premium Core-Only state"
 
           for attempt in 1 2 3
           do
