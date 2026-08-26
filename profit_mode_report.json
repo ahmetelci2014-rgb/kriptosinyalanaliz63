@@ -1,6 +1,6 @@
 {
   "version": "PROFIT_MODE_V2_COST_AWARE_2026_08_20",
-  "generated_at": 1787746033,
+  "generated_at": 1787746911,
   "cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
     "fee_rate_per_side": 0.0005,
@@ -62,7 +62,7 @@
   },
   "live_source_breakdown": {
     "version": "SOURCE_PERFORMANCE_REPORT_V2_2026_08_25",
-    "generated_at": 1787746033,
+    "generated_at": 1787746911,
     "basis": "CLOSED trade_ledger trades; one final result per trade_id; execution-cost adjusted R",
     "note": "Source and source+direction evidence report. It does not itself send or close a trade; the Premium Global Quality Guard can consume fresh 7d evidence before admitting a new entry.",
     "thresholds": {
@@ -73,6 +73,7 @@
     },
     "sources": [
       "15M_ENTRY",
+      "5M_RADAR",
       "BIG_MOVE_ENTRY",
       "EARLY_BREAKOUT_ENTRY",
       "NEW_COIN_ENTRY",
@@ -83,24 +84,24 @@
     "windows": {
       "24h": {
         "combined_live": {
-          "sample": 35,
-          "gross_r": 3.45,
-          "net_r_after_costs": -0.4654,
-          "avg_net_r_after_costs": -0.0133,
-          "profit_factor_after_costs": 0.97,
-          "positive_rate_percent": 60.0,
-          "stop_rate_percent": 40.0,
-          "tp3_rate_percent": 28.57,
-          "be_family_rate_percent": 31.43,
+          "sample": 33,
+          "gross_r": 2.1,
+          "net_r_after_costs": -1.4805,
+          "avg_net_r_after_costs": -0.0449,
+          "profit_factor_after_costs": 0.905,
+          "positive_rate_percent": 57.58,
+          "stop_rate_percent": 42.42,
+          "tp3_rate_percent": 27.27,
+          "be_family_rate_percent": 30.3,
           "result_counts": {
-            "TP1_SONRASI_BE": 6,
-            "TP3": 10,
+            "TP1_SONRASI_BE": 5,
             "TP2_SONRASI_BE": 5,
+            "TP3": 9,
             "SL": 14
           },
           "direction_counts": {
             "LONG": 14,
-            "SHORT": 21
+            "SHORT": 19
           },
           "evidence_status": "EDGE_NOT_PROVEN",
           "by_direction": {
@@ -127,31 +128,84 @@
               "evidence_status": "INSUFFICIENT_SAMPLE"
             },
             "SHORT": {
-              "sample": 21,
-              "gross_r": 10.15,
-              "net_r_after_costs": 7.6845,
-              "avg_net_r_after_costs": 0.3659,
-              "profit_factor_after_costs": 2.385,
-              "positive_rate_percent": 76.19,
-              "stop_rate_percent": 23.81,
-              "tp3_rate_percent": 42.86,
-              "be_family_rate_percent": 33.33,
+              "sample": 19,
+              "gross_r": 8.8,
+              "net_r_after_costs": 6.6694,
+              "avg_net_r_after_costs": 0.351,
+              "profit_factor_after_costs": 2.202,
+              "positive_rate_percent": 73.68,
+              "stop_rate_percent": 26.32,
+              "tp3_rate_percent": 42.11,
+              "be_family_rate_percent": 31.58,
               "result_counts": {
-                "TP1_SONRASI_BE": 4,
-                "TP3": 9,
+                "TP1_SONRASI_BE": 3,
                 "TP2_SONRASI_BE": 3,
+                "TP3": 8,
                 "SL": 5
               },
               "direction_counts": {
                 "LONG": 0,
-                "SHORT": 21
+                "SHORT": 19
               },
-              "evidence_status": "POSITIVE_EDGE"
+              "evidence_status": "INSUFFICIENT_SAMPLE"
             }
           }
         },
         "sources": {
           "15M_ENTRY": {
+            "sample": 0,
+            "gross_r": 0,
+            "net_r_after_costs": 0,
+            "avg_net_r_after_costs": null,
+            "profit_factor_after_costs": 0.0,
+            "positive_rate_percent": 0.0,
+            "stop_rate_percent": 0.0,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 0.0,
+            "result_counts": {},
+            "direction_counts": {
+              "LONG": 0,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE",
+            "by_direction": {
+              "LONG": {
+                "sample": 0,
+                "gross_r": 0,
+                "net_r_after_costs": 0,
+                "avg_net_r_after_costs": null,
+                "profit_factor_after_costs": 0.0,
+                "positive_rate_percent": 0.0,
+                "stop_rate_percent": 0.0,
+                "tp3_rate_percent": 0.0,
+                "be_family_rate_percent": 0.0,
+                "result_counts": {},
+                "direction_counts": {
+                  "LONG": 0,
+                  "SHORT": 0
+                },
+                "evidence_status": "INSUFFICIENT_SAMPLE"
+              },
+              "SHORT": {
+                "sample": 0,
+                "gross_r": 0,
+                "net_r_after_costs": 0,
+                "avg_net_r_after_costs": null,
+                "profit_factor_after_costs": 0.0,
+                "positive_rate_percent": 0.0,
+                "stop_rate_percent": 0.0,
+                "tp3_rate_percent": 0.0,
+                "be_family_rate_percent": 0.0,
+                "result_counts": {},
+                "direction_counts": {
+                  "LONG": 0,
+                  "SHORT": 0
+                },
+                "evidence_status": "INSUFFICIENT_SAMPLE"
+              }
+            }
+          },
+          "5M_RADAR": {
             "sample": 0,
             "gross_r": 0,
             "net_r_after_costs": 0,
@@ -270,23 +324,21 @@
             }
           },
           "EARLY_BREAKOUT_ENTRY": {
-            "sample": 3,
-            "gross_r": 1.625,
-            "net_r_after_costs": 1.1688,
-            "avg_net_r_after_costs": 0.3896,
+            "sample": 1,
+            "gross_r": 0.275,
+            "net_r_after_costs": 0.1537,
+            "avg_net_r_after_costs": 0.1537,
             "profit_factor_after_costs": 999.0,
             "positive_rate_percent": 100.0,
             "stop_rate_percent": 0.0,
-            "tp3_rate_percent": 33.33,
-            "be_family_rate_percent": 66.67,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 100.0,
             "result_counts": {
-              "TP3": 1,
-              "TP1_SONRASI_BE": 1,
               "TP2_SONRASI_BE": 1
             },
             "direction_counts": {
               "LONG": 0,
-              "SHORT": 3
+              "SHORT": 1
             },
             "evidence_status": "INSUFFICIENT_SAMPLE",
             "by_direction": {
@@ -308,23 +360,21 @@
                 "evidence_status": "INSUFFICIENT_SAMPLE"
               },
               "SHORT": {
-                "sample": 3,
-                "gross_r": 1.625,
-                "net_r_after_costs": 1.1688,
-                "avg_net_r_after_costs": 0.3896,
+                "sample": 1,
+                "gross_r": 0.275,
+                "net_r_after_costs": 0.1537,
+                "avg_net_r_after_costs": 0.1537,
                 "profit_factor_after_costs": 999.0,
                 "positive_rate_percent": 100.0,
                 "stop_rate_percent": 0.0,
-                "tp3_rate_percent": 33.33,
-                "be_family_rate_percent": 66.67,
+                "tp3_rate_percent": 0.0,
+                "be_family_rate_percent": 100.0,
                 "result_counts": {
-                  "TP3": 1,
-                  "TP1_SONRASI_BE": 1,
                   "TP2_SONRASI_BE": 1
                 },
                 "direction_counts": {
                   "LONG": 0,
-                  "SHORT": 3
+                  "SHORT": 1
                 },
                 "evidence_status": "INSUFFICIENT_SAMPLE"
               }
@@ -561,45 +611,45 @@
       },
       "7d": {
         "combined_live": {
-          "sample": 120,
-          "gross_r": 4.575,
-          "net_r_after_costs": -9.0835,
-          "avg_net_r_after_costs": -0.0757,
-          "profit_factor_after_costs": 0.814,
-          "positive_rate_percent": 63.33,
-          "stop_rate_percent": 36.67,
-          "tp3_rate_percent": 25.0,
-          "be_family_rate_percent": 38.33,
+          "sample": 122,
+          "gross_r": 5.125,
+          "net_r_after_costs": -8.9161,
+          "avg_net_r_after_costs": -0.0731,
+          "profit_factor_after_costs": 0.818,
+          "positive_rate_percent": 63.11,
+          "stop_rate_percent": 36.07,
+          "tp3_rate_percent": 24.59,
+          "be_family_rate_percent": 39.34,
           "result_counts": {
             "SL": 44,
             "TP3": 30,
-            "TP1_SONRASI_BE": 35,
-            "TP2_SONRASI_BE": 11
+            "TP2_SONRASI_BE": 12,
+            "TP1_SONRASI_BE": 36
           },
           "direction_counts": {
-            "LONG": 76,
+            "LONG": 78,
             "SHORT": 44
           },
           "evidence_status": "EDGE_NOT_PROVEN",
           "by_direction": {
             "LONG": {
-              "sample": 76,
-              "gross_r": -2.025,
-              "net_r_after_costs": -10.4784,
-              "avg_net_r_after_costs": -0.1379,
-              "profit_factor_after_costs": 0.685,
-              "positive_rate_percent": 60.53,
-              "stop_rate_percent": 39.47,
-              "tp3_rate_percent": 25.0,
-              "be_family_rate_percent": 35.53,
+              "sample": 78,
+              "gross_r": -1.475,
+              "net_r_after_costs": -10.311,
+              "avg_net_r_after_costs": -0.1322,
+              "profit_factor_after_costs": 0.69,
+              "positive_rate_percent": 60.26,
+              "stop_rate_percent": 38.46,
+              "tp3_rate_percent": 24.36,
+              "be_family_rate_percent": 37.18,
               "result_counts": {
-                "SL": 30,
                 "TP3": 19,
-                "TP1_SONRASI_BE": 23,
-                "TP2_SONRASI_BE": 4
+                "TP2_SONRASI_BE": 5,
+                "SL": 30,
+                "TP1_SONRASI_BE": 24
               },
               "direction_counts": {
-                "LONG": 76,
+                "LONG": 78,
                 "SHORT": 0
               },
               "evidence_status": "EDGE_NOT_PROVEN"
@@ -630,45 +680,45 @@
         },
         "sources": {
           "15M_ENTRY": {
-            "sample": 28,
-            "gross_r": 10.45,
-            "net_r_after_costs": 7.433,
-            "avg_net_r_after_costs": 0.2655,
-            "profit_factor_after_costs": 2.103,
-            "positive_rate_percent": 78.57,
-            "stop_rate_percent": 21.43,
-            "tp3_rate_percent": 46.43,
-            "be_family_rate_percent": 32.14,
+            "sample": 27,
+            "gross_r": 11.45,
+            "net_r_after_costs": 8.5825,
+            "avg_net_r_after_costs": 0.3179,
+            "profit_factor_after_costs": 2.536,
+            "positive_rate_percent": 81.48,
+            "stop_rate_percent": 18.52,
+            "tp3_rate_percent": 48.15,
+            "be_family_rate_percent": 33.33,
             "result_counts": {
-              "SL": 6,
+              "SL": 5,
               "TP3": 13,
               "TP1_SONRASI_BE": 8,
               "TP2_SONRASI_BE": 1
             },
             "direction_counts": {
-              "LONG": 26,
+              "LONG": 25,
               "SHORT": 2
             },
             "evidence_status": "POSITIVE_EDGE",
             "by_direction": {
               "LONG": {
-                "sample": 26,
-                "gross_r": 12.45,
-                "net_r_after_costs": 9.6302,
-                "avg_net_r_after_costs": 0.3704,
-                "profit_factor_after_costs": 3.121,
-                "positive_rate_percent": 84.62,
-                "stop_rate_percent": 15.38,
-                "tp3_rate_percent": 50.0,
-                "be_family_rate_percent": 34.62,
+                "sample": 25,
+                "gross_r": 13.45,
+                "net_r_after_costs": 10.7797,
+                "avg_net_r_after_costs": 0.4312,
+                "profit_factor_after_costs": 4.179,
+                "positive_rate_percent": 88.0,
+                "stop_rate_percent": 12.0,
+                "tp3_rate_percent": 52.0,
+                "be_family_rate_percent": 36.0,
                 "result_counts": {
-                  "SL": 4,
                   "TP3": 13,
                   "TP1_SONRASI_BE": 8,
-                  "TP2_SONRASI_BE": 1
+                  "TP2_SONRASI_BE": 1,
+                  "SL": 3
                 },
                 "direction_counts": {
-                  "LONG": 26,
+                  "LONG": 25,
                   "SHORT": 0
                 },
                 "evidence_status": "POSITIVE_EDGE"
@@ -689,6 +739,67 @@
                 "direction_counts": {
                   "LONG": 0,
                   "SHORT": 2
+                },
+                "evidence_status": "INSUFFICIENT_SAMPLE"
+              }
+            }
+          },
+          "5M_RADAR": {
+            "sample": 3,
+            "gross_r": -0.45,
+            "net_r_after_costs": -0.9821,
+            "avg_net_r_after_costs": -0.3274,
+            "profit_factor_after_costs": 0.116,
+            "positive_rate_percent": 33.33,
+            "stop_rate_percent": 33.33,
+            "tp3_rate_percent": 0.0,
+            "be_family_rate_percent": 66.67,
+            "result_counts": {
+              "TP2_SONRASI_BE": 1,
+              "SL": 1,
+              "TP1_SONRASI_BE": 1
+            },
+            "direction_counts": {
+              "LONG": 3,
+              "SHORT": 0
+            },
+            "evidence_status": "INSUFFICIENT_SAMPLE",
+            "by_direction": {
+              "LONG": {
+                "sample": 3,
+                "gross_r": -0.45,
+                "net_r_after_costs": -0.9821,
+                "avg_net_r_after_costs": -0.3274,
+                "profit_factor_after_costs": 0.116,
+                "positive_rate_percent": 33.33,
+                "stop_rate_percent": 33.33,
+                "tp3_rate_percent": 0.0,
+                "be_family_rate_percent": 66.67,
+                "result_counts": {
+                  "TP2_SONRASI_BE": 1,
+                  "SL": 1,
+                  "TP1_SONRASI_BE": 1
+                },
+                "direction_counts": {
+                  "LONG": 3,
+                  "SHORT": 0
+                },
+                "evidence_status": "INSUFFICIENT_SAMPLE"
+              },
+              "SHORT": {
+                "sample": 0,
+                "gross_r": 0,
+                "net_r_after_costs": 0,
+                "avg_net_r_after_costs": null,
+                "profit_factor_after_costs": 0.0,
+                "positive_rate_percent": 0.0,
+                "stop_rate_percent": 0.0,
+                "tp3_rate_percent": 0.0,
+                "be_family_rate_percent": 0.0,
+                "result_counts": {},
+                "direction_counts": {
+                  "LONG": 0,
+                  "SHORT": 0
                 },
                 "evidence_status": "INSUFFICIENT_SAMPLE"
               }
@@ -1057,71 +1168,71 @@
       },
       "30d": {
         "combined_live": {
-          "sample": 697,
-          "gross_r": 19.9293,
-          "net_r_after_costs": -72.7888,
-          "avg_net_r_after_costs": -0.1044,
-          "profit_factor_after_costs": 0.737,
-          "positive_rate_percent": 64.28,
-          "stop_rate_percent": 33.86,
-          "tp3_rate_percent": 22.81,
-          "be_family_rate_percent": 42.04,
+          "sample": 802,
+          "gross_r": 22.5799,
+          "net_r_after_costs": -89.9935,
+          "avg_net_r_after_costs": -0.1122,
+          "profit_factor_after_costs": 0.717,
+          "positive_rate_percent": 63.84,
+          "stop_rate_percent": 33.79,
+          "tp3_rate_percent": 22.69,
+          "be_family_rate_percent": 42.39,
           "result_counts": {
-            "SL": 236,
-            "TP2_SONRASI_BE": 76,
-            "TP3": 159,
-            "TP1_SONRASI_BE": 217,
+            "SL": 271,
+            "TP2_SONRASI_BE": 88,
+            "TP3": 182,
+            "TP1_SONRASI_BE": 252,
             "EXPIRED": 9
           },
           "direction_counts": {
-            "LONG": 282,
-            "SHORT": 415
+            "LONG": 334,
+            "SHORT": 468
           },
           "evidence_status": "EDGE_NOT_PROVEN",
           "by_direction": {
             "LONG": {
-              "sample": 282,
-              "gross_r": -3.717,
-              "net_r_after_costs": -37.3193,
-              "avg_net_r_after_costs": -0.1323,
-              "profit_factor_after_costs": 0.671,
-              "positive_rate_percent": 62.77,
-              "stop_rate_percent": 35.46,
-              "tp3_rate_percent": 20.92,
-              "be_family_rate_percent": 43.26,
+              "sample": 334,
+              "gross_r": 4.4086,
+              "net_r_after_costs": -37.8904,
+              "avg_net_r_after_costs": -0.1134,
+              "profit_factor_after_costs": 0.704,
+              "positive_rate_percent": 64.07,
+              "stop_rate_percent": 33.83,
+              "tp3_rate_percent": 21.56,
+              "be_family_rate_percent": 44.31,
               "result_counts": {
-                "SL": 100,
-                "TP3": 59,
-                "TP1_SONRASI_BE": 95,
-                "TP2_SONRASI_BE": 27,
+                "SL": 113,
+                "TP3": 72,
+                "TP1_SONRASI_BE": 116,
+                "TP2_SONRASI_BE": 32,
                 "EXPIRED": 1
               },
               "direction_counts": {
-                "LONG": 282,
+                "LONG": 334,
                 "SHORT": 0
               },
               "evidence_status": "EDGE_NOT_PROVEN"
             },
             "SHORT": {
-              "sample": 415,
-              "gross_r": 23.6463,
-              "net_r_after_costs": -35.4695,
-              "avg_net_r_after_costs": -0.0855,
-              "profit_factor_after_costs": 0.783,
-              "positive_rate_percent": 65.3,
-              "stop_rate_percent": 32.77,
-              "tp3_rate_percent": 24.1,
-              "be_family_rate_percent": 41.2,
+              "sample": 468,
+              "gross_r": 18.1713,
+              "net_r_after_costs": -52.1031,
+              "avg_net_r_after_costs": -0.1113,
+              "profit_factor_after_costs": 0.726,
+              "positive_rate_percent": 63.68,
+              "stop_rate_percent": 33.76,
+              "tp3_rate_percent": 23.5,
+              "be_family_rate_percent": 41.03,
               "result_counts": {
-                "TP2_SONRASI_BE": 49,
-                "TP3": 100,
-                "TP1_SONRASI_BE": 122,
-                "SL": 136,
+                "TP2_SONRASI_BE": 56,
+                "TP3": 110,
+                "TP1_SONRASI_BE": 136,
+                "SL": 158,
                 "EXPIRED": 8
               },
               "direction_counts": {
                 "LONG": 0,
-                "SHORT": 415
+                "SHORT": 468
               },
               "evidence_status": "EDGE_NOT_PROVEN"
             }
@@ -1194,6 +1305,74 @@
                 "direction_counts": {
                   "LONG": 0,
                   "SHORT": 373
+                },
+                "evidence_status": "EDGE_NOT_PROVEN"
+              }
+            }
+          },
+          "5M_RADAR": {
+            "sample": 105,
+            "gross_r": 2.6506,
+            "net_r_after_costs": -17.2047,
+            "avg_net_r_after_costs": -0.1639,
+            "profit_factor_after_costs": 0.585,
+            "positive_rate_percent": 60.95,
+            "stop_rate_percent": 33.33,
+            "tp3_rate_percent": 21.9,
+            "be_family_rate_percent": 44.76,
+            "result_counts": {
+              "SL": 35,
+              "TP2_SONRASI_BE": 12,
+              "TP1_SONRASI_BE": 35,
+              "TP3": 23
+            },
+            "direction_counts": {
+              "LONG": 52,
+              "SHORT": 53
+            },
+            "evidence_status": "EDGE_NOT_PROVEN",
+            "by_direction": {
+              "LONG": {
+                "sample": 52,
+                "gross_r": 8.1256,
+                "net_r_after_costs": -0.5711,
+                "avg_net_r_after_costs": -0.011,
+                "profit_factor_after_costs": 0.961,
+                "positive_rate_percent": 71.15,
+                "stop_rate_percent": 25.0,
+                "tp3_rate_percent": 25.0,
+                "be_family_rate_percent": 50.0,
+                "result_counts": {
+                  "TP3": 13,
+                  "SL": 13,
+                  "TP1_SONRASI_BE": 21,
+                  "TP2_SONRASI_BE": 5
+                },
+                "direction_counts": {
+                  "LONG": 52,
+                  "SHORT": 0
+                },
+                "evidence_status": "EDGE_NOT_PROVEN"
+              },
+              "SHORT": {
+                "sample": 53,
+                "gross_r": -5.475,
+                "net_r_after_costs": -16.6336,
+                "avg_net_r_after_costs": -0.3138,
+                "profit_factor_after_costs": 0.376,
+                "positive_rate_percent": 50.94,
+                "stop_rate_percent": 41.51,
+                "tp3_rate_percent": 18.87,
+                "be_family_rate_percent": 39.62,
+                "result_counts": {
+                  "SL": 22,
+                  "TP2_SONRASI_BE": 7,
+                  "TP1_SONRASI_BE": 14,
+                  "TP3": 10
+                },
+                "direction_counts": {
+                  "LONG": 0,
+                  "SHORT": 53
                 },
                 "evidence_status": "EDGE_NOT_PROVEN"
               }
@@ -1562,71 +1741,71 @@
       },
       "lifetime": {
         "combined_live": {
-          "sample": 779,
-          "gross_r": 14.0723,
-          "net_r_after_costs": -89.4432,
-          "avg_net_r_after_costs": -0.1148,
-          "profit_factor_after_costs": 0.713,
-          "positive_rate_percent": 63.93,
-          "stop_rate_percent": 34.15,
-          "tp3_rate_percent": 21.95,
-          "be_family_rate_percent": 42.49,
+          "sample": 892,
+          "gross_r": 14.6229,
+          "net_r_after_costs": -110.4138,
+          "avg_net_r_after_costs": -0.1238,
+          "profit_factor_after_costs": 0.691,
+          "positive_rate_percent": 63.45,
+          "stop_rate_percent": 34.19,
+          "tp3_rate_percent": 21.86,
+          "be_family_rate_percent": 42.71,
           "result_counts": {
-            "SL": 266,
-            "TP3": 171,
-            "TP1_SONRASI_BE": 246,
-            "TP2_SONRASI_BE": 85,
+            "SL": 305,
+            "TP3": 195,
+            "TP1_SONRASI_BE": 282,
+            "TP2_SONRASI_BE": 99,
             "EXPIRED": 11
           },
           "direction_counts": {
-            "LONG": 315,
-            "SHORT": 464
+            "LONG": 373,
+            "SHORT": 519
           },
           "evidence_status": "EDGE_NOT_PROVEN",
           "by_direction": {
             "LONG": {
-              "sample": 315,
-              "gross_r": -1.792,
-              "net_r_after_costs": -39.5459,
-              "avg_net_r_after_costs": -0.1255,
-              "profit_factor_after_costs": 0.683,
-              "positive_rate_percent": 63.49,
-              "stop_rate_percent": 34.92,
-              "tp3_rate_percent": 20.95,
-              "be_family_rate_percent": 43.81,
+              "sample": 373,
+              "gross_r": 4.9586,
+              "net_r_after_costs": -42.6841,
+              "avg_net_r_after_costs": -0.1144,
+              "profit_factor_after_costs": 0.702,
+              "positive_rate_percent": 64.34,
+              "stop_rate_percent": 33.78,
+              "tp3_rate_percent": 21.45,
+              "be_family_rate_percent": 44.5,
               "result_counts": {
-                "TP3": 66,
-                "TP1_SONRASI_BE": 107,
-                "SL": 110,
-                "TP2_SONRASI_BE": 31,
+                "TP3": 80,
+                "TP1_SONRASI_BE": 129,
+                "SL": 126,
+                "TP2_SONRASI_BE": 37,
                 "EXPIRED": 1
               },
               "direction_counts": {
-                "LONG": 315,
+                "LONG": 373,
                 "SHORT": 0
               },
               "evidence_status": "EDGE_NOT_PROVEN"
             },
             "SHORT": {
-              "sample": 464,
-              "gross_r": 15.8643,
-              "net_r_after_costs": -49.8973,
-              "avg_net_r_after_costs": -0.1075,
-              "profit_factor_after_costs": 0.733,
-              "positive_rate_percent": 64.22,
-              "stop_rate_percent": 33.62,
-              "tp3_rate_percent": 22.63,
-              "be_family_rate_percent": 41.59,
+              "sample": 519,
+              "gross_r": 9.6643,
+              "net_r_after_costs": -67.7297,
+              "avg_net_r_after_costs": -0.1305,
+              "profit_factor_after_costs": 0.684,
+              "positive_rate_percent": 62.81,
+              "stop_rate_percent": 34.49,
+              "tp3_rate_percent": 22.16,
+              "be_family_rate_percent": 41.43,
               "result_counts": {
-                "SL": 156,
-                "TP3": 105,
-                "TP2_SONRASI_BE": 54,
-                "TP1_SONRASI_BE": 139,
+                "SL": 179,
+                "TP3": 115,
+                "TP2_SONRASI_BE": 62,
+                "TP1_SONRASI_BE": 153,
                 "EXPIRED": 10
               },
               "direction_counts": {
                 "LONG": 0,
-                "SHORT": 464
+                "SHORT": 519
               },
               "evidence_status": "EDGE_NOT_PROVEN"
             }
@@ -1699,6 +1878,74 @@
                 "direction_counts": {
                   "LONG": 0,
                   "SHORT": 422
+                },
+                "evidence_status": "EDGE_NOT_PROVEN"
+              }
+            }
+          },
+          "5M_RADAR": {
+            "sample": 113,
+            "gross_r": 0.5506,
+            "net_r_after_costs": -20.9706,
+            "avg_net_r_after_costs": -0.1856,
+            "profit_factor_after_costs": 0.548,
+            "positive_rate_percent": 60.18,
+            "stop_rate_percent": 34.51,
+            "tp3_rate_percent": 21.24,
+            "be_family_rate_percent": 44.25,
+            "result_counts": {
+              "SL": 39,
+              "TP2_SONRASI_BE": 14,
+              "TP1_SONRASI_BE": 36,
+              "TP3": 24
+            },
+            "direction_counts": {
+              "LONG": 58,
+              "SHORT": 55
+            },
+            "evidence_status": "EDGE_NOT_PROVEN",
+            "by_direction": {
+              "LONG": {
+                "sample": 58,
+                "gross_r": 6.7506,
+                "net_r_after_costs": -3.1382,
+                "avg_net_r_after_costs": -0.0541,
+                "profit_factor_after_costs": 0.83,
+                "positive_rate_percent": 68.97,
+                "stop_rate_percent": 27.59,
+                "tp3_rate_percent": 24.14,
+                "be_family_rate_percent": 48.28,
+                "result_counts": {
+                  "SL": 16,
+                  "TP2_SONRASI_BE": 6,
+                  "TP1_SONRASI_BE": 22,
+                  "TP3": 14
+                },
+                "direction_counts": {
+                  "LONG": 58,
+                  "SHORT": 0
+                },
+                "evidence_status": "EDGE_NOT_PROVEN"
+              },
+              "SHORT": {
+                "sample": 55,
+                "gross_r": -6.2,
+                "net_r_after_costs": -17.8324,
+                "avg_net_r_after_costs": -0.3242,
+                "profit_factor_after_costs": 0.361,
+                "positive_rate_percent": 50.91,
+                "stop_rate_percent": 41.82,
+                "tp3_rate_percent": 18.18,
+                "be_family_rate_percent": 40.0,
+                "result_counts": {
+                  "TP2_SONRASI_BE": 8,
+                  "SL": 23,
+                  "TP1_SONRASI_BE": 14,
+                  "TP3": 10
+                },
+                "direction_counts": {
+                  "LONG": 0,
+                  "SHORT": 55
                 },
                 "evidence_status": "EDGE_NOT_PROVEN"
               }
