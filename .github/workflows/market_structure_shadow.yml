@@ -63,7 +63,7 @@ jobs:
           MARKET_STRUCTURE_READY_ALERT_SCORE: "72"
           MARKET_STRUCTURE_READY_DIRECTION_GAP: "10"
           MARKET_STRUCTURE_READY_MAX_ORIGIN_ATR: "2.80"
-        run: python market_structure_shadow_runner.py
+        run: python market_structure_smart_runner.py
 
       - name: Shadow state kaydet
         if: ${{ always() && github.ref_name == 'main' }}
