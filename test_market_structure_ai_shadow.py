@@ -101,9 +101,13 @@ def test_ready_is_blocked_after_move_is_already_far_from_origin():
 
 
 def test_feature_extractor_tracks_recent_origin_distance():
-    base = [110 - i * 0.12 for i in range(50)]
-    reversal = [104.0, 103.2, 103.7, 102.7, 103.3, 102.2, 102.8, 101.8, 102.5, 101.4,
-                102.0, 101.0, 101.7, 100.8, 101.6, 102.4, 101.7, 102.8, 103.7, 104.4]
+    # Kontrollü düşüş içinde küçük salınımlar gerçek swing high/low üretir.
+    wiggle = [0.40, 0.05, -0.35, 0.00]
+    base = [110 - i * 0.14 + wiggle[i % 4] for i in range(50)]
+    reversal = [
+        103.0, 102.2, 102.8, 101.9, 102.5, 101.5, 102.1, 101.2, 101.9, 100.8,
+        101.5, 100.5, 101.2, 100.3, 101.1, 102.0, 101.4, 102.5, 103.4, 104.0,
+    ]
     closes = base + reversal
     volumes = [100.0] * len(closes)
     volumes[-3:] = [145.0, 190.0, 240.0]
