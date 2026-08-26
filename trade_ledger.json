@@ -148123,7 +148123,7 @@
         "max_adverse_percent": 1.4883,
         "extension_class": "STRONG_EXTENSION",
         "shadow_only": true,
-        "last_checked_at": 1787756781,
+        "last_checked_at": 1787757209,
         "best_price": 0.06469,
         "worst_price": 0.06654
       },
@@ -148183,9 +148183,9 @@
         "max_adverse_r": 1.1682,
         "best_price": 0.06469,
         "worst_price": 0.06654,
-        "last_checked_at": 1787756790,
+        "last_checked_at": 1787757212,
         "completed_at": 0,
-        "last_price": 0.06558
+        "last_price": 0.0658
       },
       "tp3_multi_day_runner_shadow": {
         "version": "TP3_MULTI_DAY_RUNNER_SHADOW_V1_2026_08_24",
@@ -151243,7 +151243,7 @@
         "checkpoints": {},
         "max_favorable_r": 0.0,
         "max_adverse_r": 1.1899,
-        "last_checked_at": 1787756792,
+        "last_checked_at": 1787757214,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -151265,7 +151265,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.012754
+        "last_price": 0.012782
       }
     },
     "RAYUSDT_SHORT_BIG_MOVE_ENTRY_1787736142": {
@@ -151969,37 +151969,39 @@
       "duration_minutes": 110,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "KURULUM DEVAM ETMEDI",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
-          "Islem yeterli lehe ivme olusturmadan stop oldu."
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Stop sonrasi fiyat TP1 seviyesine dondu."
         ],
         "duration_minutes": 110,
         "best_favorable_r": 0.198,
         "worst_adverse_r": 1.0298,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "KURULUM_DEVAM_ETMEDI",
-        "preliminary_label": "Kurulum devam etmedi",
+        "primary": "FITIL_DAR_STOP",
+        "label": "Fitil/dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası fiyat TP1 seviyesine 227 dakikada döndü.",
+          "Stop sonrası hedef dönüşü fitil veya giriş zamanlaması ihtimalini güçlendirdi."
         ],
         "metrics": {
           "duration_minutes": 110,
           "mfe_r": 0.198,
           "mae_r": 1.0298,
           "risk_percent": 1.398,
-          "return_minutes": null
+          "return_minutes": 227.0
         },
-        "updated_at": 1787743247
+        "updated_at": 1787756872
       },
       "gross_r_before_costs": -1.0,
       "estimated_execution_cost_r": 0.0858,
@@ -152054,7 +152056,7 @@
         },
         "max_favorable_r": 2.3764,
         "max_adverse_r": 0.1188,
-        "last_checked_at": 1787756792,
+        "last_checked_at": 1787757214,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -152076,7 +152078,13 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.01794
+        "last_price": 0.01793
+      },
+      "post_stop_follow": {
+        "returned_level": "TP1",
+        "age_minutes": 227,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1787756872
       }
     },
     "NGUSDT_LONG_15M_ENTRY_1787742500": {
@@ -152159,7 +152167,7 @@
       "worst_adverse_r": 0.6009,
       "best_favorable_price": 2.92,
       "worst_adverse_price": 2.866,
-      "last_market_price": 2.908,
+      "last_market_price": 2.914,
       "tp1_hit_at": 1787754240,
       "continuation_shadow": {
         "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
@@ -152167,31 +152175,31 @@
         "status": "DEVAM_GUCLU",
         "score": 100,
         "action_shadow": "HOLD_SHADOW",
-        "confidence": "ORTA",
-        "current_price": 2.912,
-        "move_from_entry_percent": 0.9359,
+        "confidence": "YUKSEK",
+        "current_price": 2.91,
+        "move_from_entry_percent": 0.8666,
         "trend_origin": {
           "price": 2.866,
           "at": 1787748300,
           "method": "EMA20_REGIME_CROSS",
-          "move_so_far_percent": 1.605
+          "move_so_far_percent": 1.5352
         },
         "remaining_move_shadow": {
           "low_percent": 0.4852,
           "high_percent": 1.2939,
           "method": "15M_ATR_HEURISTIC_UNCALIBRATED",
-          "estimated_total_move_low_percent": 2.0902,
-          "estimated_total_move_high_percent": 2.8989
+          "estimated_total_move_low_percent": 2.0205,
+          "estimated_total_move_high_percent": 2.8291
         },
         "metrics": {
           "trend_5m": 1,
           "trend_15m": 1,
           "trend_1h": 1,
-          "structure_5m": 0,
+          "structure_5m": 1,
           "adx_15m": 30.78,
           "adx_1h": 35.03,
           "rsi_15m": 64.02,
-          "volume_ratio_5m": 0.299,
+          "volume_ratio_5m": 0.488,
           "volume_ratio_15m": 1.189,
           "atr_15m_percent": 0.4043
         },
@@ -152199,10 +152207,11 @@
           "5M trend yönü destekliyor",
           "15M trend yönü destekliyor",
           "1H trend yönü destekliyor",
+          "5M mikro yapı devam yönünde",
           "15M ADX güçlü",
           "5M hacim sönüyor"
         ],
-        "updated_at": 1787756771,
+        "updated_at": 1787757199,
         "trade_id": "NGUSDT_LONG_15M_ENTRY_1787742500",
         "symbol": "NGUSDT",
         "direction": "LONG",
@@ -152464,16 +152473,32 @@
               "estimated_total_move_low_percent": 1.7397,
               "estimated_total_move_high_percent": 2.5457
             }
+          },
+          {
+            "at": 1787757199,
+            "status": "DEVAM_GUCLU",
+            "score": 100,
+            "action_shadow": "HOLD_SHADOW",
+            "current_price": 2.91,
+            "move_from_entry_percent": 0.8666,
+            "origin_move_percent": 1.5352,
+            "remaining_move_shadow": {
+              "low_percent": 0.4852,
+              "high_percent": 1.2939,
+              "method": "15M_ATR_HEURISTIC_UNCALIBRATED",
+              "estimated_total_move_low_percent": 2.0205,
+              "estimated_total_move_high_percent": 2.8291
+            }
           }
         ],
         "peak_score": 100,
         "min_score": 34,
         "status_changed": false
       },
-      "last_tracking_at": 1787756400
+      "last_tracking_at": 1787756820
     }
   },
-  "last_update": 1787756794,
+  "last_update": 1787757216,
   "profit_mode_v2_last_enriched_at": 1787756769,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -152514,7 +152539,7 @@
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
     "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_EXIT_MUTATION",
-    "updated_at": 1787756771,
+    "updated_at": 1787757199,
     "checked": 1,
     "statuses": {
       "DEVAM_GUCLU": 1
@@ -152523,7 +152548,7 @@
   "tp3_runner_shadow_summary": {
     "version": "TP3_RUNNER_SHADOW_V1_2026_08_24",
     "mode": "SHADOW_ONLY_NO_TELEGRAM_NO_ORDERS_NO_EXIT_MUTATION",
-    "updated_at": 1787756781,
+    "updated_at": 1787757209,
     "checked": 1,
     "candidate_classes": {
       "RUNNER_STRONG_SHADOW": 1
