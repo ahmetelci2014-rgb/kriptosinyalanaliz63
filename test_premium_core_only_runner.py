@@ -1,0 +1,80 @@
+from types import SimpleNamespace
+
+import premium_core_only_runner as core
+
+
+def _runner_with_legacy(result=(True, "LEGACY_OK")):
+    calls = []
+
+    def factory(original, gate, pending_gate):
+        def wrapped(signal, current_price):
+            calls.append((signal.get("source"), current_price))
+            return result
+
+        return wrapped
+
+    runner = SimpleNamespace(_make_profit_gate=factory)
+    return runner, calls
+
+
+def test_only_15m_entry_reaches_existing_live_gates():
+    runner, calls = _runner_with_legacy()
+    core._install_core_only_source_gate(runner)
+    wrapped = runner._make_profit_gate(lambda *_: None, object(), object())
+
+    signal = {"symbol": "BTCUSDT", "direction": "LONG", "source": "15M_ENTRY"}
+    ok, reason = wrapped(signal, 100.0)
+
+    assert ok is True
+    assert reason == "LEGACY_OK"
+    assert calls == [("15M_ENTRY", 100.0)]
+    assert signal["core_only_live_gate"]["decision"] == "ALLOW"
+
+
+def test_experimental_sources_are_blocked_before_direct_or_legacy_gate():
+    for source in (
+        "BIG_MOVE_ENTRY",
+        "EARLY_BREAKOUT_ENTRY",
+        "REGIME_TRANSITION_ENTRY",
+        "TREND_CONTINUATION_ENTRY",
+        "YOUNG_COIN_ENTRY",
+        "NEW_COIN_ENTRY",
+    ):
+        runner, calls = _runner_with_legacy()
+        core._install_core_only_source_gate(runner)
+        wrapped = runner._make_profit_gate(lambda *_: None, object(), object())
+        signal = {"symbol": "TESTUSDT", "direction": "SHORT", "source": source}
+
+        ok, reason = wrapped(signal, 1.0)
+
+        assert ok is False
+        assert reason == f"CORE_ONLY_SOURCE_BLOCK:{source}"
+        assert calls == []
+        assert signal["core_only_live_gate"]["decision"] == "BLOCK"
+
+
+def test_missing_source_fails_closed():
+    runner, calls = _runner_with_legacy()
+    core._install_core_only_source_gate(runner)
+    wrapped = runner._make_profit_gate(lambda *_: None, object(), object())
+    signal = {"symbol": "TESTUSDT", "direction": "LONG"}
+
+    ok, reason = wrapped(signal, 1.0)
+
+    assert ok is False
+    assert reason == "CORE_ONLY_SOURCE_BLOCK:UNKNOWN"
+    assert calls == []
+
+
+def test_existing_core_rejection_is_preserved():
+    runner, calls = _runner_with_legacy((False, "ENTRY_TOO_LATE"))
+    core._install_core_only_source_gate(runner)
+    wrapped = runner._make_profit_gate(lambda *_: None, object(), object())
+    signal = {"symbol": "ETHUSDT", "direction": "SHORT", "source": "15m_entry"}
+
+    ok, reason = wrapped(signal, 200.0)
+
+    assert ok is False
+    assert reason == "ENTRY_TOO_LATE"
+    assert calls == [("15m_entry", 200.0)]
+    assert signal["core_only_live_gate"]["decision"] == "CORE_REJECTED_BY_EXISTING_GATES"
