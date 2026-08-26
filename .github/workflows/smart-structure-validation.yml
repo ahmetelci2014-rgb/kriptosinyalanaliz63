@@ -8,6 +8,7 @@ on:
       - "smart_structure_adapter.py"
       - "smart_structure_historical_runner.py"
       - "smart_structure_combined_validation.py"
+      - "smart_structure_combined_fast.py"
       - "test_smart_structure_adapter.py"
       - ".github/workflows/smart-structure-validation.yml"
 
@@ -17,7 +18,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
     steps:
       - name: Repo indir
         uses: actions/checkout@v4
@@ -43,11 +44,11 @@ jobs:
           SMART_STRUCTURE_RESULT_FILE: "smart_structure_validation.json"
         run: python smart_structure_historical_runner.py
 
-      - name: Mevcut Market Structure ile birlikte test et
+      - name: Mevcut Market Structure ile birlikte hizli test et
         env:
-          SMART_STRUCTURE_COMBINED_DAYS: "7"
+          SMART_STRUCTURE_COMBINED_DAYS: "5"
           SMART_STRUCTURE_COMBINED_RESULT_FILE: "smart_structure_combined_validation.json"
-        run: python smart_structure_combined_validation.py
+        run: python smart_structure_combined_fast.py
 
       - name: Sonuclari artifact olarak kaydet
         if: always()
