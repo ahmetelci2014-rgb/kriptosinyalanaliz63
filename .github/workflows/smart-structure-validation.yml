@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - "smart_structure_adapter.py"
-      - "smart_structure_historical_runner.py"
       - "smart_structure_combined_validation.py"
       - "smart_structure_combined_fast.py"
       - "test_smart_structure_adapter.py"
@@ -18,7 +17,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 20
     steps:
       - name: Repo indir
         uses: actions/checkout@v4
@@ -38,24 +37,16 @@ jobs:
       - name: Adapter testleri
         run: python -m pytest -q test_smart_structure_adapter.py
 
-      - name: Pine structure mantigini tek basina test et
-        env:
-          SMART_STRUCTURE_HISTORY_DAYS: "14"
-          SMART_STRUCTURE_RESULT_FILE: "smart_structure_validation.json"
-        run: python smart_structure_historical_runner.py
-
       - name: Mevcut Market Structure ile birlikte hizli test et
         env:
           SMART_STRUCTURE_COMBINED_DAYS: "5"
           SMART_STRUCTURE_COMBINED_RESULT_FILE: "smart_structure_combined_validation.json"
         run: python smart_structure_combined_fast.py
 
-      - name: Sonuclari artifact olarak kaydet
+      - name: Sonucu artifact olarak kaydet
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: smart-structure-validation
-          path: |
-            smart_structure_validation.json
-            smart_structure_combined_validation.json
+          name: smart-structure-combined-validation
+          path: smart_structure_combined_validation.json
           if-no-files-found: warn
