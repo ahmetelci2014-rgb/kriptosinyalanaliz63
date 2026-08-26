@@ -20,6 +20,9 @@ import movement_start_shadow as movement_start
 import movement_start_v2_shadow as movement_start_v2
 import movement_start_v3_orderflow_shadow as movement_start_v3
 
+EARLY_5M_SOURCE = "5M_RADAR"
+EARLY_5M_LIVE_VERSION = "EARLY_5M_LIVE_V1_2026_08_26"
+
 
 def _make_clear_signal_sender(original: Callable[..., Any]) -> Callable[..., Any]:
     def wrapped(message: Any, *args: Any, **kwargs: Any) -> Any:
@@ -57,14 +60,55 @@ def _direct_evidence_allows(gate: profit.PremiumGate, signal: dict) -> bool:
     return bool(evidence.get("live_allowed"))
 
 
+def _early_5m_direct_allowed(
+    signal: dict,
+    current_price: Any,
+    base_validator: Callable[..., Any],
+) -> bool:
+    """Admit only the already-existing, replay-proven 5M TRADE path.
+
+    This does not create a new signal model. strategy.analyze_5m_radar has already
+    enforced strict 4H+1H direction, 15M strength, 5M reversal/volume, risk and
+    entry-zone conditions. Here we only avoid re-delaying that early signal
+    through the 15M pending-confirmation queue while preserving the live
+    validator, global-quality wrapper and execution-cost check.
+    """
+    if str(signal.get("source") or "").upper() != EARLY_5M_SOURCE:
+        return False
+    if str(signal.get("signal_class") or "").upper() != "TRADE":
+        return False
+    if not bool(strategy.ENABLE_5M_EARLY_TRADE):
+        return False
+
+    score = int(strategy.safe_float(signal.get("score"), 0.0))
+    min_score = max(
+        int(strategy.MIN_SCORE_TRADE),
+        int(strategy.EARLY_TRADE_MIN_SCORE),
+    )
+    if score < min_score:
+        return False
+
+    ok, _ = base_validator(signal, current_price)
+    if not ok:
+        return False
+
+    return bool(profit.cost_viability(signal).get("ok"))
+
+
 def _make_profit_gate(
     original: Callable[..., Any],
     gate: profit.PremiumGate,
     pending_gate: confirmation.PendingConfirmationGate,
 ) -> Callable[..., Any]:
     def wrapped(signal: dict, current_price: Any):
+        early_5m_direct = _early_5m_direct_allowed(
+            signal,
+            current_price,
+            original,
+        )
         direct_allowed = (
-            allcoins.strong_direct_allowed(
+            early_5m_direct
+            or allcoins.strong_direct_allowed(
                 signal,
                 current_price,
                 original,
@@ -79,17 +123,18 @@ def _make_profit_gate(
         )
         if _direct_evidence_allows(gate, signal) and direct_allowed:
             source = str(signal.get("source") or "").upper()
-            direct_status = (
-                "TREND_CONTINUATION_DIRECT"
-                if source == continuation.SOURCE
-                else "STRONG_DIRECT"
-            )
+            if source == EARLY_5M_SOURCE:
+                direct_status = "EARLY_5M_DIRECT"
+                direct_version = EARLY_5M_LIVE_VERSION
+            elif source == continuation.SOURCE:
+                direct_status = "TREND_CONTINUATION_DIRECT"
+                direct_version = continuation.VERSION
+            else:
+                direct_status = "STRONG_DIRECT"
+                direct_version = allcoins.VERSION
+
             signal["premium_confirmation"] = {
-                "version": (
-                    continuation.VERSION
-                    if source == continuation.SOURCE
-                    else allcoins.VERSION
-                ),
+                "version": direct_version,
                 "status": direct_status,
                 "confirmed_at": bot.now_ts(),
             }
@@ -343,8 +388,11 @@ def _make_all_coin_scanner(original: Callable[..., Any]) -> Callable[..., Any]:
 
 
 def run() -> None:
-    strategy.ENABLE_5M_EARLY_TRADE = False
-    strategy.MAX_LATE_ENTRY_DISTANCE_PERCENT = 0.35
+    # Replay proof (8 crypto majors / 7d) showed that the already-existing 5M
+    # path delivered 36 trades, +18.55R and a 25-minute median lead versus 15M.
+    # Do not silently disable it in runtime. Keep the configured no-chase limit.
+    strategy.ENABLE_5M_EARLY_TRADE = True
+    strategy.MAX_LATE_ENTRY_DISTANCE_PERCENT = 0.25
 
     gate = profit.PremiumGate(bot.TRADE_LEDGER_FILE)
     pending_gate = confirmation.PendingConfirmationGate(gate)
@@ -379,6 +427,13 @@ def run() -> None:
     print(
         "PROFIT MODE V4 / PREMIUM ALL-COINS | "
         "tüm USDT perpetual + klasik MTF + kontrollü trend devam + adaptif genç/yeni"
+    )
+    print(
+        "Premium 5M erken giriş:",
+        "AKTİF",
+        "| source=",
+        EARLY_5M_SOURCE,
+        "| pending bekleme: YOK | canlı kalite/maliyet kapıları: AKTİF",
     )
     print(
         "Movement Start Shadow V1:",
