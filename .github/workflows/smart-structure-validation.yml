@@ -7,6 +7,7 @@ on:
     paths:
       - "smart_structure_adapter.py"
       - "smart_structure_historical_runner.py"
+      - "smart_structure_combined_validation.py"
       - "test_smart_structure_adapter.py"
       - ".github/workflows/smart-structure-validation.yml"
 
@@ -16,7 +17,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - name: Repo indir
         uses: actions/checkout@v4
@@ -36,16 +37,24 @@ jobs:
       - name: Adapter testleri
         run: python -m pytest -q test_smart_structure_adapter.py
 
-      - name: OKX 5M historical validation
+      - name: Pine structure mantigini tek basina test et
         env:
           SMART_STRUCTURE_HISTORY_DAYS: "14"
           SMART_STRUCTURE_RESULT_FILE: "smart_structure_validation.json"
         run: python smart_structure_historical_runner.py
 
-      - name: Sonucu artifact olarak kaydet
+      - name: Mevcut Market Structure ile birlikte test et
+        env:
+          SMART_STRUCTURE_COMBINED_DAYS: "7"
+          SMART_STRUCTURE_COMBINED_RESULT_FILE: "smart_structure_combined_validation.json"
+        run: python smart_structure_combined_validation.py
+
+      - name: Sonuclari artifact olarak kaydet
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: smart-structure-validation
-          path: smart_structure_validation.json
+          path: |
+            smart_structure_validation.json
+            smart_structure_combined_validation.json
           if-no-files-found: warn
