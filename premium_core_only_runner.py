@@ -75,6 +75,7 @@ def _install_core_only_source_gate(runner: Any) -> None:
 
 
 def run() -> None:
+    import premium_core_entry_safety as core_entry_safety
     import premium_crypto_profit_runner as legacy_helpers
     import premium_global_quality_guard as global_guard
     import premium_market_outlook_refresh as outlook_refresh
@@ -84,6 +85,11 @@ def run() -> None:
 
     # Preserve the existing ledger/backfill and fresh market-context safeguards.
     tracking_backfill.install(base_runner.bot)
+
+    # Narrow live safety patch: verified crypto-only universe + pre-signal
+    # no-chase geometry. It creates no new route and never opens an exchange order.
+    core_entry_safety.install(base_runner)
+
     refresh = outlook_refresh.ensure_fresh()
     print(
         "Core-only Market Outlook:",
@@ -125,6 +131,7 @@ def run() -> None:
         VERSION,
         "| live source allowlist=",
         ",".join(sorted(LIVE_SOURCE_ALLOWLIST)),
+        "| crypto-only=ON | pre-signal-no-chase=ON",
     )
     print(
         "Experimental live routes are quarantined: BIG_MOVE / EARLY_BREAKOUT / "
