@@ -72,7 +72,7 @@ def test_5m_early_trade_still_fails_when_live_validator_rejects(monkeypatch):
     assert reason == "LIVE_VALIDATOR_REJECT"
 
 
-def test_core_gate_blocks_old_experimental_route_but_allows_5m():
+def test_core_gate_blocks_paused_5m_and_old_experimental_route():
     def factory(original, gate, pending_gate):
         def wrapped(signal, current_price):
             return True, "BASE_OK"
@@ -84,8 +84,8 @@ def test_core_gate_blocks_old_experimental_route_but_allows_5m():
 
     early = _early_signal()
     ok, reason = wrapped(early, 100.0)
-    assert ok is True
-    assert reason == "BASE_OK"
+    assert ok is False
+    assert reason == "CORE_5M_DIRECTION_BLOCK:LONG"
 
     experimental = _early_signal()
     experimental["source"] = "BIG_MOVE_ENTRY"
