@@ -39,7 +39,12 @@ def _feature_row(label: int) -> dict[str, float]:
                 "funding_crowding_8h_bps": 0.5,
                 "taker_available": 1.0,
                 "taker_imbalance_alignment": 0.35,
-                "derivatives_soft_score": 4.0,
+                "cvd_available": 1.0,
+                "cvd_impulse_alignment": 0.45,
+                "book_available": 1.0,
+                "book_imbalance_alignment": 0.20,
+                "book_opposing_wall_ratio": 1.3,
+                "derivatives_soft_score": 5.0,
             }
         )
     else:
@@ -67,7 +72,12 @@ def _feature_row(label: int) -> dict[str, float]:
                 "funding_crowding_8h_bps": 3.5,
                 "taker_available": 1.0,
                 "taker_imbalance_alignment": -0.3,
-                "derivatives_soft_score": -3.0,
+                "cvd_available": 1.0,
+                "cvd_impulse_alignment": -0.4,
+                "book_available": 1.0,
+                "book_imbalance_alignment": -0.2,
+                "book_opposing_wall_ratio": 8.5,
+                "derivatives_soft_score": -5.0,
             }
         )
     return base
@@ -107,7 +117,12 @@ def test_extract_features_aligns_short_with_down_market_and_derivatives():
         "funding_crowding_8h_bps": 0.7,
         "taker_available": True,
         "taker_imbalance_alignment": 0.25,
-        "derivatives_soft_score": 4,
+        "cvd_available": True,
+        "cvd_impulse_alignment": 0.4,
+        "book_available": True,
+        "book_imbalance_alignment": 0.18,
+        "book_opposing_wall_ratio": 1.7,
+        "derivatives_soft_score": 5,
     }
     features = extract_features(decision, context)
     assert tuple(features.keys()) == FEATURE_NAMES
@@ -119,6 +134,11 @@ def test_extract_features_aligns_short_with_down_market_and_derivatives():
     assert features["derivatives_available"] == 1.0
     assert features["oi_change_15m_percent"] == 1.1
     assert features["taker_imbalance_alignment"] == 0.25
+    assert features["cvd_available"] == 1.0
+    assert features["cvd_impulse_alignment"] == 0.4
+    assert features["book_available"] == 1.0
+    assert features["book_imbalance_alignment"] == 0.18
+    assert features["book_opposing_wall_ratio"] == 1.7
 
 
 def test_small_dataset_stays_collecting():

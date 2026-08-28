@@ -4,10 +4,11 @@ This is not a second trading system. Market First remains the hard decision
 engine. The model learns only from completed Market First trades and may affect
 live selection only after chronological out-of-sample validation passes.
 
-V2 adds derivatives/order-flow observations (OI, normalized funding and taker
-imbalance). Old samples remain valid: missing V2 fields are represented by
-explicit availability flags plus zero values, so the model cannot mistake
-missing historical data for a confirmed derivatives signal.
+V3 adds derivatives/order-flow observations (OI, normalized funding, taker
+imbalance, CVD impulse and near-price order-book context). Old samples remain
+valid: missing newer fields are represented by explicit availability flags plus
+zero values, so the model cannot mistake missing historical data for a
+confirmed derivatives/order-flow signal.
 """
 from __future__ import annotations
 
@@ -23,7 +24,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import balanced_accuracy_score, roc_auc_score
 
 
-MODEL_VERSION = "MARKET_FIRST_RF_QUALITY_V2_DERIVATIVES_2026_08_28"
+MODEL_VERSION = "MARKET_FIRST_RF_QUALITY_V3_ORDERFLOW_2026_08_28"
 SAMPLE_FILE = "market_first_ml_samples.json"
 
 MIN_LABELED_SAMPLES = 120
@@ -68,8 +69,8 @@ FEATURE_NAMES = (
     "log10_quote_volume_24h",
     "risk_percent",
     "room_r_capped",
-    # Derivatives/order-flow V2. Availability flags are essential because
-    # historical V1 samples do not contain these observations.
+    # Derivatives/order-flow. Availability flags are essential because older
+    # samples do not contain all of these observations.
     "derivatives_available",
     "oi_history_available",
     "oi_change_5m_percent",
@@ -78,6 +79,11 @@ FEATURE_NAMES = (
     "funding_crowding_8h_bps",
     "taker_available",
     "taker_imbalance_alignment",
+    "cvd_available",
+    "cvd_impulse_alignment",
+    "book_available",
+    "book_imbalance_alignment",
+    "book_opposing_wall_ratio",
     "derivatives_soft_score",
 )
 
@@ -175,6 +181,18 @@ def extract_features(decision: Mapping[str, Any], context: Any) -> Dict[str, flo
         "taker_available": 1.0 if decision.get("taker_available") else 0.0,
         # Positive = aggressive recent flow is aligned with candidate direction.
         "taker_imbalance_alignment": _sf(decision.get("taker_imbalance_alignment")),
+        "cvd_available": 1.0 if decision.get("cvd_available") else 0.0,
+        # Positive = aggressive pressure strengthened in candidate direction
+        # during the latter half of the recent-trade window.
+        "cvd_impulse_alignment": _sf(decision.get("cvd_impulse_alignment")),
+        "book_available": 1.0 if decision.get("book_available") else 0.0,
+        # Positive = visible near-price depth favors candidate direction.
+        "book_imbalance_alignment": _sf(decision.get("book_imbalance_alignment")),
+        # High means a concentrated visible wall sits on the opposing side.
+        "book_opposing_wall_ratio": min(
+            20.0,
+            max(0.0, _sf(decision.get("book_opposing_wall_ratio"))),
+        ),
         "derivatives_soft_score": _sf(decision.get("derivatives_soft_score")),
     }
     return {name: round(_sf(features.get(name)), 8) for name in FEATURE_NAMES}
