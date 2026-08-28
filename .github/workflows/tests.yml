@@ -38,11 +38,13 @@ jobs:
           python -m pip install --prefer-binary -r requirements.txt
           python -m pip install "pytest>=8,<10"
 
-      - name: Premium cekirdek dosyalarini kontrol et
+      - name: Premium ve Simple Core dosyalarini kontrol et
         run: |
           test -f main.py
           test -f strategy.py
           test -f config.py
+          test -f simple_core_strategy.py
+          test -f simple_core_runner.py
           test -f premium_core_only_runner.py
           test -f premium_crypto_profit_runner.py
           test -f premium_regime_profit_runner.py
@@ -83,12 +85,14 @@ jobs:
           test -f post_result_shadow.py
           test -f result_diagnostics.py
 
-      - name: Premium cekirdegi derle
+      - name: Premium ve Simple Core derle
         run: |
           python -m py_compile \
             main.py \
             strategy.py \
             config.py \
+            simple_core_strategy.py \
+            simple_core_runner.py \
             premium_core_only_runner.py \
             premium_crypto_profit_runner.py \
             premium_regime_profit_runner.py \
