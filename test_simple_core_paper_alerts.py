@@ -82,7 +82,7 @@ def _install_common(monkeypatch, *, rejection_ok, trigger_ok):
     )
 
 
-def test_paper_candidate_allows_exactly_one_missing_5m_gate(monkeypatch):
+def test_paper_candidate_allows_one_missing_5m_gate(monkeypatch):
     _install_common(monkeypatch, rejection_ok=True, trigger_ok=False)
     candidate, reason = paper.build_paper_candidate(
         "TESTUSDT",
@@ -95,11 +95,12 @@ def test_paper_candidate_allows_exactly_one_missing_5m_gate(monkeypatch):
     assert reason == "PAPER_READY"
     assert candidate is not None
     assert candidate["paper_missing_gate"] == "5M_NO_CONFIRM"
+    assert candidate["missing_gate_count"] == 1
     assert candidate["signal_class"] == "PAPER"
     assert candidate["room_r"] == 3.2
 
 
-def test_paper_candidate_allows_exactly_one_missing_15m_gate(monkeypatch):
+def test_paper_candidate_allows_one_missing_15m_gate(monkeypatch):
     _install_common(monkeypatch, rejection_ok=False, trigger_ok=True)
     candidate, reason = paper.build_paper_candidate(
         "TESTUSDT",
@@ -112,9 +113,10 @@ def test_paper_candidate_allows_exactly_one_missing_15m_gate(monkeypatch):
     assert reason == "PAPER_READY"
     assert candidate is not None
     assert candidate["paper_missing_gate"] == "15M_NO_REJECTION"
+    assert candidate["missing_gate_count"] == 1
 
 
-def test_paper_candidate_rejects_two_missing_late_gates(monkeypatch):
+def test_paper_candidate_allows_two_missing_late_gates_for_observation(monkeypatch):
     _install_common(monkeypatch, rejection_ok=False, trigger_ok=False)
     candidate, reason = paper.build_paper_candidate(
         "TESTUSDT",
@@ -124,8 +126,11 @@ def test_paper_candidate_rejects_two_missing_late_gates(monkeypatch):
         100.0,
     )
 
-    assert candidate is None
-    assert reason == "PAPER_MULTI_MISS"
+    assert reason == "PAPER_READY"
+    assert candidate is not None
+    assert candidate["paper_missing_gate"] == "15M_NO_REJECTION+5M_NO_CONFIRM"
+    assert candidate["missing_gate_count"] == 2
+    assert candidate["score"] < 85
 
 
 def test_paper_candidate_does_not_duplicate_live_ready_setup(monkeypatch):
@@ -163,8 +168,8 @@ def test_paper_message_is_unambiguously_test_only():
             "tp3": 102.0,
             "room_r": 3.2,
             "trend_reason": "1H yükseliş trendi",
-            "paper_missing_text": "5M giriş kırılım teyidi eksik",
-            "score": 85,
+            "paper_missing_text": "15M bölge dönüşü ve 5M giriş kırılım teyidi henüz eksik",
+            "score": 70,
         },
     )
 
