@@ -1,9 +1,16 @@
-"""Premium Core live runner: canonical 15M + replay-validated 5M early entry.
+"""Premium Core live runner: canonical 15M + replay-scoped 5M early entry.
 
 Only two Premium sources may reach the live Telegram admission pipeline:
 - ``15M_ENTRY``: canonical Premium confirmation route.
-- ``5M_RADAR``: the existing strict 5M early-trade route, activated after
-  no-lookahead replay evidence.
+- ``5M_RADAR``: strict 5M early-trade route, limited by default to the exact
+  high-liquidity universe used by the no-lookahead activation replay.
+
+The 5M route was originally validated on eight majors, but later ran across the
+full all-coins scanner. Live ledger evidence showed that broader deployment had
+no durable edge after execution costs. This runner therefore fails closed for
+5M symbols outside the replay-proven universe while leaving 15M and all shadow
+research unchanged. ``PREMIUM_5M_LIVE_SYMBOLS`` may explicitly override the
+universe after a future replay validates additional symbols.
 
 Big Move, Early Breakout, Regime Transition, Trend Continuation and young/new
 coin routes remain quarantined from live capital. This module never places
@@ -11,19 +18,54 @@ exchange orders.
 """
 from __future__ import annotations
 
-from typing import Any, Callable, Dict
+import os
+from typing import Any, Callable, Dict, FrozenSet
 
-VERSION = "PREMIUM_CORE_EARLY_LIVE_V2_2026_08_26"
+VERSION = "PREMIUM_CORE_EARLY_LIVE_V3_2026_08_28"
 EARLY_SOURCE = "5M_RADAR"
 LIVE_SOURCE_ALLOWLIST = frozenset({"15M_ENTRY", EARLY_SOURCE})
+
+# Exact universe used by the replay that justified 5M live activation.
+# Do not silently broaden this list: validate additions with no-lookahead replay
+# first, then use PREMIUM_5M_LIVE_SYMBOLS or update the default deliberately.
+REPLAY_PROVEN_5M_SYMBOLS: FrozenSet[str] = frozenset(
+    {
+        "BTCUSDT",
+        "ETHUSDT",
+        "SOLUSDT",
+        "BNBUSDT",
+        "XRPUSDT",
+        "DOGEUSDT",
+        "SUIUSDT",
+        "TRXUSDT",
+    }
+)
 
 
 def _signal_source(signal: Dict[str, Any]) -> str:
     return str((signal or {}).get("source") or "").strip().upper()
 
 
+def _signal_symbol(signal: Dict[str, Any]) -> str:
+    return str((signal or {}).get("symbol") or "").strip().upper()
+
+
+def _live_5m_symbols() -> FrozenSet[str]:
+    """Return explicit override or the replay-proven default universe."""
+    raw = str(os.getenv("PREMIUM_5M_LIVE_SYMBOLS") or "").strip()
+    if not raw:
+        return REPLAY_PROVEN_5M_SYMBOLS
+
+    parsed = frozenset(
+        part.strip().upper()
+        for part in raw.replace(";", ",").split(",")
+        if part.strip()
+    )
+    return parsed or REPLAY_PROVEN_5M_SYMBOLS
+
+
 def _install_core_only_source_gate(runner: Any) -> None:
-    """Wrap Premium's final admission factory with the strict two-source list."""
+    """Wrap Premium's final admission factory with source and 5M scope gates."""
     original_factory = runner._make_profit_gate
 
     def core_factory(
@@ -35,6 +77,8 @@ def _install_core_only_source_gate(runner: Any) -> None:
 
         def wrapped(signal: Dict[str, Any], current_price: Any):
             source = _signal_source(signal)
+            symbol = _signal_symbol(signal)
+
             if source not in LIVE_SOURCE_ALLOWLIST:
                 signal["core_only_live_gate"] = {
                     "version": VERSION,
@@ -45,18 +89,41 @@ def _install_core_only_source_gate(runner: Any) -> None:
                 reason = f"CORE_ONLY_SOURCE_BLOCK:{source or 'UNKNOWN'}"
                 print(
                     "CORE ONLY LIVE BLOCK:",
-                    signal.get("symbol"),
+                    symbol or signal.get("symbol"),
                     signal.get("direction"),
                     source or "UNKNOWN",
                 )
                 return False, reason
+
+            if source == EARLY_SOURCE:
+                allowed_5m = _live_5m_symbols()
+                if not symbol or symbol not in allowed_5m:
+                    signal["core_only_live_gate"] = {
+                        "version": VERSION,
+                        "decision": "BLOCK_5M_UNVALIDATED_UNIVERSE",
+                        "source": source,
+                        "symbol": symbol or "UNKNOWN",
+                        "allowed_sources": sorted(LIVE_SOURCE_ALLOWLIST),
+                        "allowed_5m_symbols": sorted(allowed_5m),
+                    }
+                    reason = f"CORE_5M_REPLAY_UNIVERSE_BLOCK:{symbol or 'UNKNOWN'}"
+                    print(
+                        "CORE 5M REPLAY UNIVERSE BLOCK:",
+                        symbol or "UNKNOWN",
+                        signal.get("direction"),
+                    )
+                    return False, reason
 
             ok, reason = legacy(signal, current_price)
             signal["core_only_live_gate"] = {
                 "version": VERSION,
                 "decision": "ALLOW" if ok else "CORE_REJECTED_BY_EXISTING_GATES",
                 "source": source,
+                "symbol": symbol or "UNKNOWN",
                 "allowed_sources": sorted(LIVE_SOURCE_ALLOWLIST),
+                "allowed_5m_symbols": (
+                    sorted(_live_5m_symbols()) if source == EARLY_SOURCE else None
+                ),
                 "existing_gate_reason": reason,
             }
             return ok, reason
@@ -120,12 +187,19 @@ def run() -> None:
     except Exception as exc:
         print("Core pre-scan source report error:", exc)
 
+    live_5m = sorted(_live_5m_symbols())
     print(
         "PREMIUM CORE LIVE:",
         VERSION,
         "| live source allowlist=",
         ",".join(sorted(LIVE_SOURCE_ALLOWLIST)),
-        "| 5M early=ON | crypto-only=ON | send-time-no-chase=ON",
+        "| 5M early=ON_REPLAY_SCOPE | crypto-only=ON | send-time-no-chase=ON",
+    )
+    print(
+        "5M replay-proven live universe:",
+        ",".join(live_5m),
+        "| count=",
+        len(live_5m),
     )
     print(
         "Experimental live routes remain quarantined: BIG_MOVE / EARLY_BREAKOUT / "
