@@ -31,6 +31,15 @@ def _feature_row(label: int) -> dict[str, float]:
                 "structure_1h_alignment": 1.0,
                 "risk_percent": 0.8,
                 "room_r_capped": 3.0,
+                "derivatives_available": 1.0,
+                "oi_history_available": 1.0,
+                "oi_change_5m_percent": 0.7,
+                "oi_change_15m_percent": 1.2,
+                "funding_available": 1.0,
+                "funding_crowding_8h_bps": 0.5,
+                "taker_available": 1.0,
+                "taker_imbalance_alignment": 0.35,
+                "derivatives_soft_score": 4.0,
             }
         )
     else:
@@ -50,12 +59,21 @@ def _feature_row(label: int) -> dict[str, float]:
                 "structure_1h_alignment": -1.0,
                 "risk_percent": 1.4,
                 "room_r_capped": 1.7,
+                "derivatives_available": 1.0,
+                "oi_history_available": 1.0,
+                "oi_change_5m_percent": -0.6,
+                "oi_change_15m_percent": -1.0,
+                "funding_available": 1.0,
+                "funding_crowding_8h_bps": 3.5,
+                "taker_available": 1.0,
+                "taker_imbalance_alignment": -0.3,
+                "derivatives_soft_score": -3.0,
             }
         )
     return base
 
 
-def test_extract_features_aligns_short_with_down_market():
+def test_extract_features_aligns_short_with_down_market_and_derivatives():
     context = SimpleNamespace(
         regime="BEAR_STRONG",
         breadth_5m=0.35,
@@ -81,6 +99,15 @@ def test_extract_features_aligns_short_with_down_market():
         "quote_volume_24h": 20_000_000,
         "risk_percent": 0.9,
         "room_r": 2.5,
+        "derivatives_available": True,
+        "oi_history_available": True,
+        "oi_change_5m_percent": 0.6,
+        "oi_change_15m_percent": 1.1,
+        "funding_available": True,
+        "funding_crowding_8h_bps": 0.7,
+        "taker_available": True,
+        "taker_imbalance_alignment": 0.25,
+        "derivatives_soft_score": 4,
     }
     features = extract_features(decision, context)
     assert tuple(features.keys()) == FEATURE_NAMES
@@ -89,6 +116,9 @@ def test_extract_features_aligns_short_with_down_market():
     assert features["major_move_5m_alignment"] > 0
     assert features["move_5m_alignment"] > 0
     assert features["structure_1h_alignment"] == 1.0
+    assert features["derivatives_available"] == 1.0
+    assert features["oi_change_15m_percent"] == 1.1
+    assert features["taker_imbalance_alignment"] == 0.25
 
 
 def test_small_dataset_stays_collecting():
@@ -108,7 +138,6 @@ def test_small_dataset_stays_collecting():
 
 def test_strong_chronological_signal_can_activate():
     store = empty_store()
-    # Alternating classes across time keeps both train and future holdout balanced.
     for i in range(160):
         label = i % 2
         store["samples"][f"t{i}"] = {
