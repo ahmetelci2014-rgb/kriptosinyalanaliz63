@@ -1,4 +1,4 @@
-"""Near-miss paper alerts for Simple Core.
+"""Observational paper alerts for Simple Core.
 
 Purpose
 -------
@@ -11,9 +11,9 @@ A paper candidate must already have:
 - valid structural stop geometry,
 - at least 2R room.
 
-It is eligible only when exactly ONE late live gate is missing:
-- 15M rejection, or
-- 5M trigger.
+The 15M rejection and/or 5M trigger may still be missing. Those missing late
+confirmations are shown explicitly in the Telegram message. This is deliberate:
+paper mode is for observation, while live mode keeps every original gate.
 
 Paper alerts never enter open_signals/trade_ledger and never place exchange
 orders. They are recorded separately for later comparison.
@@ -26,8 +26,8 @@ import time
 import simple_core_strategy as core
 from telegram_delivery import send_telegram_once
 
-VERSION = "SIMPLE_CORE_PAPER_V1_2026_08_28"
-SOURCE = "SIMPLE_CORE_PAPER_V1"
+VERSION = "SIMPLE_CORE_PAPER_V2_OBSERVE_2026_08_28"
+SOURCE = "SIMPLE_CORE_PAPER_V2"
 STATE_FILE = "simple_core_paper_candidates.json"
 MAX_PAPER_PER_RUN = 2
 PAPER_DUPLICATE_SECONDS = 2 * 60 * 60
@@ -45,7 +45,7 @@ def build_paper_candidate(
     df1h: Any,
     current_price: Optional[float],
 ) -> Tuple[Optional[Dict[str, Any]], str]:
-    """Build a near-live paper candidate or return its rejection reason."""
+    """Build an observational paper candidate or return its rejection reason."""
     direction, trend_reason, trend_info = core._one_hour_direction(df1h)
     if direction is None:
         return None, trend_reason
@@ -92,11 +92,11 @@ def build_paper_candidate(
         missing.append("15M_NO_REJECTION")
     if not trigger_ok:
         missing.append("5M_NO_CONFIRM")
+    if not missing:
+        return None, "LIVE_READY"
 
-    # Do not spam weak setups. Exactly one late confirmation may be missing.
-    if len(missing) != 1:
-        return None, "PAPER_MULTI_MISS"
-
+    # Paper mode still requires sound risk geometry and >=2R room. We relax
+    # confirmation timing only; we do not paper-test structurally bad trades.
     targets, risk_reason = core._targets_and_room(
         direction,
         frame15,
@@ -107,14 +107,19 @@ def build_paper_candidate(
     if targets is None:
         return None, risk_reason
 
-    missing_gate = missing[0]
-    missing_text = (
-        "15M bölge dönüş mumu eksik"
-        if missing_gate == "15M_NO_REJECTION"
-        else "5M giriş kırılım teyidi eksik"
-    )
+    if len(missing) == 1:
+        missing_gate = missing[0]
+        missing_text = (
+            "15M bölge dönüş mumu eksik"
+            if missing_gate == "15M_NO_REJECTION"
+            else "5M giriş kırılım teyidi eksik"
+        )
+        score = 70
+    else:
+        missing_gate = "+".join(missing)
+        missing_text = "15M bölge dönüşü ve 5M giriş kırılım teyidi henüz eksik"
+        score = 60
 
-    score = 70
     adx_1h = _safe(trend_info.get("adx_1h"))
     volume_5m = _safe(trigger_info.get("volume_5m"))
     if adx_1h >= 25:
@@ -157,6 +162,7 @@ def build_paper_candidate(
         "trigger_reason": trigger_reason,
         "paper_missing_gate": missing_gate,
         "paper_missing_text": missing_text,
+        "missing_gate_count": len(missing),
         "adx_1h": trend_info.get("adx_1h"),
         "rsi_1h": trend_info.get("rsi_1h"),
         "volume_5m": trigger_info.get("volume_5m"),
@@ -221,7 +227,7 @@ def format_paper_message(bot: Any, candidate: Dict[str, Any]) -> str:
         f"🧭 1H: {candidate.get('trend_reason')}\n"
         f"⚠️ Canlıya geçmeme nedeni: {candidate.get('paper_missing_text')}\n"
         f"🧠 Test yakınlık skoru: {int(candidate.get('score') or 0)}/95\n"
-        "🔬 Amaç: canlı kuralları gevşetmeden yakın adayın sonucunu gözlemlemek.\n"
+        "🔬 Amaç: canlı kuralları gevşetmeden erken/yakın adayın sonucunu gözlemlemek.\n"
         "❗ Bu mesaj canlı işlem sinyali veya otomatik emir değildir."
     )
 
@@ -241,6 +247,7 @@ def send_paper_candidates(
     rows.sort(
         key=lambda item: (
             int(item.get("score") or 0),
+            -int(item.get("missing_gate_count") or 0),
             _safe(item.get("room_r")),
             -_safe(item.get("zone_distance_percent"), 999.0),
         ),
