@@ -1,18 +1,18 @@
-"""Market First V5 runner with one embedded ML quality layer.
+"""Market First V5 runner with embedded ML and derivatives/order-flow context.
 
 Decision order:
-1) read BTC/ETH/SOL + breadth,
-2) decide market wind,
-3) scan the whole OKX USDT perpetual universe,
-4) rank fresh movers,
-5) analyze only the best/rotating candidates,
-6) reject extended moves,
-7) optionally use the chronologically validated tree model as a quality filter,
-8) send compact early/trade messages,
-9) keep each radar alert alive until CONTINUE / LATE / DEAD.
+1) BTC/ETH/SOL + market breadth,
+2) market wind,
+3) whole OKX USDT perpetual universe,
+4) fresh-mover ranking and rotation,
+5) Market First technical/risk decision,
+6) OI + funding + taker context for surviving candidates,
+7) chronologically validated tree-model quality filter/ranking,
+8) compact early/trade messages and lifecycle tracking.
 
-The ML layer is not a second strategy. Market/risk/late-entry rules always win.
-No exchange order is placed.
+There is still only one live strategy. Derivatives data is a confirmation/learning
+layer, never a second trading engine and never allowed to bypass hard market,
+late-entry, risk, cooldown or portfolio rules. No exchange order is placed.
 """
 from __future__ import annotations
 
@@ -25,6 +25,11 @@ from typing import Any, Dict, List, Mapping, Optional, Tuple
 import main as bot
 from telegram_delivery import send_telegram_once
 
+from market_first_derivatives import (
+    compact_confirmation,
+    enrich_decision,
+    fetch_derivatives_snapshot,
+)
 from market_first_ml import (
     bundle_summary,
     extract_features,
@@ -62,6 +67,28 @@ MAX_ALERT_STATE = 600
 
 TOKEN = os.getenv("TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
+
+DERIVATIVE_SIGNAL_FIELDS = (
+    "derivatives_available",
+    "oi_history_available",
+    "oi_change_5m_percent",
+    "oi_change_15m_percent",
+    "open_interest_value",
+    "funding_available",
+    "funding_rate",
+    "funding_interval_hours",
+    "funding_rate_8h_bps",
+    "funding_crowding_8h_bps",
+    "taker_available",
+    "taker_buy_quote",
+    "taker_sell_quote",
+    "taker_imbalance",
+    "taker_imbalance_alignment",
+    "taker_trade_count",
+    "taker_window_seconds",
+    "derivatives_soft_score",
+    "derivatives_errors",
+)
 
 
 def _is_live_run() -> bool:
@@ -171,11 +198,7 @@ def _breadth_and_sample_moves(
     rows: List[Dict[str, Any]],
     previous_prices: Mapping[str, Any],
 ) -> Tuple[float, float, Dict[str, float]]:
-    liquid = sorted(
-        rows,
-        key=lambda row: _sf(row.get("quote_volume")),
-        reverse=True,
-    )[:100]
+    liquid = sorted(rows, key=lambda row: _sf(row.get("quote_volume")), reverse=True)[:100]
     sample_moves: Dict[str, float] = {}
     positive_sample = 0
     matched = 0
@@ -263,11 +286,7 @@ def _select_deep_scan(
     )[:daily_limit]:
         add(str(row["symbol"]))
 
-    for row in sorted(
-        rows,
-        key=lambda item: _sf(item.get("quote_volume")),
-        reverse=True,
-    )[:TOP_VOLUME]:
+    for row in sorted(rows, key=lambda item: _sf(item.get("quote_volume")), reverse=True)[:TOP_VOLUME]:
         add(str(row["symbol"]))
 
     ordered = sorted(str(row["symbol"]) for row in rows)
@@ -295,11 +314,7 @@ def _can_new_alert(state: Dict[str, Any], symbol: str, direction: str, now: int)
     return now - last >= ALERT_COOLDOWN_SECONDS
 
 
-def _register_alert(
-    state: Dict[str, Any],
-    decision: Mapping[str, Any],
-    now: int,
-) -> None:
+def _register_alert(state: Dict[str, Any], decision: Mapping[str, Any], now: int) -> None:
     key = _alert_key(str(decision["symbol"]), str(decision["direction"]))
     price = _sf(decision.get("current_price"))
     state.setdefault("active_alerts", {})[key] = {
@@ -327,7 +342,6 @@ def _prune_state(state: Dict[str, Any], now: int) -> None:
         status = str((item or {}).get("status") or "")
         if status == "DEAD" and first_at and now - first_at > 12 * 60 * 60:
             active.pop(key, None)
-
     history = state.setdefault("alert_history", {})
     if len(history) > MAX_ALERT_STATE:
         ordered = sorted(
@@ -372,14 +386,11 @@ def _format_early_message(decision: Mapping[str, Any]) -> str:
 def _format_status_message(item: Mapping[str, Any], update: Mapping[str, Any]) -> str:
     status = str(update.get("status"))
     if status == "CONTINUE":
-        label = "DEVAM EDİYOR"
-        icon = "🟢"
+        label, icon = "DEVAM EDİYOR", "🟢"
     elif status == "LATE":
-        label = "GEÇ KALINDI"
-        icon = "🟠"
+        label, icon = "GEÇ KALINDI", "🟠"
     else:
-        label = "BİTTİ"
-        icon = "⚫"
+        label, icon = "BİTTİ", "⚫"
     return (
         f"{icon} {item.get('symbol')} | {label}\n"
         f"{item.get('direction')}\n"
@@ -390,6 +401,8 @@ def _format_status_message(item: Mapping[str, Any], update: Mapping[str, Any]) -
 def _format_trade_message(signal: Mapping[str, Any]) -> str:
     direction = str(signal["direction"])
     icon = "🟢" if direction == "LONG" else "🔴"
+    confirmation = compact_confirmation(signal)
+    confirm_line = f"🧠 Teyit: {confirmation}\n" if confirmation else ""
     return (
         f"✅ İŞLEM FIRSATI | {signal['symbol']}\n"
         f"{icon} {direction} | Piyasa: {signal.get('market_label') or '-'}\n"
@@ -399,6 +412,7 @@ def _format_trade_message(signal: Mapping[str, Any]) -> str:
         f"🎯 TP1: {bot.format_price(signal['tp1'])}\n"
         f"🎯 TP2: {bot.format_price(signal['tp2'])}\n"
         f"🎯 TP3: {bot.format_price(signal['tp3'])}\n"
+        f"{confirm_line}"
         f"⚠️ Otomatik emir açılmaz."
     )
 
@@ -466,7 +480,6 @@ def _send_trade(exchange: Any, signal: Dict[str, Any], ml_store: Dict[str, Any])
     current_price = bot.get_current_price(exchange, symbol)
     if current_price is None:
         return False
-
     valid, reason = bot.is_entry_still_valid(signal, current_price)
     if not valid:
         print(symbol, "son giriş kontrolü elendi:", reason)
@@ -497,10 +510,9 @@ def _send_trade(exchange: Any, signal: Dict[str, Any], ml_store: Dict[str, Any])
             "MARKET FIRST TEST ONLY | canlı işlem mesajı engellendi:",
             symbol,
             signal.get("direction"),
-            "score=",
-            signal.get("score"),
-            "ml=",
-            signal.get("ml_quality_probability"),
+            "score=", signal.get("score"),
+            "deriv=", signal.get("derivatives_soft_score"),
+            "ml=", signal.get("ml_quality_probability"),
         )
         return True
 
@@ -520,8 +532,6 @@ def _send_trade(exchange: Any, signal: Dict[str, Any], ml_store: Dict[str, Any])
             opened_at=int(saved.get("opened_at") or bot.now_ts()),
         )
         if registered:
-            # Persist immediately so a later workflow interruption does not lose
-            # the training row for a trade that was already sent to Telegram.
             save_ml_store(ml_store)
 
     bot.mark_sent(signal, radar=False)
@@ -567,6 +577,10 @@ def _save_diagnostics(
                 "risk_percent": item.get("risk_percent"),
                 "market_label": item.get("market_label"),
                 "relative_strength_5m": item.get("relative_strength_5m"),
+                "derivatives_soft_score": item.get("derivatives_soft_score"),
+                "oi_change_15m_percent": item.get("oi_change_15m_percent"),
+                "funding_rate_8h_bps": item.get("funding_rate_8h_bps"),
+                "taker_imbalance_alignment": item.get("taker_imbalance_alignment"),
                 "ml_mode": item.get("ml_mode"),
                 "ml_quality_probability": item.get("ml_quality_probability"),
             }
@@ -576,14 +590,19 @@ def _save_diagnostics(
     bot.save_json_file(DIAGNOSTICS_FILE, payload)
 
 
+def _copy_derivatives_to_signal(signal: Dict[str, Any], decision: Mapping[str, Any]) -> None:
+    for key in DERIVATIVE_SIGNAL_FIELDS:
+        if key in decision:
+            signal[key] = decision.get(key)
+
+
 def run() -> None:
     print(
         "MARKET FIRST V5:",
         VERSION,
         "| önce BTC/ETH/SOL+breadth, sonra coin",
-        "| tek sistem içi ağaç ML kalite katmanı",
-        "| live=",
-        _is_live_run(),
+        "| OI+funding+taker + ağaç ML kalite",
+        "| live=", _is_live_run(),
     )
 
     state = _load_state()
@@ -605,14 +624,10 @@ def run() -> None:
     ml_bundle = train_quality_model(ml_store)
     ml_info = bundle_summary(ml_bundle)
     print(
-        "ML KALİTE:",
-        ml_bundle.mode,
-        "| labeled=",
-        ml_bundle.labeled_count,
-        "| +/−=",
-        f"{ml_bundle.positive_count}/{ml_bundle.negative_count}",
-        "| metrics=",
-        ml_bundle.metrics or {},
+        "ML KALİTE:", ml_bundle.mode,
+        "| labeled=", ml_bundle.labeled_count,
+        "| +/−=", f"{ml_bundle.positive_count}/{ml_bundle.negative_count}",
+        "| metrics=", ml_bundle.metrics or {},
     )
 
     rows, universe = _load_universe(exchange)
@@ -626,16 +641,11 @@ def run() -> None:
     )
 
     print(
-        "PİYASA:",
-        market_label(context),
-        "| regime=",
-        context.regime,
-        "| score=",
-        context.score,
-        "| breadth5m=",
-        round(context.breadth_5m * 100, 1),
-        "| majors5m=",
-        context.major_move_5m_percent,
+        "PİYASA:", market_label(context),
+        "| regime=", context.regime,
+        "| score=", context.score,
+        "| breadth5m=", round(context.breadth_5m * 100, 1),
+        "| majors5m=", context.major_move_5m_percent,
     )
 
     now = bot.now_ts()
@@ -671,6 +681,17 @@ def run() -> None:
                 reasons[reason] += 1
                 continue
 
+            # Do not spend three extra public API calls on already-extended moves.
+            # For EARLY/READY candidates the derivatives layer is observational +
+            # soft-ranking only; it never creates a hard rejection by itself.
+            if decision.get("stage") != "LATE":
+                snapshot = fetch_derivatives_snapshot(
+                    exchange,
+                    str(row.get("ccxt_symbol") or symbol),
+                    str(decision.get("direction") or ""),
+                )
+                enrich_decision(decision, snapshot)
+
             features = extract_features(decision, context)
             ml_probability = score_features(features, ml_bundle)
             decision["ml_mode"] = ml_bundle.mode
@@ -680,37 +701,31 @@ def run() -> None:
             if decision.get("stage") == "LATE":
                 reasons["LATE_SKIP"] += 1
                 print(
-                    "GEÇ KALINDI:",
-                    symbol,
-                    decision.get("direction"),
-                    "5m=",
-                    decision.get("move_5m_percent"),
-                    "extATR=",
-                    decision.get("extension_atr_5m"),
+                    "GEÇ KALINDI:", symbol, decision.get("direction"),
+                    "5m=", decision.get("move_5m_percent"),
+                    "extATR=", decision.get("extension_atr_5m"),
                 )
                 continue
 
             signal = decision_to_signal(decision)
             if signal is not None:
+                _copy_derivatives_to_signal(signal, decision)
                 signal["ml_features"] = features
                 signal["ml_mode"] = ml_bundle.mode
                 signal["ml_quality_probability"] = ml_probability
                 if should_block_live(ml_probability, ml_bundle):
                     reasons["ML_LOW_QUALITY"] += 1
                     print(
-                        "ML düşük kalite engeli:",
-                        symbol,
-                        signal.get("direction"),
-                        "p=",
-                        ml_probability,
+                        "ML düşük kalite engeli:", symbol, signal.get("direction"),
+                        "p=", ml_probability,
                     )
                 elif not bot.has_open_same_symbol(symbol) and not bot.has_recent_stop(symbol):
                     trade_candidates.append(signal)
                 else:
                     reasons["TRADE_COOLDOWN"] += 1
 
-            # Early-awareness messages stay rule-based. ML never hides an early
-            # move just because its later trade-success estimate is low.
+            # Early awareness remains rule-based. ML/derivatives never hide a fresh
+            # movement merely because later trade-success confidence is weak.
             if (
                 decision.get("alert_eligible")
                 and alert_count < MAX_EARLY_ALERTS_PER_RUN
@@ -721,19 +736,15 @@ def run() -> None:
                 alert_count += 1
 
             print(
-                "ADAY:",
-                symbol,
-                decision.get("direction"),
-                "stage=",
-                decision.get("stage"),
-                "score=",
-                decision.get("score"),
-                "market=",
-                decision.get("market_label"),
-                "rel5=",
-                decision.get("relative_strength_5m"),
-                "ml=",
-                ml_probability,
+                "ADAY:", symbol, decision.get("direction"),
+                "stage=", decision.get("stage"),
+                "score=", decision.get("score"),
+                "market=", decision.get("market_label"),
+                "rel5=", decision.get("relative_strength_5m"),
+                "deriv=", decision.get("derivatives_soft_score"),
+                "oi15=", decision.get("oi_change_15m_percent"),
+                "taker=", decision.get("taker_imbalance_alignment"),
+                "ml=", ml_probability,
             )
             time.sleep(0.05)
 
@@ -744,6 +755,7 @@ def run() -> None:
     decisions.sort(
         key=lambda item: (
             int(item.get("score") or 0),
+            _sf(item.get("derivatives_soft_score")),
             _sf(item.get("relative_strength_5m")),
             -_sf(item.get("extension_atr_5m"), 999.0),
         ),
@@ -755,6 +767,7 @@ def run() -> None:
         ml_rank = _sf(probability, 0.50) if ml_bundle.mode == "ACTIVE" else 0.50
         return (
             ml_rank,
+            _sf(item.get("derivatives_soft_score")),
             int(item.get("score") or 0),
             _sf(item.get("relative_strength_5m")),
         )
@@ -789,6 +802,7 @@ def run() -> None:
         "trades_selected": len(selected_trades),
         "lifecycle_changes": lifecycle_changes,
         "ml_mode": ml_bundle.mode,
+        "derivatives_layer": "OI_FUNDING_TAKER_V1",
     }
     _prune_state(state, now)
     _save_state(state)
@@ -804,24 +818,16 @@ def run() -> None:
     )
 
     print(
-        "MARKET FIRST ÖZET | eligible=",
-        len(rows),
-        "| deep=",
-        len(selected_symbols),
-        "| aday=",
-        len(decisions),
-        "| erken=",
-        alert_count,
-        "| trade aday=",
-        len(trade_candidates),
-        "| seçilen=",
-        len(selected_trades),
-        "| ML=",
-        ml_bundle.mode,
-        "| lifecycle=",
-        lifecycle_changes,
-        "| eleme=",
-        reasons.most_common(8),
+        "MARKET FIRST ÖZET | eligible=", len(rows),
+        "| deep=", len(selected_symbols),
+        "| aday=", len(decisions),
+        "| erken=", alert_count,
+        "| trade aday=", len(trade_candidates),
+        "| seçilen=", len(selected_trades),
+        "| ML=", ml_bundle.mode,
+        "| derivatives=OI+funding+taker",
+        "| lifecycle=", lifecycle_changes,
+        "| eleme=", reasons.most_common(8),
     )
 
 
