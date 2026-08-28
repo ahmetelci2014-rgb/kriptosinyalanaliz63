@@ -23,6 +23,7 @@ import time
 
 import main as bot
 import premium_crypto_profit_runner as telegram_helpers
+from all_market_opportunity_prefilter import build_scan_universe
 from simple_core_strategy import SOURCE, VERSION, analyze_simple_trade
 
 DIAGNOSTICS_FILE = "simple_core_diagnostics.json"
@@ -43,6 +44,7 @@ def _save_diagnostics(
     scanned: int,
     reasons: Counter,
     candidates: List[Dict[str, Any]],
+    universe_meta: Dict[str, Any],
 ) -> None:
     payload = {
         "version": VERSION,
@@ -51,6 +53,7 @@ def _save_diagnostics(
         "scanned": int(scanned),
         "candidate_count": len(candidates),
         "rejection_counts": dict(reasons.most_common()),
+        "universe_screen": universe_meta,
         "top_candidates": [
             {
                 "symbol": item.get("symbol"),
@@ -166,6 +169,7 @@ def run() -> None:
         "SIMPLE CORE LIVE:" if _is_live_run() else "SIMPLE CORE TEST:",
         VERSION,
         "| 1H yön -> 15M destek/direnç -> 5M teyit",
+        "| tüm aktif USDT swap fırsat ön-taraması=AKTİF",
         "| pending=YOK | 5M erken bağımsız trade=YOK | deneysel live=YOK",
     )
 
@@ -179,13 +183,38 @@ def run() -> None:
     bot.maybe_send_open_summary(exchange)
 
     risk_mode = bot.risk_mode_active()
-    scan_coins = bot.get_scan_coins(exchange)
+    core_scan_coins = bot.get_scan_coins(exchange)
+    scan_coins, universe_meta = build_scan_universe(exchange, core_scan_coins)
     market_status = bot.get_market_direction_status(exchange)
+
+    print(
+        "Tüm piyasa fırsat ön-taraması | aktif USDT swap=",
+        universe_meta.get("active_usdt_swap_count"),
+        "| ana derin evren=",
+        universe_meta.get("core_count"),
+        "| ana evren dışı=",
+        universe_meta.get("excluded_count"),
+        "| mikro taranan=",
+        universe_meta.get("micro_screened_count"),
+        "| derin analize eklenen=",
+        universe_meta.get("promoted_extra_count"),
+    )
+    if universe_meta.get("promoted_extras"):
+        print(
+            "Ek fırsatlar:",
+            [item.get("symbol") for item in universe_meta["promoted_extras"]],
+        )
+    if universe_meta.get("errors"):
+        print("Fırsat ön-tarama uyarıları:", universe_meta.get("errors"))
 
     risky_open, reduced_open, total_open = bot.count_open_signal_risk()
     print(
         "Simple Core başlangıç | tarama=",
         len(scan_coins),
+        "| ana=",
+        len(core_scan_coins),
+        "| ek fırsat=",
+        max(0, len(scan_coins) - len(core_scan_coins)),
         "| açık=",
         total_open,
         "| riskli=",
@@ -316,7 +345,7 @@ def run() -> None:
     allowed_count = min(max_trade, available_slots)
     selected = candidates[:allowed_count]
 
-    _save_diagnostics(scanned, reasons, candidates)
+    _save_diagnostics(scanned, reasons, candidates, universe_meta)
 
     print(
         "SIMPLE CORE ÖZET | taranan=",
