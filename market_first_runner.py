@@ -1,15 +1,17 @@
-"""Market First V5 runner.
+"""Market First V5 runner with one embedded ML quality layer.
 
-The decision order is intentionally simple:
+Decision order:
 1) read BTC/ETH/SOL + breadth,
 2) decide market wind,
 3) scan the whole OKX USDT perpetual universe,
 4) rank fresh movers,
 5) analyze only the best/rotating candidates,
 6) reject extended moves,
-7) send compact early/trade messages,
-8) keep each radar alert alive until CONTINUE / LATE / DEAD.
+7) optionally use the chronologically validated tree model as a quality filter,
+8) send compact early/trade messages,
+9) keep each radar alert alive until CONTINUE / LATE / DEAD.
 
+The ML layer is not a second strategy. Market/risk/late-entry rules always win.
 No exchange order is placed.
 """
 from __future__ import annotations
@@ -23,6 +25,17 @@ from typing import Any, Dict, List, Mapping, Optional, Tuple
 import main as bot
 from telegram_delivery import send_telegram_once
 
+from market_first_ml import (
+    bundle_summary,
+    extract_features,
+    load_store as load_ml_store,
+    reconcile_samples,
+    register_trade_sample,
+    save_store as save_ml_store,
+    score_features,
+    should_block_live,
+    train_quality_model,
+)
 from market_first_strategy import (
     MAJOR_WEIGHTS,
     VERSION,
@@ -124,7 +137,6 @@ def _change_24h(ticker: Mapping[str, Any]) -> float:
 def _load_universe(exchange: Any) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[str, Any]]]:
     markets = exchange.load_markets()
     tickers = exchange.fetch_tickers()
-
     by_label: Dict[str, Dict[str, Any]] = {}
 
     for market in markets.values():
@@ -134,13 +146,11 @@ def _load_universe(exchange: Any) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[
         ccxt_symbol = str(market.get("symbol") or "").strip()
         if not base or not ccxt_symbol:
             continue
-
         label = f"{base}USDT"
         ticker = tickers.get(ccxt_symbol) or {}
         last = _sf(ticker.get("last") or ticker.get("close"))
         if last <= 0:
             continue
-
         row = {
             "symbol": label,
             "ccxt_symbol": ccxt_symbol,
@@ -148,7 +158,6 @@ def _load_universe(exchange: Any) -> Tuple[List[Dict[str, Any]], Dict[str, Dict[
             "quote_volume": _quote_volume(ticker),
             "change_24h": _change_24h(ticker),
         }
-
         old = by_label.get(label)
         if old and _sf(old.get("quote_volume")) >= row["quote_volume"]:
             continue
@@ -167,7 +176,6 @@ def _breadth_and_sample_moves(
         key=lambda row: _sf(row.get("quote_volume")),
         reverse=True,
     )[:100]
-
     sample_moves: Dict[str, float] = {}
     positive_sample = 0
     matched = 0
@@ -372,7 +380,6 @@ def _format_status_message(item: Mapping[str, Any], update: Mapping[str, Any]) -
     else:
         label = "BİTTİ"
         icon = "⚫"
-
     return (
         f"{icon} {item.get('symbol')} | {label}\n"
         f"{item.get('direction')}\n"
@@ -404,9 +411,7 @@ def _update_alert_lifecycle(
     changed_count = 0
     active = state.setdefault("active_alerts", {})
     for key, item in list(active.items()):
-        if not isinstance(item, dict):
-            continue
-        if str(item.get("status") or "") == "DEAD":
+        if not isinstance(item, dict) or str(item.get("status") or "") == "DEAD":
             continue
         symbol = str(item.get("symbol") or "")
         row = universe.get(symbol)
@@ -429,14 +434,12 @@ def _update_alert_lifecycle(
         item["last_favorable_percent"] = update["favorable_percent"]
         item["best_favorable_percent"] = update["best_favorable_percent"]
         item["updated_at"] = now
-
         if update.get("changed") and update.get("status") in {"CONTINUE", "LATE", "DEAD"}:
             changed_count += 1
             _send(
                 _format_status_message(item, update),
                 delivery_key=f"{key}|{update['status']}",
             )
-
     return changed_count
 
 
@@ -448,7 +451,17 @@ def _candidate_frames(exchange: Any, symbol: str) -> Tuple[Any, Any, Any, Any]:
     return df1m, df5m, df15m, df1h
 
 
-def _send_trade(exchange: Any, signal: Dict[str, Any]) -> bool:
+def _saved_trade_after_open(signal: Mapping[str, Any]) -> Optional[Mapping[str, Any]]:
+    key = (
+        f"{signal.get('symbol')}_"
+        f"{signal.get('direction')}_"
+        f"{signal.get('source', 'MARKET_FIRST_V5')}"
+    )
+    saved = bot.load_open_signals().get(key)
+    return saved if isinstance(saved, Mapping) else None
+
+
+def _send_trade(exchange: Any, signal: Dict[str, Any], ml_store: Dict[str, Any]) -> bool:
     symbol = str(signal["symbol"])
     current_price = bot.get_current_price(exchange, symbol)
     if current_price is None:
@@ -458,7 +471,6 @@ def _send_trade(exchange: Any, signal: Dict[str, Any]) -> bool:
     if not valid:
         print(symbol, "son giriş kontrolü elendi:", reason)
         return False
-
     if bot.is_duplicate(signal, radar=False):
         print(symbol, "duplicate engellendi")
         return False
@@ -487,6 +499,8 @@ def _send_trade(exchange: Any, signal: Dict[str, Any]) -> bool:
             signal.get("direction"),
             "score=",
             signal.get("score"),
+            "ml=",
+            signal.get("ml_quality_probability"),
         )
         return True
 
@@ -494,6 +508,22 @@ def _send_trade(exchange: Any, signal: Dict[str, Any]) -> bool:
         return False
 
     bot.save_open_signal(signal)
+    saved = _saved_trade_after_open(signal)
+    if saved:
+        registered = register_trade_sample(
+            ml_store,
+            trade_id=str(saved.get("trade_id") or ""),
+            signal=signal,
+            features=signal.get("ml_features") or {},
+            probability=signal.get("ml_quality_probability"),
+            mode=str(signal.get("ml_mode") or "COLLECTING"),
+            opened_at=int(saved.get("opened_at") or bot.now_ts()),
+        )
+        if registered:
+            # Persist immediately so a later workflow interruption does not lose
+            # the training row for a trade that was already sent to Telegram.
+            save_ml_store(ml_store)
+
     bot.mark_sent(signal, radar=False)
     bot.update_performance(
         signal["symbol"],
@@ -514,12 +544,14 @@ def _save_diagnostics(
     decisions: List[Dict[str, Any]],
     trade_candidates: List[Dict[str, Any]],
     lifecycle_changes: int,
+    ml_info: Mapping[str, Any],
 ) -> None:
     payload = {
         "version": VERSION,
         "generated_at": bot.now_ts(),
         "live_run": _is_live_run(),
         "market": context.to_dict(),
+        "ml_quality": dict(ml_info),
         "eligible_usdt_swaps": len(rows),
         "deep_scan_count": len(selected_symbols),
         "deep_scan_symbols": selected_symbols,
@@ -535,6 +567,8 @@ def _save_diagnostics(
                 "risk_percent": item.get("risk_percent"),
                 "market_label": item.get("market_label"),
                 "relative_strength_5m": item.get("relative_strength_5m"),
+                "ml_mode": item.get("ml_mode"),
+                "ml_quality_probability": item.get("ml_quality_probability"),
             }
             for item in trade_candidates[:10]
         ],
@@ -547,6 +581,7 @@ def run() -> None:
         "MARKET FIRST V5:",
         VERSION,
         "| önce BTC/ETH/SOL+breadth, sonra coin",
+        "| tek sistem içi ağaç ML kalite katmanı",
         "| live=",
         _is_live_run(),
     )
@@ -561,13 +596,28 @@ def run() -> None:
         bot.check_post_expiry_follow(exchange)
         bot.check_tp3_post_follow(exchange)
 
-    rows, universe = _load_universe(exchange)
-    previous_prices = state.get("previous_prices") or {}
-    breadth_5m, breadth_24h, sample_moves = _breadth_and_sample_moves(
-        rows,
-        previous_prices,
+    ml_store = load_ml_store()
+    if _is_live_run():
+        reconciled = reconcile_samples(ml_store, bot.load_trade_ledger())
+        if reconciled:
+            save_ml_store(ml_store)
+            print("ML etiketlenen/sonuçlanan yeni örnek:", reconciled)
+    ml_bundle = train_quality_model(ml_store)
+    ml_info = bundle_summary(ml_bundle)
+    print(
+        "ML KALİTE:",
+        ml_bundle.mode,
+        "| labeled=",
+        ml_bundle.labeled_count,
+        "| +/−=",
+        f"{ml_bundle.positive_count}/{ml_bundle.negative_count}",
+        "| metrics=",
+        ml_bundle.metrics or {},
     )
 
+    rows, universe = _load_universe(exchange)
+    previous_prices = state.get("previous_prices") or {}
+    breadth_5m, breadth_24h, sample_moves = _breadth_and_sample_moves(rows, previous_prices)
     major_payloads = _fetch_major_payloads(exchange, universe)
     context = build_market_context(
         major_payloads,
@@ -589,21 +639,11 @@ def run() -> None:
     )
 
     now = bot.now_ts()
-    lifecycle_changes = _update_alert_lifecycle(
-        state,
-        universe,
-        now,
-    )
-
-    selected_symbols = _select_deep_scan(
-        rows,
-        sample_moves,
-        state,
-    )
+    lifecycle_changes = _update_alert_lifecycle(state, universe, now)
+    selected_symbols = _select_deep_scan(rows, sample_moves, state)
     reasons: Counter = Counter()
     decisions: List[Dict[str, Any]] = []
     trade_candidates: List[Dict[str, Any]] = []
-
     alert_count = 0
 
     for symbol in selected_symbols:
@@ -631,6 +671,10 @@ def run() -> None:
                 reasons[reason] += 1
                 continue
 
+            features = extract_features(decision, context)
+            ml_probability = score_features(features, ml_bundle)
+            decision["ml_mode"] = ml_bundle.mode
+            decision["ml_quality_probability"] = ml_probability
             decisions.append(decision)
 
             if decision.get("stage") == "LATE":
@@ -648,11 +692,25 @@ def run() -> None:
 
             signal = decision_to_signal(decision)
             if signal is not None:
-                if not bot.has_open_same_symbol(symbol) and not bot.has_recent_stop(symbol):
+                signal["ml_features"] = features
+                signal["ml_mode"] = ml_bundle.mode
+                signal["ml_quality_probability"] = ml_probability
+                if should_block_live(ml_probability, ml_bundle):
+                    reasons["ML_LOW_QUALITY"] += 1
+                    print(
+                        "ML düşük kalite engeli:",
+                        symbol,
+                        signal.get("direction"),
+                        "p=",
+                        ml_probability,
+                    )
+                elif not bot.has_open_same_symbol(symbol) and not bot.has_recent_stop(symbol):
                     trade_candidates.append(signal)
                 else:
                     reasons["TRADE_COOLDOWN"] += 1
 
+            # Early-awareness messages stay rule-based. ML never hides an early
+            # move just because its later trade-success estimate is low.
             if (
                 decision.get("alert_eligible")
                 and alert_count < MAX_EARLY_ALERTS_PER_RUN
@@ -674,6 +732,8 @@ def run() -> None:
                 decision.get("market_label"),
                 "rel5=",
                 decision.get("relative_strength_5m"),
+                "ml=",
+                ml_probability,
             )
             time.sleep(0.05)
 
@@ -689,13 +749,17 @@ def run() -> None:
         ),
         reverse=True,
     )
-    trade_candidates.sort(
-        key=lambda item: (
+
+    def trade_rank(item: Mapping[str, Any]) -> tuple:
+        probability = item.get("ml_quality_probability")
+        ml_rank = _sf(probability, 0.50) if ml_bundle.mode == "ACTIVE" else 0.50
+        return (
+            ml_rank,
             int(item.get("score") or 0),
             _sf(item.get("relative_strength_5m")),
-        ),
-        reverse=True,
-    )
+        )
+
+    trade_candidates.sort(key=trade_rank, reverse=True)
 
     risk_mode = bot.risk_mode_active()
     max_new = bot.RISK_MODE_MAX_TRADE_SIGNALS if risk_mode else bot.MAX_TRADE_SIGNALS_PER_RUN
@@ -704,7 +768,9 @@ def run() -> None:
     selected_trades = trade_candidates[: min(max_new, available_slots)]
 
     for signal in selected_trades:
-        _send_trade(exchange, signal)
+        _send_trade(exchange, signal, ml_store)
+
+    save_ml_store(ml_store)
 
     state["previous_prices"] = {
         str(row["symbol"]): _sf(row.get("price"))
@@ -712,6 +778,7 @@ def run() -> None:
         if _sf(row.get("price")) > 0
     }
     state["last_market"] = context.to_dict()
+    state["last_ml_quality"] = ml_info
     state["last_run"] = {
         "at": now,
         "eligible": len(rows),
@@ -721,6 +788,7 @@ def run() -> None:
         "trade_candidates": len(trade_candidates),
         "trades_selected": len(selected_trades),
         "lifecycle_changes": lifecycle_changes,
+        "ml_mode": ml_bundle.mode,
     }
     _prune_state(state, now)
     _save_state(state)
@@ -732,6 +800,7 @@ def run() -> None:
         decisions,
         trade_candidates,
         lifecycle_changes,
+        ml_info,
     )
 
     print(
@@ -747,6 +816,8 @@ def run() -> None:
         len(trade_candidates),
         "| seçilen=",
         len(selected_trades),
+        "| ML=",
+        ml_bundle.mode,
         "| lifecycle=",
         lifecycle_changes,
         "| eleme=",

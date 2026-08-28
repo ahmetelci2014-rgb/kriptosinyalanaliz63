@@ -16,6 +16,7 @@ Market First V5 bunu tersine çevirir:
 5. **Göreli güç:** altcoin hareketinin BTC/ETH/SOL hareketinden ne kadar ayrıştığı ölçülür.
 6. **Geç kalma koruması:** 5M ATR uzaması ve 1M/3M/5M hareket genişliği yüksekse yeni giriş kovalanmaz.
 7. **İşlem:** yalnız piyasa + coin + risk geometrisi birlikte uygunsa işlem fırsatı oluşur.
+8. **Öğrenen kalite katmanı:** ağaç tabanlı model, geçmiş Market First sonuçlarından hangi koşul birleşimlerinin daha kaliteli olduğunu öğrenir.
 
 ## Piyasa rejimleri
 
@@ -29,6 +30,23 @@ Market First V5 bunu tersine çevirir:
 
 Güçlü rejimde normal karşı-yön işlemleri engellenir. Yalnız gerçekten bağımsız kırılım yapan altcoin, ayrı güçlü-hareket istisnasından değerlendirilebilir.
 
+## Öğrenen kalite katmanı — Random Forest
+
+Bu katman **ayrı bot veya ayrı strateji değildir**; Market First V5'in içindedir.
+
+- Model: `RandomForestClassifier`.
+- Özellikler: piyasa rejimi/score, breadth, BTC-ETH-SOL 5M rüzgârı, coin 1M/3M/5M ivmesi, hacim anomalisi, 20M kırılım, göreli güç, ATR uzaması, 5M/15M/1H yapı uyumu, risk ve hedef alanı.
+- Hedef etiket: işlem TP1'e ulaşmışsa başarılı; TP1 görülmeden SL olmuşsa başarısız. Belirsiz/süre-sonu örnekleri eğitime zorla sokulmaz.
+- Eğitim/test ayrımı **zamana göre kronolojiktir**; gelecek verisi geçmiş eğitime karıştırılmaz.
+- Modelin hangi değişkenlere ağırlık verdiği `market_first_diagnostics.json` içinde feature importance olarak kaydedilir.
+- Model yeterli veri yokken `COLLECTING`, veri var ama zaman-serisi doğrulaması zayıfsa `SHADOW`, yalnız doğrulama eşikleri geçilirse `ACTIVE` olur.
+- `COLLECTING` ve `SHADOW` modlarında canlı işlem seçimini değiştirmez.
+- `ACTIVE` olsa bile piyasa yönü, geç-kalma, risk, SL/TP, duplicate/cooldown ve portföy güvenlik kurallarını asla geçersiz kılamaz; yalnız çok düşük kalite olasılıklı READY adayları eleyebilir ve kalanları sıralayabilir.
+
+İlk aşamada LSTM eklenmemiştir. Mevcut veri tabular olduğu ve açıklanabilirlik/overfit kontrolü öncelikli olduğu için ağaç modeli daha uygun başlangıçtır.
+
+Öğrenme kayıtları `market_first_ml_samples.json` içinde tutulur. Model binary/pickle olarak saklanmaz; her çalışmada doğrulanmış etiketlerden yeniden oluşturulur. Böylece eski/stale model dosyası riski azaltılır.
+
 ## Erken hareket yaşam döngüsü
 
 Kullanıcıya karmaşık ara durumlar yerine basit takip verilir:
@@ -38,7 +56,7 @@ Kullanıcıya karmaşık ara durumlar yerine basit takip verilir:
 - `GEÇ KALINDI` — hareket fazla uzadı; yeni giriş kovalanmaz
 - `BİTTİ` — ivme başarısız oldu, güçlü geri verdi veya süre doldu
 
-Bu takip `market_first_state.json` içinde saklanır.
+ML kalite tahmini erken hareket uyarısını gizlemez. Radarın amacı hareketi erken göstermek; ML'nin amacı READY işlem adayının kalite seçimine yardımcı olmaktır.
 
 ## İşlem mesajı
 
@@ -50,7 +68,7 @@ Gerçek işlem fırsatında mesaj sade tutulur:
 - SL
 - TP1 / TP2 / TP3
 
-Skor ve çok sayıda teknik ayrıntı kullanıcı mesajına doldurulmaz; teşhis için `market_first_diagnostics.json` içinde tutulur.
+ML olasılığı ve çok sayıda teknik ayrıntı Telegram mesajına doldurulmaz; teşhis dosyalarında tutulur.
 
 ## Tarama evreni
 
@@ -75,6 +93,7 @@ Skor ve çok sayıda teknik ayrıntı kullanıcı mesajına doldurulmaz; teşhis
 - Hareketin erken / devam / geç / bitmiş durumunu takip eder.
 - Geç kalmış dik mumların arkasından giriş üretmemeye çalışır.
 - Sabit 262/300 coin sınırı mantığına bağlı değildir; aktif OKX perpetual evrenini görür.
+- Kendi sonuçlarından hangi değişkenlerin gerçekten işe yaradığını zamanla öğrenebilir.
 - Kullanıcı mesajlarını sade tutar; ayrıntıyı teşhis dosyasına taşır.
 
 ## Eksileri / bilinçli bedeller
@@ -83,7 +102,8 @@ Skor ve çok sayıda teknik ayrıntı kullanıcı mesajına doldurulmaz; teşhis
 - Piyasa rejimi hızlı yön değiştirirse kısa süreli yanlış sınıflandırma olabilir.
 - Her kontratı her koşuda 4 zaman diliminde derin taramak API açısından pahalıdır; bu yüzden ön sıralama + rotasyon kullanılır.
 - Yeni listelenmiş ve yeterli mum geçmişi olmayan coinler erken radar açısından görülebilse de güvenilir SL/TP üretmek için yeterli yapı verisi olmayabilir.
-- Hiçbir filtre gelecekteki fiyatı garanti edemez; sistem olasılığı ve zamanlamayı iyileştirmeyi amaçlar.
+- Ağaç modeli de geçmişi ezberleyebilir; bu yüzden rastgele train/test yerine kronolojik doğrulama ve minimum örnek şartları kullanılır.
+- Hiçbir model gelecekteki fiyatı garanti edemez; sistem olasılığı ve zamanlamayı iyileştirmeyi amaçlar.
 
 ## GitHub Actions
 
@@ -91,16 +111,19 @@ Skor ve çok sayıda teknik ayrıntı kullanıcı mesajına doldurulmaz; teşhis
 
 - `.github/workflows/main.yml` — **Market First V5**, 5 dakikada bir.
 
-Repo içindeki eski Premium, Market Outlook, Market Structure Shadow, Big Move Research, All Contracts Momentum Radar ve benzeri yardımcı/araştırma bileşenleri **ayrı canlı sistem değildir**. Otomatik zamanlamaları kapalıdır; yalnız manuel teşhis, araştırma veya geriye dönük test amacıyla tutulur. Canlı Telegram sinyali ve ana karar akışı tek sistem olan Market First V5 üzerinden yürür.
+Repo içindeki eski Premium, Market Outlook, Market Structure Shadow, Big Move Research, All Contracts Momentum Radar ve benzeri yardımcı/araştırma bileşenleri **ayrı canlı sistem değildir**. Otomatik zamanlamaları kapalıdır; yalnız manuel teşhis, araştırma veya geriye dönük test amacıyla tutulur. Canlı Telegram sinyali, ML kalite öğrenmesi ve ana karar akışı tek sistem olan Market First V5 üzerinden yürür.
 
 ## Ana dosyalar
 
 - `market_first_strategy.py` — piyasa rejimi, coin skoru, geç kalma ve yaşam döngüsü
-- `market_first_runner.py` — OKX evreni, breadth, rotasyon, Telegram ve canlı operasyon bağlantısı
-- `test_market_first_strategy.py` — regresyon testleri
+- `market_first_runner.py` — OKX evreni, breadth, rotasyon, ML bağlantısı, Telegram ve canlı operasyon
+- `market_first_ml.py` — ağaç tabanlı kalite öğrenmesi, kronolojik doğrulama ve feature importance
+- `test_market_first_strategy.py` — Market First regresyon testleri
+- `test_market_first_ml.py` — ML güvenlik ve öğrenme regresyon testleri
 - `market_first_state.json` — çalışma sırasında oluşan durum
-- `market_first_diagnostics.json` — detaylı teşhis
+- `market_first_diagnostics.json` — piyasa + ML detaylı teşhis
+- `market_first_ml_samples.json` — yalnız Market First işlemlerinden biriken öğrenme örnekleri
 
 ## Temel ilke
 
-**Önce piyasanın rüzgârını bul; sonra o rüzgârla giden veya gerçekten bağımsız güç gösteren coini erken yakala.**
+**Önce piyasanın rüzgârını bul; sonra o rüzgârla giden veya gerçekten bağımsız güç gösteren coini erken yakala; yeterli gerçek sonuç biriktiğinde ağaç modeli de kalite seçiminde ikinci göz olsun.**
