@@ -72,7 +72,15 @@ def test_5m_early_trade_still_fails_when_live_validator_rejects(monkeypatch):
     assert reason == "LIVE_VALIDATOR_REJECT"
 
 
-def test_core_gate_blocks_old_experimental_route_but_allows_5m():
+def test_legacy_core_gate_blocks_5m_by_default_and_experimental_routes():
+    """The old Premium Core runner is retained only as legacy code.
+
+    Its current fail-closed configuration intentionally has no live 5M
+    directions. Simple Core V1 is the live workflow, so this regression test
+    must verify the legacy gate as it actually behaves instead of expecting an
+    obsolete 5M activation.
+    """
+
     def factory(original, gate, pending_gate):
         def wrapped(signal, current_price):
             return True, "BASE_OK"
@@ -84,8 +92,8 @@ def test_core_gate_blocks_old_experimental_route_but_allows_5m():
 
     early = _early_signal()
     ok, reason = wrapped(early, 100.0)
-    assert ok is True
-    assert reason == "BASE_OK"
+    assert ok is False
+    assert reason == "CORE_5M_DIRECTION_BLOCK"
 
     experimental = _early_signal()
     experimental["source"] = "BIG_MOVE_ENTRY"
