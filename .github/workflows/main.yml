@@ -60,7 +60,7 @@ jobs:
           OKX_API_KEY: ${{ secrets.OKX_API_KEY }}
           OKX_SECRET_KEY: ${{ secrets.OKX_SECRET_KEY }}
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
-        run: python market_first_runner.py
+        run: python market_first_live.py
 
       - name: SL BE sonuc teshisi
         if: always()
@@ -80,7 +80,8 @@ jobs:
             trade_ledger.json \
             market_first_state.json \
             market_first_diagnostics.json \
-            market_first_ml_samples.json
+            market_first_ml_samples.json \
+            market_first_guard_shadow.json
           do
             if [ -f "$file" ]; then
               git add "$file"
