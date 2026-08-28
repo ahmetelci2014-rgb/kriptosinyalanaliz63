@@ -3,18 +3,21 @@
 Only two Premium sources may reach the live Telegram admission pipeline:
 - ``15M_ENTRY``: canonical Premium confirmation route.
 - ``5M_RADAR``: strict 5M early-trade route, limited by default to the exact
-  high-liquidity universe used by the no-lookahead activation replay.
+  high-liquidity universe used by the no-lookahead activation replay and to the
+  live direction that has not shown a severe negative edge.
 
 The 5M route was originally validated on eight majors, but later ran across the
 full all-coins scanner. Live ledger evidence showed that broader deployment had
-no durable edge after execution costs. This runner therefore fails closed for
-5M symbols outside the replay-proven universe while leaving 15M and all shadow
-research unchanged. ``PREMIUM_5M_LIVE_SYMBOLS`` may explicitly override the
-universe after a future replay validates additional symbols.
+no durable edge after execution costs, with the live SHORT side materially
+worse than LONG. This runner therefore fails closed for 5M symbols outside the
+replay-proven universe and quarantines 5M SHORT by default while leaving 15M
+and all shadow research unchanged.
 
-Big Move, Early Breakout, Regime Transition, Trend Continuation and young/new
-coin routes remain quarantined from live capital. This module never places
-exchange orders.
+``PREMIUM_5M_LIVE_SYMBOLS`` and ``PREMIUM_5M_LIVE_DIRECTIONS`` may explicitly
+override these defaults after future no-lookahead/live evidence validates an
+expansion. Big Move, Early Breakout, Regime Transition, Trend Continuation and
+young/new coin routes remain quarantined from live capital. This module never
+places exchange orders.
 """
 from __future__ import annotations
 
@@ -41,6 +44,11 @@ REPLAY_PROVEN_5M_SYMBOLS: FrozenSet[str] = frozenset(
     }
 )
 
+# Live ledger evidence is asymmetric: 5M SHORT has shown a severe negative edge.
+# Keep it quarantined until a fresh validation proves otherwise. LONG still must
+# pass the existing cost, market, geometry and rolling source-performance gates.
+DEFAULT_5M_LIVE_DIRECTIONS: FrozenSet[str] = frozenset({"LONG"})
+
 
 def _signal_source(signal: Dict[str, Any]) -> str:
     return str((signal or {}).get("source") or "").strip().upper()
@@ -50,18 +58,34 @@ def _signal_symbol(signal: Dict[str, Any]) -> str:
     return str((signal or {}).get("symbol") or "").strip().upper()
 
 
-def _live_5m_symbols() -> FrozenSet[str]:
-    """Return explicit override or the replay-proven default universe."""
-    raw = str(os.getenv("PREMIUM_5M_LIVE_SYMBOLS") or "").strip()
+def _signal_direction(signal: Dict[str, Any]) -> str:
+    return str((signal or {}).get("direction") or "").strip().upper()
+
+
+def _parse_env_set(name: str, default: FrozenSet[str]) -> FrozenSet[str]:
+    raw = str(os.getenv(name) or "").strip()
     if not raw:
-        return REPLAY_PROVEN_5M_SYMBOLS
+        return default
 
     parsed = frozenset(
         part.strip().upper()
         for part in raw.replace(";", ",").split(",")
         if part.strip()
     )
-    return parsed or REPLAY_PROVEN_5M_SYMBOLS
+    return parsed or default
+
+
+def _live_5m_symbols() -> FrozenSet[str]:
+    """Return explicit override or the replay-proven default universe."""
+    return _parse_env_set("PREMIUM_5M_LIVE_SYMBOLS", REPLAY_PROVEN_5M_SYMBOLS)
+
+
+def _live_5m_directions() -> FrozenSet[str]:
+    """Return explicit override or the evidence-based safe live direction set."""
+    return _parse_env_set(
+        "PREMIUM_5M_LIVE_DIRECTIONS",
+        DEFAULT_5M_LIVE_DIRECTIONS,
+    )
 
 
 def _install_core_only_source_gate(runner: Any) -> None:
@@ -78,6 +102,7 @@ def _install_core_only_source_gate(runner: Any) -> None:
         def wrapped(signal: Dict[str, Any], current_price: Any):
             source = _signal_source(signal)
             symbol = _signal_symbol(signal)
+            direction = _signal_direction(signal)
 
             if source not in LIVE_SOURCE_ALLOWLIST:
                 signal["core_only_live_gate"] = {
@@ -90,7 +115,7 @@ def _install_core_only_source_gate(runner: Any) -> None:
                 print(
                     "CORE ONLY LIVE BLOCK:",
                     symbol or signal.get("symbol"),
-                    signal.get("direction"),
+                    direction or signal.get("direction"),
                     source or "UNKNOWN",
                 )
                 return False, reason
@@ -103,14 +128,36 @@ def _install_core_only_source_gate(runner: Any) -> None:
                         "decision": "BLOCK_5M_UNVALIDATED_UNIVERSE",
                         "source": source,
                         "symbol": symbol or "UNKNOWN",
+                        "direction": direction or "UNKNOWN",
                         "allowed_sources": sorted(LIVE_SOURCE_ALLOWLIST),
                         "allowed_5m_symbols": sorted(allowed_5m),
+                        "allowed_5m_directions": sorted(_live_5m_directions()),
                     }
                     reason = f"CORE_5M_REPLAY_UNIVERSE_BLOCK:{symbol or 'UNKNOWN'}"
                     print(
                         "CORE 5M REPLAY UNIVERSE BLOCK:",
                         symbol or "UNKNOWN",
-                        signal.get("direction"),
+                        direction or "UNKNOWN",
+                    )
+                    return False, reason
+
+                allowed_directions = _live_5m_directions()
+                if not direction or direction not in allowed_directions:
+                    signal["core_only_live_gate"] = {
+                        "version": VERSION,
+                        "decision": "BLOCK_5M_DIRECTION_QUARANTINE",
+                        "source": source,
+                        "symbol": symbol,
+                        "direction": direction or "UNKNOWN",
+                        "allowed_sources": sorted(LIVE_SOURCE_ALLOWLIST),
+                        "allowed_5m_symbols": sorted(allowed_5m),
+                        "allowed_5m_directions": sorted(allowed_directions),
+                    }
+                    reason = f"CORE_5M_DIRECTION_BLOCK:{direction or 'UNKNOWN'}"
+                    print(
+                        "CORE 5M DIRECTION BLOCK:",
+                        symbol,
+                        direction or "UNKNOWN",
                     )
                     return False, reason
 
@@ -120,9 +167,13 @@ def _install_core_only_source_gate(runner: Any) -> None:
                 "decision": "ALLOW" if ok else "CORE_REJECTED_BY_EXISTING_GATES",
                 "source": source,
                 "symbol": symbol or "UNKNOWN",
+                "direction": direction or "UNKNOWN",
                 "allowed_sources": sorted(LIVE_SOURCE_ALLOWLIST),
                 "allowed_5m_symbols": (
                     sorted(_live_5m_symbols()) if source == EARLY_SOURCE else None
+                ),
+                "allowed_5m_directions": (
+                    sorted(_live_5m_directions()) if source == EARLY_SOURCE else None
                 ),
                 "existing_gate_reason": reason,
             }
@@ -188,6 +239,7 @@ def run() -> None:
         print("Core pre-scan source report error:", exc)
 
     live_5m = sorted(_live_5m_symbols())
+    live_5m_directions = sorted(_live_5m_directions())
     print(
         "PREMIUM CORE LIVE:",
         VERSION,
@@ -196,8 +248,10 @@ def run() -> None:
         "| 5M early=ON_REPLAY_SCOPE | crypto-only=ON | send-time-no-chase=ON",
     )
     print(
-        "5M replay-proven live universe:",
+        "5M replay-scoped live universe:",
         ",".join(live_5m),
+        "| directions=",
+        ",".join(live_5m_directions),
         "| count=",
         len(live_5m),
     )
