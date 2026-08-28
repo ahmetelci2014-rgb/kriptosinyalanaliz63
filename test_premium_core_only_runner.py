@@ -31,6 +31,58 @@ def test_only_15m_entry_reaches_existing_live_gates():
     assert signal["core_only_live_gate"]["decision"] == "ALLOW"
 
 
+def test_replay_proven_5m_symbol_reaches_existing_live_gates(monkeypatch):
+    monkeypatch.delenv("PREMIUM_5M_LIVE_SYMBOLS", raising=False)
+    runner, calls = _runner_with_legacy()
+    core._install_core_only_source_gate(runner)
+    wrapped = runner._make_profit_gate(lambda *_: None, object(), object())
+
+    signal = {"symbol": "BTCUSDT", "direction": "LONG", "source": "5M_RADAR"}
+    ok, reason = wrapped(signal, 100.0)
+
+    assert ok is True
+    assert reason == "LEGACY_OK"
+    assert calls == [("5M_RADAR", 100.0)]
+    assert signal["core_only_live_gate"]["decision"] == "ALLOW"
+    assert "BTCUSDT" in signal["core_only_live_gate"]["allowed_5m_symbols"]
+
+
+def test_non_replay_5m_symbol_is_blocked_before_existing_live_gates(monkeypatch):
+    monkeypatch.delenv("PREMIUM_5M_LIVE_SYMBOLS", raising=False)
+    runner, calls = _runner_with_legacy()
+    core._install_core_only_source_gate(runner)
+    wrapped = runner._make_profit_gate(lambda *_: None, object(), object())
+
+    signal = {"symbol": "TESTUSDT", "direction": "LONG", "source": "5M_RADAR"}
+    ok, reason = wrapped(signal, 1.0)
+
+    assert ok is False
+    assert reason == "CORE_5M_REPLAY_UNIVERSE_BLOCK:TESTUSDT"
+    assert calls == []
+    assert signal["core_only_live_gate"]["decision"] == "BLOCK_5M_UNVALIDATED_UNIVERSE"
+    assert signal["core_only_live_gate"]["allowed_5m_symbols"] == sorted(
+        core.REPLAY_PROVEN_5M_SYMBOLS
+    )
+
+
+def test_5m_universe_can_be_explicitly_overridden_after_future_validation(monkeypatch):
+    monkeypatch.setenv("PREMIUM_5M_LIVE_SYMBOLS", "linkusdt;avaxusdt")
+    runner, calls = _runner_with_legacy()
+    core._install_core_only_source_gate(runner)
+    wrapped = runner._make_profit_gate(lambda *_: None, object(), object())
+
+    allowed = {"symbol": "LINKUSDT", "direction": "LONG", "source": "5M_RADAR"}
+    ok, reason = wrapped(allowed, 10.0)
+    assert ok is True
+    assert reason == "LEGACY_OK"
+
+    blocked = {"symbol": "BTCUSDT", "direction": "LONG", "source": "5M_RADAR"}
+    ok, reason = wrapped(blocked, 10.0)
+    assert ok is False
+    assert reason == "CORE_5M_REPLAY_UNIVERSE_BLOCK:BTCUSDT"
+    assert calls == [("5M_RADAR", 10.0)]
+
+
 def test_experimental_sources_are_blocked_before_direct_or_legacy_gate():
     for source in (
         "BIG_MOVE_ENTRY",
