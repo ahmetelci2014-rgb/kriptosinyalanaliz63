@@ -31,7 +31,7 @@ def test_only_15m_entry_reaches_existing_live_gates():
     assert signal["core_only_live_gate"]["decision"] == "ALLOW"
 
 
-def test_replay_proven_5m_long_reaches_existing_live_gates(monkeypatch):
+def test_5m_long_is_quarantined_by_default(monkeypatch):
     monkeypatch.delenv("PREMIUM_5M_LIVE_SYMBOLS", raising=False)
     monkeypatch.delenv("PREMIUM_5M_LIVE_DIRECTIONS", raising=False)
     runner, calls = _runner_with_legacy()
@@ -41,15 +41,32 @@ def test_replay_proven_5m_long_reaches_existing_live_gates(monkeypatch):
     signal = {"symbol": "BTCUSDT", "direction": "LONG", "source": "5M_RADAR"}
     ok, reason = wrapped(signal, 100.0)
 
-    assert ok is True
-    assert reason == "LEGACY_OK"
-    assert calls == [("5M_RADAR", 100.0)]
-    assert signal["core_only_live_gate"]["decision"] == "ALLOW"
+    assert ok is False
+    assert reason == "CORE_5M_DIRECTION_BLOCK:LONG"
+    assert calls == []
+    assert signal["core_only_live_gate"]["decision"] == "BLOCK_5M_DIRECTION_QUARANTINE"
     assert "BTCUSDT" in signal["core_only_live_gate"]["allowed_5m_symbols"]
-    assert signal["core_only_live_gate"]["allowed_5m_directions"] == ["LONG"]
+    assert signal["core_only_live_gate"]["allowed_5m_directions"] == []
 
 
-def test_non_replay_5m_symbol_is_blocked_before_existing_live_gates(monkeypatch):
+def test_5m_short_is_quarantined_by_default(monkeypatch):
+    monkeypatch.delenv("PREMIUM_5M_LIVE_SYMBOLS", raising=False)
+    monkeypatch.delenv("PREMIUM_5M_LIVE_DIRECTIONS", raising=False)
+    runner, calls = _runner_with_legacy()
+    core._install_core_only_source_gate(runner)
+    wrapped = runner._make_profit_gate(lambda *_: None, object(), object())
+
+    signal = {"symbol": "BTCUSDT", "direction": "SHORT", "source": "5M_RADAR"}
+    ok, reason = wrapped(signal, 100.0)
+
+    assert ok is False
+    assert reason == "CORE_5M_DIRECTION_BLOCK:SHORT"
+    assert calls == []
+    assert signal["core_only_live_gate"]["decision"] == "BLOCK_5M_DIRECTION_QUARANTINE"
+    assert signal["core_only_live_gate"]["allowed_5m_directions"] == []
+
+
+def test_non_replay_5m_symbol_is_blocked_before_direction_gate(monkeypatch):
     monkeypatch.delenv("PREMIUM_5M_LIVE_SYMBOLS", raising=False)
     monkeypatch.delenv("PREMIUM_5M_LIVE_DIRECTIONS", raising=False)
     runner, calls = _runner_with_legacy()
@@ -68,39 +85,28 @@ def test_non_replay_5m_symbol_is_blocked_before_existing_live_gates(monkeypatch)
     )
 
 
-def test_5m_short_is_quarantined_by_default(monkeypatch):
-    monkeypatch.delenv("PREMIUM_5M_LIVE_SYMBOLS", raising=False)
-    monkeypatch.delenv("PREMIUM_5M_LIVE_DIRECTIONS", raising=False)
+def test_5m_direction_can_be_reenabled_only_by_explicit_validated_override(monkeypatch):
+    monkeypatch.setenv("PREMIUM_5M_LIVE_SYMBOLS", "btcusdt;ethusdt")
+    monkeypatch.setenv("PREMIUM_5M_LIVE_DIRECTIONS", "long")
     runner, calls = _runner_with_legacy()
     core._install_core_only_source_gate(runner)
     wrapped = runner._make_profit_gate(lambda *_: None, object(), object())
 
-    signal = {"symbol": "BTCUSDT", "direction": "SHORT", "source": "5M_RADAR"}
-    ok, reason = wrapped(signal, 100.0)
-
-    assert ok is False
-    assert reason == "CORE_5M_DIRECTION_BLOCK:SHORT"
-    assert calls == []
-    assert signal["core_only_live_gate"]["decision"] == "BLOCK_5M_DIRECTION_QUARANTINE"
-    assert signal["core_only_live_gate"]["allowed_5m_directions"] == ["LONG"]
-
-
-def test_5m_scope_can_be_explicitly_overridden_after_future_validation(monkeypatch):
-    monkeypatch.setenv("PREMIUM_5M_LIVE_SYMBOLS", "linkusdt;avaxusdt")
-    monkeypatch.setenv("PREMIUM_5M_LIVE_DIRECTIONS", "long,short")
-    runner, calls = _runner_with_legacy()
-    core._install_core_only_source_gate(runner)
-    wrapped = runner._make_profit_gate(lambda *_: None, object(), object())
-
-    allowed = {"symbol": "LINKUSDT", "direction": "SHORT", "source": "5M_RADAR"}
+    allowed = {"symbol": "BTCUSDT", "direction": "LONG", "source": "5M_RADAR"}
     ok, reason = wrapped(allowed, 10.0)
     assert ok is True
     assert reason == "LEGACY_OK"
 
-    blocked = {"symbol": "BTCUSDT", "direction": "LONG", "source": "5M_RADAR"}
-    ok, reason = wrapped(blocked, 10.0)
+    blocked_direction = {"symbol": "ETHUSDT", "direction": "SHORT", "source": "5M_RADAR"}
+    ok, reason = wrapped(blocked_direction, 10.0)
     assert ok is False
-    assert reason == "CORE_5M_REPLAY_UNIVERSE_BLOCK:BTCUSDT"
+    assert reason == "CORE_5M_DIRECTION_BLOCK:SHORT"
+
+    blocked_symbol = {"symbol": "SOLUSDT", "direction": "LONG", "source": "5M_RADAR"}
+    ok, reason = wrapped(blocked_symbol, 10.0)
+    assert ok is False
+    assert reason == "CORE_5M_REPLAY_UNIVERSE_BLOCK:SOLUSDT"
+
     assert calls == [("5M_RADAR", 10.0)]
 
 
