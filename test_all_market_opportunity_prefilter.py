@@ -1,34 +1,46 @@
 from all_market_opportunity_prefilter import build_scan_universe
 
 
+def crypto_market(symbol, base):
+    return {
+        "symbol": symbol,
+        "base": base,
+        "quote": "USDT",
+        "settle": "USDT",
+        "swap": True,
+        "active": True,
+        "info": {
+            "state": "live",
+            "instCategory": "1",
+            "groupId": "4",
+        },
+    }
+
+
+def non_crypto_market(symbol, base):
+    return {
+        "symbol": symbol,
+        "base": base,
+        "quote": "USDT",
+        "settle": "USDT",
+        "swap": True,
+        "active": True,
+        "info": {
+            "state": "live",
+            "instCategory": "3",
+            "groupId": "6",
+        },
+    }
+
+
 class FakeExchange:
     def __init__(self, fail_tickers=False):
         self.fail_tickers = fail_tickers
         self.markets = {
-            "BTC/USDT:USDT": {
-                "symbol": "BTC/USDT:USDT",
-                "base": "BTC",
-                "quote": "USDT",
-                "settle": "USDT",
-                "swap": True,
-                "active": True,
-            },
-            "MOVE/USDT:USDT": {
-                "symbol": "MOVE/USDT:USDT",
-                "base": "MOVE",
-                "quote": "USDT",
-                "settle": "USDT",
-                "swap": True,
-                "active": True,
-            },
-            "THIN/USDT:USDT": {
-                "symbol": "THIN/USDT:USDT",
-                "base": "THIN",
-                "quote": "USDT",
-                "settle": "USDT",
-                "swap": True,
-                "active": True,
-            },
+            "BTC/USDT:USDT": crypto_market("BTC/USDT:USDT", "BTC"),
+            "MOVE/USDT:USDT": crypto_market("MOVE/USDT:USDT", "MOVE"),
+            "THIN/USDT:USDT": crypto_market("THIN/USDT:USDT", "THIN"),
+            "IBM/USDT:USDT": non_crypto_market("IBM/USDT:USDT", "IBM"),
             "SPOT/USDT": {
                 "symbol": "SPOT/USDT",
                 "base": "SPOT",
@@ -58,6 +70,12 @@ class FakeExchange:
                 "percentage": 150.0,
                 "quoteVolume": 50_000,
             },
+            "IBM/USDT:USDT": {
+                "last": 250.0,
+                "open": 200.0,
+                "percentage": 25.0,
+                "quoteVolume": 5_000_000,
+            },
         }
 
     def fetch_ohlcv(self, symbol, timeframe="5m", limit=24):
@@ -78,14 +96,18 @@ class FakeExchange:
         return rows
 
 
-def test_core_universe_is_preserved_and_active_excluded_mover_is_promoted():
+def test_core_universe_is_preserved_and_active_excluded_crypto_mover_is_promoted():
     universe, meta = build_scan_universe(FakeExchange(), ["BTCUSDT"])
 
     assert universe[0] == "BTCUSDT"
     assert "MOVEUSDT" in universe
     assert "THINUSDT" not in universe
+    assert "IBMUSDT" not in universe
     assert meta["core_count"] == 1
+    assert meta["raw_active_usdt_swap_count"] == 4
     assert meta["active_usdt_swap_count"] == 3
+    assert meta["guard_rejected_swap_count"] == 1
+    assert meta["guard_rejection_counts"]["NON_CRYPTO_CATEGORY"] == 1
     assert meta["excluded_count"] == 2
     assert meta["promoted_extra_count"] == 1
     assert meta["promoted_extras"][0]["symbol"] == "MOVEUSDT"
