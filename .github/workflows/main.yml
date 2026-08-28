@@ -1,4 +1,4 @@
-name: Premium Core-Only V4 All Coins
+name: Simple Core V1 - 1H 15M 5M
 
 on:
   workflow_dispatch:
@@ -9,11 +9,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: premium-profit-mode-v4-all-coins
+  group: simple-core-v1-live
   cancel-in-progress: false
 
 jobs:
-  premium:
+  simple-core:
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -21,8 +21,6 @@ jobs:
       - name: Repo indir
         uses: actions/checkout@v4
         with:
-          # Short history is enough for the state commit/rebase cycle and keeps
-          # the 5-minute live scan responsive.
           fetch-depth: 5
 
       - name: En guncel main state ile esitle
@@ -31,7 +29,7 @@ jobs:
           set -e
           git fetch origin main
           git reset --hard origin/main
-          echo "Premium run SHA: $(git rev-parse HEAD)"
+          echo "Simple Core run SHA: $(git rev-parse HEAD)"
 
       - name: Python kur
         uses: actions/setup-python@v5
@@ -52,10 +50,7 @@ jobs:
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
         run: python untradable_futures_cleanup.py
 
-      - name: Acik islemleri sonuc kontrolunden once devam gucu shadow
-        run: python position_continuation_shadow.py
-
-      - name: Premium Core-Only 15M_ENTRY calistir
+      - name: Simple Core V1 calistir
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -65,45 +60,13 @@ jobs:
           OKX_API_KEY: ${{ secrets.OKX_API_KEY }}
           OKX_SECRET_KEY: ${{ secrets.OKX_SECRET_KEY }}
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
-        run: python premium_core_only_runner.py
-
-      - name: Yeni acilan islemleri devam gucu shadow
-        if: always()
-        run: python position_continuation_shadow.py
-
-      - name: Tum coin adaylarinda 4H cok gunluk trend omru shadow
-        if: always()
-        run: python multi_day_trend_shadow.py
-
-      - name: Buyuk hareket erken yakalama ve tasima shadow
-        if: always()
-        run: python big_move_hunter_shadow.py
-
-      - name: TP3 sonrasi runner degeri 6 saat shadow
-        if: always()
-        run: python tp3_runner_shadow.py
-
-      - name: TP3 sonrasi 96 saat cok gunluk runner shadow
-        if: always()
-        run: python tp3_multi_day_runner_shadow.py
-
-      - name: TP BE sonrasi sessiz takip
-        if: always()
-        run: python post_result_shadow.py
+        run: python simple_core_runner.py
 
       - name: SL BE sonuc teshisi
         if: always()
         run: python result_diagnostics.py
 
-      - name: Early Breakout LONG SHORT neden ayrimi shadow
-        if: always()
-        run: python early_breakout_direction_diagnostics.py
-
-      - name: Golge state dosyalarini kompaktlastir
-        if: always()
-        run: python compact_shadow_states.py
-
-      - name: Durum ve karlilik dosyalarini kaydet
+      - name: Durum ve Simple Core verisini kaydet
         if: ${{ always() && github.ref_name == 'main' }}
         run: |
           set -e
@@ -115,25 +78,7 @@ jobs:
             performance.json \
             last_signals.json \
             trade_ledger.json \
-            premium_pending_candidates.json \
-            invalid_market_signals.json \
-            premium_all_coins_state.json \
-            smart_recovery_state.json \
-            movement_start_shadow.json \
-            movement_start_v2_shadow.json \
-            movement_start_v3_orderflow_shadow.json \
-            premium_early_breakout_state.json \
-            premium_regime_transition_state.json \
-            premium_quality_state.json \
-            premium_big_move_state.json \
-            big_move_false_positive_shadow.json \
-            market_outlook_state.json \
-            multi_day_trend_shadow.json \
-            big_move_hunter_shadow.json \
-            early_breakout_direction_diagnostics.json \
-            profit_mode_report.json \
-            profit_mode_rejections.json \
-            portfolio_risk_shadow_main_mtf.json
+            simple_core_diagnostics.json
           do
             if [ -f "$file" ]; then
               git add "$file"
@@ -145,7 +90,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update Premium Core-Only state"
+          git commit -m "Update Simple Core state"
 
           for attempt in 1 2 3
           do
