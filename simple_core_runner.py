@@ -25,6 +25,7 @@ import main as bot
 import premium_crypto_profit_runner as telegram_helpers
 from all_market_opportunity_prefilter import build_scan_universe
 from simple_core_strategy import SOURCE, VERSION, analyze_simple_trade
+from simple_core_paper_alerts import build_paper_candidate, send_paper_candidates
 
 DIAGNOSTICS_FILE = "simple_core_diagnostics.json"
 LIVE_BRANCH = "main"
@@ -45,6 +46,7 @@ def _save_diagnostics(
     reasons: Counter,
     candidates: List[Dict[str, Any]],
     universe_meta: Dict[str, Any],
+    paper_candidates: List[Dict[str, Any]],
 ) -> None:
     payload = {
         "version": VERSION,
@@ -52,6 +54,7 @@ def _save_diagnostics(
         "live_run": _is_live_run(),
         "scanned": int(scanned),
         "candidate_count": len(candidates),
+        "paper_candidate_count": len(paper_candidates),
         "rejection_counts": dict(reasons.most_common()),
         "universe_screen": universe_meta,
         "top_candidates": [
@@ -65,6 +68,19 @@ def _save_diagnostics(
                 "volume_5m": item.get("volume_5m"),
             }
             for item in candidates[:10]
+        ],
+        "top_paper_candidates": [
+            {
+                "symbol": item.get("symbol"),
+                "direction": item.get("direction"),
+                "score": item.get("score"),
+                "paper_missing_gate": item.get("paper_missing_gate"),
+                "zone_distance_percent": item.get("zone_distance_percent"),
+                "risk_percent": item.get("risk_percent"),
+                "room_r": item.get("room_r"),
+                "volume_5m": item.get("volume_5m"),
+            }
+            for item in paper_candidates[:10]
         ],
     }
     bot.save_json_file(DIAGNOSTICS_FILE, payload)
@@ -170,6 +186,7 @@ def run() -> None:
         VERSION,
         "| 1H yön -> 15M destek/direnç -> 5M teyit",
         "| tüm aktif USDT swap fırsat ön-taraması=AKTİF",
+        "| paper yakın-aday=AKTİF",
         "| pending=YOK | 5M erken bağımsız trade=YOK | deneysel live=YOK",
     )
 
@@ -229,6 +246,7 @@ def run() -> None:
 
     reasons: Counter = Counter()
     candidates: List[Dict[str, Any]] = []
+    paper_candidates: List[Dict[str, Any]] = []
     scanned = 0
 
     for symbol in scan_coins:
@@ -280,6 +298,35 @@ def run() -> None:
             )
             if signal is None:
                 reasons[reason] += 1
+
+                paper_signal, _ = build_paper_candidate(
+                    symbol,
+                    df5m,
+                    df15m,
+                    df1h,
+                    current_price,
+                )
+                if paper_signal is not None:
+                    paper_direction = paper_signal["direction"]
+                    direction_enabled = (
+                        (paper_direction == "LONG" and bot.ALLOW_LONG)
+                        or (paper_direction == "SHORT" and bot.ALLOW_SHORT)
+                    )
+                    if direction_enabled and market_status.get(paper_direction, True):
+                        paper_candidates.append(paper_signal)
+                        print(
+                            "SIMPLE CORE PAPER ADAY:",
+                            symbol,
+                            paper_direction,
+                            "eksik=",
+                            paper_signal.get("paper_missing_gate"),
+                            "score=",
+                            paper_signal.get("score"),
+                            "risk=",
+                            paper_signal.get("risk_percent"),
+                            "roomR=",
+                            paper_signal.get("room_r"),
+                        )
                 continue
 
             direction = signal["direction"]
@@ -333,6 +380,14 @@ def run() -> None:
         ),
         reverse=True,
     )
+    paper_candidates.sort(
+        key=lambda item: (
+            item.get("score", 0),
+            item.get("room_r", 0),
+            -float(item.get("zone_distance_percent") or 999.0),
+        ),
+        reverse=True,
+    )
 
     max_trade = (
         bot.RISK_MODE_MAX_TRADE_SIGNALS
@@ -345,13 +400,21 @@ def run() -> None:
     allowed_count = min(max_trade, available_slots)
     selected = candidates[:allowed_count]
 
-    _save_diagnostics(scanned, reasons, candidates, universe_meta)
+    _save_diagnostics(
+        scanned,
+        reasons,
+        candidates,
+        universe_meta,
+        paper_candidates,
+    )
 
     print(
         "SIMPLE CORE ÖZET | taranan=",
         scanned,
         "| aday=",
         len(candidates),
+        "| paper yakın-aday=",
+        len(paper_candidates),
         "| seçilen=",
         len(selected),
         "| en çok eleme=",
@@ -364,6 +427,15 @@ def run() -> None:
             sent += 1
             time.sleep(1)
 
+    paper_sent = send_paper_candidates(
+        bot,
+        paper_candidates,
+        live_run=_is_live_run(),
+        live_candidate_exists=bool(selected),
+    )
+    if paper_sent:
+        print("SIMPLE CORE PAPER | Telegram test adayı gönderilen=", paper_sent)
+
     if not selected:
         print("Simple Core uygun işlem yok.")
     elif sent == 0:
@@ -371,7 +443,16 @@ def run() -> None:
 
     bot.maybe_send_daily_report()
     label = "gönderilen" if _is_live_run() else "test doğrulanan"
-    print("SIMPLE CORE tamamlandı |", label, "=", sent, "| source=", SOURCE)
+    print(
+        "SIMPLE CORE tamamlandı |",
+        label,
+        "=",
+        sent,
+        "| paper=",
+        paper_sent,
+        "| source=",
+        SOURCE,
+    )
 
 
 if __name__ == "__main__":
