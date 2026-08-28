@@ -5,6 +5,7 @@ hooks without creating a second signal engine:
 - strict crypto-only OKX universe,
 - final contract-level crypto purity gate for stock/ETF/commodity derivatives,
 - fresh moderate-mover deep-scan priority,
+- newly listed contract deep-scan priority,
 - corrected late/stale classification,
 - profit-after-cost ML labelling,
 - fresh BTC/ETH/SOL recheck before Telegram,
@@ -18,6 +19,7 @@ from typing import Any, Dict
 import market_first_runner as runner
 import market_first_audit_layer as audit
 import market_first_crypto_purity as purity
+import market_first_new_listings as new_listings
 from market_first_pre_send_guard import (
     evaluate_pre_send_market,
     fetch_fresh_major_moves,
@@ -76,11 +78,19 @@ def install_guards() -> None:
             state,
             original_select_deep_scan,
         )
+        selected, listing_summary = new_listings.prioritize_new_listings(
+            rows,
+            state,
+            selected,
+            max_total=audit.MAX_AUDITED_DEEP_SCAN,
+            now=runner.bot.now_ts(),
+        )
         print(
             "MARKET FIRST EARLY CAPTURE | deep=",
             len(selected),
             "| fresh-band öncelikli",
         )
+        print("MARKET FIRST NEW LISTINGS:", listing_summary)
         return selected
 
     def audited_analyze_candidate(*args, **kwargs):
