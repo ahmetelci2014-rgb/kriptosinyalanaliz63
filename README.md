@@ -1,76 +1,106 @@
-# Kripto Sinyal Sistemi — Premium V4
+# Kripto Sinyal Sistemi — Market First V5
 
-Bu repo artık tek bir ana canlı sisteme odaklanır: **Premium V4**.
+Bu repo artık ana canlı karar mantığını **Market First V5** üzerine kurar.
 
-> Kâr garantisi yoktur. Sistem borsada otomatik emir açmaz; Telegram sinyalleri manuel değerlendirme içindir.
+> Kâr garantisi yoktur. Sistem borsada otomatik emir açmaz; Telegram bildirimleri manuel değerlendirme içindir.
 
-## Aktif mimari
+## Ana fikir
 
-### Premium V4 — ana canlı çekirdek
-- OKX USDT perpetual piyasasını tarar.
-- 4H ana trend + 1H teyit + 15M giriş yapısını kullanır.
-- 5M erken trade canlı değildir; 5M yalnız giriş zamanlaması ve Movement Start gölge öğrenmesi için kullanılır.
-- Adaylar Premium confirmation, maliyet/entry timing, cooldown/duplicate ve Portfolio Risk kontrollerinden geçer.
-- Trend Continuation ve kontrollü Reversal Capture ana Premium zincirine entegredir.
-- Genç/yeni coinler ayrı eski radar yerine `premium_all_coins.py` içindeki yaşa uygun kurallarla değerlendirilir.
-- Telegram'a yalnız canlı Premium kapıları gerçekten geçen girişler gönderilir.
+Eski sırada coin önce analiz ediliyor, piyasa yönü sonradan filtre gibi kullanılıyordu.
+Market First V5 bunu tersine çevirir:
 
-### Movement Start öğrenme katmanı
-Premium ana koşusu içinde çalışır; ayrı Action harcamaz.
-- V1: hareket başlangıç profili
-- V2: 5M mikro yapı / squeeze / sweep / internal break
-- V3: yalnız güçlü V2 adaylarında OKX order-flow
+1. **Önce piyasa:** BTC + ETH + SOL 4H / 1H / 15M / 5M yönü okunur.
+2. **Breadth:** likit OKX USDT perpetual evreninde kısa dönem ve 24 saatlik yayılım ölçülür.
+3. **Piyasa rüzgârı:** `YUKARI`, `AŞAĞI` veya `KARIŞIK` belirlenir.
+4. **Sonra coin:** tüm aktif OKX USDT perpetual kontratları topluca görülür; taze hareket edenler + hacimliler + rotasyon adayları derin taramaya alınır.
+5. **Göreli güç:** altcoin hareketinin BTC/ETH/SOL hareketinden ne kadar ayrıştığı ölçülür.
+6. **Geç kalma koruması:** 5M ATR uzaması ve 1M/3M/5M hareket genişliği yüksekse yeni giriş kovalanmaz.
+7. **İşlem:** yalnız piyasa + coin + risk geometrisi birlikte uygunsa işlem fırsatı oluşur.
 
-Bu katmanlar gölge/öğrenme modundadır; tek başına canlı sinyal veya emir üretmez.
+## Piyasa rejimleri
 
-### Coin Detay Analizi
-`Coin Detay Analizi` workflow'u yalnız manuel çalışır.
-- Premium çekirdeğin aynı karar bileşenlerini kullanır.
-- Modern Telegram mikroskop raporu üretir.
-- Entry / TP / SL yalnız gerçek Premium kapıları geçildiğinde gösterilir.
+- `SHOCK_UP` — majörlerde ani güçlü yukarı hareket
+- `BULL_STRONG` — majörler ve piyasa geneli güçlü yukarı
+- `BULL` — yukarı eğilim
+- `CHOP` — karışık / yönsüz
+- `BEAR` — aşağı eğilim
+- `BEAR_STRONG` — majörler ve piyasa geneli güçlü aşağı
+- `SHOCK_DOWN` — majörlerde ani güçlü aşağı hareket
 
-### Market Outlook
-Market Outlook teşhis aracıdır ve yalnız manuel çalışır.
-- Genel piyasa yönü, breadth ve bağlam üretir.
-- Kendi başına Premium hard-gate değildir.
+Güçlü rejimde normal karşı-yön işlemleri engellenir. Yalnız gerçekten bağımsız kırılım yapan altcoin, ayrı güçlü-hareket istisnasından değerlendirilebilir.
+
+## Erken hareket yaşam döngüsü
+
+Kullanıcıya karmaşık ara durumlar yerine basit takip verilir:
+
+- `ERKEN` — hareket yeni yakalandı
+- `DEVAM EDİYOR` — ilk uyarıdan sonra hareket avantajlı yönde ilerledi
+- `GEÇ KALINDI` — hareket fazla uzadı; yeni giriş kovalanmaz
+- `BİTTİ` — ivme başarısız oldu, güçlü geri verdi veya süre doldu
+
+Bu takip `market_first_state.json` içinde saklanır.
+
+## İşlem mesajı
+
+Gerçek işlem fırsatında mesaj sade tutulur:
+
+- yön
+- piyasa yönü
+- giriş
+- SL
+- TP1 / TP2 / TP3
+
+Skor ve çok sayıda teknik ayrıntı kullanıcı mesajına doldurulmaz; teşhis için `market_first_diagnostics.json` içinde tutulur.
+
+## Tarama evreni
+
+- Borsa: **OKX USDT perpetual / swap**
+- Tüm aktif uygun kontratlar her koşuda topluca görülür.
+- Derin tarama kapasitesi taze fiyat hareketi, 24s hareket, hacim ve rotasyon arasında bölüştürülür.
+- Böylece yalnız sabit Top-N listesine bağımlı kalınmaz.
+
+## Risk
+
+- Otomatik emir yok.
+- Stop mesafesi için alt/üst risk sınırı vardır.
+- Yakın karşı seviye hedef alanını bozuyorsa işlem üretilmez.
+- Aynı coin açık işlem, stop cooldown, duplicate ve portföy çakışma korumaları mevcut operasyon katmanından korunur.
+- Açık işlemlerin TP/SL/BE ve ledger takibi mevcut güvenilir takip altyapısıyla devam eder.
+
+## Artıları
+
+- Majör piyasa hareketini kararın merkezine alır.
+- BTC/ETH/SOL sert düşerken sıradan altcoin LONG kovalamayı azaltır.
+- Altcoinlerin majörlere göre göreli gücünü ölçer.
+- Hareketin erken / devam / geç / bitmiş durumunu takip eder.
+- Geç kalmış dik mumların arkasından giriş üretmemeye çalışır.
+- Sabit 262/300 coin sınırı mantığına bağlı değildir; aktif OKX perpetual evrenini görür.
+- Kullanıcı mesajlarını sade tutar; ayrıntıyı teşhis dosyasına taşır.
+
+## Eksileri / bilinçli bedeller
+
+- Majörlere fazla bağlı kalmak bazı bağımsız altcoin hareketlerini kaçırabilir; bu yüzden bağımsız kırılım istisnası vardır.
+- Piyasa rejimi hızlı yön değiştirirse kısa süreli yanlış sınıflandırma olabilir.
+- Her kontratı her koşuda 4 zaman diliminde derin taramak API açısından pahalıdır; bu yüzden ön sıralama + rotasyon kullanılır.
+- Yeni listelenmiş ve yeterli mum geçmişi olmayan coinler erken radar açısından görülebilse de güvenilir SL/TP üretmek için yeterli yapı verisi olmayabilir.
+- Hiçbir filtre gelecekteki fiyatı garanti edemez; sistem olasılığı ve zamanlamayı iyileştirmeyi amaçlar.
 
 ## GitHub Actions
-Otomatik çalışan tek ana workflow:
-- `main.yml` — Premium V4, 5 dakikada bir.
 
-Manuel / gerektiğinde çalışanlar:
-- `coin-analysis.yml` — Coin Detay Analizi
-- `market-outlook.yml` — Market Outlook
-- `tests.yml` — manuel veya pull request regresyon testleri
+Ana canlı workflow:
 
-Eski bağımsız Scalp, Pump/Dump, Big Move, Decision/Prescription, Range, Swing, Momentum, Position Trend ve ayrı portfolio-outcome workflow'ları kaldırılmıştır. Bunlar artık Action kotası tüketmez.
+- `.github/workflows/main.yml` — **Market First V5**, 5 dakikada bir.
 
-## Maliyet sonrası canlı kapı
-`profitability_engine.py` Premium geçmişini gerçekçi execution-cost rezerviyle değerlendirir.
-Varsayılan eşikler:
-- minimum örnek: 20
-- minimum ortalama Net R: +0.03R
-- minimum maliyet-sonrası profit factor: 1.10
-- maksimum stop oranı: %32
-- TP1→BE senaryosunda minimum maliyet-sonrası +0.05R
+Eski `All Contracts Momentum Radar` artık yalnız manuel çalışır; V5 ile aynı fırsat için çift Telegram mesajı üretmemesi amaçlanır.
 
-Canlı PremiumGate için ana kanıt kaynağı `trade_ledger.json` içindeki Premium 15M_ENTRY geçmişidir.
+## Ana dosyalar
 
-## Korunan ana state / ledger dosyaları
-- `open_signals.json`
-- `performance.json`
-- `last_signals.json`
-- `trade_ledger.json`
-- `premium_pending_candidates.json`
-- `premium_all_coins_state.json`
-- `smart_recovery_state.json`
-- `movement_start_shadow.json`
-- `movement_start_v2_shadow.json`
-- `movement_start_v3_orderflow_shadow.json`
-- `profit_mode_report.json`
-- `profit_mode_rejections.json`
-- `portfolio_risk_shadow_main_mtf.json`
-- `market_outlook_state.json`
+- `market_first_strategy.py` — piyasa rejimi, coin skoru, geç kalma ve yaşam döngüsü
+- `market_first_runner.py` — OKX evreni, breadth, rotasyon, Telegram ve canlı operasyon bağlantısı
+- `test_market_first_strategy.py` — regresyon testleri
+- `market_first_state.json` — çalışma sırasında oluşan durum
+- `market_first_diagnostics.json` — detaylı teşhis
 
 ## Temel ilke
-**Kalite > miktar. Önce maliyet sonrası edge, sonra canlı sinyal; edge veya giriş teyidi yoksa işlem yok.**
+
+**Önce piyasanın rüzgârını bul; sonra o rüzgârla giden veya gerçekten bağımsız güç gösteren coini erken yakala.**

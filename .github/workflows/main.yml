@@ -1,4 +1,4 @@
-name: Simple Core V1 - 1H 15M 5M
+name: Market First V5 - Major Wind + Early Movers
 
 on:
   workflow_dispatch:
@@ -9,11 +9,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: simple-core-v1-live
+  group: market-first-v5-live
   cancel-in-progress: false
 
 jobs:
-  simple-core:
+  market-first:
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -29,7 +29,7 @@ jobs:
           set -e
           git fetch origin main
           git reset --hard origin/main
-          echo "Simple Core run SHA: $(git rev-parse HEAD)"
+          echo "Market First run SHA: $(git rev-parse HEAD)"
 
       - name: Python kur
         uses: actions/setup-python@v5
@@ -50,7 +50,7 @@ jobs:
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
         run: python untradable_futures_cleanup.py
 
-      - name: Simple Core V1 calistir
+      - name: Market First V5 calistir
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -60,13 +60,13 @@ jobs:
           OKX_API_KEY: ${{ secrets.OKX_API_KEY }}
           OKX_SECRET_KEY: ${{ secrets.OKX_SECRET_KEY }}
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
-        run: python simple_core_runner.py
+        run: python market_first_runner.py
 
       - name: SL BE sonuc teshisi
         if: always()
         run: python result_diagnostics.py
 
-      - name: Durum ve Simple Core verisini kaydet
+      - name: Durum ve Market First verisini kaydet
         if: ${{ always() && github.ref_name == 'main' }}
         run: |
           set -e
@@ -78,8 +78,8 @@ jobs:
             performance.json \
             last_signals.json \
             trade_ledger.json \
-            simple_core_diagnostics.json \
-            simple_core_paper_candidates.json
+            market_first_state.json \
+            market_first_diagnostics.json
           do
             if [ -f "$file" ]; then
               git add "$file"
@@ -91,7 +91,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update Simple Core state"
+          git commit -m "Update Market First V5 state"
 
           for attempt in 1 2 3
           do

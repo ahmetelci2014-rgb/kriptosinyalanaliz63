@@ -1,21 +1,13 @@
-name: All Contracts Momentum Radar
+name: Legacy All Contracts Momentum Radar - Manual Only
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - "all_contracts_momentum_radar.py"
-      - ".github/workflows/all-contracts-momentum-radar.yml"
-  schedule:
-    - cron: "*/5 * * * *"
 
 permissions:
   contents: write
 
 concurrency:
-  group: all-contracts-momentum-radar
+  group: legacy-all-contracts-momentum-radar
   cancel-in-progress: false
 
 jobs:
@@ -29,14 +21,6 @@ jobs:
         with:
           fetch-depth: 5
 
-      - name: En guncel main ile esitle
-        if: ${{ github.ref_name == 'main' }}
-        run: |
-          set -e
-          git fetch origin main
-          git reset --hard origin/main
-          echo "Momentum radar SHA: $(git rev-parse HEAD)"
-
       - name: Python kur
         uses: actions/setup-python@v5
         with:
@@ -49,7 +33,7 @@ jobs:
           PIP_DISABLE_PIP_VERSION_CHECK: "1"
         run: python -m pip install --prefer-binary -r requirements.txt
 
-      - name: Tum kontratlarda ani ivme radarini calistir
+      - name: Eski ani ivme radarini manuel calistir
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -68,32 +52,3 @@ jobs:
           MOMENTUM_MIN_ALERT_SCORE: "5"
           MOMENTUM_COOLDOWN_SECONDS: "900"
         run: python all_contracts_momentum_radar.py
-
-      - name: Momentum radar durumunu kaydet
-        if: ${{ always() && github.ref_name == 'main' }}
-        run: |
-          set -e
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-          if [ -f all_contracts_momentum_state.json ]; then
-            git add all_contracts_momentum_state.json
-          fi
-
-          if git diff --cached --quiet; then
-            echo "Kaydedilecek momentum durumu yok."
-            exit 0
-          fi
-
-          git commit -m "Update all-contracts momentum state"
-
-          for attempt in 1 2 3
-          do
-            git pull --rebase --autostash origin main
-            if git push origin HEAD:main; then
-              exit 0
-            fi
-            sleep 10
-          done
-
-          exit 1
