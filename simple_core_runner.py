@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from collections import Counter
 from typing import Any, Dict, List
+import os
 import time
 
 import main as bot
@@ -25,6 +26,12 @@ import premium_crypto_profit_runner as telegram_helpers
 from simple_core_strategy import SOURCE, VERSION, analyze_simple_trade
 
 DIAGNOSTICS_FILE = "simple_core_diagnostics.json"
+LIVE_BRANCH = "main"
+
+
+def _is_live_run() -> bool:
+    """Only the default main branch may send or persist a new live entry."""
+    return str(os.getenv("GITHUB_REF_NAME") or "").strip() == LIVE_BRANCH
 
 
 def _install_entry_only_telegram() -> None:
@@ -40,6 +47,7 @@ def _save_diagnostics(
     payload = {
         "version": VERSION,
         "generated_at": bot.now_ts(),
+        "live_run": _is_live_run(),
         "scanned": int(scanned),
         "candidate_count": len(candidates),
         "rejection_counts": dict(reasons.most_common()),
@@ -117,6 +125,18 @@ def _send_selected(
     signal["market_guard_short_allowed"] = market_status.get("SHORT")
     signal["market_guard_reason"] = market_status.get("reason")
 
+    # Branch/replay tests may use real market data and repository secrets, but
+    # they must never create a Telegram entry or mutate the live trade ledger.
+    if not _is_live_run():
+        print(
+            "SIMPLE CORE TEST ONLY | canlı gönderim engellendi:",
+            signal.get("symbol"),
+            signal.get("direction"),
+            "score=",
+            signal.get("score"),
+        )
+        return True
+
     message = bot.build_short_trade_message(
         signal=signal,
         current_price=current_price,
@@ -143,7 +163,7 @@ def run() -> None:
     _install_entry_only_telegram()
 
     print(
-        "SIMPLE CORE LIVE:",
+        "SIMPLE CORE LIVE:" if _is_live_run() else "SIMPLE CORE TEST:",
         VERSION,
         "| 1H yön -> 15M destek/direnç -> 5M teyit",
         "| pending=YOK | 5M erken bağımsız trade=YOK | deneysel live=YOK",
@@ -174,6 +194,8 @@ def run() -> None:
         reduced_open,
         "| risk mode=",
         risk_mode,
+        "| live=",
+        _is_live_run(),
     )
 
     reasons: Counter = Counter()
@@ -319,7 +341,8 @@ def run() -> None:
         print("Simple Core aday vardı fakat son güvenlik kontrolünde gönderilmedi.")
 
     bot.maybe_send_daily_report()
-    print("SIMPLE CORE tamamlandı | gönderilen=", sent, "| source=", SOURCE)
+    label = "gönderilen" if _is_live_run() else "test doğrulanan"
+    print("SIMPLE CORE tamamlandı |", label, "=", sent, "| source=", SOURCE)
 
 
 if __name__ == "__main__":
