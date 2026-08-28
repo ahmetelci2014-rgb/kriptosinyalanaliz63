@@ -17,7 +17,9 @@ VERSION = "SIMPLE_CORE_V1_2026_08_28"
 SOURCE = "SIMPLE_CORE_V1"
 
 MIN_1H_ADX = 15.0
-MIN_5M_VOLUME_RATIO = 0.90
+# First full-market branch test left 18 otherwise-valid setups at the final 5M
+# gate. Relax only this last timing gate: structure/risk/2R room stay unchanged.
+MIN_5M_VOLUME_RATIO = 0.80
 MIN_RISK_PERCENT = 0.35
 MAX_RISK_PERCENT = 1.80
 MIN_ROOM_R = 2.0
@@ -201,7 +203,9 @@ def _five_minute_trigger(
         return False, "5M_DATA", {}
 
     last = frame.iloc[-2]
-    prior = frame.iloc[-5:-2]
+    # Two-bar micro structure is enough for the timing trigger. The 1H trend,
+    # 15M zone/rejection and 2R room filters have already done the heavy work.
+    prior = frame.iloc[-4:-2]
     if prior.empty:
         return False, "5M_DATA", {}
 
@@ -216,19 +220,19 @@ def _five_minute_trigger(
         ok = (
             close > open_price
             and close > trigger_level
-            and close_power >= 58.0
+            and close_power >= 55.0
             and volume_ratio >= MIN_5M_VOLUME_RATIO
         )
-        reason = "5M önceki 3 mum tepesini bullish kırdı"
+        reason = "5M önceki 2 mum tepesini bullish kırdı"
     else:
         trigger_level = _safe(prior["low"].min())
         ok = (
             close < open_price
             and close < trigger_level
-            and close_power <= 42.0
+            and close_power <= 45.0
             and volume_ratio >= MIN_5M_VOLUME_RATIO
         )
-        reason = "5M önceki 3 mum dibini bearish kırdı"
+        reason = "5M önceki 2 mum dibini bearish kırdı"
 
     return bool(ok), reason, {
         "volume_5m": round(volume_ratio, 2),
