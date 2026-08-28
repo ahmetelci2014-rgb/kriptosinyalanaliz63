@@ -87,11 +87,11 @@ Skor ve çok sayıda teknik ayrıntı kullanıcı mesajına doldurulmaz; teşhis
 
 ## GitHub Actions
 
-Ana canlı workflow:
+**Otomatik çalışan tek canlı workflow:**
 
 - `.github/workflows/main.yml` — **Market First V5**, 5 dakikada bir.
 
-Eski `All Contracts Momentum Radar` artık yalnız manuel çalışır; V5 ile aynı fırsat için çift Telegram mesajı üretmemesi amaçlanır.
+Repo içindeki eski Premium, Market Outlook, Market Structure Shadow, Big Move Research, All Contracts Momentum Radar ve benzeri yardımcı/araştırma bileşenleri **ayrı canlı sistem değildir**. Otomatik zamanlamaları kapalıdır; yalnız manuel teşhis, araştırma veya geriye dönük test amacıyla tutulur. Canlı Telegram sinyali ve ana karar akışı tek sistem olan Market First V5 üzerinden yürür.
 
 ## Ana dosyalar
 
