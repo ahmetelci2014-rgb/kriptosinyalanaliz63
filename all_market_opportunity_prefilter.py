@@ -2,7 +2,7 @@
 
 Purpose:
 - Keep the existing liquid/core scan universe intact.
-- Screen the rest of active OKX USDT perpetual markets cheaply.
+- Screen the rest of verified live OKX crypto USDT perpetual markets cheaply.
 - Promote only the strongest excluded movers into the expensive 1H/15M/5M
   Simple Core analysis.
 
@@ -10,11 +10,14 @@ This module never sends Telegram messages and never places exchange orders.
 """
 from __future__ import annotations
 
+from collections import Counter
 import math
 import time
 from typing import Any, Dict, Iterable, List, Tuple
 
-VERSION = "ALL_MARKET_PREFILTER_V1_2026_08_28"
+import crypto_universe_guard as crypto_guard
+
+VERSION = "ALL_MARKET_PREFILTER_V2_CRYPTO_ONLY_2026_08_28"
 
 # We deliberately keep a lower liquidity floor for discovery than the main
 # 500k USDT core universe, but do not promote ultra-thin contracts to live
@@ -172,14 +175,17 @@ def build_scan_universe(
     exchange: Any,
     core_symbols: Iterable[str],
 ) -> Tuple[List[str], Dict[str, Any]]:
-    """Return core symbols plus promoted opportunities from excluded markets."""
+    """Return core symbols plus promoted verified-crypto opportunities."""
     core = list(dict.fromkeys(str(item).upper() for item in core_symbols if item))
     core_set = set(core)
 
     meta: Dict[str, Any] = {
         "version": VERSION,
         "core_count": len(core),
+        "raw_active_usdt_swap_count": 0,
         "active_usdt_swap_count": 0,
+        "guard_rejected_swap_count": 0,
+        "guard_rejection_counts": {},
         "excluded_count": 0,
         "ticker_eligible_excluded_count": 0,
         "micro_screened_count": 0,
@@ -194,16 +200,35 @@ def build_scan_universe(
         meta["errors"].append(f"load_markets:{exc}")
         return core, meta
 
+    # Reuse the repository's strict crypto/live/account guard. Public OKX can
+    # expose stock, commodity and other RWA swaps; they must never be promoted
+    # into the crypto signal universe merely because OHLCV is available.
+    crypto_guard.refresh_account_tradable_futures_from_env()
+    guard_rejections: Counter = Counter()
+
     normalized_to_ccxt: Dict[str, str] = {}
-    for market in markets.values():
+    raw_active = 0
+    for key, market in markets.items():
         normalized = _normalized_symbol(market)
+        if not normalized:
+            continue
+        raw_active += 1
+
+        reason = crypto_guard.market_exclusion_reason(market, key)
+        if reason:
+            guard_rejections[reason] += 1
+            continue
+
         ccxt_symbol = str(market.get("symbol") or "").strip()
-        if normalized and ccxt_symbol:
+        if ccxt_symbol:
             normalized_to_ccxt[normalized] = ccxt_symbol
 
     active_symbols = set(normalized_to_ccxt)
     excluded = sorted(active_symbols - core_set)
+    meta["raw_active_usdt_swap_count"] = raw_active
     meta["active_usdt_swap_count"] = len(active_symbols)
+    meta["guard_rejected_swap_count"] = sum(guard_rejections.values())
+    meta["guard_rejection_counts"] = dict(guard_rejections.most_common())
     meta["excluded_count"] = len(excluded)
 
     if not excluded:
