@@ -1,16 +1,13 @@
 """Embedded tree-model quality layer for Market First V5.
 
-This is deliberately NOT a second trading system. Market First remains the
-hard decision engine. The ML layer learns from completed Market First trades
-and, only after enough chronologically validated data exists, can suppress
-very low-quality READY candidates and improve ranking.
+This is not a second trading system. Market First remains the hard decision
+engine. The model learns only from completed Market First trades and may affect
+live selection only after chronological out-of-sample validation passes.
 
-Safety principles:
-- no look-ahead features;
-- chronological train/validation split (never random time mixing);
-- no live influence while data is insufficient or validation is weak;
-- hard market/risk/late-entry rules always win;
-- no LSTM/deep-learning dependency at this stage.
+V2 adds derivatives/order-flow observations (OI, normalized funding and taker
+imbalance). Old samples remain valid: missing V2 fields are represented by
+explicit availability flags plus zero values, so the model cannot mistake
+missing historical data for a confirmed derivatives signal.
 """
 from __future__ import annotations
 
@@ -20,13 +17,13 @@ import math
 import os
 import tempfile
 import time
-from typing import Any, Dict, Mapping, Optional, Sequence
+from typing import Any, Dict, Mapping, Optional
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import balanced_accuracy_score, roc_auc_score
 
 
-MODEL_VERSION = "MARKET_FIRST_RF_QUALITY_V1_2026_08_28"
+MODEL_VERSION = "MARKET_FIRST_RF_QUALITY_V2_DERIVATIVES_2026_08_28"
 SAMPLE_FILE = "market_first_ml_samples.json"
 
 MIN_LABELED_SAMPLES = 120
@@ -71,6 +68,17 @@ FEATURE_NAMES = (
     "log10_quote_volume_24h",
     "risk_percent",
     "room_r_capped",
+    # Derivatives/order-flow V2. Availability flags are essential because
+    # historical V1 samples do not contain these observations.
+    "derivatives_available",
+    "oi_history_available",
+    "oi_change_5m_percent",
+    "oi_change_15m_percent",
+    "funding_available",
+    "funding_crowding_8h_bps",
+    "taker_available",
+    "taker_imbalance_alignment",
+    "derivatives_soft_score",
 )
 
 
@@ -109,11 +117,8 @@ def _aligned_structure(value: Any, direction: Any) -> float:
     return -1.0
 
 
-def extract_features(
-    decision: Mapping[str, Any],
-    context: Any,
-) -> Dict[str, float]:
-    """Build only information that exists at candidate-decision time."""
+def extract_features(decision: Mapping[str, Any], context: Any) -> Dict[str, float]:
+    """Use only information available at candidate-decision time."""
     direction = str(decision.get("direction") or "SHORT").upper()
     sign = _direction_sign(direction)
     regime = str(decision.get("market_regime") or getattr(context, "regime", "CHOP"))
@@ -159,16 +164,24 @@ def extract_features(
         "log10_quote_volume_24h": math.log10(max(1.0, quote_volume)),
         "risk_percent": _sf(decision.get("risk_percent")),
         "room_r_capped": min(10.0, max(0.0, room_r)),
+        "derivatives_available": 1.0 if decision.get("derivatives_available") else 0.0,
+        "oi_history_available": 1.0 if decision.get("oi_history_available") else 0.0,
+        "oi_change_5m_percent": _sf(decision.get("oi_change_5m_percent")),
+        "oi_change_15m_percent": _sf(decision.get("oi_change_15m_percent")),
+        "funding_available": 1.0 if decision.get("funding_available") else 0.0,
+        # Positive = funding crowding is in candidate direction; the tree learns
+        # whether that is supportive or dangerous in a given regime.
+        "funding_crowding_8h_bps": _sf(decision.get("funding_crowding_8h_bps")),
+        "taker_available": 1.0 if decision.get("taker_available") else 0.0,
+        # Positive = aggressive recent flow is aligned with candidate direction.
+        "taker_imbalance_alignment": _sf(decision.get("taker_imbalance_alignment")),
+        "derivatives_soft_score": _sf(decision.get("derivatives_soft_score")),
     }
     return {name: round(_sf(features.get(name)), 8) for name in FEATURE_NAMES}
 
 
 def empty_store() -> Dict[str, Any]:
-    return {
-        "version": MODEL_VERSION,
-        "samples": {},
-        "last_update": 0,
-    }
+    return {"version": MODEL_VERSION, "samples": {}, "last_update": 0}
 
 
 def load_store(filename: str = SAMPLE_FILE) -> Dict[str, Any]:
@@ -271,9 +284,7 @@ def register_trade_sample(
         "features": normalized,
         "model_version_at_open": MODEL_VERSION,
         "model_mode_at_open": str(mode or "COLLECTING"),
-        "model_probability_at_open": (
-            round(float(probability), 6) if probability is not None else None
-        ),
+        "model_probability_at_open": round(float(probability), 6) if probability is not None else None,
         "label": None,
         "resolved": False,
         "ignored_reason": None,
@@ -282,7 +293,7 @@ def register_trade_sample(
 
 
 def reconcile_samples(store: Dict[str, Any], ledger: Mapping[str, Any]) -> int:
-    """Label target = TP1 reached before a clean pre-TP1 stop."""
+    """Target: TP1 reached before a clean pre-TP1 stop."""
     trades = ledger.get("trades", {}) if isinstance(ledger, Mapping) else {}
     if not isinstance(trades, Mapping):
         return 0
@@ -301,30 +312,24 @@ def reconcile_samples(store: Dict[str, Any], ledger: Mapping[str, Any]) -> int:
         if tp1_hit or result in positive_results:
             sample["label"] = 1
             sample["resolved"] = True
-            sample["resolved_result"] = result
-            sample["resolved_at"] = int(trade.get("closed_at") or time.time())
-            changed += 1
         elif result == "SL":
             sample["label"] = 0
             sample["resolved"] = True
-            sample["resolved_result"] = result
-            sample["resolved_at"] = int(trade.get("closed_at") or time.time())
-            changed += 1
         else:
-            # BE/EXPIRED without TP1 is deliberately excluded from supervised labels.
             sample["label"] = None
             sample["resolved"] = True
-            sample["resolved_result"] = result
             sample["ignored_reason"] = "AMBIGUOUS_OR_EXPIRED_BEFORE_TP1"
-            sample["resolved_at"] = int(trade.get("closed_at") or time.time())
-            changed += 1
+        sample["resolved_result"] = result
+        sample["resolved_at"] = int(trade.get("closed_at") or time.time())
+        changed += 1
     return changed
 
 
 def _labeled_samples(store: Mapping[str, Any]) -> list[Mapping[str, Any]]:
     samples = store.get("samples", {}) if isinstance(store, Mapping) else {}
     rows = [
-        item for item in samples.values()
+        item
+        for item in samples.values()
         if isinstance(item, Mapping) and item.get("label") in (0, 1)
     ] if isinstance(samples, Mapping) else []
     return sorted(rows, key=lambda item: int(item.get("opened_at") or 0))
@@ -346,17 +351,25 @@ def _new_model() -> RandomForestClassifier:
     )
 
 
+def _importance(model: Any) -> Dict[str, float]:
+    values = getattr(model, "feature_importances_", None)
+    if values is None:
+        return {}
+    pairs = sorted(
+        ((name, float(value)) for name, value in zip(FEATURE_NAMES, values)),
+        key=lambda pair: pair[1],
+        reverse=True,
+    )
+    return {name: round(value, 6) for name, value in pairs}
+
+
 def train_quality_model(store: Mapping[str, Any]) -> QualityBundle:
     rows = _labeled_samples(store)
     labels = [int(item["label"]) for item in rows]
     positive = sum(labels)
     negative = len(labels) - positive
 
-    if (
-        len(rows) < MIN_LABELED_SAMPLES
-        or positive < MIN_CLASS_SAMPLES
-        or negative < MIN_CLASS_SAMPLES
-    ):
+    if len(rows) < MIN_LABELED_SAMPLES or positive < MIN_CLASS_SAMPLES or negative < MIN_CLASS_SAMPLES:
         return QualityBundle(
             mode="COLLECTING",
             labeled_count=len(rows),
@@ -365,10 +378,7 @@ def train_quality_model(store: Mapping[str, Any]) -> QualityBundle:
             reason="Yeterli dengeli Market First sonucu henüz birikmedi.",
         )
 
-    validation_count = max(
-        MIN_VALIDATION_SAMPLES,
-        int(round(len(rows) * VALIDATION_FRACTION)),
-    )
+    validation_count = max(MIN_VALIDATION_SAMPLES, int(round(len(rows) * VALIDATION_FRACTION)))
     validation_count = min(validation_count, max(1, len(rows) - 40))
     split = len(rows) - validation_count
     train_rows = rows[:split]
@@ -396,10 +406,7 @@ def train_quality_model(store: Mapping[str, Any]) -> QualityBundle:
         )
 
     eval_model = _new_model()
-    eval_model.fit(
-        [_vector(item.get("features", {})) for item in train_rows],
-        train_y,
-    )
+    eval_model.fit([_vector(item.get("features", {})) for item in train_rows], train_y)
     probabilities = eval_model.predict_proba(
         [_vector(item.get("features", {})) for item in validation_rows]
     )[:, 1]
@@ -410,14 +417,8 @@ def train_quality_model(store: Mapping[str, Any]) -> QualityBundle:
         "roc_auc": round(auc, 4),
         "balanced_accuracy": round(balanced, 4),
     }
-    mode = (
-        "ACTIVE"
-        if auc >= MIN_ROC_AUC and balanced >= MIN_BALANCED_ACCURACY
-        else "SHADOW"
-    )
+    mode = "ACTIVE" if auc >= MIN_ROC_AUC and balanced >= MIN_BALANCED_ACCURACY else "SHADOW"
 
-    # Once the out-of-sample gate is passed/assessed, fit the scoring model on
-    # all historical labeled samples. The holdout metrics above remain untouched.
     production = _new_model()
     production.fit([_vector(item.get("features", {})) for item in rows], labels)
     return QualityBundle(
@@ -437,22 +438,7 @@ def train_quality_model(store: Mapping[str, Any]) -> QualityBundle:
     )
 
 
-def _importance(model: Any) -> Dict[str, float]:
-    values = getattr(model, "feature_importances_", None)
-    if values is None:
-        return {}
-    pairs = sorted(
-        ((name, float(value)) for name, value in zip(FEATURE_NAMES, values)),
-        key=lambda pair: pair[1],
-        reverse=True,
-    )
-    return {name: round(value, 6) for name, value in pairs}
-
-
-def score_features(
-    features: Mapping[str, Any],
-    bundle: QualityBundle,
-) -> Optional[float]:
+def score_features(features: Mapping[str, Any], bundle: QualityBundle) -> Optional[float]:
     if bundle.model is None:
         return None
     try:
