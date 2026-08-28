@@ -1,36 +1,37 @@
-"""Premium Core live runner: canonical 15M + replay-scoped 5M early entry.
+"""Premium Core live runner: canonical 15M + replay-scoped 5M research gate.
 
-Only two Premium sources may reach the live Telegram admission pipeline:
+Only two Premium sources may reach the live admission pipeline:
 - ``15M_ENTRY``: canonical Premium confirmation route.
-- ``5M_RADAR``: strict 5M early-trade route, limited by default to the exact
-  high-liquidity universe used by the no-lookahead activation replay and to the
-  live direction that has not shown a severe negative edge.
+- ``5M_RADAR``: strict 5M early-trade route, kept available for analysis but
+  with live directions disabled by default until execution-cost-adjusted edge
+  is proven again.
 
 The 5M route was originally validated on eight majors, but later ran across the
-full all-coins scanner. Live ledger evidence showed that broader deployment had
-no durable edge after execution costs, with the live SHORT side materially
-worse than LONG. This runner therefore fails closed for 5M symbols outside the
-replay-proven universe and quarantines 5M SHORT by default while leaving 15M
-and all shadow research unchanged.
+full all-coins scanner. Live evidence then deteriorated: the broader lifetime
+sample had no durable edge after execution costs, and the latest 7-day sample
+was also negative even though it consisted only of LONG trades. For capital
+protection this runner therefore keeps the replay-proven symbol scope but fails
+closed for BOTH 5M directions by default. 15M and all shadow/research logic stay
+unchanged.
 
 ``PREMIUM_5M_LIVE_SYMBOLS`` and ``PREMIUM_5M_LIVE_DIRECTIONS`` may explicitly
-override these defaults after future no-lookahead/live evidence validates an
-expansion. Big Move, Early Breakout, Regime Transition, Trend Continuation and
-young/new coin routes remain quarantined from live capital. This module never
-places exchange orders.
+override these defaults only after future no-lookahead/live evidence validates
+an expansion. Big Move, Early Breakout, Regime Transition, Trend Continuation
+and young/new coin routes remain quarantined from live capital. This module
+never places exchange orders.
 """
 from __future__ import annotations
 
 import os
 from typing import Any, Callable, Dict, FrozenSet
 
-VERSION = "PREMIUM_CORE_EARLY_LIVE_V3_2026_08_28"
+VERSION = "PREMIUM_CORE_EARLY_LIVE_V4_2026_08_28"
 EARLY_SOURCE = "5M_RADAR"
 LIVE_SOURCE_ALLOWLIST = frozenset({"15M_ENTRY", EARLY_SOURCE})
 
-# Exact universe used by the replay that justified 5M live activation.
-# Do not silently broaden this list: validate additions with no-lookahead replay
-# first, then use PREMIUM_5M_LIVE_SYMBOLS or update the default deliberately.
+# Exact universe used by the replay that originally justified 5M activation.
+# Keep this scope for research/revalidation; live direction admission is handled
+# independently below.
 REPLAY_PROVEN_5M_SYMBOLS: FrozenSet[str] = frozenset(
     {
         "BTCUSDT",
@@ -44,10 +45,11 @@ REPLAY_PROVEN_5M_SYMBOLS: FrozenSet[str] = frozenset(
     }
 )
 
-# Live ledger evidence is asymmetric: 5M SHORT has shown a severe negative edge.
-# Keep it quarantined until a fresh validation proves otherwise. LONG still must
-# pass the existing cost, market, geometry and rolling source-performance gates.
-DEFAULT_5M_LIVE_DIRECTIONS: FrozenSet[str] = frozenset({"LONG"})
+# Capital-protection default: no 5M direction is live right now.
+# Latest 7d 5M evidence was negative after costs even though all 10 trades were
+# LONG; older/lifetime SHORT evidence was also materially negative. Re-enable a
+# direction only after fresh no-lookahead/live validation proves positive edge.
+DEFAULT_5M_LIVE_DIRECTIONS: FrozenSet[str] = frozenset()
 
 
 def _signal_source(signal: Dict[str, Any]) -> str:
@@ -76,12 +78,12 @@ def _parse_env_set(name: str, default: FrozenSet[str]) -> FrozenSet[str]:
 
 
 def _live_5m_symbols() -> FrozenSet[str]:
-    """Return explicit override or the replay-proven default universe."""
+    """Return explicit override or the replay-proven research universe."""
     return _parse_env_set("PREMIUM_5M_LIVE_SYMBOLS", REPLAY_PROVEN_5M_SYMBOLS)
 
 
 def _live_5m_directions() -> FrozenSet[str]:
-    """Return explicit override or the evidence-based safe live direction set."""
+    """Return explicit validated override or the fail-closed default set."""
     return _parse_env_set(
         "PREMIUM_5M_LIVE_DIRECTIONS",
         DEFAULT_5M_LIVE_DIRECTIONS,
@@ -195,15 +197,15 @@ def run() -> None:
 
     tracking_backfill.install(base_runner.bot)
 
-    # Record 5M_RADAR independently in the same source-performance report so
-    # live results can quarantine it automatically if the real edge deteriorates.
+    # Keep 5M recorded independently in the performance report so existing
+    # evidence remains available while the route is revalidated in research.
     if EARLY_SOURCE not in source_report.DEFAULT_LIVE_SOURCES:
         source_report.DEFAULT_LIVE_SOURCES = tuple(source_report.DEFAULT_LIVE_SOURCES) + (
             EARLY_SOURCE,
         )
 
-    # Early entries should be rejected sooner if delivery has already consumed
-    # too much of TP1. Reuse the existing fast-route send-time geometry rule.
+    # Preserve the stricter fast-route send-time geometry if 5M is explicitly
+    # re-enabled after future validation.
     global_guard.FAST_ROUTES.add(EARLY_SOURCE)
 
     # Preserve the existing ledger/backfill and crypto-only/no-chase safeguards.
@@ -245,13 +247,13 @@ def run() -> None:
         VERSION,
         "| live source allowlist=",
         ",".join(sorted(LIVE_SOURCE_ALLOWLIST)),
-        "| 5M early=ON_REPLAY_SCOPE | crypto-only=ON | send-time-no-chase=ON",
+        "| 5M live=PAUSED_REVALIDATION | crypto-only=ON | send-time-no-chase=ON",
     )
     print(
-        "5M replay-scoped live universe:",
+        "5M replay research universe:",
         ",".join(live_5m),
-        "| directions=",
-        ",".join(live_5m_directions),
+        "| live directions=",
+        ",".join(live_5m_directions) if live_5m_directions else "NONE",
         "| count=",
         len(live_5m),
     )
