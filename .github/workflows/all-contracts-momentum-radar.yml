@@ -2,6 +2,12 @@ name: All Contracts Momentum Radar
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "all_contracts_momentum_radar.py"
+      - ".github/workflows/all-contracts-momentum-radar.yml"
   schedule:
     - cron: "*/5 * * * *"
 
