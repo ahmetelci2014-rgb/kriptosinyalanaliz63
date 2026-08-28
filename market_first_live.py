@@ -3,6 +3,7 @@
 Market First remains the only strategy. This entry point installs safety/audit
 hooks without creating a second signal engine:
 - strict crypto-only OKX universe,
+- final contract-level crypto purity gate for stock/ETF/commodity derivatives,
 - fresh moderate-mover deep-scan priority,
 - corrected late/stale classification,
 - profit-after-cost ML labelling,
@@ -16,6 +17,7 @@ from typing import Any, Dict
 
 import market_first_runner as runner
 import market_first_audit_layer as audit
+import market_first_crypto_purity as purity
 from market_first_pre_send_guard import (
     evaluate_pre_send_market,
     fetch_fresh_major_moves,
@@ -46,6 +48,18 @@ def install_guards() -> None:
             universe,
         )
         print("MARKET FIRST STRICT CRYPTO:", strict_summary)
+
+        # CCXT can classify OKX stock/ETF/commodity products as generic
+        # contract/future rows instead of swap=True. Re-check every surviving
+        # derivative using OKX instCategory/groupId and fail closed when crypto
+        # evidence is missing. This prevents XAU/AAPL/DELL/etc. from polluting
+        # market breadth, rotation and deep-scan selection.
+        rows, universe, purity_summary = purity.filter_market_first_universe(
+            exchange,
+            rows,
+            universe,
+        )
+        print("MARKET FIRST CRYPTO PURITY:", purity_summary)
 
         if runner._is_live_run():
             try:
