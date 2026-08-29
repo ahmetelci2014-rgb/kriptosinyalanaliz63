@@ -8,6 +8,7 @@ on:
     paths:
       - "market_first_historical_ml_seed.py"
       - "market_first_historical_replay_v2.py"
+      - "market_first_historical_replay_v3.py"
       - "market_first_historical_store_bridge.py"
       - "market_first_ml_training_pool.py"
       - ".github/workflows/market-first-historical-ml-seed.yml"
@@ -53,15 +54,15 @@ jobs:
       - name: Canli ve tarihsel ML state'ini worktree icinde birlestir
         run: python market_first_historical_store_bridge.py prepare
 
-      - name: Market First gecmisini dakika bazli no-lookahead replay et
+      - name: Market First gecmisinde kacirilan firsatlari no-lookahead ogren
         env:
           MARKET_FIRST_HIST_LOOKBACK_DAYS: "45"
           MARKET_FIRST_HIST_BATCH_SYMBOLS: "12"
-          MARKET_FIRST_HIST_MAX_EVALS: "120"
+          MARKET_FIRST_HIST_MAX_EVALS: "160"
           MARKET_FIRST_HIST_OUTCOME_HOURS: "18"
           MARKET_FIRST_HIST_MIN_QUOTE_VOLUME: "250000"
           MARKET_FIRST_HIST_COST_PERCENT: "0.12"
-        run: python market_first_historical_replay_v2.py
+        run: python market_first_historical_replay_v3.py
 
       - name: Tarihsel ornekleri ayri havuza cikar ve canli state'i geri yukle
         if: ${{ always() }}
