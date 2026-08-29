@@ -9,6 +9,7 @@ hooks without creating a second signal engine:
 - rolling full-universe deep-analysis coverage,
 - corrected late/stale classification,
 - profit-after-cost ML labelling,
+- no-lookahead historical replay rows added only to the in-memory ML training pool,
 - fresh BTC/ETH/SOL recheck before Telegram,
 - final spread/depth liquidity check,
 - shadow audit for signals withheld by the last safety guards.
@@ -22,6 +23,7 @@ import market_first_audit_layer as audit
 import market_first_crypto_purity as purity
 import market_first_new_listings as new_listings
 import market_first_full_coverage as full_coverage
+import market_first_ml_training_pool as ml_training_pool
 from market_first_pre_send_guard import (
     evaluate_pre_send_market,
     fetch_fresh_major_moves,
@@ -42,6 +44,7 @@ def install_guards() -> None:
     original_select_deep_scan = runner._select_deep_scan
     original_analyze_candidate = runner.analyze_candidate
     original_send_trade = runner._send_trade
+    original_train_quality_model = runner.train_quality_model
     guard_cache: Dict[str, Any] = {"at": 0, "moves": {}}
 
     def guarded_load_universe(exchange: Any):
@@ -117,6 +120,13 @@ def install_guards() -> None:
             )
         return revised, revised_reason
 
+    def train_quality_with_history(live_store):
+        training_store = ml_training_pool.combine_training_store(live_store)
+        historical_added = int(training_store.get("historical_seed_rows_added") or 0)
+        if historical_added:
+            print("ML HISTORICAL TRAINING POOL:", historical_added, "etiketli replay örneği eklendi")
+        return original_train_quality_model(training_store)
+
     def guarded_send_trade(exchange: Any, signal: Dict[str, Any], ml_store: Dict[str, Any]) -> bool:
         now = runner.bot.now_ts()
 
@@ -180,6 +190,7 @@ def install_guards() -> None:
     runner._select_deep_scan = audited_select_deep_scan
     runner.analyze_candidate = audited_analyze_candidate
     runner.reconcile_samples = audit.reconcile_samples_net_r
+    runner.train_quality_model = train_quality_with_history
     runner._send_trade = guarded_send_trade
 
 
