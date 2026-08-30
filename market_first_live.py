@@ -7,6 +7,8 @@ hooks without creating a second signal engine:
 - fresh moderate-mover deep-scan priority,
 - newly listed contract deep-scan priority,
 - rolling full-universe deep-analysis coverage,
+- active EARLY alerts forced back into every scan until resolved,
+- EARLY -> trade follow-through confirmation before the move becomes late,
 - corrected late/stale classification,
 - profit-after-cost ML labelling,
 - no-lookahead historical replay rows added only to the in-memory ML training pool,
@@ -24,6 +26,7 @@ import market_first_crypto_purity as purity
 import market_first_new_listings as new_listings
 import market_first_full_coverage as full_coverage
 import market_first_ml_training_pool as ml_training_pool
+import market_first_early_trade_bridge as early_trade_bridge
 from market_first_pre_send_guard import (
     evaluate_pre_send_market,
     fetch_fresh_major_moves,
@@ -43,9 +46,11 @@ def install_guards() -> None:
     original_load_universe = runner._load_universe
     original_select_deep_scan = runner._select_deep_scan
     original_analyze_candidate = runner.analyze_candidate
+    original_decision_to_signal = runner.decision_to_signal
     original_send_trade = runner._send_trade
     original_train_quality_model = runner.train_quality_model
     guard_cache: Dict[str, Any] = {"at": 0, "moves": {}}
+    followthrough_cache: Dict[str, Any] = {"alerts": {}}
 
     def guarded_load_universe(exchange: Any):
         rows, universe = original_load_universe(exchange)
@@ -97,13 +102,22 @@ def install_guards() -> None:
             max_total=full_coverage.MAX_DEEP_SCAN_PER_RUN,
             priority_slots=full_coverage.PRIORITY_SLOTS,
         )
+        selected, active_alerts, follow_summary = early_trade_bridge.prioritize_active_alerts(
+            selected,
+            rows,
+            state,
+            max_total=full_coverage.MAX_DEEP_SCAN_PER_RUN,
+            now=runner.bot.now_ts(),
+        )
+        followthrough_cache["alerts"] = active_alerts
         print(
             "MARKET FIRST EARLY CAPTURE | deep=",
             len(selected),
-            "| fresh-band + full-universe rotation",
+            "| fresh-band + full-universe rotation + active-alert follow-up",
         )
         print("MARKET FIRST NEW LISTINGS:", listing_summary)
         print("MARKET FIRST FULL COVERAGE:", coverage_summary)
+        print("MARKET FIRST EARLY->TRADE:", follow_summary)
         return selected
 
     def audited_analyze_candidate(*args, **kwargs):
@@ -118,7 +132,45 @@ def install_guards() -> None:
                 "| 5m=", revised.get("move_5m_percent"),
                 "| extATR=", revised.get("extension_atr_5m"),
             )
+
+        def arg(name: str, index: int, default=None):
+            if name in kwargs:
+                return kwargs.get(name)
+            return args[index] if len(args) > index else default
+
+        symbol = str(arg("symbol", 0, "") or "")
+        alert = (followthrough_cache.get("alerts") or {}).get(symbol)
+        if alert:
+            promoted, promoted_reason, follow_diag = early_trade_bridge.promote_active_alert(
+                revised,
+                revised_reason,
+                alert,
+                symbol=symbol,
+                df1m=arg("df1m", 1),
+                df5m=arg("df5m", 2),
+                df15m=arg("df15m", 3),
+                df1h=arg("df1h", 4),
+                current_price=float(arg("current_price", 5, 0.0) or 0.0),
+                quote_volume_24h=float(arg("quote_volume_24h", 6, 0.0) or 0.0),
+                context=arg("context", 7),
+                now=runner.bot.now_ts(),
+            )
+            if follow_diag.get("promoted"):
+                print(
+                    "ERKEN -> İŞLEM TEYİDİ:",
+                    symbol,
+                    promoted.get("direction"),
+                    "| ilk uyarıdan=", promoted.get("followthrough_favorable_percent"),
+                    "| skor=", promoted.get("score"),
+                    "| risk=", promoted.get("risk_percent"),
+                    "| roomR=", promoted.get("room_r"),
+                )
+            revised, revised_reason = promoted, promoted_reason
         return revised, revised_reason
+
+    def decision_to_signal_with_followthrough(decision):
+        signal = original_decision_to_signal(decision)
+        return early_trade_bridge.decorate_followthrough_signal(signal, decision)
 
     def train_quality_with_history(live_store):
         training_store = ml_training_pool.combine_training_store(live_store)
@@ -189,6 +241,7 @@ def install_guards() -> None:
     runner._load_universe = guarded_load_universe
     runner._select_deep_scan = audited_select_deep_scan
     runner.analyze_candidate = audited_analyze_candidate
+    runner.decision_to_signal = decision_to_signal_with_followthrough
     runner.reconcile_samples = audit.reconcile_samples_net_r
     runner.train_quality_model = train_quality_with_history
     runner._send_trade = guarded_send_trade
