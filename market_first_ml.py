@@ -1,14 +1,14 @@
 """Embedded tree-model quality layer for Market First V5.
 
 This is not a second trading system. Market First remains the hard decision
-engine. The model learns only from completed Market First trades and may affect
-live selection only after chronological out-of-sample validation passes.
+engine. The model can learn from completed live trades, no-lookahead historical
+replay rows and ML-ready resolved EARLY episodes. Live blocking is still allowed
+only after the large chronological validation gate passes.
 
-V3 adds derivatives/order-flow observations (OI, normalized funding, taker
-imbalance, CVD impulse and near-price order-book context). Old samples remain
-valid: missing newer fields are represented by explicit availability flags plus
-zero values, so the model cannot mistake missing historical data for a
-confirmed derivatives/order-flow signal.
+V4 keeps derivatives/order-flow observations (OI, normalized funding, taker
+imbalance, CVD impulse and near-price order-book context) and adds a small-data
+SHADOW stage. The shadow model may score candidates for diagnostics while it is
+still too young to block or create live trades.
 """
 from __future__ import annotations
 
@@ -24,9 +24,13 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import balanced_accuracy_score, roc_auc_score
 
 
-MODEL_VERSION = "MARKET_FIRST_RF_QUALITY_V3_ORDERFLOW_2026_08_28"
+MODEL_VERSION = "MARKET_FIRST_RF_QUALITY_V4_EARLY_POOL_2026_08_30"
 SAMPLE_FILE = "market_first_ml_samples.json"
 
+# A tiny balanced set is enough to start observational scoring, but never to
+# influence live trades. ACTIVE remains deliberately difficult to reach.
+SHADOW_MIN_LABELED_SAMPLES = 5
+SHADOW_MIN_CLASS_SAMPLES = 2
 MIN_LABELED_SAMPLES = 120
 MIN_CLASS_SAMPLES = 25
 VALIDATION_FRACTION = 0.25
@@ -175,20 +179,13 @@ def extract_features(decision: Mapping[str, Any], context: Any) -> Dict[str, flo
         "oi_change_5m_percent": _sf(decision.get("oi_change_5m_percent")),
         "oi_change_15m_percent": _sf(decision.get("oi_change_15m_percent")),
         "funding_available": 1.0 if decision.get("funding_available") else 0.0,
-        # Positive = funding crowding is in candidate direction; the tree learns
-        # whether that is supportive or dangerous in a given regime.
         "funding_crowding_8h_bps": _sf(decision.get("funding_crowding_8h_bps")),
         "taker_available": 1.0 if decision.get("taker_available") else 0.0,
-        # Positive = aggressive recent flow is aligned with candidate direction.
         "taker_imbalance_alignment": _sf(decision.get("taker_imbalance_alignment")),
         "cvd_available": 1.0 if decision.get("cvd_available") else 0.0,
-        # Positive = aggressive pressure strengthened in candidate direction
-        # during the latter half of the recent-trade window.
         "cvd_impulse_alignment": _sf(decision.get("cvd_impulse_alignment")),
         "book_available": 1.0 if decision.get("book_available") else 0.0,
-        # Positive = visible near-price depth favors candidate direction.
         "book_imbalance_alignment": _sf(decision.get("book_imbalance_alignment")),
-        # High means a concentrated visible wall sits on the opposing side.
         "book_opposing_wall_ratio": min(
             20.0,
             max(0.0, _sf(decision.get("book_opposing_wall_ratio"))),
@@ -369,6 +366,20 @@ def _new_model() -> RandomForestClassifier:
     )
 
 
+def _new_shadow_model() -> RandomForestClassifier:
+    # Small-sample observational model. It can emit probabilities but
+    # should_block_live() never allows SHADOW to veto a real signal.
+    return RandomForestClassifier(
+        n_estimators=220,
+        max_depth=4,
+        min_samples_leaf=2,
+        max_features="sqrt",
+        class_weight="balanced_subsample",
+        random_state=42,
+        n_jobs=1,
+    )
+
+
 def _importance(model: Any) -> Dict[str, float]:
     values = getattr(model, "feature_importances_", None)
     if values is None:
@@ -387,13 +398,38 @@ def train_quality_model(store: Mapping[str, Any]) -> QualityBundle:
     positive = sum(labels)
     negative = len(labels) - positive
 
-    if len(rows) < MIN_LABELED_SAMPLES or positive < MIN_CLASS_SAMPLES or negative < MIN_CLASS_SAMPLES:
+    active_ready = (
+        len(rows) >= MIN_LABELED_SAMPLES
+        and positive >= MIN_CLASS_SAMPLES
+        and negative >= MIN_CLASS_SAMPLES
+    )
+    if not active_ready:
+        shadow_ready = (
+            len(rows) >= SHADOW_MIN_LABELED_SAMPLES
+            and positive >= SHADOW_MIN_CLASS_SAMPLES
+            and negative >= SHADOW_MIN_CLASS_SAMPLES
+        )
+        if shadow_ready:
+            model = _new_shadow_model()
+            model.fit([_vector(item.get("features", {})) for item in rows], labels)
+            return QualityBundle(
+                mode="SHADOW",
+                model=model,
+                labeled_count=len(rows),
+                positive_count=positive,
+                negative_count=negative,
+                feature_importance=_importance(model),
+                reason=(
+                    "Erken gölge model çalışıyor; olasılık üretir ama canlı işlemi "
+                    "engellemez veya tek başına işlem oluşturmaz."
+                ),
+            )
         return QualityBundle(
             mode="COLLECTING",
             labeled_count=len(rows),
             positive_count=positive,
             negative_count=negative,
-            reason="Yeterli dengeli Market First sonucu henüz birikmedi.",
+            reason="Gölge model için bile yeterli dengeli Market First sonucu henüz birikmedi.",
         )
 
     validation_count = max(MIN_VALIDATION_SAMPLES, int(round(len(rows) * VALIDATION_FRACTION)))
@@ -485,6 +521,10 @@ def bundle_summary(bundle: QualityBundle) -> Dict[str, Any]:
         "negative_count": bundle.negative_count,
         "validation_count": bundle.validation_count,
         "metrics": bundle.metrics or {},
+        "shadow_min_labeled": SHADOW_MIN_LABELED_SAMPLES,
+        "shadow_min_each_class": SHADOW_MIN_CLASS_SAMPLES,
+        "active_min_labeled": MIN_LABELED_SAMPLES,
+        "active_min_each_class": MIN_CLASS_SAMPLES,
         "live_block_probability": LIVE_BLOCK_PROBABILITY,
         "top_feature_importance": dict(list(importance.items())[:8]),
         "reason": bundle.reason,

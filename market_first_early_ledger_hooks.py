@@ -12,18 +12,20 @@ import math
 import os
 from typing import Any, Dict, Mapping
 
-VERSION = "MARKET_FIRST_EARLY_LEDGER_V1_2026_08_30"
+VERSION = "MARKET_FIRST_EARLY_LEDGER_V2_ML_READY_2026_08_30"
 LEDGER_FILE = "market_first_early_ledger.json"
 MAX_EPISODES = 1500
 _INSTALLED = False
 
 SNAPSHOT_FIELDS = (
     "score",
+    "stage",
     "market_label",
     "market_regime",
     "market_score",
     "market_strength",
     "market_breadth_5m",
+    "market_breadth_24h",
     "major_move_5m_percent",
     "move_1m_percent",
     "move_3m_percent",
@@ -37,10 +39,24 @@ SNAPSHOT_FIELDS = (
     "structure_1h",
     "independent_move",
     "quote_volume_24h",
-    "derivatives_soft_score",
+    "risk_percent",
+    "room_r",
+    "risk_reject_reason",
+    "derivatives_available",
+    "oi_history_available",
+    "oi_change_5m_percent",
     "oi_change_15m_percent",
+    "funding_available",
     "funding_rate_8h_bps",
+    "funding_crowding_8h_bps",
+    "taker_available",
     "taker_imbalance_alignment",
+    "cvd_available",
+    "cvd_impulse_alignment",
+    "book_available",
+    "book_imbalance_alignment",
+    "book_opposing_wall_ratio",
+    "derivatives_soft_score",
 )
 
 
@@ -174,8 +190,9 @@ def update_episode(
         )
         episode["final_directional_percent"] = round(current, 4)
 
-        # No artificial TP/SL is invented. The label is based only on the price
-        # path observed after the EARLY alert and is deliberately conservative.
+        # The target is now explicit: did the EARLY alert produce a clean,
+        # monetisable directional move? MIXED is therefore a negative training
+        # example rather than an unlabeled result. No synthetic TP/SL is used.
         if best >= 2.0:
             outcome, label = "STRONG_MOVE", 1
         elif best >= 0.75 and best >= max(0.75, worst * 1.20):
@@ -183,7 +200,7 @@ def update_episode(
         elif worst >= 0.90 and best < 0.50:
             outcome, label = "BAD_MOVE", 0
         else:
-            outcome, label = "MIXED", None
+            outcome, label = "MIXED", 0
         episode["outcome"] = outcome
         episode["quality_label"] = label
     return True
@@ -235,7 +252,9 @@ def install() -> None:
             if not isinstance(item, dict):
                 continue
             if not item.get("early_episode_id"):
-                # Adopt alerts that existed before this ledger was deployed.
+                # Adopt alerts that existed before this ledger was deployed. Such
+                # legacy episodes remain useful for outcome statistics, but their
+                # partial snapshots are intentionally excluded from ML training.
                 first_at = int(item.get("first_at") or now)
                 seed = {
                     "symbol": item.get("symbol"),

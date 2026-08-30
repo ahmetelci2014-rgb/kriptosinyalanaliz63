@@ -141,7 +141,7 @@ def test_extract_features_aligns_short_with_down_market_and_derivatives():
     assert features["book_opposing_wall_ratio"] == 1.7
 
 
-def test_small_dataset_stays_collecting():
+def test_small_balanced_dataset_starts_shadow_without_live_blocking():
     store = empty_store()
     for i in range(40):
         label = i % 2
@@ -152,8 +152,11 @@ def test_small_dataset_stays_collecting():
             "features": _feature_row(label),
         }
     bundle = train_quality_model(store)
-    assert bundle.mode == "COLLECTING"
-    assert bundle.model is None
+    assert bundle.mode == "SHADOW"
+    assert bundle.model is not None
+    probability = score_features(_feature_row(0), bundle)
+    assert probability is not None
+    assert not should_block_live(probability, bundle)
 
 
 def test_strong_chronological_signal_can_activate():
