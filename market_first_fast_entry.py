@@ -1,13 +1,12 @@
 """Immediate actionable entry for very short Market First moves.
 
-Market First can identify a useful move on its first EARLY observation, but a
-5-minute scheduler plus a later follow-through confirmation can turn a good
-scalp into a late chase. This module lets only the strongest first-observation
-EARLY decisions become actionable immediately.
+The normal Market First score was intentionally conservative, but live evidence
+showed that useful 1-5 minute moves can finish before the normal trade gate opens.
+This module therefore gives the SAME Market First strategy a narrow fast lane:
+qualified fresh momentum can become actionable on its first observation.
 
-It stays inside the same Market First strategy and does not place exchange
-orders. Normal fresh-major, liquidity, duplicate, portfolio and entry-validity
-guards still run in the ordinary send path.
+It does not place exchange orders. Fresh-major, liquidity, duplicate, portfolio,
+recent-stop and final-entry guards still run in the ordinary send path.
 """
 from __future__ import annotations
 
@@ -16,16 +15,24 @@ from typing import Any, Dict, Mapping, Optional, Tuple
 
 import market_first_strategy as strategy
 
-VERSION = "MARKET_FIRST_FAST_ENTRY_V1_2026_08_30"
+VERSION = "MARKET_FIRST_FAST_ENTRY_V2_2026_08_30"
 
-MIN_FAST_SCORE = 70
-MIN_MOVE_3_PERCENT = 0.45
-MIN_MOVE_5_PERCENT = 0.65
-MAX_MOVE_3_PERCENT = 1.65
-MAX_MOVE_5_PERCENT = 2.20
-MIN_VOLUME_RATIO = 0.55
+# Live evidence (BICO and similar short-lived moves) showed that the old 66/70
+# admission pair was often waiting for confirmation until the scalp was nearly
+# over. Lower only the *awareness* floor used by this same strategy; hard market,
+# structure, extension, risk and pre-send guards remain below.
+FAST_ALERT_SCORE = 58
+if strategy.MIN_ALERT_SCORE > FAST_ALERT_SCORE:
+    strategy.MIN_ALERT_SCORE = FAST_ALERT_SCORE
+
+MIN_FAST_SCORE = 58
+MIN_MOVE_3_PERCENT = 0.35
+MIN_MOVE_5_PERCENT = 0.50
+MAX_MOVE_3_PERCENT = 1.55
+MAX_MOVE_5_PERCENT = 2.00
+MIN_VOLUME_RATIO = 0.50
 MAX_EXTENSION_ATR = 1.55
-MAX_FAST_RISK_PERCENT = 1.60
+MAX_FAST_RISK_PERCENT = 1.50
 MIN_FAST_ROOM_R = 1.25
 FAST_TP1_R = 0.55
 FAST_TP2_R = 1.00
@@ -113,7 +120,7 @@ def promote_initial_early(
     current_price: float,
     context: strategy.MarketContext,
 ) -> Tuple[Optional[Dict[str, Any]], str, Dict[str, Any]]:
-    """Turn a strong first-observation EARLY move into an immediate trade."""
+    """Turn a fresh qualified EARLY move into an immediate short-lived trade."""
     diagnostics: Dict[str, Any] = {"promoted": False, "version": VERSION}
     if not isinstance(decision, Mapping):
         diagnostics["reason"] = "FAST_NO_DECISION"
@@ -134,6 +141,7 @@ def promote_initial_early(
     move5 = _signed_for(direction, current.get("move_5m_percent"))
     volume = _sf(current.get("volume_ratio_1m"))
     extension = _sf(current.get("extension_atr_5m"))
+    breakout = bool(current.get("breakout_20m"))
     diagnostics.update({
         "direction": direction,
         "score": score,
@@ -142,6 +150,7 @@ def promote_initial_early(
         "move5": round(move5, 4),
         "volume": round(volume, 3),
         "extension_atr": round(extension, 3),
+        "breakout": breakout,
     })
 
     if direction not in {"LONG", "SHORT"} or score < MIN_FAST_SCORE:
@@ -153,7 +162,12 @@ def promote_initial_early(
     if not (MIN_MOVE_5_PERCENT <= move5 <= MAX_MOVE_5_PERCENT):
         diagnostics["reason"] = "FAST_5M_OUTSIDE"
         return current, reason, diagnostics
-    if move1 < -0.12:
+    # If there is no clean 20m break, demand stronger continuation so the lower
+    # score floor does not turn tiny random noise into a trade.
+    if not breakout and move3 < 0.60 and move5 < 0.90:
+        diagnostics["reason"] = "FAST_NO_BREAKOUT_WEAK_PROGRESS"
+        return current, reason, diagnostics
+    if move1 < -0.10:
         diagnostics["reason"] = "FAST_1M_REVERSING"
         return current, reason, diagnostics
     if volume < MIN_VOLUME_RATIO:
@@ -198,7 +212,7 @@ def promote_initial_early(
         "alert_eligible": False,
         "fast_entry": True,
         "fast_entry_version": VERSION,
-        "fast_entry_reason": "FIRST_EARLY_MOMENTUM",
+        "fast_entry_reason": "FIRST_FRESH_MOMENTUM_V2",
         "fast_tp1_r": FAST_TP1_R,
         "fast_tp2_r": FAST_TP2_R,
         "fast_tp3_r": FAST_TP3_R,
@@ -215,7 +229,7 @@ def decorate_signal(signal: Optional[Dict[str, Any]], decision: Mapping[str, Any
         return signal
     signal["entry_type"] = "MARKET_FIRST_FAST"
     signal["quality"] = "HIZLI MARKET FIRST"
-    signal["quality_note"] = "İlk ERKEN tespitte hızlı giriş; gecikmiş takip teyidi beklenmez."
+    signal["quality_note"] = "İlk tespitte hızlı giriş; ikinci tur teyidi beklenmez."
     signal["fast_entry"] = True
     signal["rr_tp1"] = FAST_TP1_R
     signal["rr_tp2"] = FAST_TP2_R
