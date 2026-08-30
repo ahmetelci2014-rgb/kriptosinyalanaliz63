@@ -1,198 +1,213 @@
 {
   "batch_symbols": 12,
-  "cursor_end": 12,
-  "cursor_start": 0,
+  "cursor_end": 24,
+  "cursor_start": 12,
   "eligible_research_universe": 271,
-  "generated_at": 1788037388,
+  "generated_at": 1788094632,
   "historical_breadth_mode": "NEUTRAL_0_50_NO_LOOKAHEAD",
   "historical_derivatives_mode": "UNAVAILABLE_FLAGS_ZERO",
-  "historical_labeled_total": 4,
-  "labeled_added": 4,
-  "labeled_after": 4,
-  "labeled_before": 0,
+  "historical_labeled_total": 6,
+  "labeled_added": 2,
+  "labeled_after": 6,
+  "labeled_before": 4,
   "liquidity_note": "Historical order-book depth unavailable; quote-volume gate used, live depth guard remains unchanged.",
   "lookback_days": 45,
   "max_evals_per_symbol": 160,
   "ml_quality_after_seed": {
-    "labeled_count": 4,
+    "active_min_each_class": 25,
+    "active_min_labeled": 120,
+    "labeled_count": 6,
     "live_block_probability": 0.42,
     "metrics": {},
-    "mode": "COLLECTING",
-    "negative_count": 2,
+    "mode": "SHADOW",
+    "negative_count": 4,
     "positive_count": 2,
-    "reason": "Yeterli dengeli Market First sonucu henüz birikmedi.",
-    "top_feature_importance": {},
+    "reason": "Erken gölge model çalışıyor; olasılık üretir ama canlı işlemi engellemez veya tek başına işlem oluşturmaz.",
+    "shadow_min_each_class": 2,
+    "shadow_min_labeled": 5,
+    "top_feature_importance": {
+      "extension_atr_5m": 0.085526,
+      "major_move_5m_alignment": 0.092105,
+      "move_1m_alignment": 0.078947,
+      "move_3m_alignment": 0.105263,
+      "move_5m_alignment": 0.123684,
+      "relative_strength_5m": 0.072368,
+      "risk_percent": 0.092105,
+      "volume_ratio_1m": 0.085526
+    },
     "validation_count": 0,
-    "version": "MARKET_FIRST_RF_QUALITY_V3_ORDERFLOW_2026_08_28"
+    "version": "MARKET_FIRST_RF_QUALITY_V4_EARLY_POOL_2026_08_30"
   },
   "outcome_hours": 18,
   "round_trip_cost_percent": 0.12,
   "run_totals": {
-    "LOW_HIST_VOLUME": 644,
-    "LOW_SCORE": 362,
-    "MARKET_OPPOSED": 1,
-    "NO_ACCELERATION": 314,
-    "RESEARCH_LATE_SKIP": 7,
-    "RESEARCH_RISK_WIDE": 4,
-    "STALE_EXTENSION": 104,
+    "LOW_HIST_VOLUME": 174,
+    "LOW_SCORE": 586,
+    "NO_ACCELERATION": 480,
+    "RESEARCH_LATE_SKIP": 15,
+    "RESEARCH_RISK_WIDE": 11,
+    "STALE_EXTENSION": 172,
     "eval_times": 1440,
     "negative": 2,
-    "positive": 2,
-    "seeded": 4,
-    "seeded_counterfactual": 4,
-    "stage_EARLY": 7,
-    "stage_LATE": 7,
-    "stage_READY": 1
+    "seeded": 2,
+    "seeded_counterfactual": 2,
+    "stage_EARLY": 13,
+    "stage_LATE": 15
   },
   "strategy_version": "MARKET_FIRST_V5_2026_08_28",
   "symbols": [
     {
       "stats": {
-        "LOW_SCORE": 69,
-        "NO_ACCELERATION": 41,
-        "RESEARCH_LATE_SKIP": 1,
-        "STALE_EXTENSION": 9,
-        "eval_times": 120,
-        "stage_LATE": 1
-      },
-      "status": "OK",
-      "symbol": "ZECUSDT"
-    },
-    {
-      "stats": {
-        "LOW_SCORE": 62,
-        "MARKET_OPPOSED": 1,
-        "NO_ACCELERATION": 39,
+        "LOW_HIST_VOLUME": 15,
+        "LOW_SCORE": 57,
+        "NO_ACCELERATION": 29,
         "RESEARCH_LATE_SKIP": 2,
         "RESEARCH_RISK_WIDE": 2,
-        "STALE_EXTENSION": 14,
+        "STALE_EXTENSION": 15,
         "eval_times": 120,
-        "stage_EARLY": 1,
-        "stage_LATE": 2,
-        "stage_READY": 1
-      },
-      "status": "OK",
-      "symbol": "TRUMPUSDT"
-    },
-    {
-      "stats": {
-        "LOW_HIST_VOLUME": 96,
-        "LOW_SCORE": 19,
-        "NO_ACCELERATION": 2,
-        "RESEARCH_LATE_SKIP": 2,
-        "STALE_EXTENSION": 1,
-        "eval_times": 120,
+        "stage_EARLY": 2,
         "stage_LATE": 2
       },
       "status": "OK",
-      "symbol": "GIGGLEUSDT"
+      "symbol": "RIVERUSDT"
     },
     {
       "stats": {
-        "LOW_HIST_VOLUME": 120,
-        "eval_times": 120
-      },
-      "status": "OK",
-      "symbol": "YFIUSDT"
-    },
-    {
-      "stats": {
-        "LOW_SCORE": 44,
-        "NO_ACCELERATION": 54,
-        "RESEARCH_LATE_SKIP": 1,
-        "STALE_EXTENSION": 18,
-        "eval_times": 120,
-        "negative": 1,
-        "positive": 2,
-        "seeded": 3,
-        "seeded_counterfactual": 3,
-        "stage_EARLY": 3,
-        "stage_LATE": 1
-      },
-      "status": "OK",
-      "symbol": "HYPEUSDT"
-    },
-    {
-      "stats": {
-        "LOW_HIST_VOLUME": 9,
-        "LOW_SCORE": 23,
-        "NO_ACCELERATION": 71,
-        "STALE_EXTENSION": 17,
-        "eval_times": 120
-      },
-      "status": "OK",
-      "symbol": "BNBUSDT"
-    },
-    {
-      "stats": {
-        "LOW_HIST_VOLUME": 73,
-        "LOW_SCORE": 25,
-        "NO_ACCELERATION": 19,
-        "STALE_EXTENSION": 3,
-        "eval_times": 120
-      },
-      "status": "OK",
-      "symbol": "OKBUSDT"
-    },
-    {
-      "stats": {
-        "LOW_HIST_VOLUME": 112,
-        "LOW_SCORE": 6,
-        "STALE_EXTENSION": 2,
-        "eval_times": 120
-      },
-      "status": "OK",
-      "symbol": "DASHUSDT"
-    },
-    {
-      "stats": {
-        "LOW_HIST_VOLUME": 97,
-        "LOW_SCORE": 16,
-        "NO_ACCELERATION": 2,
+        "LOW_SCORE": 64,
+        "NO_ACCELERATION": 34,
+        "RESEARCH_LATE_SKIP": 2,
         "RESEARCH_RISK_WIDE": 1,
-        "STALE_EXTENSION": 4,
-        "eval_times": 120,
-        "stage_EARLY": 1
-      },
-      "status": "OK",
-      "symbol": "TAOUSDT"
-    },
-    {
-      "stats": {
-        "LOW_HIST_VOLUME": 120,
-        "eval_times": 120
-      },
-      "status": "OK",
-      "symbol": "ICPUSDT"
-    },
-    {
-      "stats": {
-        "LOW_SCORE": 45,
-        "NO_ACCELERATION": 55,
-        "RESEARCH_LATE_SKIP": 1,
         "STALE_EXTENSION": 18,
         "eval_times": 120,
         "negative": 1,
         "seeded": 1,
         "seeded_counterfactual": 1,
+        "stage_EARLY": 2,
+        "stage_LATE": 2
+      },
+      "status": "OK",
+      "symbol": "UNIUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 34,
+        "NO_ACCELERATION": 68,
+        "STALE_EXTENSION": 18,
+        "eval_times": 120
+      },
+      "status": "OK",
+      "symbol": "BCHUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 48,
+        "NO_ACCELERATION": 60,
+        "STALE_EXTENSION": 12,
+        "eval_times": 120
+      },
+      "status": "OK",
+      "symbol": "FILUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 61,
+        "NO_ACCELERATION": 34,
+        "STALE_EXTENSION": 25,
+        "eval_times": 120
+      },
+      "status": "OK",
+      "symbol": "WLDUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 51,
+        "NO_ACCELERATION": 48,
+        "RESEARCH_LATE_SKIP": 1,
+        "RESEARCH_RISK_WIDE": 1,
+        "STALE_EXTENSION": 19,
+        "eval_times": 120,
         "stage_EARLY": 1,
         "stage_LATE": 1
       },
       "status": "OK",
-      "symbol": "AAVEUSDT"
+      "symbol": "INJUSDT"
     },
     {
       "stats": {
-        "LOW_HIST_VOLUME": 17,
-        "LOW_SCORE": 53,
-        "NO_ACCELERATION": 31,
+        "LOW_HIST_VOLUME": 109,
+        "LOW_SCORE": 5,
+        "NO_ACCELERATION": 6,
+        "eval_times": 120
+      },
+      "status": "OK",
+      "symbol": "EGLDUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 39,
+        "NO_ACCELERATION": 68,
+        "STALE_EXTENSION": 13,
+        "eval_times": 120
+      },
+      "status": "OK",
+      "symbol": "SUIUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 57,
+        "NO_ACCELERATION": 48,
         "RESEARCH_RISK_WIDE": 1,
-        "STALE_EXTENSION": 18,
+        "STALE_EXTENSION": 14,
         "eval_times": 120,
         "stage_EARLY": 1
       },
       "status": "OK",
-      "symbol": "RIVERUSDT"
+      "symbol": "ORDIUSDT"
+    },
+    {
+      "stats": {
+        "LOW_HIST_VOLUME": 4,
+        "LOW_SCORE": 77,
+        "NO_ACCELERATION": 19,
+        "RESEARCH_LATE_SKIP": 7,
+        "RESEARCH_RISK_WIDE": 5,
+        "STALE_EXTENSION": 8,
+        "eval_times": 120,
+        "stage_EARLY": 5,
+        "stage_LATE": 7
+      },
+      "status": "OK",
+      "symbol": "BICOUSDT"
+    },
+    {
+      "stats": {
+        "LOW_HIST_VOLUME": 46,
+        "LOW_SCORE": 38,
+        "NO_ACCELERATION": 26,
+        "RESEARCH_LATE_SKIP": 2,
+        "STALE_EXTENSION": 8,
+        "eval_times": 120,
+        "stage_LATE": 2
+      },
+      "status": "OK",
+      "symbol": "VVVUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 55,
+        "NO_ACCELERATION": 40,
+        "RESEARCH_LATE_SKIP": 1,
+        "RESEARCH_RISK_WIDE": 1,
+        "STALE_EXTENSION": 22,
+        "eval_times": 120,
+        "negative": 1,
+        "seeded": 1,
+        "seeded_counterfactual": 1,
+        "stage_EARLY": 2,
+        "stage_LATE": 1
+      },
+      "status": "OK",
+      "symbol": "LINKUSDT"
     }
   ],
   "version": "MARKET_FIRST_HISTORICAL_ML_SEED_V1_2026_08_29"
