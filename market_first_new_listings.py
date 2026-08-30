@@ -129,3 +129,8 @@ def prioritize_new_listings(
         "watch_hours": NEW_LISTING_WATCH_SECONDS // 3600,
     }
     return merged, summary
+
+
+# Imported for its live-main-only EARLY alert bookkeeping hook. It does not
+# change selection or entry rules and remains inert on PR/test branches.
+import market_first_early_ledger_hooks as _early_ledger_hooks  # noqa: E402,F401
