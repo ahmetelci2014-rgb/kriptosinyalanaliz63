@@ -52,10 +52,15 @@ class FastEntryTests(unittest.TestCase):
             "move_5m_percent": 1.27,
             "volume_ratio_1m": 0.64,
             "extension_atr_5m": 0.90,
+            "breakout_20m": True,
             "independent_move": False,
         }
         row.update(changes)
         return row
+
+    def test_fast_import_lowers_awareness_floor(self):
+        self.assertEqual(strategy.MIN_ALERT_SCORE, fast.FAST_ALERT_SCORE)
+        self.assertEqual(fast.FAST_ALERT_SCORE, 58)
 
     def test_bico_like_first_observation_becomes_actionable(self):
         with patch.object(strategy, "_structure", side_effect=self.structures()):
@@ -75,6 +80,21 @@ class FastEntryTests(unittest.TestCase):
         self.assertFalse(promoted["alert_eligible"])
         self.assertLess(promoted["sl"], 100.0)
         self.assertGreater(promoted["tp1"], 100.0)
+
+    def test_near_threshold_bico_like_move_can_trade_without_second_run(self):
+        with patch.object(strategy, "_structure", side_effect=self.structures()):
+            promoted, reason, diag = fast.promote_initial_early(
+                self.decision(score=60, breakout_20m=False),
+                "OK",
+                df5m=object(),
+                df15m=object(),
+                df1h=object(),
+                current_price=100.0,
+                context=self.context(),
+            )
+        self.assertEqual(reason, "OK")
+        self.assertTrue(diag["promoted"])
+        self.assertTrue(promoted["trade_eligible"])
 
     def test_one_minute_reversal_does_not_chase(self):
         with patch.object(strategy, "_structure", side_effect=self.structures()):
@@ -105,6 +125,25 @@ class FastEntryTests(unittest.TestCase):
         self.assertFalse(diag["promoted"])
         self.assertEqual(diag["reason"], "FAST_5M_OUTSIDE")
         self.assertFalse(promoted["trade_eligible"])
+
+    def test_tiny_noise_without_breakout_stays_out(self):
+        with patch.object(strategy, "_structure", side_effect=self.structures()):
+            promoted, _, diag = fast.promote_initial_early(
+                self.decision(
+                    score=60,
+                    move_3m_percent=0.40,
+                    move_5m_percent=0.55,
+                    breakout_20m=False,
+                ),
+                "OK",
+                df5m=object(),
+                df15m=object(),
+                df1h=object(),
+                current_price=100.0,
+                context=self.context(),
+            )
+        self.assertFalse(diag["promoted"])
+        self.assertEqual(diag["reason"], "FAST_NO_BREAKOUT_WEAK_PROGRESS")
 
 
 if __name__ == "__main__":
