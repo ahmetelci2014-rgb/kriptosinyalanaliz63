@@ -95,24 +95,29 @@ def _early_sample(episode: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
         "current_price": alert_price,
     })
 
-    # Availability flags prevent historical missing data from looking like a
-    # confirmed zero reading in the derivatives/order-flow features.
-    if any(key in initial for key in ("oi_change_15m_percent", "funding_rate_8h_bps", "taker_imbalance_alignment")):
-        decision["derivatives_available"] = True
-    if "oi_change_15m_percent" in initial:
-        decision["oi_history_available"] = True
-    if "funding_rate_8h_bps" in initial:
-        decision["funding_available"] = True
+    # Preserve explicit availability flags from the live snapshot. For older
+    # snapshots that did not store flags, infer availability only from the
+    # presence of the corresponding observation.
+    if "derivatives_available" not in decision:
+        decision["derivatives_available"] = any(
+            key in initial
+            for key in ("oi_change_15m_percent", "funding_rate_8h_bps", "taker_imbalance_alignment")
+        )
+    if "oi_history_available" not in decision:
+        decision["oi_history_available"] = "oi_change_15m_percent" in initial
+    if "funding_available" not in decision:
+        decision["funding_available"] = "funding_rate_8h_bps" in initial
+    if "funding_crowding_8h_bps" not in decision and "funding_rate_8h_bps" in initial:
         decision["funding_crowding_8h_bps"] = initial.get("funding_rate_8h_bps")
-    if "taker_imbalance_alignment" in initial:
-        decision["taker_available"] = True
+    if "taker_available" not in decision:
+        decision["taker_available"] = "taker_imbalance_alignment" in initial
 
     context = SimpleNamespace(
         regime=str(initial.get("market_regime") or "CHOP"),
         score=float(initial.get("market_score") or 0.0),
         strength=float(initial.get("market_strength") or abs(float(initial.get("market_score") or 0.0))),
-        breadth_5m=float(initial.get("market_breadth_5m") or 0.50),
-        breadth_24h=float(initial.get("market_breadth_24h") or 0.50),
+        breadth_5m=float(initial.get("market_breadth_5m") if initial.get("market_breadth_5m") is not None else 0.50),
+        breadth_24h=float(initial.get("market_breadth_24h") if initial.get("market_breadth_24h") is not None else 0.50),
         major_move_5m_percent=float(initial.get("major_move_5m_percent") or 0.0),
     )
     features = extract_features(decision, context)
@@ -123,7 +128,7 @@ def _early_sample(episode: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
         "symbol": symbol,
         "direction": direction,
         "source": "MARKET_FIRST_EARLY_LEDGER",
-        "sample_origin": "MARKET_FIRST_EARLY_LEDGER_V1",
+        "sample_origin": "MARKET_FIRST_EARLY_LEDGER_V2_ML_READY",
         "opened_at": first_at,
         "entry": alert_price,
         "features": features,
