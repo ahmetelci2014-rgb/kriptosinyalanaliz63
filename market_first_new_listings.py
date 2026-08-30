@@ -64,9 +64,6 @@ def prioritize_new_listings(
 
     if not bootstrapped:
         state[STATE_BOOTSTRAP_KEY] = ts
-        # Existing persisted prices let us safely identify contracts that truly
-        # appeared since the previous run. With an empty state, establish a
-        # baseline and wait for the next run rather than flagging every market.
         if previous_prices:
             for symbol in sorted(current_symbols):
                 if symbol not in previous_prices:
@@ -78,7 +75,6 @@ def prioritize_new_listings(
                 tracker[symbol] = ts
                 discovered_now.append(symbol)
 
-    # Keep the state compact. Removed/old markets do not need permanent history.
     for symbol, first_seen in list(tracker.items()):
         age = ts - int(_sf(first_seen))
         if age > NEW_LISTING_TRACKER_RETENTION_SECONDS:
@@ -101,7 +97,6 @@ def prioritize_new_listings(
         quote_volume = _sf(row.get("quote_volume"))
         if quote_volume < MIN_NEW_LISTING_QUOTE_VOLUME:
             continue
-        # Newest first; among equally new symbols prefer the more liquid one.
         candidates.append((int(first_seen), quote_volume, symbol))
 
     priority_symbols = [
@@ -131,6 +126,7 @@ def prioritize_new_listings(
     return merged, summary
 
 
-# Imported for its live-main-only EARLY alert bookkeeping hook. It does not
-# change selection or entry rules and remains inert on PR/test branches.
+# Live-main-only hooks. Both remain inert on PR/test branches unless explicitly
+# installed by a unit test.
 import market_first_early_ledger_hooks as _early_ledger_hooks  # noqa: E402,F401
+import market_first_ignition_hooks as _ignition_hooks  # noqa: E402,F401
