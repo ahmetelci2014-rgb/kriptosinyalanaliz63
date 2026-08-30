@@ -7,8 +7,9 @@ hooks without creating a second signal engine:
 - fresh moderate-mover deep-scan priority,
 - newly listed contract deep-scan priority,
 - rolling full-universe deep-analysis coverage,
+- strongest first-observation EARLY moves can become immediate fast trades,
 - active EARLY alerts forced back into every scan until resolved,
-- EARLY -> trade follow-through confirmation before the move becomes late,
+- EARLY -> trade follow-through remains as a fallback, not the primary fast path,
 - corrected late/stale classification,
 - profit-after-cost ML labelling,
 - no-lookahead historical replay rows added only to the in-memory ML training pool,
@@ -27,6 +28,7 @@ import market_first_new_listings as new_listings
 import market_first_full_coverage as full_coverage
 import market_first_ml_training_pool as ml_training_pool
 import market_first_early_trade_bridge as early_trade_bridge
+import market_first_fast_entry as fast_entry
 from market_first_pre_send_guard import (
     evaluate_pre_send_market,
     fetch_fresh_major_moves,
@@ -49,10 +51,34 @@ def install_guards() -> None:
     original_decision_to_signal = runner.decision_to_signal
     original_send_trade = runner._send_trade
     original_train_quality_model = runner.train_quality_model
+    original_load_ml_store = runner.load_ml_store
+    original_extract_features = runner.extract_features
+    original_format_trade_message = runner._format_trade_message
+
     guard_cache: Dict[str, Any] = {"at": 0, "moves": {}}
     followthrough_cache: Dict[str, Any] = {"alerts": {}}
+    runtime_cache: Dict[str, Any] = {
+        "exchange": None,
+        "ml_store": None,
+        "ml_bundle": None,
+        "features": {},
+        "fast_sent": 0,
+    }
+
+    def tracked_load_ml_store():
+        store = original_load_ml_store()
+        runtime_cache["ml_store"] = store
+        return store
+
+    def tracked_extract_features(decision, context):
+        features = original_extract_features(decision, context)
+        symbol = str((decision or {}).get("symbol") or "") if isinstance(decision, dict) else ""
+        if symbol:
+            runtime_cache.setdefault("features", {})[symbol] = features
+        return features
 
     def guarded_load_universe(exchange: Any):
+        runtime_cache["exchange"] = exchange
         rows, universe = original_load_universe(exchange)
         rows, universe, strict_summary = audit.strict_crypto_universe(
             exchange,
@@ -61,11 +87,6 @@ def install_guards() -> None:
         )
         print("MARKET FIRST STRICT CRYPTO:", strict_summary)
 
-        # CCXT can classify OKX stock/ETF/commodity products as generic
-        # contract/future rows instead of swap=True. Re-check every surviving
-        # derivative using OKX instCategory/groupId and fail closed when crypto
-        # evidence is missing. This prevents XAU/AAPL/DELL/etc. from polluting
-        # market breadth, rotation and deep-scan selection.
         rows, universe, purity_summary = purity.filter_market_first_universe(
             exchange,
             rows,
@@ -123,6 +144,16 @@ def install_guards() -> None:
     def audited_analyze_candidate(*args, **kwargs):
         decision, reason = original_analyze_candidate(*args, **kwargs)
         revised, revised_reason = audit.revise_late_decision(decision, reason)
+
+        def arg(name: str, index: int, default=None):
+            if name in kwargs:
+                return kwargs.get(name)
+            return args[index] if len(args) > index else default
+
+        symbol = str(arg("symbol", 0, "") or "")
+        current_price = float(arg("current_price", 5, 0.0) or 0.0)
+        context = arg("context", 7)
+
         if revised is not None and revised.get("late_rescued"):
             print(
                 "LATE RESCUE -> EARLY:",
@@ -133,14 +164,30 @@ def install_guards() -> None:
                 "| extATR=", revised.get("extension_atr_5m"),
             )
 
-        def arg(name: str, index: int, default=None):
-            if name in kwargs:
-                return kwargs.get(name)
-            return args[index] if len(args) > index else default
+        fast_promoted, fast_reason, fast_diag = fast_entry.promote_initial_early(
+            revised,
+            revised_reason,
+            df5m=arg("df5m", 2),
+            df15m=arg("df15m", 3),
+            df1h=arg("df1h", 4),
+            current_price=current_price,
+            context=context,
+        )
+        if fast_diag.get("promoted"):
+            print(
+                "İLK ERKEN -> HIZLI İŞLEM:",
+                symbol,
+                fast_promoted.get("direction"),
+                "| skor=", fast_promoted.get("score"),
+                "| 3m=", fast_promoted.get("move_3m_percent"),
+                "| 5m=", fast_promoted.get("move_5m_percent"),
+                "| risk=", fast_promoted.get("risk_percent"),
+                "| roomR=", fast_promoted.get("room_r"),
+            )
+        revised, revised_reason = fast_promoted, fast_reason
 
-        symbol = str(arg("symbol", 0, "") or "")
         alert = (followthrough_cache.get("alerts") or {}).get(symbol)
-        if alert:
+        if alert and not bool((revised or {}).get("fast_entry")):
             promoted, promoted_reason, follow_diag = early_trade_bridge.promote_active_alert(
                 revised,
                 revised_reason,
@@ -150,9 +197,9 @@ def install_guards() -> None:
                 df5m=arg("df5m", 2),
                 df15m=arg("df15m", 3),
                 df1h=arg("df1h", 4),
-                current_price=float(arg("current_price", 5, 0.0) or 0.0),
+                current_price=current_price,
                 quote_volume_24h=float(arg("quote_volume_24h", 6, 0.0) or 0.0),
-                context=arg("context", 7),
+                context=context,
                 now=runner.bot.now_ts(),
             )
             if follow_diag.get("promoted"):
@@ -168,22 +215,75 @@ def install_guards() -> None:
             revised, revised_reason = promoted, promoted_reason
         return revised, revised_reason
 
-    def decision_to_signal_with_followthrough(decision):
+    def decision_to_signal_with_fast_path(decision):
         signal = original_decision_to_signal(decision)
-        return early_trade_bridge.decorate_followthrough_signal(signal, decision)
+        signal = fast_entry.decorate_signal(signal, decision)
+        signal = early_trade_bridge.decorate_followthrough_signal(signal, decision)
+        if signal is None or not bool(decision.get("fast_entry")):
+            return signal
+
+        symbol = str(signal.get("symbol") or "")
+        runner._copy_derivatives_to_signal(signal, decision)
+        signal["ml_features"] = (runtime_cache.get("features") or {}).get(symbol, {})
+        signal["ml_mode"] = decision.get("ml_mode")
+        signal["ml_quality_probability"] = decision.get("ml_quality_probability")
+
+        # A fast entry is useful only if it is sent during the candidate scan,
+        # not after the other 100+ deep scans have finished. Preserve the normal
+        # ML, cooldown, portfolio, major-market, liquidity and open-slot guards.
+        if not runner._is_live_run():
+            return signal
+        bundle = runtime_cache.get("ml_bundle")
+        probability = decision.get("ml_quality_probability")
+        if bundle is not None and runner.should_block_live(probability, bundle):
+            return signal
+        if runner.bot.has_open_same_symbol(symbol) or runner.bot.has_recent_stop(symbol):
+            return signal
+        risky_open, _, _ = runner.bot.count_open_signal_risk()
+        if risky_open >= runner.bot.MAX_OPEN_SIGNALS:
+            return signal
+
+        exchange = runtime_cache.get("exchange")
+        ml_store = runtime_cache.get("ml_store")
+        if exchange is None or not isinstance(ml_store, dict):
+            return signal
+
+        sent = runner._send_trade(exchange, signal, ml_store)
+        if not sent:
+            return signal
+
+        runtime_cache["fast_sent"] = int(runtime_cache.get("fast_sent") or 0) + 1
+        # The ordinary end-of-run queue still runs. Reduce its remaining per-run
+        # allowance so immediate entries do not weaken portfolio discipline.
+        runner.bot.MAX_TRADE_SIGNALS_PER_RUN = max(
+            0,
+            int(runner.bot.MAX_TRADE_SIGNALS_PER_RUN) - 1,
+        )
+        runner.bot.RISK_MODE_MAX_TRADE_SIGNALS = max(
+            0,
+            int(runner.bot.RISK_MODE_MAX_TRADE_SIGNALS) - 1,
+        )
+        print("HIZLI İŞLEM AYNI TURDA GÖNDERİLDİ:", symbol, signal.get("direction"))
+        return None
 
     def train_quality_with_history(live_store):
         training_store = ml_training_pool.combine_training_store(live_store)
         historical_added = int(training_store.get("historical_seed_rows_added") or 0)
         if historical_added:
             print("ML HISTORICAL TRAINING POOL:", historical_added, "etiketli replay örneği eklendi")
-        return original_train_quality_model(training_store)
+        bundle = original_train_quality_model(training_store)
+        runtime_cache["ml_bundle"] = bundle
+        return bundle
+
+    def format_trade_message_with_fast_path(signal):
+        text = original_format_trade_message(signal)
+        if bool((signal or {}).get("fast_entry")):
+            text = text.replace("✅ İŞLEM FIRSATI", "⚡ ERKEN İŞLEM FIRSATI", 1)
+        return text
 
     def guarded_send_trade(exchange: Any, signal: Dict[str, Any], ml_store: Dict[str, Any]) -> bool:
         now = runner.bot.now_ts()
 
-        # Reuse the same fresh-major snapshot for multiple signals selected in the
-        # same run. This avoids unnecessary OKX calls without weakening the guard.
         if now - int(guard_cache.get("at") or 0) > 20:
             guard_cache["moves"] = fetch_fresh_major_moves(exchange)
             guard_cache["at"] = now
@@ -238,12 +338,15 @@ def install_guards() -> None:
 
         return original_send_trade(exchange, signal, ml_store)
 
+    runner.load_ml_store = tracked_load_ml_store
+    runner.extract_features = tracked_extract_features
     runner._load_universe = guarded_load_universe
     runner._select_deep_scan = audited_select_deep_scan
     runner.analyze_candidate = audited_analyze_candidate
-    runner.decision_to_signal = decision_to_signal_with_followthrough
+    runner.decision_to_signal = decision_to_signal_with_fast_path
     runner.reconcile_samples = audit.reconcile_samples_net_r
     runner.train_quality_model = train_quality_with_history
+    runner._format_trade_message = format_trade_message_with_fast_path
     runner._send_trade = guarded_send_trade
 
 
