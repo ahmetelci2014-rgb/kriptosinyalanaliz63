@@ -157309,25 +157309,26 @@
         "confidence": "ORTA",
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
-          "15M hacim kendi ortalamasinin altinda veya sinirdaydi."
+          "15M hacim kendi ortalamasinin altinda veya sinirdaydi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 42,
         "best_favorable_r": 0.2005,
         "worst_adverse_r": 1.0026,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ZAYIF_TREND_HACIM",
-        "preliminary_label": "Zayıf trend/hacim",
+        "primary": "ZAYIF_TREND_HACIM",
+        "label": "Zayıf trend/hacim",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
           "15M hacim oranı sınırın altındaydı."
         ],
         "metrics": {
@@ -157335,9 +157336,9 @@
           "mfe_r": 0.2005,
           "mae_r": 1.0026,
           "risk_percent": 0.948,
-          "return_minutes": null
+          "return_minutes": 255.0
         },
-        "updated_at": 1788403562
+        "updated_at": 1788418882
       },
       "result_diagnostics": {
         "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
@@ -157411,10 +157412,16 @@
           }
         },
         "last_price": 0.02672
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 255,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1788418882
       }
     }
   },
-  "last_update": 1788418044,
+  "last_update": 1788418882,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
