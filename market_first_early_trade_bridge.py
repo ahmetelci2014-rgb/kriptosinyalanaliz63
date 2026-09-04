@@ -3,8 +3,8 @@
 This is not a second strategy. It is a narrow continuation bridge for alerts that
 Market First already detected. The bridge exists because a fresh impulse can be
 correctly flagged EARLY, then lose its 1m acceleration before the rule score ever
-reaches the normal READY threshold. In that case the lifecycle can show +1%..+2%
-progress while the trade gate never opens.
+reaches the normal READY threshold. In that case the lifecycle can show useful
+progress while the ordinary READY gate never opens.
 
 Safety principles:
 - only an already-active Market First alert may use the bridge;
@@ -12,7 +12,8 @@ Safety principles:
 - current 5m and 15m structure must still align with the alert direction;
 - current market regime must not hard-oppose the direction;
 - a strong short-term reversal cancels confirmation;
-- stop geometry, 0.40%-1.80% risk width and a minimum room check remain;
+- score requirements rise when favorable progress is still small;
+- stop geometry, narrower follow-through risk and a minimum room check remain;
 - fresh-major, liquidity, portfolio, duplicate and final-entry guards still run
   later in the normal live send path;
 - no exchange order is placed.
@@ -24,14 +25,15 @@ from typing import Any, Dict, Iterable, Mapping, Optional, Sequence, Tuple
 
 import market_first_strategy as strategy
 
-VERSION = "MARKET_FIRST_EARLY_TO_TRADE_V1_2026_08_30"
+VERSION = "MARKET_FIRST_EARLY_TO_TRADE_V2_DATA_GUARD_2026_09_05"
 
 MIN_FAVORABLE_PERCENT = 0.45
 MAX_FAVORABLE_PERCENT = 2.35
-MAX_ALERT_AGE_MINUTES = 60.0
-MAX_EXTENSION_ATR = 1.65
-MIN_FOLLOWTHROUGH_ROOM_R = 1.30
-MIN_EARLY_VOLUME_RATIO = 0.55
+MAX_ALERT_AGE_MINUTES = 45.0
+MAX_EXTENSION_ATR = 1.50
+MIN_FOLLOWTHROUGH_ROOM_R = 1.50
+MIN_EARLY_VOLUME_RATIO = 0.65
+MAX_FOLLOWTHROUGH_RISK_PERCENT = 1.60
 
 _ALLOWED_EMPTY_DECISION_REASONS = {"NO_ACCELERATION", "LOW_SCORE"}
 
@@ -122,12 +124,15 @@ def prioritize_active_alerts(
 
 
 def _continuation_score_ok(initial_score: int, current_score: int, favorable: float) -> bool:
+    """Demand more rule quality until price itself has proved continuation."""
     score = max(int(initial_score), int(current_score))
-    if favorable >= 0.90:
-        return score >= 66
-    if favorable >= 0.65:
+    if favorable >= 1.20:
         return score >= 70
-    return score >= 72
+    if favorable >= 0.90:
+        return score >= 74
+    if favorable >= 0.65:
+        return score >= 78
+    return score >= 80
 
 
 def _continuation_risk_plan(
@@ -136,7 +141,7 @@ def _continuation_risk_plan(
     s5: Mapping[str, Any],
     s15: Mapping[str, Any],
 ) -> Tuple[Optional[Dict[str, float]], str]:
-    """Same Market First stop geometry with a slightly less rigid room floor."""
+    """Use Market First geometry with stricter follow-through risk/room limits."""
     atr5 = _sf(s5.get("atr"))
     if entry <= 0 or atr5 <= 0:
         return None, "FOLLOW_RISK_DATA"
@@ -155,7 +160,7 @@ def _continuation_risk_plan(
         risk = entry * strategy.MIN_RISK_PERCENT / 100.0
         raw_sl = entry - risk if direction == "LONG" else entry + risk
         risk_percent = strategy.MIN_RISK_PERCENT
-    if risk_percent > strategy.MAX_RISK_PERCENT:
+    if risk_percent > min(strategy.MAX_RISK_PERCENT, MAX_FOLLOWTHROUGH_RISK_PERCENT):
         return None, "FOLLOW_RISK_WIDE"
 
     if direction == "LONG":
@@ -361,7 +366,10 @@ def promote_active_alert(
     return promoted, "OK", diagnostics
 
 
-def decorate_followthrough_signal(signal: Optional[Mapping[str, Any]], decision: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
+def decorate_followthrough_signal(
+    signal: Optional[Mapping[str, Any]],
+    decision: Mapping[str, Any],
+) -> Optional[Dict[str, Any]]:
     if signal is None:
         return None
     result = dict(signal)
@@ -369,7 +377,10 @@ def decorate_followthrough_signal(signal: Optional[Mapping[str, Any]], decision:
         return result
     result.update({
         "quality": "A MARKET FIRST DEVAM TEYİDİ",
-        "quality_note": "ERKEN uyarı sonrası hareket devamı + 5m/15m yapı teyidi.",
+        "quality_note": (
+            "ERKEN uyarı sonrası hareket devamı + 5m/15m yapı teyidi; "
+            "daha sıkı skor, uzama, risk ve hedef alanı kapıları geçti."
+        ),
         "entry_type": "MARKET_FIRST_FOLLOWTHROUGH",
         "zone_name": "Early follow-through confirmation",
         "followthrough_confirmed": True,
