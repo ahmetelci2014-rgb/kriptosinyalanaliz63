@@ -18,14 +18,14 @@ def _context(preferred="LONG", regime="BULL"):
     )
 
 
-def _structure(direction, *, atr=0.5, volume=0.8):
+def _structure(direction, *, atr=0.5, volume=0.8, swing_low=100.20, swing_high=101.80):
     return {
         "direction": direction,
         "atr": atr,
         "extension_atr": 0.8,
         "volume_ratio": volume,
-        "swing_low_12": 100.20,
-        "swing_high_12": 101.80,
+        "swing_low_12": swing_low,
+        "swing_high_12": swing_high,
         "range_low_72": 96.0,
         "range_high_72": 106.0,
     }
@@ -42,7 +42,7 @@ def test_active_alert_is_forced_back_into_deep_scan():
                 "status": "CONTINUE",
                 "first_at": now - 10 * 60,
                 "alert_price": 100.0,
-                "score": 70,
+                "score": 78,
             }
         }
     }
@@ -63,7 +63,7 @@ def test_continuing_alert_can_be_promoted_even_if_current_acceleration_faded():
         "status": "CONTINUE",
         "first_at": now - 12 * 60,
         "alert_price": 100.0,
-        "score": 70,
+        "score": 78,
     }
     s5 = _structure("LONG")
     s15 = _structure("LONG")
@@ -90,7 +90,42 @@ def test_continuing_alert_can_be_promoted_even_if_current_acceleration_faded():
     assert decision["trade_eligible"] is True
     assert decision["followthrough_confirmed"] is True
     assert decision["stage"] == "READY"
-    assert 0.4 <= decision["risk_percent"] <= 1.8
+    assert 0.4 <= decision["risk_percent"] <= bridge.MAX_FOLLOWTHROUGH_RISK_PERCENT
+
+
+def test_low_score_followthrough_stays_observational_on_small_progress():
+    now = 1_000_000
+    alert = {
+        "symbol": "DASHUSDT",
+        "direction": "LONG",
+        "status": "CONTINUE",
+        "first_at": now - 10 * 60,
+        "alert_price": 100.0,
+        "score": 67,
+    }
+    s5 = _structure("LONG", volume=1.0)
+    s15 = _structure("LONG")
+    s1h = _structure("LONG")
+    with patch.object(strategy, "_structure", side_effect=[s5, s15, s1h]), patch.object(
+        strategy, "_acceleration", return_value=None
+    ):
+        decision, _, diag = bridge.promote_active_alert(
+            None,
+            "NO_ACCELERATION",
+            alert,
+            symbol="DASHUSDT",
+            df1m=object(),
+            df5m=object(),
+            df15m=object(),
+            df1h=object(),
+            current_price=100.60,
+            quote_volume_24h=5_000_000,
+            context=_context(),
+            now=now,
+        )
+    assert decision is None
+    assert diag["promoted"] is False
+    assert diag["reason"] == "FOLLOW_SCORE_WEAK"
 
 
 def test_followthrough_does_not_chase_after_late_threshold():
@@ -101,7 +136,7 @@ def test_followthrough_does_not_chase_after_late_threshold():
         "status": "CONTINUE",
         "first_at": now - 10 * 60,
         "alert_price": 100.0,
-        "score": 75,
+        "score": 80,
     }
     decision, reason, diag = bridge.promote_active_alert(
         None,
@@ -130,7 +165,7 @@ def test_strong_opposite_market_still_blocks_followthrough():
         "status": "CONTINUE",
         "first_at": now - 8 * 60,
         "alert_price": 100.0,
-        "score": 74,
+        "score": 78,
     }
     s5 = _structure("LONG")
     s15 = _structure("LONG")
@@ -166,12 +201,47 @@ def test_strong_opposite_market_still_blocks_followthrough():
     assert diag["reason"] == "FOLLOW_MARKET_OPPOSED"
 
 
+def test_followthrough_rejects_risk_wider_than_1_60_percent():
+    now = 1_000_000
+    alert = {
+        "symbol": "RISKUSDT",
+        "direction": "LONG",
+        "status": "CONTINUE",
+        "first_at": now - 8 * 60,
+        "alert_price": 100.0,
+        "score": 82,
+    }
+    s5 = _structure("LONG", atr=0.2, volume=1.0, swing_low=99.20)
+    s15 = _structure("LONG")
+    s1h = _structure("LONG")
+    with patch.object(strategy, "_structure", side_effect=[s5, s15, s1h]), patch.object(
+        strategy, "_acceleration", return_value=None
+    ):
+        decision, _, diag = bridge.promote_active_alert(
+            None,
+            "NO_ACCELERATION",
+            alert,
+            symbol="RISKUSDT",
+            df1m=object(),
+            df5m=object(),
+            df15m=object(),
+            df1h=object(),
+            current_price=101.00,
+            quote_volume_24h=5_000_000,
+            context=_context(),
+            now=now,
+        )
+    assert decision is None
+    assert diag["promoted"] is False
+    assert diag["reason"] == "FOLLOW_RISK_WIDE"
+
+
 def test_followthrough_signal_is_marked_as_confirmation_entry():
     base_signal = {"symbol": "BICOUSDT", "direction": "LONG", "entry_type": "MARKET_FIRST"}
     decision = {
         "followthrough_confirmed": True,
         "followthrough_favorable_percent": 1.1,
-        "followthrough_alert_score": 70,
+        "followthrough_alert_score": 78,
     }
     decorated = bridge.decorate_followthrough_signal(base_signal, decision)
     assert decorated["entry_type"] == "MARKET_FIRST_FOLLOWTHROUGH"
