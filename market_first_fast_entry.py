@@ -15,25 +15,27 @@ from typing import Any, Dict, Mapping, Optional, Tuple
 
 import market_first_strategy as strategy
 
-VERSION = "MARKET_FIRST_FAST_ENTRY_V2_2026_08_30"
+VERSION = "MARKET_FIRST_FAST_ENTRY_V3_DATA_GUARD_2026_09_05"
 
-# Live evidence (BICO and similar short-lived moves) showed that the old 66/70
-# admission pair was often waiting for confirmation until the scalp was nearly
-# over. Lower only the *awareness* floor used by this same strategy; hard market,
-# structure, extension, risk and pre-send guards remain below.
+# Keep broad EARLY awareness so the radar does not lose opportunity coverage.
+# The actionable fast-trade gate below is deliberately much stricter.
 FAST_ALERT_SCORE = 58
 if strategy.MIN_ALERT_SCORE > FAST_ALERT_SCORE:
     strategy.MIN_ALERT_SCORE = FAST_ALERT_SCORE
 
-MIN_FAST_SCORE = 58
+MIN_FAST_SCORE = 70
+MIN_FAST_SCORE_WITHOUT_BREAKOUT = 76
 MIN_MOVE_3_PERCENT = 0.35
 MIN_MOVE_5_PERCENT = 0.50
 MAX_MOVE_3_PERCENT = 1.55
 MAX_MOVE_5_PERCENT = 2.00
-MIN_VOLUME_RATIO = 0.50
-MAX_EXTENSION_ATR = 1.55
-MAX_FAST_RISK_PERCENT = 1.50
-MIN_FAST_ROOM_R = 1.25
+MIN_VOLUME_RATIO = 0.60
+MIN_NO_BREAKOUT_VOLUME_RATIO = 0.80
+MIN_NO_BREAKOUT_MOVE_3_PERCENT = 0.75
+MIN_NO_BREAKOUT_MOVE_5_PERCENT = 1.00
+MAX_EXTENSION_ATR = 1.40
+MAX_FAST_RISK_PERCENT = 1.35
+MIN_FAST_ROOM_R = 1.50
 FAST_TP1_R = 0.55
 FAST_TP2_R = 1.00
 FAST_TP3_R = 1.50
@@ -120,7 +122,7 @@ def promote_initial_early(
     current_price: float,
     context: strategy.MarketContext,
 ) -> Tuple[Optional[Dict[str, Any]], str, Dict[str, Any]]:
-    """Turn a fresh qualified EARLY move into an immediate short-lived trade."""
+    """Turn only a high-quality fresh EARLY move into an immediate trade."""
     diagnostics: Dict[str, Any] = {"promoted": False, "version": VERSION}
     if not isinstance(decision, Mapping):
         diagnostics["reason"] = "FAST_NO_DECISION"
@@ -162,11 +164,6 @@ def promote_initial_early(
     if not (MIN_MOVE_5_PERCENT <= move5 <= MAX_MOVE_5_PERCENT):
         diagnostics["reason"] = "FAST_5M_OUTSIDE"
         return current, reason, diagnostics
-    # If there is no clean 20m break, demand stronger continuation so the lower
-    # score floor does not turn tiny random noise into a trade.
-    if not breakout and move3 < 0.60 and move5 < 0.90:
-        diagnostics["reason"] = "FAST_NO_BREAKOUT_WEAK_PROGRESS"
-        return current, reason, diagnostics
     if move1 < -0.10:
         diagnostics["reason"] = "FAST_1M_REVERSING"
         return current, reason, diagnostics
@@ -175,6 +172,17 @@ def promote_initial_early(
         return current, reason, diagnostics
     if extension > MAX_EXTENSION_ATR:
         diagnostics["reason"] = "FAST_EXTENSION_HIGH"
+        return current, reason, diagnostics
+
+    # A non-breakout EARLY signal is observational by default. It can use the
+    # fast lane only when score, progress and volume are all materially stronger.
+    if not breakout and (
+        score < MIN_FAST_SCORE_WITHOUT_BREAKOUT
+        or move3 < MIN_NO_BREAKOUT_MOVE_3_PERCENT
+        or move5 < MIN_NO_BREAKOUT_MOVE_5_PERCENT
+        or volume < MIN_NO_BREAKOUT_VOLUME_RATIO
+    ):
+        diagnostics["reason"] = "FAST_NO_BREAKOUT_QUALITY"
         return current, reason, diagnostics
 
     s5 = strategy._structure(df5m, current_price)
@@ -188,9 +196,19 @@ def promote_initial_early(
     if str(s5.get("direction")) != direction:
         diagnostics["reason"] = "FAST_5M_NOT_ALIGNED"
         return current, reason, diagnostics
-    if str(s15.get("direction")) not in {direction, "NEUTRAL"}:
-        diagnostics["reason"] = "FAST_15M_OPPOSED"
-        return current, reason, diagnostics
+
+    s15_direction = str(s15.get("direction"))
+    if s15_direction != direction:
+        neutral_exception = bool(
+            s15_direction == "NEUTRAL"
+            and breakout
+            and score >= 82
+            and volume >= 1.00
+        )
+        if not neutral_exception:
+            diagnostics["reason"] = "FAST_15M_NOT_ALIGNED"
+            return current, reason, diagnostics
+
     if str(s1h.get("direction")) == opposite:
         diagnostics["reason"] = "FAST_1H_OPPOSED"
         return current, reason, diagnostics
@@ -212,7 +230,7 @@ def promote_initial_early(
         "alert_eligible": False,
         "fast_entry": True,
         "fast_entry_version": VERSION,
-        "fast_entry_reason": "FIRST_FRESH_MOMENTUM_V2",
+        "fast_entry_reason": "FIRST_FRESH_MOMENTUM_DATA_GUARDED",
         "fast_tp1_r": FAST_TP1_R,
         "fast_tp2_r": FAST_TP2_R,
         "fast_tp3_r": FAST_TP3_R,
@@ -229,7 +247,10 @@ def decorate_signal(signal: Optional[Dict[str, Any]], decision: Mapping[str, Any
         return signal
     signal["entry_type"] = "MARKET_FIRST_FAST"
     signal["quality"] = "HIZLI MARKET FIRST"
-    signal["quality_note"] = "İlk tespitte hızlı giriş; ikinci tur teyidi beklenmez."
+    signal["quality_note"] = (
+        "İlk tespitte hızlı giriş; yalnız daha yüksek skor, yapı, hacim, "
+        "uzama ve risk kalite kapıları geçildi."
+    )
     signal["fast_entry"] = True
     signal["rr_tp1"] = FAST_TP1_R
     signal["rr_tp2"] = FAST_TP2_R
