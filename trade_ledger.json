@@ -157507,7 +157507,7 @@
       "result_diagnostics": {
         "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
         "shadow_only": true,
-        "status": "TRACKING",
+        "status": "COMPLETED",
         "final_result": "TP1_SONRASI_BE",
         "started_at": 1788525077,
         "measurement_start_at": 1788525120,
@@ -157517,7 +157517,13 @@
           "TP2": 6.4487589286,
           "TP3": 6.5152142857
         },
-        "reached_levels": {},
+        "reached_levels": {
+          "TP2": {
+            "first_reached_at": 1788539400,
+            "minutes_after_close": 238,
+            "level_price": 6.4487589286
+          }
+        },
         "checkpoints": {
           "15": {
             "target_at": 1788525977,
@@ -157542,37 +157548,43 @@
             "candle_time": 1788532200,
             "close_price": 6.137,
             "directional_r_from_reference": -2.2684
+          },
+          "240": {
+            "target_at": 1788539477,
+            "candle_time": 1788539400,
+            "close_price": 6.501,
+            "directional_r_from_reference": 1.8396
           }
         },
-        "max_favorable_r": 0.237,
+        "max_favorable_r": 1.975,
         "max_adverse_r": 3.8936,
-        "last_checked_at": 1788538634,
-        "completed_at": 0,
+        "last_checked_at": 1788539582,
+        "completed_at": 1788539582,
         "diagnosis": {
-          "status": "PROVISIONAL",
-          "code": "BE_KORUMASI_DOGRU",
-          "likely_cause": "SERMAYE_KORUMASI_ISABETLI",
-          "confidence": "HIGH",
-          "summary": "BE sonrasinda fiyat belirgin terslesti; koruma fayda saglamis gorunuyor.",
+          "status": "FINAL",
+          "code": "BE_SONRASI_YENIDEN_HEDEF",
+          "likely_cause": "BE_KORUMASI_ERKEN_OLABILIR",
+          "confidence": "MEDIUM",
+          "summary": "BE kapanisindan sonra fiyat yeniden hedef bolgesine dondu.",
           "evidence": {
-            "max_favorable_r_after_close": 0.237,
+            "max_favorable_r_after_close": 1.975,
             "max_adverse_r_after_close": 3.8936,
             "risk_percent": 1.398,
             "tp1_progress_at_send_percent": null,
             "entry_distance_at_send_percent": 0.07888923950772946,
             "reached_tp1_after_close": false,
-            "reached_tp2_after_close": false,
+            "reached_tp2_after_close": true,
             "reached_tp3_after_close": false,
             "tp1_minutes_after_close": null,
-            "tp2_minutes_after_close": null,
+            "tp2_minutes_after_close": 238,
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 6.291
+        "last_price": 6.501
       }
     }
   },
-  "last_update": 1788538636,
+  "last_update": 1788539584,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -157584,20 +157596,20 @@
   "result_diagnostics_summary": {
     "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
     "tracked_total": 99,
-    "completed_total": 98,
+    "completed_total": 99,
     "diagnosis_counts": {
       "BE_SONRASI_TP3": 16,
-      "BE_KORUMASI_DOGRU": 13,
+      "BE_KORUMASI_DOGRU": 12,
       "BE_NOTR_KARISIK": 18,
       "SL_SONRASI_TERS_YON_DEVAMI": 3,
       "SL_SONRASI_TOPARLANMA": 25,
-      "BE_SONRASI_YENIDEN_HEDEF": 3,
+      "BE_SONRASI_YENIDEN_HEDEF": 4,
       "SL_SONRASI_GUCLU_TOPARLANMA": 14,
       "SL_KARISIK_SONUC": 7
     },
     "likely_cause_counts": {
-      "BE_KORUMASI_ERKEN_OLABILIR": 19,
-      "SERMAYE_KORUMASI_ISABETLI": 13,
+      "BE_KORUMASI_ERKEN_OLABILIR": 20,
+      "SERMAYE_KORUMASI_ISABETLI": 12,
       "BE_AYARI_ICIN_DAHA_COK_VERI": 18,
       "YON_VEYA_SETUP_GECERSIZLESMESI": 3,
       "ERKEN_GIRIS_OLASILIGI": 31,
@@ -157606,9 +157618,9 @@
       "DAR_STOP_OLASILIGI": 3
     },
     "sl_recovery_total": 39,
-    "be_maybe_early_total": 19,
-    "be_protection_correct_total": 13,
-    "updated_at": 1788525185
+    "be_maybe_early_total": 20,
+    "be_protection_correct_total": 12,
+    "updated_at": 1788539584
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
