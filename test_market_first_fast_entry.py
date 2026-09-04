@@ -19,7 +19,7 @@ class FastEntryTests(unittest.TestCase):
             majors={},
         )
 
-    def structures(self):
+    def structures(self, *, s15_direction="LONG"):
         s5 = {
             "direction": "LONG",
             "atr": 1.0,
@@ -29,7 +29,7 @@ class FastEntryTests(unittest.TestCase):
             "range_high_72": 103.0,
         }
         s15 = {
-            "direction": "LONG",
+            "direction": s15_direction,
             "atr": 1.5,
             "swing_low_12": 98.0,
             "swing_high_12": 101.0,
@@ -58,11 +58,11 @@ class FastEntryTests(unittest.TestCase):
         row.update(changes)
         return row
 
-    def test_fast_import_lowers_awareness_floor(self):
+    def test_fast_import_keeps_broad_awareness_floor(self):
         self.assertEqual(strategy.MIN_ALERT_SCORE, fast.FAST_ALERT_SCORE)
         self.assertEqual(fast.FAST_ALERT_SCORE, 58)
 
-    def test_bico_like_first_observation_becomes_actionable(self):
+    def test_high_quality_breakout_can_still_become_actionable(self):
         with patch.object(strategy, "_structure", side_effect=self.structures()):
             promoted, reason, diag = fast.promote_initial_early(
                 self.decision(),
@@ -81,10 +81,50 @@ class FastEntryTests(unittest.TestCase):
         self.assertLess(promoted["sl"], 100.0)
         self.assertGreater(promoted["tp1"], 100.0)
 
-    def test_near_threshold_bico_like_move_can_trade_without_second_run(self):
+    def test_low_score_early_move_stays_alert_only(self):
+        with patch.object(strategy, "_structure", side_effect=self.structures()):
+            promoted, _, diag = fast.promote_initial_early(
+                self.decision(score=60),
+                "OK",
+                df5m=object(),
+                df15m=object(),
+                df1h=object(),
+                current_price=100.0,
+                context=self.context(),
+            )
+        self.assertFalse(diag["promoted"])
+        self.assertEqual(diag["reason"], "FAST_SCORE_WEAK")
+        self.assertFalse(promoted["trade_eligible"])
+
+    def test_no_breakout_requires_stronger_score_progress_and_volume(self):
+        with patch.object(strategy, "_structure", side_effect=self.structures()):
+            promoted, _, diag = fast.promote_initial_early(
+                self.decision(
+                    score=74,
+                    breakout_20m=False,
+                    volume_ratio_1m=0.90,
+                    move_3m_percent=0.80,
+                    move_5m_percent=1.10,
+                ),
+                "OK",
+                df5m=object(),
+                df15m=object(),
+                df1h=object(),
+                current_price=100.0,
+                context=self.context(),
+            )
+        self.assertFalse(diag["promoted"])
+        self.assertEqual(diag["reason"], "FAST_NO_BREAKOUT_QUALITY")
+
         with patch.object(strategy, "_structure", side_effect=self.structures()):
             promoted, reason, diag = fast.promote_initial_early(
-                self.decision(score=60, breakout_20m=False),
+                self.decision(
+                    score=78,
+                    breakout_20m=False,
+                    volume_ratio_1m=0.90,
+                    move_3m_percent=0.80,
+                    move_5m_percent=1.10,
+                ),
                 "OK",
                 df5m=object(),
                 df15m=object(),
@@ -126,15 +166,10 @@ class FastEntryTests(unittest.TestCase):
         self.assertEqual(diag["reason"], "FAST_5M_OUTSIDE")
         self.assertFalse(promoted["trade_eligible"])
 
-    def test_tiny_noise_without_breakout_stays_out(self):
-        with patch.object(strategy, "_structure", side_effect=self.structures()):
+    def test_neutral_15m_needs_exceptional_breakout_quality(self):
+        with patch.object(strategy, "_structure", side_effect=self.structures(s15_direction="NEUTRAL")):
             promoted, _, diag = fast.promote_initial_early(
-                self.decision(
-                    score=60,
-                    move_3m_percent=0.40,
-                    move_5m_percent=0.55,
-                    breakout_20m=False,
-                ),
+                self.decision(score=74, volume_ratio_1m=0.90),
                 "OK",
                 df5m=object(),
                 df15m=object(),
@@ -143,7 +178,21 @@ class FastEntryTests(unittest.TestCase):
                 context=self.context(),
             )
         self.assertFalse(diag["promoted"])
-        self.assertEqual(diag["reason"], "FAST_NO_BREAKOUT_WEAK_PROGRESS")
+        self.assertEqual(diag["reason"], "FAST_15M_NOT_ALIGNED")
+
+        with patch.object(strategy, "_structure", side_effect=self.structures(s15_direction="NEUTRAL")):
+            promoted, reason, diag = fast.promote_initial_early(
+                self.decision(score=84, volume_ratio_1m=1.10),
+                "OK",
+                df5m=object(),
+                df15m=object(),
+                df1h=object(),
+                current_price=100.0,
+                context=self.context(),
+            )
+        self.assertEqual(reason, "OK")
+        self.assertTrue(diag["promoted"])
+        self.assertTrue(promoted["trade_eligible"])
 
 
 if __name__ == "__main__":
