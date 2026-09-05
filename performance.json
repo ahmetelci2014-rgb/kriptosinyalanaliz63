@@ -35037,7 +35037,7 @@
       "tp1": 13,
       "tp2": 9,
       "tp3": 5,
-      "sl": 6,
+      "sl": 7,
       "be": 8,
       "expired": 0,
       "long": 19,
@@ -35221,7 +35221,7 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
@@ -35237,7 +35237,7 @@
         }
       },
       "direction_stops": {
-        "LONG": 5,
+        "LONG": 6,
         "SHORT": 1
       },
       "stop_times": {
@@ -35246,7 +35246,8 @@
         "TRUMPUSDT": 1788623155,
         "BCHUSDT": 1788624079,
         "APEUSDT": 1788626775,
-        "WLDUSDT": 1788633957
+        "WLDUSDT": 1788633957,
+        "LPTUSDT": 1788639352
       },
       "closed_times": {
         "ATOMUSDT": 1788618670,
@@ -35686,14 +35687,24 @@
           "exit": 0.6018,
           "source": "MARKET_FIRST_V5",
           "score": 91
+        },
+        {
+          "time": "23:15:52",
+          "symbol": "LPTUSDT",
+          "direction": "LONG",
+          "result": "SL",
+          "entry": 1.468,
+          "exit": 1.463,
+          "source": "MARKET_FIRST_V5",
+          "score": 96
         }
       ],
-      "sl_after_tp1": 1,
+      "sl_after_tp1": 2,
       "sl_after_tp2": 0,
-      "sl_after_no_return": 2
+      "sl_after_no_return": 3
     }
   },
-  "last_update": 1788638469,
+  "last_update": 1788639355,
   "last_open_summary": 1787843763,
   "last_status_message": 1787906216,
   "last_daily_report": "2026-08-27",
@@ -35739,12 +35750,15 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-09-05"
     },
     "APEUSDT_LONG_1788626775": {
       "trade_id": "APEUSDT_LONG_MARKET_FIRST_V5_1788625964",
@@ -35766,10 +35780,10 @@
         120,
         180
       ],
-      "after_sl_tp1": false,
+      "after_sl_tp1": true,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true
     },
     "WLDUSDT_LONG_1788633957": {
       "trade_id": "WLDUSDT_LONG_MARKET_FIRST_V5_1788629864",
@@ -35789,6 +35803,26 @@
         30,
         60
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "LPTUSDT_LONG_1788639352": {
+      "trade_id": "LPTUSDT_LONG_MARKET_FIRST_V5_1788634081",
+      "symbol": "LPTUSDT",
+      "direction": "LONG",
+      "source": "MARKET_FIRST_V5",
+      "entry": 1.468,
+      "tp1": 1.472404,
+      "tp2": 1.47534,
+      "tp3": 1.479744,
+      "sl": 1.462128,
+      "score": 96,
+      "risk_percent": 0.4,
+      "stopped_at": 1788639352,
+      "stop_exit": 1.463,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
