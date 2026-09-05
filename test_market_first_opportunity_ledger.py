@@ -1,6 +1,7 @@
 import pandas as pd
 
 import market_first_opportunity_ledger as ledger
+import market_first_live_entry_plan_tracking as tracking
 
 
 def _plan(direction="LONG", symbol="TESTUSDT", price=100.0):
@@ -34,6 +35,10 @@ def _plan(direction="LONG", symbol="TESTUSDT", price=100.0):
 
 def _bar(high, low):
     return pd.DataFrame([{"high": high, "low": low}])
+
+
+def test_tracking_wrapper_imports_without_installing_live_run():
+    assert callable(tracking.install_tracking)
 
 
 def test_long_prep_records_tp1_before_real_entry_signal():
