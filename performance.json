@@ -35034,11 +35034,11 @@
     "2026-09-05": {
       "opened": 11,
       "radar": 0,
-      "tp1": 4,
-      "tp2": 1,
+      "tp1": 7,
+      "tp2": 2,
       "tp3": 0,
-      "sl": 3,
-      "be": 3,
+      "sl": 4,
+      "be": 4,
       "expired": 0,
       "long": 10,
       "short": 1,
@@ -35098,7 +35098,7 @@
         "KAITOUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
+          "tp1": 1,
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
@@ -35131,14 +35131,14 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         },
         "BNBUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
+          "tp1": 1,
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
@@ -35148,31 +35148,35 @@
         "BIOUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
-          "tp2": 0,
+          "tp1": 1,
+          "tp2": 1,
           "tp3": 0,
           "sl": 0,
-          "be": 0,
+          "be": 1,
           "expired": 0
         }
       },
       "direction_stops": {
-        "LONG": 3
+        "LONG": 3,
+        "SHORT": 1
       },
       "stop_times": {
         "RENDERUSDT": 1788615956,
         "VIRTUALUSDT": 1788615959,
-        "TRUMPUSDT": 1788623155
+        "TRUMPUSDT": 1788623155,
+        "BCHUSDT": 1788624079
       },
       "closed_times": {
         "ATOMUSDT": 1788618670,
         "FILUSDT": 1788621357,
-        "GMXUSDT": 1788622633
+        "GMXUSDT": 1788622633,
+        "BIOUSDT": 1788624092
       },
       "closed_results": {
         "ATOMUSDT": "BE",
         "FILUSDT": "BE",
-        "GMXUSDT": "BE"
+        "GMXUSDT": "BE",
+        "BIOUSDT": "BE"
       },
       "closed_history": [
         {
@@ -35284,6 +35288,66 @@
           "exit": 85.450585,
           "source": "MARKET_FIRST_V5",
           "score": 91
+        },
+        {
+          "time": "19:01:14",
+          "symbol": "KAITOUSDT",
+          "direction": "LONG",
+          "result": "TP1",
+          "entry": 0.3111,
+          "exit": 0.3120514286,
+          "source": "MARKET_FIRST_V5",
+          "score": 96
+        },
+        {
+          "time": "19:01:19",
+          "symbol": "BCHUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 249.7,
+          "exit": 251.7,
+          "source": "MARKET_FIRST_V5",
+          "score": 92
+        },
+        {
+          "time": "19:01:22",
+          "symbol": "BNBUSDT",
+          "direction": "LONG",
+          "result": "TP1",
+          "entry": 766.4,
+          "exit": 769.6008928571,
+          "source": "MARKET_FIRST_V5",
+          "score": 87
+        },
+        {
+          "time": "19:01:26",
+          "symbol": "BIOUSDT",
+          "direction": "LONG",
+          "result": "TP1",
+          "entry": 0.02782,
+          "exit": 0.02790346,
+          "source": "MARKET_FIRST_V5",
+          "score": 92
+        },
+        {
+          "time": "19:01:29",
+          "symbol": "BIOUSDT",
+          "direction": "LONG",
+          "result": "TP2",
+          "entry": 0.02782,
+          "exit": 0.0279591,
+          "source": "MARKET_FIRST_V5",
+          "score": 92
+        },
+        {
+          "time": "19:01:32",
+          "symbol": "BIOUSDT",
+          "direction": "LONG",
+          "result": "BE",
+          "entry": 0.02782,
+          "exit": 0.02782,
+          "source": "MARKET_FIRST_V5",
+          "score": 92
         }
       ],
       "sl_after_tp1": 0,
@@ -35291,7 +35355,7 @@
       "sl_after_no_return": 0
     }
   },
-  "last_update": 1788623282,
+  "last_update": 1788624092,
   "last_open_summary": 1787843763,
   "last_status_message": 1787906216,
   "last_daily_report": "2026-08-27",
@@ -35358,6 +35422,26 @@
       "risk_percent": 1.006,
       "stopped_at": 1788623155,
       "stop_exit": 2.367,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "BCHUSDT_SHORT_1788624079": {
+      "trade_id": "BCHUSDT_SHORT_MARKET_FIRST_V5_1788622758",
+      "symbol": "BCHUSDT",
+      "direction": "SHORT",
+      "source": "MARKET_FIRST_V5",
+      "entry": 249.7,
+      "tp1": 248.9509,
+      "tp2": 248.4515,
+      "tp3": 247.7024,
+      "sl": 250.6988,
+      "score": 92,
+      "risk_percent": 0.4,
+      "stopped_at": 1788624079,
+      "stop_exit": 251.7,
       "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
