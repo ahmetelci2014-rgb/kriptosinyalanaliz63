@@ -11,6 +11,7 @@ from typing import Any, Dict, Mapping
 import market_first_live as live
 import market_first_runner as runner
 import market_first_entry_plan as entry_plan
+import market_first_live_direction_guard as direction_guard
 
 _INSTALLED = False
 MAX_PREP_MESSAGES_PER_RUN = 4
@@ -51,9 +52,11 @@ def install_entry_plan() -> None:
         symbol = str(arg(args, kwargs, "symbol", 0, "") or "")
         current_price = float(arg(args, kwargs, "current_price", 5, 0.0) or 0.0)
         quote_volume = float(arg(args, kwargs, "quote_volume_24h", 6, 0.0) or 0.0)
-        context = arg(args, kwargs, "context", 7)
+        raw_context = arg(args, kwargs, "context", 7)
+        context, breadth_guard = direction_guard.neutralize_breadth_conflict(raw_context)
 
-        # Existing READY/FAST/FOLLOWTHROUGH trades always keep priority.
+        # Existing READY/FAST/FOLLOWTHROUGH trades always keep priority. Their
+        # final live-flow veto remains active in market_first_live._send_trade.
         if isinstance(decision, Mapping) and bool(decision.get("trade_eligible")):
             return decision, reason
         if not symbol or current_price <= 0 or context is None:
@@ -115,7 +118,28 @@ def install_entry_plan() -> None:
         if status != "ENTRY" or direction_conflict:
             return decision, reason
 
+        fresh_ok, fresh_guard = direction_guard.fresh_entry_plan_confirmation(
+            decision,
+            direction,
+        )
+        if not fresh_ok:
+            print(
+                "GİRİŞ TAZELİK ENGELİ:",
+                symbol,
+                direction,
+                "| reason=", fresh_guard.get("reason"),
+                "| 3m=", fresh_guard.get("aligned_move_3m_percent"),
+                "| 5m=", fresh_guard.get("aligned_move_5m_percent"),
+                "| rel5=", fresh_guard.get("relative_strength_5m"),
+                "| breakout=", fresh_guard.get("breakout_20m"),
+            )
+            return decision, "ENTRY_PLAN_STALE_MICRO"
+
         promoted = entry_plan.promote_to_decision(decision, plan)
+        if isinstance(promoted, dict):
+            promoted["entry_plan_fresh_guard"] = fresh_guard
+            if breadth_guard.get("active"):
+                promoted["breadth_direction_guard"] = breadth_guard
         print(
             "GİRİŞ BÖLGESİ TEYİDİ -> İŞLEM ADAYI:",
             symbol,
@@ -140,7 +164,7 @@ def install_entry_plan() -> None:
             zone_high = float((signal or {}).get("entry_plan_zone_high") or 0.0)
             if zone_low > 0 and zone_high > 0:
                 text += f"\n📍 Plan bölgesi: {zone_low:.10g} - {zone_high:.10g}"
-            text += "\n🧭 15M+1H yönü ve 5M bölge teyidi birlikte sağlandı."
+            text += "\n🧭 15M+1H yönü, 5M bölgesi ve canlı mikro teyit birlikte sağlandı."
         return text
 
     runner.analyze_candidate = analyze_with_entry_plan
