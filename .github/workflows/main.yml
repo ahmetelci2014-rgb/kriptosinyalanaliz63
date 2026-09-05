@@ -50,7 +50,7 @@ jobs:
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
         run: python untradable_futures_cleanup.py
 
-      - name: Market First V5 + LONG SHORT giris plani ve firsat takibi calistir
+      - name: Market First V5 + tam firsat ve yon takibi calistir
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -60,7 +60,7 @@ jobs:
           OKX_API_KEY: ${{ secrets.OKX_API_KEY }}
           OKX_SECRET_KEY: ${{ secrets.OKX_SECRET_KEY }}
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
-        run: python market_first_live_entry_plan_tracking.py
+        run: python market_first_live_complete_tracking.py
 
       - name: SL BE sonuc teshisi
         if: always()
@@ -85,7 +85,9 @@ jobs:
             market_first_early_ledger.json \
             market_first_entry_plan_state.json \
             market_first_entry_plan_ledger.json \
-            market_first_opportunity_summary.json
+            market_first_opportunity_summary.json \
+            market_first_direction_ledger.json \
+            market_first_direction_summary.json
           do
             if [ -f "$file" ]; then
               git add "$file"
