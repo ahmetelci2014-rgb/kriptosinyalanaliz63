@@ -50,7 +50,7 @@ jobs:
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
         run: python untradable_futures_cleanup.py
 
-      - name: Market First V5 + LONG SHORT giris plani calistir
+      - name: Market First V5 + LONG SHORT giris plani ve firsat takibi calistir
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -60,7 +60,7 @@ jobs:
           OKX_API_KEY: ${{ secrets.OKX_API_KEY }}
           OKX_SECRET_KEY: ${{ secrets.OKX_SECRET_KEY }}
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
-        run: python market_first_live_entry_plan.py
+        run: python market_first_live_entry_plan_tracking.py
 
       - name: SL BE sonuc teshisi
         if: always()
