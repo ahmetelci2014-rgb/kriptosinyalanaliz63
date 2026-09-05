@@ -13,6 +13,8 @@ hooks without creating a second signal engine:
 - corrected late/stale classification,
 - profit-after-cost ML labelling,
 - no-lookahead historical replay rows added only to the in-memory ML training pool,
+- short-term breadth conflict removes stale normal-regime directional preference,
+- combined live taker/CVD or taker/opposing-wall veto before Telegram,
 - fresh BTC/ETH/SOL recheck before Telegram,
 - final spread/depth liquidity check,
 - shadow audit for signals withheld by the last safety guards.
@@ -29,6 +31,7 @@ import market_first_full_coverage as full_coverage
 import market_first_ml_training_pool as ml_training_pool
 import market_first_early_trade_bridge as early_trade_bridge
 import market_first_fast_entry as fast_entry
+import market_first_live_direction_guard as direction_guard
 from market_first_pre_send_guard import (
     evaluate_pre_send_market,
     fetch_fresh_major_moves,
@@ -142,17 +145,33 @@ def install_guards() -> None:
         return selected
 
     def audited_analyze_candidate(*args, **kwargs):
-        decision, reason = original_analyze_candidate(*args, **kwargs)
+        def arg(call_args, call_kwargs, name: str, index: int, default=None):
+            if name in call_kwargs:
+                return call_kwargs.get(name)
+            return call_args[index] if len(call_args) > index else default
+
+        raw_context = arg(args, kwargs, "context", 7)
+        context, breadth_guard = direction_guard.neutralize_breadth_conflict(raw_context)
+
+        # Feed the underlying strategy the effective context so normal BULL/BEAR
+        # preference cannot stay sticky when short-term breadth strongly disagrees.
+        call_args = list(args)
+        call_kwargs = dict(kwargs)
+        if "context" in call_kwargs:
+            call_kwargs["context"] = context
+        elif len(call_args) > 7:
+            call_args[7] = context
+        else:
+            call_kwargs["context"] = context
+
+        decision, reason = original_analyze_candidate(*tuple(call_args), **call_kwargs)
         revised, revised_reason = audit.revise_late_decision(decision, reason)
 
-        def arg(name: str, index: int, default=None):
-            if name in kwargs:
-                return kwargs.get(name)
-            return args[index] if len(args) > index else default
+        symbol = str(arg(args, kwargs, "symbol", 0, "") or "")
+        current_price = float(arg(args, kwargs, "current_price", 5, 0.0) or 0.0)
 
-        symbol = str(arg("symbol", 0, "") or "")
-        current_price = float(arg("current_price", 5, 0.0) or 0.0)
-        context = arg("context", 7)
+        if revised is not None and breadth_guard.get("active"):
+            revised["breadth_direction_guard"] = breadth_guard
 
         if revised is not None and revised.get("late_rescued"):
             print(
@@ -167,9 +186,9 @@ def install_guards() -> None:
         fast_promoted, fast_reason, fast_diag = fast_entry.promote_initial_early(
             revised,
             revised_reason,
-            df5m=arg("df5m", 2),
-            df15m=arg("df15m", 3),
-            df1h=arg("df1h", 4),
+            df5m=arg(args, kwargs, "df5m", 2),
+            df15m=arg(args, kwargs, "df15m", 3),
+            df1h=arg(args, kwargs, "df1h", 4),
             current_price=current_price,
             context=context,
         )
@@ -193,12 +212,12 @@ def install_guards() -> None:
                 revised_reason,
                 alert,
                 symbol=symbol,
-                df1m=arg("df1m", 1),
-                df5m=arg("df5m", 2),
-                df15m=arg("df15m", 3),
-                df1h=arg("df1h", 4),
+                df1m=arg(args, kwargs, "df1m", 1),
+                df5m=arg(args, kwargs, "df5m", 2),
+                df15m=arg(args, kwargs, "df15m", 3),
+                df1h=arg(args, kwargs, "df1h", 4),
                 current_price=current_price,
-                quote_volume_24h=float(arg("quote_volume_24h", 6, 0.0) or 0.0),
+                quote_volume_24h=float(arg(args, kwargs, "quote_volume_24h", 6, 0.0) or 0.0),
                 context=context,
                 now=runner.bot.now_ts(),
             )
@@ -219,7 +238,17 @@ def install_guards() -> None:
         signal = original_decision_to_signal(decision)
         signal = fast_entry.decorate_signal(signal, decision)
         signal = early_trade_bridge.decorate_followthrough_signal(signal, decision)
-        if signal is None or not bool(decision.get("fast_entry")):
+        if signal is None:
+            return signal
+
+        # Runner's legacy derivative copy list intentionally predates CVD/book.
+        # Carry these live fields to the final pre-send guard without changing
+        # their ML/shadow use elsewhere.
+        for key in direction_guard.LIVE_FLOW_SIGNAL_FIELDS:
+            if key in decision:
+                signal[key] = decision.get(key)
+
+        if not bool(decision.get("fast_entry")):
             return signal
 
         symbol = str(signal.get("symbol") or "")
@@ -283,6 +312,28 @@ def install_guards() -> None:
 
     def guarded_send_trade(exchange: Any, signal: Dict[str, Any], ml_store: Dict[str, Any]) -> bool:
         now = runner.bot.now_ts()
+
+        flow_guard = direction_guard.evaluate_live_flow_veto(signal)
+        signal["pre_send_live_flow_guard"] = flow_guard
+        if flow_guard.get("blocked"):
+            print(
+                "PRE-SEND LIVE FLOW GUARD:",
+                signal.get("symbol"),
+                signal.get("direction"),
+                "engellendi |",
+                flow_guard.get("reason"),
+                "| taker=", flow_guard.get("taker_alignment"),
+                "| cvd=", flow_guard.get("cvd_ratio_alignment"),
+                "| wall=", flow_guard.get("opposing_wall_ratio"),
+            )
+            if runner._is_live_run():
+                try:
+                    audit_guard = dict(flow_guard)
+                    audit_guard["guard_type"] = "LIVE_FLOW"
+                    register_shadow_rejection(signal, audit_guard, now)
+                except Exception as exc:
+                    print("Live flow shadow kayıt hatası:", type(exc).__name__, exc)
+            return False
 
         if now - int(guard_cache.get("at") or 0) > 20:
             guard_cache["moves"] = fetch_fresh_major_moves(exchange)
