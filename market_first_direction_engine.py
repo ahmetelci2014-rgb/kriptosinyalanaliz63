@@ -134,6 +134,7 @@ def score_from_evidence(
     cvd_alignment = _sf(decision.get("cvd_ratio")) * sign
     cvd_impulse_alignment = _sf(decision.get("cvd_impulse")) * sign
     book_alignment = _sf(decision.get("book_imbalance")) * sign
+    opposing_wall_ratio = _sf(decision.get("book_opposing_wall_ratio"))
 
     components["taker"] = (
         _flow_points(taker_alignment, 0.18, 0.35, 10, 18) if taker_available else 0
@@ -148,6 +149,17 @@ def score_from_evidence(
         _flow_points(book_alignment, 0.12, 0.25, 2, 4) if book_available else 0
     )
 
+    # The wall ratio is direction-specific to the *current* scanner direction.
+    # Therefore a large wall is evidence against that current direction and in
+    # favor of its mirror. It is only corroborating evidence; wall alone can
+    # never satisfy the reversal confirmation requirement.
+    wall_points = 0
+    if book_available and current_direction in {"LONG", "SHORT"}:
+        magnitude = 10 if opposing_wall_ratio >= 8.0 else (6 if opposing_wall_ratio >= 4.0 else 0)
+        if magnitude:
+            wall_points = -magnitude if direction == current_direction else magnitude
+    components["opposing_wall"] = wall_points
+
     raw_score = 50 + sum(components.values())
     score = _clip_score(raw_score)
     return score, {
@@ -160,6 +172,7 @@ def score_from_evidence(
         "cvd_alignment": round(cvd_alignment, 6),
         "cvd_impulse_alignment": round(cvd_impulse_alignment, 6),
         "book_alignment": round(book_alignment, 6),
+        "opposing_wall_ratio": round(opposing_wall_ratio, 4),
         "breadth_5m": round(breadth, 4),
     }
 
@@ -197,6 +210,11 @@ def choose_direction(
     current_direction = str(decision.get("direction") or "").upper()
     reversal = current_direction in {"LONG", "SHORT"} and selected != current_direction
 
+    wall_supports_reverse = (
+        bool(decision.get("book_available"))
+        and _sf(decision.get("book_opposing_wall_ratio")) >= 4.0
+        and selected != current_direction
+    )
     confirmation_flags = {
         "structure_5m": str(s5.get("direction") or "").upper() == selected,
         "fresh_micro": (
@@ -211,6 +229,7 @@ def choose_direction(
             (selected == "SHORT" and _sf(context.breadth_5m, 0.50) <= 0.35)
             or (selected == "LONG" and _sf(context.breadth_5m, 0.50) >= 0.65)
         ),
+        "opposing_wall": wall_supports_reverse,
     }
     confirmations = sum(1 for value in confirmation_flags.values() if value)
 
@@ -230,7 +249,7 @@ def choose_direction(
 
     diag = {
         "version": VERSION,
-        "reason": reason if allowed else reason,
+        "reason": reason,
         "selected_direction": selected if allowed else None,
         "selected_score": selected_score,
         "other_score": other_score,
