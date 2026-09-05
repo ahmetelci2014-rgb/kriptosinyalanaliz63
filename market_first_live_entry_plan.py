@@ -1,8 +1,9 @@
 """Live Market First entry point with symmetric LONG/SHORT entry planning.
 
 The existing market_first_live guards are installed first. This overlay then adds
-pre-trade preparation, zone confirmation and chase protection without replacing
-the underlying strategy or its final safety gates.
+pre-trade preparation, dual-direction evidence scoring, zone confirmation and
+chase protection without replacing the underlying strategy or its final safety
+gates.
 """
 from __future__ import annotations
 
@@ -12,6 +13,7 @@ import market_first_live as live
 import market_first_runner as runner
 import market_first_entry_plan as entry_plan
 import market_first_live_direction_guard as direction_guard
+import market_first_direction_engine as direction_engine
 
 _INSTALLED = False
 MAX_PREP_MESSAGES_PER_RUN = 4
@@ -34,6 +36,7 @@ def install_entry_plan() -> None:
     runtime: Dict[str, Any] = {
         "state": runner.bot.load_json_file(entry_plan.STATE_FILE, {"plans": {}}),
         "prep_sent": 0,
+        "candidate_cache": {},
     }
     entry_plan.prune_state(runtime["state"], runner.bot.now_ts())
 
@@ -46,6 +49,35 @@ def install_entry_plan() -> None:
             return kwargs.get(name)
         return args[index] if len(args) > index else default
 
+    def remember_candidate(symbol: str, **values: Any) -> None:
+        if not symbol:
+            return
+        cache = runtime.setdefault("candidate_cache", {})
+        cache[symbol] = values
+        # One run currently deep-scans ~128 coins. Keep a small hard ceiling in
+        # case the scan size grows later.
+        if len(cache) > 220:
+            for key in list(cache.keys())[: len(cache) - 220]:
+                cache.pop(key, None)
+
+    def emit_preparation(plan: Mapping[str, Any], text: str, key_prefix: str) -> bool:
+        if int(runtime.get("prep_sent") or 0) >= MAX_PREP_MESSAGES_PER_RUN:
+            return False
+        now = runner.bot.now_ts()
+        if not entry_plan.should_emit_preparation(runtime["state"], plan, now):
+            return False
+        sent = runner._send(
+            text,
+            delivery_key=(
+                f"ENTRY_PLAN:{key_prefix}:{plan.get('symbol')}:{plan.get('direction')}:"
+                f"{now // entry_plan.PREP_REPEAT_SECONDS}"
+            ),
+        )
+        if sent:
+            runtime["prep_sent"] = int(runtime.get("prep_sent") or 0) + 1
+            save_state()
+        return bool(sent)
+
     def analyze_with_entry_plan(*args, **kwargs):
         decision, reason = original_analyze_candidate(*args, **kwargs)
 
@@ -55,8 +87,19 @@ def install_entry_plan() -> None:
         raw_context = arg(args, kwargs, "context", 7)
         context, breadth_guard = direction_guard.neutralize_breadth_conflict(raw_context)
 
-        # Existing READY/FAST/FOLLOWTHROUGH trades always keep priority. Their
-        # final live-flow veto remains active in market_first_live._send_trade.
+        remember_candidate(
+            symbol,
+            df5m=arg(args, kwargs, "df5m", 2),
+            df15m=arg(args, kwargs, "df15m", 3),
+            df1h=arg(args, kwargs, "df1h", 4),
+            current_price=current_price,
+            quote_volume_24h=quote_volume,
+            context=context,
+        )
+
+        # Existing READY/FAST/FOLLOWTHROUGH trades continue into the common
+        # decision_to_signal hook where both directions can be rescored using
+        # the derivatives/order-flow evidence added by market_first_runner.
         if isinstance(decision, Mapping) and bool(decision.get("trade_eligible")):
             return decision, reason
         if not symbol or current_price <= 0 or context is None:
@@ -79,32 +122,22 @@ def install_entry_plan() -> None:
         status = str(plan.get("status") or "")
         direction = str(plan.get("direction") or "")
         current_direction = str((decision or {}).get("direction") or "") if isinstance(decision, Mapping) else ""
-        now = runner.bot.now_ts()
 
         # If 1m acceleration currently points against the higher-TF plan, keep it
         # observational until the micro move stops fighting the planned direction.
         direction_conflict = bool(current_direction and current_direction != direction)
 
         if status == "PREP" and int(plan.get("score") or 0) >= MIN_PREP_SCORE:
-            if (
-                int(runtime.get("prep_sent") or 0) < MAX_PREP_MESSAGES_PER_RUN
-                and entry_plan.should_emit_preparation(runtime["state"], plan, now)
-            ):
-                sent = runner._send(
-                    entry_plan.format_preparation(plan),
-                    delivery_key=f"ENTRY_PLAN:PREP:{symbol}:{direction}:{now // entry_plan.PREP_REPEAT_SECONDS}",
+            if emit_preparation(plan, entry_plan.format_preparation(plan), "PREP"):
+                print(
+                    "İŞLEM HAZIRLIĞI:", symbol, direction,
+                    "| zone=", plan.get("zone_low"), plan.get("zone_high"),
+                    "| score=", plan.get("score"),
                 )
-                if sent:
-                    runtime["prep_sent"] = int(runtime.get("prep_sent") or 0) + 1
-                    save_state()
-                    print(
-                        "İŞLEM HAZIRLIĞI:", symbol, direction,
-                        "| zone=", plan.get("zone_low"), plan.get("zone_high"),
-                        "| score=", plan.get("score"),
-                    )
             return decision, reason
 
         if status == "CHASED":
+            now = runner.bot.now_ts()
             if entry_plan.should_emit_chased(runtime["state"], plan, now):
                 sent = runner._send(
                     entry_plan.format_chased(plan),
@@ -153,6 +186,60 @@ def install_entry_plan() -> None:
         return promoted, "OK"
 
     def decision_to_signal_with_entry_plan(decision):
+        if not isinstance(decision, Mapping):
+            return original_decision_to_signal(decision)
+
+        symbol = str(decision.get("symbol") or "")
+        cached = (runtime.get("candidate_cache") or {}).get(symbol) or {}
+        current_direction = str(decision.get("direction") or "").upper()
+
+        if cached and current_direction in {"LONG", "SHORT"}:
+            selected, direction_diag = direction_engine.choose_direction(
+                decision=decision,
+                df5m=cached.get("df5m"),
+                df15m=cached.get("df15m"),
+                df1h=cached.get("df1h"),
+                current_price=float(cached.get("current_price") or 0.0),
+                context=cached.get("context"),
+            )
+            if isinstance(decision, dict):
+                decision["direction_engine"] = direction_diag
+
+            # A decisive opposite score invalidates the old trade direction. It
+            # becomes a PREPARATION only; no automatic reverse market signal is
+            # allowed until 5m confirms that new direction in a later evaluation.
+            if selected in {"LONG", "SHORT"} and selected != current_direction:
+                plan, plan_reason = direction_engine.build_direction_plan(
+                    symbol=symbol,
+                    direction=selected,
+                    df5m=cached.get("df5m"),
+                    df15m=cached.get("df15m"),
+                    df1h=cached.get("df1h"),
+                    current_price=float(cached.get("current_price") or 0.0),
+                    quote_volume_24h=float(cached.get("quote_volume_24h") or 0.0),
+                    context=cached.get("context"),
+                    direction_score=int(direction_diag.get("selected_score") or 0),
+                )
+                if isinstance(plan, Mapping):
+                    if str(plan.get("status") or "") in {"PREP", "ENTRY"}:
+                        if emit_preparation(
+                            plan,
+                            direction_engine.format_reversal_preparation(plan, direction_diag),
+                            "REVERSAL_PREP",
+                        ):
+                            print(
+                                "YÖN MOTORU TERS HAZIRLIK:", symbol,
+                                current_direction, "->", selected,
+                                "| long=", (direction_diag.get("long") or {}).get("score"),
+                                "| short=", (direction_diag.get("short") or {}).get("score"),
+                                "| margin=", direction_diag.get("margin"),
+                            )
+                    elif str(plan.get("status") or "") == "CHASED":
+                        print("YÖN MOTORU TERS YÖN KAÇTI:", symbol, selected)
+                else:
+                    print("YÖN MOTORU TERS PLAN YOK:", symbol, selected, plan_reason)
+                return None
+
         signal = original_decision_to_signal(decision)
         return entry_plan.decorate_signal(signal, decision)
 
