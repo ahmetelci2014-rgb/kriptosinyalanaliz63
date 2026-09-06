@@ -144,9 +144,10 @@ def test_daily_report_is_not_suppressed_by_simple_telegram_mode():
     assert simple_mode.should_suppress("📋 GÜNLÜK İŞLEM ÖZETİ | 06.09.2026") is False
 
 
-def test_live_workflow_stays_single_15m_job_and_persists_daily_files():
+def test_live_workflow_stays_single_5m_job_and_persists_daily_files():
     text = Path(".github/workflows/main.yml").read_text(encoding="utf-8")
-    assert 'cron: "*/15 * * * *"' in text
+    assert 'cron: "*/5 * * * *"' in text
+    assert "workflow_dispatch:" in text
     assert text.count("python market_first_live_simple.py") == 1
     assert "sleep 300" not in text
     assert "market_first_daily_report_state.json" in text
