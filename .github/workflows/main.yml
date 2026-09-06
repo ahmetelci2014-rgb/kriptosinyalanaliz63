@@ -1,20 +1,20 @@
-name: Market First V5 - Major Wind + Early Movers
+name: Market First V5 - Simplified Live
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "*/15 * * * *"
 
 permissions:
   contents: write
 
 concurrency:
   group: market-first-v5-live
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   market-first:
     runs-on: ubuntu-latest
-    timeout-minutes: 22
+    timeout-minutes: 15
 
     steps:
       - name: Repo indir
@@ -49,7 +49,7 @@ jobs:
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
         run: python untradable_futures_cleanup.py
 
-      - name: Market First iki 5dk dongu + 2H swing + tam takip
+      - name: Market First tek tarama - sadece islem ve sonuc Telegram
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -61,16 +61,8 @@ jobs:
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
         run: |
           set -e
-          for cycle in 1 2
-          do
-            echo "===== MARKET FIRST CYCLE ${cycle}/2 ====="
-            python market_first_live_complete_tracking.py
-            python result_diagnostics.py || true
-            if [ "$cycle" -lt 2 ]; then
-              echo "5 dakika sonra ikinci piyasa taramasi..."
-              sleep 300
-            fi
-          done
+          python market_first_live_simple.py
+          python result_diagnostics.py || true
 
       - name: Durum ve Market First verisini kaydet
         if: ${{ always() && github.ref_name == 'main' }}
