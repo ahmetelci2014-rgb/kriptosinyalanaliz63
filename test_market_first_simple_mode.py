@@ -1,7 +1,7 @@
 import market_first_simple_mode as simple
 
 
-def test_preparation_and_lifecycle_messages_are_suppressed():
+def test_old_preparation_and_lifecycle_messages_are_suppressed():
     messages = [
         "🎯 İŞLEM HAZIRLIĞI | AAVEUSDT\n🟢 LONG",
         "❌ GİRİŞİ KOVALAMA | AAVEUSDT",
@@ -15,6 +15,24 @@ def test_preparation_and_lifecycle_messages_are_suppressed():
         "🟡 ERKEN HAREKET UYARISI — İŞLEM DEĞİL",
     ]
     assert all(simple.should_suppress(message) for message in messages)
+
+
+def test_compact_quality_preparation_is_allowed():
+    text = simple.simple_preparation_message({
+        "symbol": "AAVEUSDT",
+        "direction": "LONG",
+        "current_price": 130.5,
+        "zone_low": 129.8,
+        "zone_high": 130.2,
+        "score": 82,
+    })
+    assert "🎯 FIRSAT YAKALANDI" in text
+    assert "AAVEUSDT" in text
+    assert "LONG" in text
+    assert "Hazırlık skoru: 82" in text
+    assert "Henüz işlem değil" in text
+    assert "TP1" not in text and "Stop" not in text
+    assert simple.should_suppress(text) is False
 
 
 def test_trade_results_are_not_suppressed():
