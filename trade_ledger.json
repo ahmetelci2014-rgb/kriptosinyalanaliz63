@@ -161216,7 +161216,13 @@
         "watched_levels": {
           "TP3": 5.2086857143
         },
-        "reached_levels": {},
+        "reached_levels": {
+          "TP3": {
+            "first_reached_at": 1788729780,
+            "minutes_after_close": 51,
+            "level_price": 5.2086857143
+          }
+        },
         "checkpoints": {
           "15": {
             "target_at": 1788727578,
@@ -161229,37 +161235,43 @@
             "candle_time": 1788728400,
             "close_price": 5.16,
             "directional_r_from_reference": 0.7781
+          },
+          "60": {
+            "target_at": 1788730278,
+            "candle_time": 1788730200,
+            "close_price": 5.198,
+            "directional_r_from_reference": 1.7318
           }
         },
-        "max_favorable_r": 1.6063,
+        "max_favorable_r": 2.0832,
         "max_adverse_r": 0.0,
-        "last_checked_at": 1788729477,
+        "last_checked_at": 1788730347,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
-          "code": "BE_NOTR_KARISIK",
-          "likely_cause": "BE_AYARI_ICIN_DAHA_COK_VERI",
-          "confidence": "LOW",
-          "summary": "BE icin net erken/koruyucu sonuc yok; daha fazla ornek gerekli.",
+          "code": "BE_SONRASI_TP3",
+          "likely_cause": "BE_KORUMASI_ERKEN_OLABILIR",
+          "confidence": "HIGH",
+          "summary": "BE kapanisindan sonra fiyat TP3'e ulasti; koruma zamani erken olabilir.",
           "evidence": {
-            "max_favorable_r_after_close": 1.6063,
+            "max_favorable_r_after_close": 2.0832,
             "max_adverse_r_after_close": 0.0,
             "risk_percent": 0.7768,
             "tp1_progress_at_send_percent": null,
             "entry_distance_at_send_percent": 0.0584909339052469,
             "reached_tp1_after_close": false,
             "reached_tp2_after_close": false,
-            "reached_tp3_after_close": false,
+            "reached_tp3_after_close": true,
             "tp1_minutes_after_close": null,
             "tp2_minutes_after_close": null,
-            "tp3_minutes_after_close": null
+            "tp3_minutes_after_close": 51
           }
         },
-        "last_price": 5.19
+        "last_price": 5.207
       }
     }
   },
-  "last_update": 1788729479,
+  "last_update": 1788730349,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -161273,9 +161285,9 @@
     "tracked_total": 116,
     "completed_total": 115,
     "diagnosis_counts": {
-      "BE_SONRASI_TP3": 19,
+      "BE_SONRASI_TP3": 20,
       "BE_KORUMASI_DOGRU": 13,
-      "BE_NOTR_KARISIK": 22,
+      "BE_NOTR_KARISIK": 21,
       "SL_SONRASI_TERS_YON_DEVAMI": 3,
       "SL_SONRASI_TOPARLANMA": 30,
       "BE_SONRASI_YENIDEN_HEDEF": 5,
@@ -161283,9 +161295,9 @@
       "SL_KARISIK_SONUC": 9
     },
     "likely_cause_counts": {
-      "BE_KORUMASI_ERKEN_OLABILIR": 24,
+      "BE_KORUMASI_ERKEN_OLABILIR": 25,
       "SERMAYE_KORUMASI_ISABETLI": 13,
-      "BE_AYARI_ICIN_DAHA_COK_VERI": 22,
+      "BE_AYARI_ICIN_DAHA_COK_VERI": 21,
       "YON_VEYA_SETUP_GECERSIZLESMESI": 3,
       "ERKEN_GIRIS_OLASILIGI": 31,
       "GIRIS_STOP_ZAMANLAMASI": 8,
@@ -161293,9 +161305,9 @@
       "DAR_STOP_OLASILIGI": 6
     },
     "sl_recovery_total": 45,
-    "be_maybe_early_total": 24,
+    "be_maybe_early_total": 25,
     "be_protection_correct_total": 13,
-    "updated_at": 1788726765
+    "updated_at": 1788730349
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
