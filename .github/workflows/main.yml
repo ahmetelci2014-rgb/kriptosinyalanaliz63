@@ -1,9 +1,8 @@
 name: Market First V5 - Major Wind + Early Movers
 
 on:
-  workflow_dispatch:
   schedule:
-    - cron: "*/5 * * * *"
+    - cron: "*/10 * * * *"
 
 permissions:
   contents: write
@@ -15,7 +14,7 @@ concurrency:
 jobs:
   market-first:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 22
 
     steps:
       - name: Repo indir
@@ -50,7 +49,7 @@ jobs:
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
         run: python untradable_futures_cleanup.py
 
-      - name: Market First V5 + tam firsat ve yon takibi calistir
+      - name: Market First iki 5dk dongu + 2H swing + tam takip
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -60,11 +59,18 @@ jobs:
           OKX_API_KEY: ${{ secrets.OKX_API_KEY }}
           OKX_SECRET_KEY: ${{ secrets.OKX_SECRET_KEY }}
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
-        run: python market_first_live_complete_tracking.py
-
-      - name: SL BE sonuc teshisi
-        if: always()
-        run: python result_diagnostics.py
+        run: |
+          set -e
+          for cycle in 1 2
+          do
+            echo "===== MARKET FIRST CYCLE ${cycle}/2 ====="
+            python market_first_live_complete_tracking.py
+            python result_diagnostics.py || true
+            if [ "$cycle" -lt 2 ]; then
+              echo "5 dakika sonra ikinci piyasa taramasi..."
+              sleep 300
+            fi
+          done
 
       - name: Durum ve Market First verisini kaydet
         if: ${{ always() && github.ref_name == 'main' }}
@@ -87,7 +93,10 @@ jobs:
             market_first_entry_plan_ledger.json \
             market_first_opportunity_summary.json \
             market_first_direction_ledger.json \
-            market_first_direction_summary.json
+            market_first_direction_summary.json \
+            market_first_swing_2h_state.json \
+            market_first_swing_2h_ledger.json \
+            market_first_swing_2h_summary.json
           do
             if [ -f "$file" ]; then
               git add "$file"
