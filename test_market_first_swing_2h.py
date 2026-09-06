@@ -135,10 +135,11 @@ def test_active_swing_symbols_are_kept_in_deep_scan_without_growing_cap():
     assert len(result) == 3
 
 
-def test_live_workflow_halves_launches_but_keeps_two_5m_cycles():
+def test_live_workflow_is_single_15m_cycle_and_simple_mode():
     text = Path(".github/workflows/main.yml").read_text(encoding="utf-8")
     assert "workflow_dispatch" not in text
-    assert 'cron: "*/10 * * * *"' in text
-    assert "for cycle in 1 2" in text
-    assert "sleep 300" in text
+    assert 'cron: "*/15 * * * *"' in text
+    assert "for cycle in 1 2" not in text
+    assert "sleep 300" not in text
+    assert "python market_first_live_simple.py" in text
     assert "market_first_swing_2h_ledger.json" in text
