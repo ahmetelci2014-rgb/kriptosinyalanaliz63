@@ -73,6 +73,12 @@ def install_tracking() -> None:
             "telegram_prep_sent": sum(1 for item in clean if item.get("telegram_prep_sent")),
             "zone_touched": sum(1 for item in clean if item.get("zone_touched")),
             "entry_condition_met": sum(1 for item in clean if item.get("entry_condition_met")),
+            "entry_promoted": sum(1 for item in clean if item.get("entry_promoted")),
+            "entry_guard_blocked": sum(1 for item in clean if item.get("entry_guard_blocked")),
+            "entry_stale_micro_blocked": sum(
+                1 for item in clean
+                if item.get("entry_guard_reason") == "ENTRY_PLAN_STALE_MICRO"
+            ),
             "entry_signal_sent": sum(1 for item in clean if item.get("entry_signal_sent")),
             "tp1_reached": sum(1 for item in clean if item.get("tp1_at")),
             "tp2_reached": sum(1 for item in clean if item.get("tp2_at")),
@@ -84,7 +90,10 @@ def install_tracking() -> None:
                 1 for item in clean
                 if item.get("first_decisive_event") == "SL_FIRST" and item.get("tp1_at")
             ),
-            "note": "Clean stats exclude preparation alerts that existed before this ledger started tracking.",
+            "note": (
+                "Clean stats exclude preparation alerts that existed before this ledger started tracking. "
+                "ENTRY condition, live promotion, guard block and actual Telegram send are counted separately."
+            ),
         }
         runner.bot.save_json_file(opportunity_ledger.SUMMARY_FILE, payload)
 
@@ -172,16 +181,33 @@ def install_tracking() -> None:
             if last_prep and abs(now - last_prep) <= 90:
                 opportunity_ledger.mark_prep_sent(runtime["ledger"], plan, last_prep)
 
+        effective_status = status
         if status == "ENTRY":
             promoted = bool(isinstance(decision, Mapping) and decision.get("entry_plan_trade"))
             opportunity_ledger.mark_entry_condition(
                 runtime["ledger"], plan, now, promoted=promoted
             )
 
+            reason_text = str(reason or "").upper()
+            if promoted:
+                effective_status = "ENTRY_PROMOTED"
+                episode["latest_effective_status"] = effective_status
+            elif reason_text == "ENTRY_PLAN_STALE_MICRO":
+                effective_status = "ENTRY_BLOCKED_MICRO"
+                episode["entry_guard_blocked"] = True
+                episode["entry_guard_blocked_at"] = int(now)
+                episode["entry_guard_reason"] = reason_text
+                episode["latest_effective_status"] = effective_status
+            else:
+                effective_status = "ENTRY_CONDITION_ONLY"
+                episode["latest_effective_status"] = effective_status
+                if reason_text and reason_text != "OK":
+                    episode["entry_not_promoted_reason"] = reason_text
+
         if created:
             print(
                 "OPPORTUNITY LEDGER YENİ:", symbol, direction,
-                "| status=", status,
+                "| status=", effective_status,
                 "| score=", score,
                 "| telegram=", episode.get("telegram_prep_sent"),
                 "| legacy=", episode.get("legacy_adopted", False),
@@ -212,12 +238,18 @@ def install_tracking() -> None:
         closed = opportunity_ledger.finalize_expired(runtime["ledger"], now)
         save_summary(now)
         summary = opportunity_ledger.ledger_summary(runtime["ledger"])
+        episodes = runtime["ledger"].get("episodes", {})
+        tracked = [item for item in episodes.values() if isinstance(item, Mapping)] if isinstance(episodes, Mapping) else []
+        promoted_count = sum(1 for item in tracked if item.get("entry_promoted"))
+        guard_blocked_count = sum(1 for item in tracked if item.get("entry_guard_blocked"))
         print(
             "OPPORTUNITY ÖZET | total=", summary.get("total"),
             "| open=", summary.get("open"),
             "| telegram prep=", summary.get("telegram_prep_sent"),
             "| zone touched=", summary.get("zone_touched"),
             "| entry condition=", summary.get("entry_condition_met"),
+            "| entry promoted=", promoted_count,
+            "| guard blocked=", guard_blocked_count,
             "| entry sent=", summary.get("entry_signal_sent"),
             "| TP1 before entry=", summary.get("tp1_before_entry_signal"),
             "| stop->recovery=", summary.get("stop_then_recovery"),
