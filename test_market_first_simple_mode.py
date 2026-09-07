@@ -26,6 +26,28 @@ def _strong_plan(**overrides):
     return plan
 
 
+def _strong_early(**overrides):
+    decision = {
+        "symbol": "LINKUSDT",
+        "direction": "LONG",
+        "stage": "EARLY",
+        "score": 70,
+        "current_price": 13.288,
+        "move_1m_percent": 0.10,
+        "move_3m_percent": 0.28,
+        "move_5m_percent": 0.43,
+        "volume_ratio_1m": 1.25,
+        "relative_strength_5m": 0.35,
+        "extension_atr_5m": 0.72,
+        "structure_5m": "LONG",
+        "structure_15m": "LONG",
+        "structure_1h": "LONG",
+        "market_preferred_direction": None,
+    }
+    decision.update(overrides)
+    return decision
+
+
 def test_old_preparation_and_lifecycle_messages_are_suppressed():
     messages = [
         "🎯 İŞLEM HAZIRLIĞI | AAVEUSDT\n🟢 LONG",
@@ -75,6 +97,53 @@ def test_early_entry_rejects_weak_geometry_or_volume():
     assert simple.early_entry_eligible(_strong_plan(risk_percent=1.36)) is False
     assert simple.early_entry_eligible(_strong_plan(room_r=1.49)) is False
     assert simple.early_entry_eligible(_strong_plan(extension_atr_5m=1.26)) is False
+
+
+def test_link_like_raw_early_move_becomes_orange_alert():
+    decision = _strong_early()
+    assert simple.early_move_eligible(decision) is True
+    original = "🚨 ERKEN HAREKET | LINKUSDT\n🟢 LONG\n⚠️ İşlem teyidi değildir."
+    text = simple.simple_early_move_message(decision, original)
+    assert "🎯 FIRSAT YAKALANDI – 🟠 ERKEN GİRİŞ UYGUN" in text
+    assert "LINKUSDT" in text
+    assert "13.288" in text
+    assert "3dk +0.28%" in text
+    assert "5dk +0.43%" in text
+    assert "Hacim: 1.25x" in text
+    assert "Kaynak: erken hareket + 15M/1H yön uyumu" in text
+    assert simple.should_suppress(text) is False
+
+
+def test_weak_or_conflicted_raw_early_move_stays_silent():
+    original = "🚨 ERKEN HAREKET | LINKUSDT\n🟢 LONG\n⚠️ İşlem teyidi değildir."
+    for decision in [
+        _strong_early(score=69),
+        _strong_early(structure_5m="SHORT"),
+        _strong_early(structure_15m="SHORT"),
+        _strong_early(structure_1h="SHORT"),
+        _strong_early(volume_ratio_1m=0.79),
+        _strong_early(move_3m_percent=0.14),
+        _strong_early(move_5m_percent=0.19),
+        _strong_early(move_5m_percent=1.81),
+        _strong_early(extension_atr_5m=1.26),
+        _strong_early(market_preferred_direction="SHORT"),
+    ]:
+        assert simple.early_move_eligible(decision) is False
+        assert simple.simple_early_move_message(decision, original) == original
+        assert simple.should_suppress(original) is True
+
+
+def test_short_raw_early_move_is_symmetric():
+    decision = _strong_early(
+        symbol="XPLUSDT",
+        direction="SHORT",
+        move_3m_percent=-0.31,
+        move_5m_percent=-0.55,
+        structure_5m="NEUTRAL",
+        structure_15m="SHORT",
+        structure_1h="SHORT",
+    )
+    assert simple.early_move_eligible(decision) is True
 
 
 def test_trade_results_are_not_suppressed():
