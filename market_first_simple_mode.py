@@ -1,15 +1,15 @@
 """Simple Telegram presentation for the single Market First live system.
 
 All preparation, early-alert, swing and direction ledgers keep running internally.
-Telegram intentionally exposes only the useful decision points:
+Telegram exposes only useful decision points and now includes a technical target
+plan at message time:
 - selective EARLY ENTRY alerts from qualified entry-plan preparations,
-- selective EARLY-MOVE alerts that already have enough structure/momentum quality,
+- selective EARLY-MOVE alerts with enough structure/momentum quality,
 - real trade entries and TP/SL/BE lifecycle results.
 
 Ordinary PREP/BEKLE, lower-confidence early movement, breakout, chased, swing and
-lifecycle-noise messages remain silent. This module changes presentation only;
-it does not promote an early alert or PREP into a real trade and it does not
-bypass any live guard.
+lifecycle-noise messages remain silent. Presentation/target guidance never promotes
+an alert into a trade and never bypasses a live guard.
 """
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from typing import Any, Mapping, Optional
 import market_first_entry_plan as entry_plan
 import market_first_runner as runner
 
-VERSION = "MARKET_FIRST_SIMPLE_TELEGRAM_V4_SELECTIVE_EARLY_BRIDGE_2026_09_07"
+VERSION = "MARKET_FIRST_SIMPLE_TELEGRAM_V5_TECHNICAL_TARGET_2026_09_07"
 _INSTALLED = False
 
 # Qualified PREP -> selective Telegram early-entry alert.
@@ -41,7 +41,6 @@ EARLY_MOVE_MAX_ALIGNED_MOVE_5M = 1.80
 EARLY_MOVE_MAX_EXTENSION_ATR_5M = 1.25
 EARLY_MOVE_MIN_RELATIVE_STRENGTH_5M = 0.00
 
-# Keep the old verbose preparation prefix and all lower-confidence stages blocked.
 SUPPRESSED_PREFIXES = (
     "🎯 İŞLEM HAZIRLIĞI",
     "🎯 FIRSAT YAKALANDI – BEKLE",
@@ -74,6 +73,34 @@ def _sf(value: Any, default: float = 0.0) -> float:
 def _aligned_percent(direction: str, value: Any) -> float:
     raw = _sf(value)
     return raw if str(direction).upper() == "LONG" else -raw
+
+
+def _reference(item: Mapping[str, Any], key: str) -> float:
+    return _sf(item.get(key)) or _sf(item.get(f"target_reference_{key}"))
+
+
+def _target_lines(item: Mapping[str, Any]) -> str:
+    target = _sf(item.get("technical_target"))
+    expected = _sf(item.get("expected_move_percent"))
+    if target <= 0 or expected <= 0:
+        return ""
+
+    direction = str(item.get("direction") or "").upper()
+    movement = "yükseliş" if direction == "LONG" else "düşüş"
+    low = _sf(item.get("expected_move_low_percent"))
+    high = _sf(item.get("expected_move_high_percent"))
+    confidence = str(item.get("target_confidence") or "TEMKİNLİ")
+    source = str(item.get("technical_target_source") or "teknik yapı")
+
+    range_line = ""
+    if low > 0 and high >= low:
+        range_line = f"\n📏 Potansiyel aralık: %{low:.2f} - %{high:.2f}"
+    return (
+        f"\n🎯 ANA HEDEF: {runner.bot.format_price(target)}"
+        f"\n📐 Beklenen {movement}: ~%{expected:.2f}"
+        f"{range_line}"
+        f"\n🧭 Hedef: {source} | Güven: {confidence}"
+    )
 
 
 def should_suppress(text: Any) -> bool:
@@ -125,13 +152,7 @@ def early_entry_eligible(plan: Mapping[str, Any]) -> bool:
 
 
 def early_move_eligible(decision: Mapping[str, Any]) -> bool:
-    """Promote only high-quality raw EARLY observations to Telegram visibility.
-
-    Unlike the real follow-through trade bridge, this does not require the whole
-    live trade confirmation stack. It does require higher-TF alignment, no 5M
-    opposition, fresh directional movement, supporting volume, sane extension and
-    no explicit opposite market preference.
-    """
+    """Promote only high-quality raw EARLY observations to Telegram visibility."""
     direction = str(decision.get("direction") or "").upper()
     if direction not in {"LONG", "SHORT"}:
         return False
@@ -190,10 +211,13 @@ def simple_preparation_message(plan: Mapping[str, Any]) -> str:
         f"📍 Erken giriş bölgesi: "
         f"{runner.bot.format_price(plan.get('zone_low'))} - "
         f"{runner.bot.format_price(plan.get('zone_high'))}\n"
-        f"🛑 Plan SL: {runner.bot.format_price(plan.get('sl'))}\n"
-        f"🎯 İlk hedef: {runner.bot.format_price(plan.get('tp1'))}\n"
+        f"🛑 Plan SL: {runner.bot.format_price(_reference(plan, 'sl'))}\n"
+        f"🎯 TP1: {runner.bot.format_price(_reference(plan, 'tp1'))}\n"
+        f"🎯 TP2: {runner.bot.format_price(_reference(plan, 'tp2'))}\n"
+        f"🎯 TP3: {runner.bot.format_price(_reference(plan, 'tp3'))}"
+        f"{_target_lines(plan)}\n"
         f"⭐ Erken giriş skoru: {score}\n"
-        f"⚠️ Tam 5M teyidi henüz yok; erken giriş daha risklidir."
+        f"⚠️ Teknik hedef tahmindir; tam 5M teyidi henüz yok."
     )
 
 
@@ -212,11 +236,15 @@ def simple_early_move_message(decision: Mapping[str, Any], original_text: str) -
         f"🪙 Parite: {decision.get('symbol')}\n"
         f"📊 Yön: {icon} {direction}\n"
         f"💵 Fiyat: {runner.bot.format_price(decision.get('current_price'))}\n"
+        f"🛑 Plan SL: {runner.bot.format_price(_reference(decision, 'sl'))}\n"
+        f"🎯 TP1: {runner.bot.format_price(_reference(decision, 'tp1'))}\n"
+        f"🎯 TP2: {runner.bot.format_price(_reference(decision, 'tp2'))}\n"
+        f"🎯 TP3: {runner.bot.format_price(_reference(decision, 'tp3'))}"
+        f"{_target_lines(decision)}\n"
         f"⚡ Erken hareket: 3dk +{move3:.2f}% | 5dk +{move5:.2f}%\n"
         f"🔊 Hacim: {_sf(decision.get('volume_ratio_1m')):.2f}x\n"
         f"⭐ Erken giriş skoru: {score}\n"
-        f"🧭 Kaynak: erken hareket + 15M/1H yön uyumu\n"
-        f"⚠️ Tam işlem teyidi değildir; erken giriş daha risklidir."
+        f"⚠️ Teknik hedef tahmindir; tam işlem teyidi değildir."
     )
 
 
@@ -232,6 +260,8 @@ def simple_trade_message(signal: Mapping[str, Any]) -> str:
         f"🎯 TP1: {runner.bot.format_price(signal.get('tp1'))}\n"
         f"🎯 TP2: {runner.bot.format_price(signal.get('tp2'))}\n"
         f"🎯 TP3: {runner.bot.format_price(signal.get('tp3'))}"
+        f"{_target_lines(signal)}\n"
+        f"ℹ️ Ana hedef ve yüzde hareket teknik tahmindir; garanti değildir."
     )
 
 
@@ -254,7 +284,6 @@ def install_simple_mode() -> None:
         original_text = original_early_formatter(decision)
         return simple_early_move_message(decision, original_text)
 
-    # Preserve the proven strategy/guards. Only Telegram visibility is changed.
     entry_plan.format_preparation = simple_preparation_message
     runner._format_early_message = selective_early_formatter
     runner._send = simple_send
@@ -264,9 +293,10 @@ def install_simple_mode() -> None:
 def summary() -> dict:
     return {
         "version": VERSION,
-        "telegram_mode": "SELECTIVE_EARLY_BRIDGE_TRADE_AND_RESULTS",
+        "telegram_mode": "SELECTIVE_EARLY_TARGET_TRADE_AND_RESULTS",
         "ordinary_preparations": "INTERNAL_LEDGER_ONLY",
-        "qualified_entry_preparations": "SELECTIVE_TELEGRAM_PLUS_INTERNAL_LEDGER",
-        "qualified_early_moves": "SELECTIVE_TELEGRAM_PLUS_INTERNAL_LEDGER",
+        "qualified_entry_preparations": "SELECTIVE_TELEGRAM_WITH_TARGET",
+        "qualified_early_moves": "SELECTIVE_TELEGRAM_WITH_TARGET",
+        "real_trades": "TELEGRAM_WITH_TECHNICAL_TARGET_AND_EXPECTED_PERCENT",
         "other_observations": "INTERNAL_LEDGER_ONLY",
     }
