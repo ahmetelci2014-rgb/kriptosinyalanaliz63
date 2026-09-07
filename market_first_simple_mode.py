@@ -1,29 +1,39 @@
 """Simple Telegram presentation for the single Market First live system.
 
-The strategy keeps every internal preparation, early-alert, swing and direction
-ledger. Telegram intentionally exposes only the two useful decision points:
-- one compact, high-quality preparation alert (FIRSAT YAKALANDI),
+All preparation, early-alert, swing and direction ledgers keep running internally.
+Telegram intentionally exposes only the useful decision points:
+- selective EARLY ENTRY alerts from already-qualified entry-plan preparations,
 - real trade entries and TP/SL/BE lifecycle results.
 
-Lower-confidence early movement, breakout, chased, swing and lifecycle-noise
-messages remain silent. No signal score, direction, entry, stop, target, risk or
-portfolio rule changes.
+Ordinary PREP/BEKLE, lower-confidence early movement, breakout, chased, swing and
+lifecycle-noise messages remain silent. This module changes presentation only;
+it does not promote a PREP into a real trade and it does not bypass any live guard.
 """
 from __future__ import annotations
 
+import math
 from typing import Any, Mapping, Optional
 
 import market_first_entry_plan as entry_plan
 import market_first_runner as runner
 
-VERSION = "MARKET_FIRST_SIMPLE_TELEGRAM_V2_2026_09_06"
+VERSION = "MARKET_FIRST_SIMPLE_TELEGRAM_V3_EARLY_ENTRY_2026_09_07"
 _INSTALLED = False
 
-# Keep the old verbose preparation prefix blocked as a safety fallback. During
-# install we replace entry_plan.format_preparation with the compact formatter
-# below, whose FIRSAT YAKALANDI prefix is intentionally allowed through.
+# A PREP must clear this narrower quality gate before it is worth interrupting the
+# user on Telegram. Normal PREP still stays in the existing opportunity ledger.
+EARLY_ENTRY_MIN_SCORE = 82
+EARLY_ENTRY_MAX_ZONE_DISTANCE_PERCENT = 0.30
+EARLY_ENTRY_MIN_VOLUME_RATIO_5M = 0.50
+EARLY_ENTRY_MIN_VOLUME_RATIO_15M = 0.50
+EARLY_ENTRY_MAX_RISK_PERCENT = 1.35
+EARLY_ENTRY_MIN_ROOM_R = 1.50
+EARLY_ENTRY_MAX_EXTENSION_ATR_5M = 1.25
+
+# Keep the old verbose preparation prefix and all lower-confidence stages blocked.
 SUPPRESSED_PREFIXES = (
     "🎯 İŞLEM HAZIRLIĞI",
+    "🎯 FIRSAT YAKALANDI – BEKLE",
     "❌ GİRİŞİ KOVALAMA",
     "🟡 KIRILIM HAZIRLIĞI",
     "🚨 ERKEN HAREKET",
@@ -42,6 +52,14 @@ SUPPRESSED_MARKERS = (
 )
 
 
+def _sf(value: Any, default: float = 0.0) -> float:
+    try:
+        number = float(value)
+        return number if math.isfinite(number) else default
+    except Exception:
+        return default
+
+
 def should_suppress(text: Any) -> bool:
     message = str(text or "").strip()
     if not message:
@@ -51,24 +69,77 @@ def should_suppress(text: Any) -> bool:
     return any(marker in message for marker in SUPPRESSED_MARKERS)
 
 
+def early_entry_eligible(plan: Mapping[str, Any]) -> bool:
+    """Return True only for a strong PREP that is close enough to act early.
+
+    Full 5M confirmation is intentionally *not* required here. 5M may be aligned
+    or neutral, but it may not point against the 15M+1H plan. A True result is
+    still observational/early-entry guidance, never an automatic trade promotion.
+    """
+    direction = str(plan.get("direction") or "").upper()
+    if direction not in {"LONG", "SHORT"}:
+        return False
+
+    if int(_sf(plan.get("score"))) < EARLY_ENTRY_MIN_SCORE:
+        return False
+    if _sf(plan.get("zone_distance_percent"), 999.0) > EARLY_ENTRY_MAX_ZONE_DISTANCE_PERCENT:
+        return False
+    if _sf(plan.get("volume_ratio_5m")) < EARLY_ENTRY_MIN_VOLUME_RATIO_5M:
+        return False
+    if _sf(plan.get("volume_ratio_15m")) < EARLY_ENTRY_MIN_VOLUME_RATIO_15M:
+        return False
+
+    risk_percent = _sf(plan.get("risk_percent"), 999.0)
+    if risk_percent <= 0 or risk_percent > EARLY_ENTRY_MAX_RISK_PERCENT:
+        return False
+    if _sf(plan.get("room_r")) < EARLY_ENTRY_MIN_ROOM_R:
+        return False
+    if _sf(plan.get("extension_atr_5m"), 999.0) > EARLY_ENTRY_MAX_EXTENSION_ATR_5M:
+        return False
+
+    if str(plan.get("structure_15m") or "").upper() != direction:
+        return False
+    if str(plan.get("structure_1h") or "").upper() != direction:
+        return False
+
+    opposite = "SHORT" if direction == "LONG" else "LONG"
+    micro = str(plan.get("structure_5m") or "").upper()
+    if micro not in {direction, "NEUTRAL"}:
+        return False
+
+    preferred = str(plan.get("market_preferred_direction") or "").upper()
+    if preferred == opposite:
+        return False
+    return True
+
+
 def simple_preparation_message(plan: Mapping[str, Any]) -> str:
-    """Compact high-quality preparation alert; explicitly not a trade entry."""
+    """Send only selective early-entry PREPs; keep ordinary PREPs silent."""
     direction = str(plan.get("direction") or "").upper()
     icon = "🟢" if direction == "LONG" else "🔴"
-    try:
-        score = int(float(plan.get("score") or 0))
-    except Exception:
-        score = 0
+    score = int(_sf(plan.get("score")))
+
+    if not early_entry_eligible(plan):
+        # The normal send hook suppresses this marker. Returning a silent marker
+        # instead of changing the entry-plan engine preserves all existing ledger
+        # registration and lets a later stronger PREP be reconsidered normally.
+        return (
+            f"🎯 FIRSAT YAKALANDI – BEKLE\n"
+            f"İŞLEM DEĞİL | {plan.get('symbol')} | {direction} | skor={score}"
+        )
+
     return (
-        f"🎯 FIRSAT YAKALANDI\n\n"
+        f"🎯 FIRSAT YAKALANDI – 🟠 ERKEN GİRİŞ UYGUN\n\n"
         f"🪙 Parite: {plan.get('symbol')}\n"
         f"📊 Yön: {icon} {direction}\n"
         f"💵 Fiyat: {runner.bot.format_price(plan.get('current_price'))}\n"
-        f"📍 İzlenen bölge: "
+        f"📍 Erken giriş bölgesi: "
         f"{runner.bot.format_price(plan.get('zone_low'))} - "
         f"{runner.bot.format_price(plan.get('zone_high'))}\n"
-        f"⭐ Hazırlık skoru: {score}\n"
-        f"⏳ Henüz işlem değil; giriş teyidi bekleniyor."
+        f"🛑 Plan SL: {runner.bot.format_price(plan.get('sl'))}\n"
+        f"🎯 İlk hedef: {runner.bot.format_price(plan.get('tp1'))}\n"
+        f"⭐ Erken giriş skoru: {score}\n"
+        f"⚠️ Tam 5M teyidi henüz yok; erken giriş daha risklidir."
     )
 
 
@@ -98,13 +169,13 @@ def install_simple_mode() -> None:
     def simple_send(text: str, delivery_key: Optional[str] = None) -> bool:
         if should_suppress(text):
             print("TELEGRAM SIMPLE MODE | sessiz takip:", str(text).splitlines()[0])
-            # False intentionally means "not delivered to Telegram". The live
-            # observational ledgers are maintained independently of Telegram.
+            # False means "not delivered to Telegram". Observational ledgers are
+            # maintained independently by the tracking wrappers.
             return False
         return original_send(text, delivery_key=delivery_key)
 
-    # Preserve the proven preparation engine and its existing score/cooldown.
-    # Only its Telegram presentation changes from verbose to one compact alert.
+    # Preserve the proven preparation engine and its existing cooldown/state.
+    # Only the Telegram presentation/filter is changed here.
     entry_plan.format_preparation = simple_preparation_message
     runner._send = simple_send
     runner._format_trade_message = simple_trade_message
@@ -113,7 +184,8 @@ def install_simple_mode() -> None:
 def summary() -> dict:
     return {
         "version": VERSION,
-        "telegram_mode": "QUALITY_PREP_TRADE_AND_RESULTS",
-        "preparations": "COMPACT_TELEGRAM_PLUS_INTERNAL_LEDGER",
+        "telegram_mode": "SELECTIVE_EARLY_ENTRY_TRADE_AND_RESULTS",
+        "ordinary_preparations": "INTERNAL_LEDGER_ONLY",
+        "early_entry_preparations": "SELECTIVE_TELEGRAM_PLUS_INTERNAL_LEDGER",
         "other_observations": "INTERNAL_LEDGER_ONLY",
     }
