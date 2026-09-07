@@ -1,6 +1,24 @@
 import market_first_simple_mode as simple
 
 
+def _target_fields(**overrides):
+    fields = {
+        "technical_target": 132.6,
+        "technical_target_r": 1.8,
+        "technical_target_source": "1H direnç",
+        "expected_move_percent": 2.0,
+        "expected_move_low_percent": 0.75,
+        "expected_move_high_percent": 2.8,
+        "target_confidence": "ORTA",
+        "target_reference_sl": 128.85,
+        "target_reference_tp1": 130.86,
+        "target_reference_tp2": 131.44,
+        "target_reference_tp3": 132.30,
+    }
+    fields.update(overrides)
+    return fields
+
+
 def _strong_plan(**overrides):
     plan = {
         "symbol": "AAVEUSDT",
@@ -21,7 +39,10 @@ def _strong_plan(**overrides):
         "market_preferred_direction": None,
         "sl": 128.85,
         "tp1": 130.86,
+        "tp2": 131.44,
+        "tp3": 132.30,
     }
+    plan.update(_target_fields())
     plan.update(overrides)
     return plan
 
@@ -44,6 +65,17 @@ def _strong_early(**overrides):
         "structure_1h": "LONG",
         "market_preferred_direction": None,
     }
+    decision.update(_target_fields(
+        technical_target=13.56,
+        technical_target_source="1H direnç",
+        expected_move_percent=2.047,
+        expected_move_low_percent=0.75,
+        expected_move_high_percent=3.2,
+        target_reference_sl=13.12,
+        target_reference_tp1=13.414,
+        target_reference_tp2=13.498,
+        target_reference_tp3=13.624,
+    ))
     decision.update(overrides)
     return decision
 
@@ -71,7 +103,7 @@ def test_ordinary_preparation_stays_silent():
     assert simple.should_suppress(text) is True
 
 
-def test_strong_preparation_becomes_early_entry_alert():
+def test_strong_preparation_becomes_early_entry_alert_with_target_plan():
     plan = _strong_plan()
     assert simple.early_entry_eligible(plan) is True
     text = simple.simple_preparation_message(plan)
@@ -80,8 +112,12 @@ def test_strong_preparation_becomes_early_entry_alert():
     assert "LONG" in text
     assert "Erken giriş skoru: 86" in text
     assert "Plan SL:" in text
-    assert "İlk hedef:" in text
-    assert "Tam 5M teyidi henüz yok" in text
+    assert "TP1:" in text and "TP2:" in text and "TP3:" in text
+    assert "ANA HEDEF:" in text
+    assert "Beklenen yükseliş: ~%2.00" in text
+    assert "Potansiyel aralık:" in text
+    assert "1H direnç" in text
+    assert "Teknik hedef tahmindir" in text
     assert simple.should_suppress(text) is False
 
 
@@ -99,7 +135,7 @@ def test_early_entry_rejects_weak_geometry_or_volume():
     assert simple.early_entry_eligible(_strong_plan(extension_atr_5m=1.26)) is False
 
 
-def test_link_like_raw_early_move_becomes_orange_alert():
+def test_link_like_raw_early_move_becomes_orange_alert_with_target():
     decision = _strong_early()
     assert simple.early_move_eligible(decision) is True
     original = "🚨 ERKEN HAREKET | LINKUSDT\n🟢 LONG\n⚠️ İşlem teyidi değildir."
@@ -107,10 +143,12 @@ def test_link_like_raw_early_move_becomes_orange_alert():
     assert "🎯 FIRSAT YAKALANDI – 🟠 ERKEN GİRİŞ UYGUN" in text
     assert "LINKUSDT" in text
     assert "13.288" in text
+    assert "Plan SL:" in text
+    assert "ANA HEDEF:" in text
+    assert "Beklenen yükseliş: ~%2.05" in text
     assert "3dk +0.28%" in text
     assert "5dk +0.43%" in text
     assert "Hacim: 1.25x" in text
-    assert "Kaynak: erken hareket + 15M/1H yön uyumu" in text
     assert simple.should_suppress(text) is False
 
 
@@ -152,8 +190,8 @@ def test_trade_results_are_not_suppressed():
     assert simple.should_suppress("✅ TP3 GELDİ\nCoin: AAVEUSDT") is False
 
 
-def test_real_trade_message_is_prime_like_and_compact():
-    text = simple.simple_trade_message({
+def test_real_trade_message_has_main_target_and_expected_percent():
+    signal = {
         "symbol": "AAVEUSDT",
         "direction": "LONG",
         "entry": 130.5,
@@ -163,12 +201,22 @@ def test_real_trade_message_is_prime_like_and_compact():
         "tp3": 144.0,
         "market_label": "YUKARI",
         "derivatives_soft_score": 4,
-    })
+    }
+    signal.update(_target_fields(
+        technical_target=138.0,
+        expected_move_percent=5.747,
+        expected_move_low_percent=2.68,
+        expected_move_high_percent=10.34,
+    ))
+    text = simple.simple_trade_message(signal)
     assert "🚨 KRİPTO İŞLEM" in text
     assert "AAVEUSDT" in text
     assert "LONG" in text
     assert "Giriş:" in text
     assert "Stop:" in text
     assert "TP1:" in text and "TP2:" in text and "TP3:" in text
+    assert "ANA HEDEF:" in text
+    assert "Beklenen yükseliş: ~%5.75" in text
+    assert "teknik tahmindir" in text
     assert "Piyasa:" not in text
     assert "Teyit:" not in text
