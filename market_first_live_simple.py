@@ -10,6 +10,7 @@ from __future__ import annotations
 import market_first_daily_report as daily_report
 import market_first_entry_accelerator as entry_accelerator
 import market_first_live_complete_tracking as complete_tracking
+import market_first_promotion_reason_patch as promotion_reason_patch
 import market_first_reversal_capture_v2 as reversal_capture
 import market_first_runner as runner
 import market_first_simple_mode as simple_mode
@@ -18,16 +19,20 @@ import market_first_target_overlay as target_overlay
 
 
 def main() -> None:
-    # Install the entry accelerator first, then the ordinary tracking/safety
-    # stack. Reversal Capture sits outside that stack so recent DEAD alerts stay
-    # in deep-scan priority while every final send guard remains unchanged.
+    # Install the entry accelerator first. Promotion-reason instrumentation then
+    # installs the ordinary entry-plan wrapper and makes hidden direction
+    # conflicts explicit before the tracking stack records them. No live
+    # eligibility is changed. Reversal Capture remains outside that stack so
+    # recent DEAD alerts stay in deep-scan priority while final guards remain.
     entry_accelerator.install()
+    promotion_reason_patch.install()
     complete_tracking.install_complete_tracking()
     reversal_capture.install(runner)
     target_overlay.install_target_overlay()
     simple_mode.install_simple_mode()
     target_display.install_target_display()
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
+    print("MARKET FIRST PROMOTION REASONS:", promotion_reason_patch.summary())
     print("MARKET FIRST REVERSAL CAPTURE:", reversal_capture.summary())
     print("MARKET FIRST TARGET OVERLAY:", target_overlay.summary())
     print("MARKET FIRST TARGET DISPLAY:", target_display.summary())
