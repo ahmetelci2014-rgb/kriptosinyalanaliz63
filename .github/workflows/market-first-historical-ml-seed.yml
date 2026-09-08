@@ -2,6 +2,9 @@ name: Market First Historical ML Seed
 
 on:
   workflow_dispatch:
+  schedule:
+    # GitHub cron uses UTC. 02:23 UTC = 05:23 Europe/Istanbul.
+    - cron: "23 2 * * *"
   push:
     branches:
       - main
