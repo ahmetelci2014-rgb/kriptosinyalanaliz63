@@ -1,7 +1,7 @@
 name: Market First V5 - Simplified Live
 
 on:
-  # cron-job.org is the single external 5-minute scheduler. Keep this workflow
+  # cron-job.org is the single external scheduler. Keep this workflow
   # dispatch-only so a second native GitHub schedule cannot overlap with it.
   workflow_dispatch:
 
@@ -30,6 +30,9 @@ jobs:
           git fetch origin main
           git reset --hard origin/main
           echo "Market First run SHA: $(git rev-parse HEAD)"
+
+      - name: Scheduler cadence health
+        run: python market_first_scheduler_health.py
 
       - name: Python kur
         uses: actions/setup-python@v5
@@ -89,6 +92,7 @@ jobs:
             market_first_entry_conversion_report.json \
             market_first_missed_move_report.json \
             market_first_observability_history.json \
+            market_first_scheduler_health.json \
             market_first_direction_ledger.json \
             market_first_direction_summary.json \
             market_first_swing_2h_state.json \
