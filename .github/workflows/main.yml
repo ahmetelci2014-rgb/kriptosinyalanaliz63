@@ -68,6 +68,7 @@ jobs:
           python market_first_live_simple.py
           python result_diagnostics.py || true
           python market_first_observability_report.py
+          python market_first_entry_condition_diagnosis.py
 
       - name: Durum ve Market First verisini kaydet
         if: ${{ always() && github.ref_name == 'main' }}
@@ -92,6 +93,7 @@ jobs:
             market_first_entry_conversion_report.json \
             market_first_missed_move_report.json \
             market_first_observability_history.json \
+            market_first_entry_condition_diagnosis.json \
             market_first_scheduler_health.json \
             market_first_direction_ledger.json \
             market_first_direction_summary.json \
