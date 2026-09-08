@@ -2,6 +2,9 @@ name: Autonomous Trade and Reverse Shadow V1
 
 on:
   workflow_dispatch:
+  schedule:
+    # GitHub cron uses UTC. Offset minutes avoid the busiest quarter-hour windows.
+    - cron: "11,41 * * * *"
 
 permissions:
   contents: write
