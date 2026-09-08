@@ -2,6 +2,11 @@ name: Market First V5 - Simplified Live
 
 on:
   workflow_dispatch:
+  schedule:
+    # Entry Accelerator and reversal capture use 1m/3m/5m evidence. A 30-minute
+    # cadence is too coarse for those moves; 15 minutes balances timeliness with
+    # the full-market deep scan. Concurrency below cancels accidental overlap.
+    - cron: "*/15 * * * *"
 
 permissions:
   contents: write
