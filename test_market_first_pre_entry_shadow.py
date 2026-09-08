@@ -20,7 +20,7 @@ class MarketFirstPreEntryShadowTests(unittest.TestCase):
             "structure_5m": "NEUTRAL",
             "structure_15m": "LONG",
             "structure_1h": "LONG",
-            "volume_ratio_5m": 0.40,
+            "volume_ratio_5m": 0.39,
             "volume_ratio_15m": 0.90,
             "extension_atr_5m": 0.50,
             "risk_percent": 1.0,
