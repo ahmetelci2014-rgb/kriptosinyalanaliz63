@@ -65,11 +65,11 @@ jobs:
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
         run: |
           set -e
-          python market_first_live_simple.py
-          # Sessiz olcum: TP1/TP2 sonrasi BE ve TP3 kapanislarinin sonraki
-          # 15/30/60/120/240 dakikadaki hareketini trade_ledger icine yazar.
+          # Onceki kapanmis TP1/TP2->BE ve TP3 islemlerinin sessiz golge
+          # takibini once guncelle; 23:45 gunluk raporu bu veriyi gorebilsin.
           # Sinyal/emir/Telegram uretmez; hata olursa ana taramayi durdurmaz.
           python post_result_shadow.py || true
+          python market_first_live_simple.py
           python result_diagnostics.py || true
           python market_first_observability_report.py
           python market_first_entry_condition_diagnosis.py
