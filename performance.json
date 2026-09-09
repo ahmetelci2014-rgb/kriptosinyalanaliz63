@@ -36203,11 +36203,11 @@
     "2026-09-09": {
       "opened": 11,
       "radar": 0,
-      "tp1": 8,
-      "tp2": 4,
-      "tp3": 0,
+      "tp1": 9,
+      "tp2": 5,
+      "tp3": 1,
       "sl": 2,
-      "be": 7,
+      "be": 8,
       "expired": 0,
       "long": 2,
       "short": 9,
@@ -36318,8 +36318,8 @@
           "opened": 1,
           "radar": 0,
           "tp1": 1,
-          "tp2": 0,
-          "tp3": 0,
+          "tp2": 1,
+          "tp3": 1,
           "sl": 0,
           "be": 0,
           "expired": 0
@@ -36327,11 +36327,11 @@
         "ONDOUSDT": {
           "opened": 1,
           "radar": 0,
-          "tp1": 0,
+          "tp1": 1,
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
-          "be": 0,
+          "be": 1,
           "expired": 0
         },
         "ASTERUSDT": {
@@ -36369,7 +36369,9 @@
         "AAVEUSDT": 1788905768,
         "OKBUSDT": 1788908480,
         "FARTCOINUSDT": 1788912958,
-        "LINKUSDT": 1788912961
+        "LINKUSDT": 1788912961,
+        "PIUSDT": 1788916565,
+        "ONDOUSDT": 1788916570
       },
       "closed_results": {
         "GIGGLEUSDT": "BE",
@@ -36378,7 +36380,9 @@
         "AAVEUSDT": "BE",
         "OKBUSDT": "BE",
         "FARTCOINUSDT": "BE",
-        "LINKUSDT": "BE"
+        "LINKUSDT": "BE",
+        "PIUSDT": "TP3",
+        "ONDOUSDT": "BE"
       },
       "closed_history": [
         {
@@ -36590,14 +36594,54 @@
           "exit": 0.0981583929,
           "source": "MARKET_FIRST_V5",
           "score": 92
+        },
+        {
+          "time": "04:16:02",
+          "symbol": "PIUSDT",
+          "direction": "LONG",
+          "result": "TP2",
+          "entry": 0.09783,
+          "exit": 0.0983773214,
+          "source": "MARKET_FIRST_V5",
+          "score": 92
+        },
+        {
+          "time": "04:16:05",
+          "symbol": "PIUSDT",
+          "direction": "LONG",
+          "result": "TP3",
+          "entry": 0.09783,
+          "exit": 0.0987057143,
+          "source": "MARKET_FIRST_V5",
+          "score": 92
+        },
+        {
+          "time": "04:16:08",
+          "symbol": "ONDOUSDT",
+          "direction": "SHORT",
+          "result": "TP1",
+          "entry": 0.3754,
+          "exit": 0.3739782143,
+          "source": "MARKET_FIRST_V5",
+          "score": 92
+        },
+        {
+          "time": "04:16:10",
+          "symbol": "ONDOUSDT",
+          "direction": "SHORT",
+          "result": "BE",
+          "entry": 0.3754,
+          "exit": 0.3754,
+          "source": "MARKET_FIRST_V5",
+          "score": 92
         }
       ],
-      "sl_after_tp1": 0,
+      "sl_after_tp1": 1,
       "sl_after_tp2": 0,
       "sl_after_no_return": 2
     }
   },
-  "last_update": 1788915784,
+  "last_update": 1788916575,
   "last_open_summary": 1787843763,
   "last_status_message": 1787906216,
   "last_daily_report": "2026-08-27",
@@ -36645,7 +36689,8 @@
       "stopped_at": 1788912964,
       "stop_exit": 0.12115,
       "reported_checkpoints": [
-        30
+        30,
+        60
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
@@ -36669,10 +36714,10 @@
       "reported_checkpoints": [
         30
       ],
-      "after_sl_tp1": false,
+      "after_sl_tp1": true,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true
     }
   },
   "telegram_result_guard": {
