@@ -135,3 +135,32 @@ def test_short_side_is_symmetric():
     ok, reason, _ = gate._execution_reason(decision)
     assert ok
     assert reason == "OK"
+
+
+def test_install_runs_upstream_pipeline_before_execution_gate(monkeypatch):
+    decision = base_decision("LONG")
+    engine = decision.pop("direction_engine")
+
+    def upstream(value):
+        # Mirrors Entry Plan: the Direction Engine is attached inside the
+        # upstream decision-to-signal call, not before it.
+        value["direction_engine"] = engine
+        return {"symbol": value["symbol"], "direction": value["direction"], "score": 94}
+
+    previous_installed = gate._INSTALLED
+    gate._INSTALLED = False
+    gate._RUN_COUNTS.clear()
+    gate._RUN_ACCEPTED.clear()
+    monkeypatch.setattr(gate.runner, "decision_to_signal", upstream)
+    try:
+        gate.install()
+        signal = gate.runner.decision_to_signal(decision)
+        assert signal is not None
+        assert signal["final_execution_gate_version"] == gate.VERSION
+        assert signal["final_execution_gate"]["confirmations"] == 3
+        assert gate._RUN_COUNTS["OK"] == 1
+        assert gate._RUN_COUNTS["ACCEPTED"] == 1
+    finally:
+        gate._INSTALLED = previous_installed
+        gate._RUN_COUNTS.clear()
+        gate._RUN_ACCEPTED.clear()
