@@ -1,9 +1,8 @@
 """Simplified live entry point for Market First.
 
-All analysis/tracking layers stay active internally. Telegram shows selective
-early-entry opportunities, real trade entries/results and one compact daily
-outcome summary. Technical target guidance is attached without changing trade
-eligibility or live safety guards.
+All analysis/tracking layers stay active internally. Telegram shows only the
+single final quality-filtered trade entry, trade results and the compact daily
+outcome summary. PREP/EARLY/Big-Move observations remain internal evidence.
 """
 from __future__ import annotations
 
@@ -12,6 +11,7 @@ import market_first_daily_report as daily_report
 import market_first_entry_accelerator as entry_accelerator
 import market_first_live_complete_tracking as complete_tracking
 import market_first_pre_entry_shadow as pre_entry_shadow
+import market_first_profit_quality_v1 as profit_quality
 import market_first_promotion_reason_patch as promotion_reason_patch
 import market_first_reversal_capture_v2 as reversal_capture
 import market_first_runner as runner
@@ -22,16 +22,10 @@ import market_first_target_overlay as target_overlay
 
 
 def main() -> None:
-    # Install the entry accelerator first. Promotion-reason instrumentation then
-    # installs the ordinary entry-plan wrapper. Corrected 2H swing tracking must
-    # be installed before complete tracking loads/finalizes its swing ledger so
-    # new swing episodes become entry-zone gated without rewriting legacy data.
-    # PRE-ENTRY Shadow sits after tracking and only observes selected PREP setups;
-    # it never changes the returned live decision. Reversal Capture stays outside
-    # that stack so recent DEAD alerts and open shadow positions can both keep
-    # scan priority. Big Move Capture is installed after Simple Mode so its
-    # separate large-move heads-up uses the same deduplicated Telegram transport;
-    # it observes the final analysis stack but never promotes a real trade.
+    # Order matters. Profit Quality installs last so it sees the final enriched
+    # Market First decision, keeps Big Move tracking internal, suppresses PREP /
+    # EARLY duplicate entry messages and applies the structural profit gate to the
+    # ordinary final trade signal without bypassing any existing safety guard.
     entry_accelerator.install()
     promotion_reason_patch.install()
     swing_tracking_fix.install()
@@ -42,6 +36,7 @@ def main() -> None:
     simple_mode.install_simple_mode()
     target_display.install_target_display()
     big_move_capture.install()
+    profit_quality.install()
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
     print("MARKET FIRST PROMOTION REASONS:", promotion_reason_patch.summary())
     print("MARKET FIRST 2H SWING TRACKING FIX:", swing_tracking_fix.status())
@@ -50,10 +45,12 @@ def main() -> None:
     print("MARKET FIRST TARGET OVERLAY:", target_overlay.summary())
     print("MARKET FIRST TARGET DISPLAY:", target_display.summary())
     print("MARKET FIRST SIMPLE MODE:", simple_mode.summary())
+    print("MARKET FIRST PROFIT QUALITY:", profit_quality.summary())
     try:
         runner.run()
     finally:
         print("MARKET FIRST BIG MOVE CAPTURE:", big_move_capture.finish())
+        print("MARKET FIRST PROFIT QUALITY RUN:", profit_quality.finish())
     sent = daily_report.maybe_send(runner.bot, runner._send)
     if sent:
         print("GÜNLÜK ÖZET TELEGRAM'A GÖNDERİLDİ.")
