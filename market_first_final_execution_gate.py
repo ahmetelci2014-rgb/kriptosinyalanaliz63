@@ -1,14 +1,12 @@
 """Final execution-quality gate for Market First live trades.
 
 This is deliberately the last decision gate before a candidate becomes a real
-Telegram trade.  It does not create signals, place orders, widen stops or bypass
+Telegram trade. It does not create signals, place orders, widen stops or bypass
 any existing Profit Quality / TAO / portfolio / cooldown guard.
 
-The gate was added after reviewing VANAUSDT and METUSDT false-positive LONGs on
-2026-09-09.  Both had aligned 5M/15M/1H structure but lacked convincing fresh
-continuation; VANA also had weak near-term target geometry and MET had opposing
-order-flow.  ZECUSDT on the same session is the positive control: aligned
-structure plus strong taker/CVD support.
+V2.1 fixes the wrapper order: the upstream decision-to-signal pipeline now runs
+first so the Direction Engine can attach its live diagnostics and Profit Quality
+can reject non-qualifying candidates before this final continuation/flow veto.
 """
 from __future__ import annotations
 
@@ -21,9 +19,9 @@ from typing import Any, Dict, Mapping, Tuple
 
 import market_first_runner as runner
 
-VERSION = "MARKET_FIRST_FINAL_EXECUTION_GATE_V2_2026_09_09"
+VERSION = "MARKET_FIRST_FINAL_EXECUTION_GATE_V2_1_2026_09_09"
 STATE_FILE = "market_first_final_execution_gate.json"
-MODE = "FINAL_DECISION_ONLY_NO_STOP_WIDENING_NO_ORDERS"
+MODE = "FINAL_DECISION_AFTER_UPSTREAM_QUALITY_NO_STOP_WIDENING_NO_ORDERS"
 
 MIN_DIRECTION_CONFIRMATIONS = 3
 MIN_TECHNICAL_EXPECTED_MOVE_PERCENT = 0.85
@@ -84,6 +82,9 @@ def _execution_reason(decision: Mapping[str, Any]) -> Tuple[bool, str, Dict[str,
         return False, "DIRECTION", {}
 
     engine = _engine(decision)
+    if not engine:
+        return False, "DIRECTION_ENGINE_MISSING_AFTER_UPSTREAM", {}
+
     selected = str(engine.get("selected_direction") or "").upper()
     if selected and selected != direction:
         return False, "DIRECTION_ENGINE_CONFLICT", {"selected_direction": selected}
@@ -106,8 +107,6 @@ def _execution_reason(decision: Mapping[str, Any]) -> Tuple[bool, str, Dict[str,
 
     taker = _sf(decision.get("taker_imbalance_alignment"))
     cvd = _sf(decision.get("cvd_ratio"))
-    # cvd_ratio is raw; runner also exposes direction-aligned CVD through the
-    # direction engine. Prefer the aligned value when available.
     direction_key = str(direction).lower()
     direction_block = engine.get(direction_key)
     if isinstance(direction_block, Mapping):
@@ -130,8 +129,6 @@ def _execution_reason(decision: Mapping[str, Any]) -> Tuple[bool, str, Dict[str,
         "tao_quality_bridge": bool(decision.get("tao_quality_bridge")),
     }
 
-    # Strongly opposing flow is never acceptable for a final trade, even when
-    # the higher-timeframe structure is aligned.
     if taker_available and cvd_available and taker <= MAX_OPPOSITE_FLOW and cvd <= MAX_OPPOSITE_FLOW:
         return False, "TAKER_CVD_OPPOSITE", evidence
     if cvd_available and cvd_impulse < MAX_OPPOSITE_CVD_IMPULSE:
@@ -139,10 +136,6 @@ def _execution_reason(decision: Mapping[str, Any]) -> Tuple[bool, str, Dict[str,
     if book_available and book < MAX_OPPOSITE_BOOK_ALIGNMENT:
         return False, "BOOK_PRESSURE_OPPOSITE", evidence
 
-    # A plan-native confirmation can have no fresh 1M/3M impulse.  In that case
-    # the candidate must earn its place through real buying/selling flow instead
-    # of structure score alone.  This is what separates ZEC from VANA/MET in the
-    # reviewed session.
     if not fresh_micro:
         if not taker_available or taker < MIN_FLOW_ALIGNMENT_WITHOUT_FRESH_MICRO:
             return False, "NO_FRESH_MICRO_TAKER_WEAK", evidence
@@ -168,7 +161,10 @@ def _save_summary() -> Dict[str, Any]:
         },
         "run_counts": dict(_RUN_COUNTS),
         "accepted": _RUN_ACCEPTED[-20:],
-        "note": "Execution-gate observations only; not realised PnL. Stops are not widened by this module.",
+        "note": (
+            "Execution-gate observations only; not realised PnL. Upstream Profit Quality/TAO pipeline "
+            "runs before this gate. Stops are not widened by this module."
+        ),
     }
     folder = os.path.dirname(os.path.abspath(STATE_FILE)) or "."
     os.makedirs(folder, exist_ok=True)
@@ -200,16 +196,23 @@ def install() -> None:
     original_decision_to_signal = runner.decision_to_signal
 
     def decision_to_signal_final_gate(decision):
+        # Critical order: run the existing pipeline first. Entry Plan adds the
+        # Direction Engine diagnostics inside that call, Profit Quality applies
+        # its >=2% / >=2.5R gate, and the TAO bridge decorates only valid signals.
+        # Only a surviving signal reaches this final continuation/flow veto.
+        signal = original_decision_to_signal(decision)
+        if not isinstance(signal, Mapping):
+            _RUN_COUNTS["UPSTREAM_REJECTED"] += 1
+            return signal
         if not isinstance(decision, Mapping):
-            return original_decision_to_signal(decision)
+            return signal
+
         ok, reason, evidence = _execution_reason(decision)
         _RUN_COUNTS[reason] += 1
         if not ok:
             print("FINAL EXECUTION GATE ELENDİ:", decision.get("symbol"), reason, evidence)
             return None
-        signal = original_decision_to_signal(decision)
-        if not isinstance(signal, Mapping):
-            return signal
+
         out = dict(signal)
         out["final_execution_gate_version"] = VERSION
         out["final_execution_gate"] = evidence
@@ -233,6 +236,7 @@ def summary() -> Dict[str, Any]:
     return {
         "version": VERSION,
         "mode": MODE,
+        "upstream_quality_runs_first": True,
         "min_direction_confirmations": MIN_DIRECTION_CONFIRMATIONS,
         "min_technical_expected_move_percent": MIN_TECHNICAL_EXPECTED_MOVE_PERCENT,
         "flow_required_when_no_fresh_micro": True,
