@@ -17,15 +17,18 @@ import market_first_reversal_capture_v2 as reversal_capture
 import market_first_runner as runner
 import market_first_simple_mode as simple_mode
 import market_first_swing_2h_tracking_fix as swing_tracking_fix
+import market_first_tao_quality_bridge as tao_quality_bridge
+import market_first_tao_quality_profit_patch as tao_profit_patch
 import market_first_target_display as target_display
 import market_first_target_overlay as target_overlay
 
 
 def main() -> None:
-    # Order matters. Profit Quality installs last so it sees the final enriched
-    # Market First decision, keeps Big Move tracking internal, suppresses PREP /
-    # EARLY duplicate entry messages and applies the structural profit gate to the
-    # ordinary final trade signal without bypassing any existing safety guard.
+    # Order matters. Profit Quality first installs the single-message/high-profit
+    # gate. The TAO compatibility patch then permits only the strict volume-burst
+    # -> pullback profile to use a 0.50x current-volume floor, and the bridge sits
+    # outermost so a qualifying PREP can enter the normal trade pipeline. It does
+    # not send Telegram directly or bypass any existing final safety guard.
     entry_accelerator.install()
     promotion_reason_patch.install()
     swing_tracking_fix.install()
@@ -37,6 +40,8 @@ def main() -> None:
     target_display.install_target_display()
     big_move_capture.install()
     profit_quality.install()
+    tao_profit_patch.install()
+    tao_quality_bridge.install()
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
     print("MARKET FIRST PROMOTION REASONS:", promotion_reason_patch.summary())
     print("MARKET FIRST 2H SWING TRACKING FIX:", swing_tracking_fix.status())
@@ -46,11 +51,14 @@ def main() -> None:
     print("MARKET FIRST TARGET DISPLAY:", target_display.summary())
     print("MARKET FIRST SIMPLE MODE:", simple_mode.summary())
     print("MARKET FIRST PROFIT QUALITY:", profit_quality.summary())
+    print("MARKET FIRST TAO PROFIT PATCH:", tao_profit_patch.status())
+    print("MARKET FIRST TAO QUALITY BRIDGE:", tao_quality_bridge.summary())
     try:
         runner.run()
     finally:
         print("MARKET FIRST BIG MOVE CAPTURE:", big_move_capture.finish())
         print("MARKET FIRST PROFIT QUALITY RUN:", profit_quality.finish())
+        print("MARKET FIRST TAO QUALITY RUN:", tao_quality_bridge.summary())
     sent = daily_report.maybe_send(runner.bot, runner._send)
     if sent:
         print("GÜNLÜK ÖZET TELEGRAM'A GÖNDERİLDİ.")
