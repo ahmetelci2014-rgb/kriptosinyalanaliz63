@@ -56,7 +56,7 @@ def test_real_trade_and_background_are_separate_without_double_counting():
     assert payload["real_trades"][0]["result"] == "TP2"
 
 
-def test_background_good_move_without_real_entry_is_not_profit():
+def test_background_good_move_without_event_order_is_not_overstated():
     bot = FakeBot({
         "trade_ledger.json": {}, "open_signals.json": {},
         "market_first_entry_plan_ledger.json": {"episodes": {}},
@@ -71,27 +71,138 @@ def test_background_good_move_without_real_entry_is_not_profit():
     })
     payload = report.build_report(bot, now=ts(23, 45))
     row = payload["background"][0]
-    assert row["result"] == "DOĞRU YÖN / GİRİŞ YOK"
+    assert row["result"] == "LEHTE HAREKET / SIRA BELİRSİZ"
+    assert row["first_touch"] == "UNKNOWN"
     text = "\n".join(report.format_report(payload))
-    assert "XPLUSDT SHORT | +4.9% | DOĞRU YÖN / GİRİŞ YOK" in text
+    assert "XPLUSDT SHORT | +4.9% | LEHTE HAREKET / SIRA BELİRSİZ" in text
     assert "kâr" in text.lower()
 
 
-def test_background_sl_first_is_direction_wrong():
+def test_background_tp_first_is_strict_missed_entry():
     bot = FakeBot({
         "trade_ledger.json": {}, "open_signals.json": {},
         "market_first_entry_plan_ledger.json": {"episodes": {
-            "v": {
-                "symbol": "VIRTUALUSDT", "direction": "LONG", "first_at": ts(13),
-                "best_favorable_percent": 0.2, "worst_adverse_percent": 1.4,
-                "first_decisive_event": "SL_FIRST", "outcome": "SL_FIRST", "resolved": True,
+            "x": {
+                "episode_id": "ENSUSDT:SHORT:1",
+                "symbol": "ENSUSDT", "direction": "SHORT", "first_at": ts(9),
+                "best_favorable_percent": 3.2, "worst_adverse_percent": 0.5,
+                "first_decisive_event": "TP1_FIRST", "tp1_at": ts(9, 30),
+                "resolved": True,
             }
         }},
         "market_first_swing_2h_ledger.json": {"episodes": {}},
         "market_first_early_ledger.json": {"episodes": {}},
     })
     payload = report.build_report(bot, now=ts(23, 45))
-    assert payload["background"][0]["result"] == "YÖN TERS"
+    row = payload["background"][0]
+    assert row["first_touch"] == "TP_FIRST"
+    assert row["result"] == "TP ÖNCE / GİRİŞ YOK"
+    assert payload["summary"]["background_tp_first"] == 1
+
+
+def test_background_sl_first_is_explicit_not_labeled_success():
+    bot = FakeBot({
+        "trade_ledger.json": {}, "open_signals.json": {},
+        "market_first_entry_plan_ledger.json": {"episodes": {
+            "v": {
+                "symbol": "VIRTUALUSDT", "direction": "LONG", "first_at": ts(13),
+                "best_favorable_percent": 2.2, "worst_adverse_percent": 1.4,
+                "first_decisive_event": "SL_FIRST", "outcome": "SL_FIRST_THEN_TP2_RECOVERY",
+                "resolved": True,
+            }
+        }},
+        "market_first_swing_2h_ledger.json": {"episodes": {}},
+        "market_first_early_ledger.json": {"episodes": {}},
+    })
+    payload = report.build_report(bot, now=ts(23, 45))
+    row = payload["background"][0]
+    assert row["first_touch"] == "SL_FIRST"
+    assert row["result"] == "SL ÖNCE / GİRİŞ YOK"
+    assert payload["summary"]["background_sl_first"] == 1
+
+
+def test_merge_keeps_favorable_and_adverse_from_same_representative_episode():
+    bot = FakeBot({
+        "trade_ledger.json": {}, "open_signals.json": {},
+        "market_first_entry_plan_ledger.json": {"episodes": {
+            "clean": {
+                "episode_id": "PONS:SHORT:CLEAN",
+                "symbol": "PONSUSDT", "direction": "SHORT", "first_at": ts(9),
+                "best_favorable_percent": 4.0, "worst_adverse_percent": 0.6,
+                "first_decisive_event": "TP1_FIRST", "resolved": True,
+            }
+        }},
+        "market_first_swing_2h_ledger.json": {"episodes": {
+            "wild": {
+                "episode_id": "PONS:SHORT:WILD",
+                "symbol": "PONSUSDT", "direction": "SHORT", "first_at": ts(10),
+                "best_favorable_percent": 8.4, "worst_adverse_percent": 7.8,
+                "outcome": "GOOD_MOVE", "resolved": True,
+            }
+        }},
+        "market_first_early_ledger.json": {"episodes": {}},
+    })
+    payload = report.build_report(bot, now=ts(23, 45))
+    row = payload["background"][0]
+    assert row["episode_id"] == "PONS:SHORT:CLEAN"
+    assert row["favorable_percent"] == 4.0
+    assert row["adverse_percent"] == 0.6
+    assert row["episode_count"] == 2
+    assert set(row["sources"]) == {"ENTRY_PLAN", "SWING_2H"}
+
+
+def test_diagnosis_reason_is_carried_into_background_json():
+    bot = FakeBot({
+        "trade_ledger.json": {}, "open_signals.json": {},
+        "market_first_entry_plan_ledger.json": {"episodes": {
+            "x": {
+                "episode_id": "ENSUSDT:SHORT:123",
+                "symbol": "ENSUSDT", "direction": "SHORT", "first_at": ts(9),
+                "best_favorable_percent": 2.0, "worst_adverse_percent": 0.3,
+                "first_decisive_event": "TP1_FIRST", "resolved": True,
+            }
+        }},
+        "market_first_swing_2h_ledger.json": {"episodes": {}},
+        "market_first_early_ledger.json": {"episodes": {}},
+        "market_first_entry_condition_diagnosis.json": {
+            "items": [{
+                "episode_id": "ENSUSDT:SHORT:123",
+                "symbol": "ENSUSDT", "direction": "SHORT", "first_at": ts(9),
+                "primary_obstacle": "VOLUME_5M_BELOW_0_50_LATEST",
+                "outcome": "TP3_REACHED",
+            }]
+        },
+    })
+    payload = report.build_report(bot, now=ts(23, 45))
+    row = payload["background"][0]
+    assert row["rejection_reason"] == "VOLUME_5M_BELOW_0_50_LATEST"
+    assert row["diagnostic_outcome"] == "TP3_REACHED"
+
+
+def test_real_stop_diagnosis_splits_positive_then_stop():
+    bot = FakeBot({
+        "trade_ledger.json": {"trades": {
+            "a": {
+                "symbol": "JTOUSDT", "direction": "LONG", "first_at": ts(10),
+                "best_favorable_percent": 0.7, "worst_adverse_percent": 1.0,
+                "final_result": "STOP", "closed": True,
+            },
+            "b": {
+                "symbol": "BNBUSDT", "direction": "LONG", "first_at": ts(11),
+                "best_favorable_percent": 0.0, "worst_adverse_percent": 0.8,
+                "final_result": "STOP", "closed": True,
+            },
+        }},
+        "open_signals.json": {},
+        "market_first_entry_plan_ledger.json": {"episodes": {}},
+        "market_first_swing_2h_ledger.json": {"episodes": {}},
+        "market_first_early_ledger.json": {"episodes": {}},
+    })
+    payload = report.build_report(bot, now=ts(23, 45))
+    rows = {row["symbol"]: row for row in payload["real_trades"]}
+    assert rows["JTOUSDT"]["diagnosis"] == "KÂR GÖRDÜ → STOP"
+    assert rows["BNBUSDT"]["diagnosis"] == "DİREKT/ZAYIF STOP"
+    assert payload["summary"]["real_stop_after_positive_move"] == 1
 
 
 def test_report_waits_until_2345_turkiye_time():
@@ -126,7 +237,7 @@ def test_long_report_chunks_without_dropping_rows():
             {
                 "symbol": f"COIN{i:03d}USDT", "direction": "LONG",
                 "favorable_percent": float(i % 20), "adverse_percent": 0.5,
-                "result": "DOĞRU YÖN / GİRİŞ YOK",
+                "result": "LEHTE HAREKET / SIRA BELİRSİZ",
             }
             for i in range(180)
         ],
@@ -153,5 +264,6 @@ def test_live_workflow_stays_single_external_5m_job_and_persists_daily_files():
     assert "cron:" not in text
     assert text.count("python market_first_live_simple.py") == 1
     assert "sleep 300" not in text
+    assert "python post_result_shadow.py || true" in text
     assert "market_first_daily_report_state.json" in text
     assert "market_first_daily_report.json" in text
