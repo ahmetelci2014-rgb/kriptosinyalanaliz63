@@ -1,21 +1,21 @@
 {
   "version": "MARKET_FIRST_OBSERVABILITY_V1_2026_09_08",
-  "generated_at": 1788965305,
+  "generated_at": 1788966179,
   "definition": "Clean resolved preparation that reached TP1 or better without a real Telegram entry signal.",
-  "total_missed_moves": 888,
-  "miss_rate_of_clean_resolved": 0.7817,
+  "total_missed_moves": 899,
+  "miss_rate_of_clean_resolved": 0.7811,
   "levels": {
-    "TP3_MISSED": 615,
-    "TP2_MISSED": 160,
+    "TP3_MISSED": 625,
+    "TP2_MISSED": 161,
     "TP1_MISSED": 113
   },
   "stages": {
-    "BEFORE_ENTRY_CONDITION": 593,
+    "BEFORE_ENTRY_CONDITION": 604,
     "PROMOTION_GATE": 234,
     "FINAL_DELIVERY_GATE": 61
   },
   "reasons": {
-    "ENTRY_CONDITION_NOT_REACHED": 593,
+    "ENTRY_CONDITION_NOT_REACHED": 604,
     "ENTRY_CONDITION_NOT_PROMOTED_UNKNOWN": 144,
     "ENTRY_PLAN_STALE_MICRO": 89,
     "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED": 48,
@@ -23,24 +23,24 @@
     "NO_ACCELERATION": 1
   },
   "directions": {
-    "LONG": 541,
-    "SHORT": 347
+    "LONG": 543,
+    "SHORT": 356
   },
   "outcomes": {
-    "TP3_REACHED": 461,
-    "SL_FIRST_THEN_TP3_RECOVERY": 152,
+    "TP3_REACHED": 467,
+    "SL_FIRST_THEN_TP3_RECOVERY": 155,
     "TP2_REACHED": 116,
     "TP1_REACHED": 75,
-    "SL_FIRST_THEN_TP2_RECOVERY": 43,
+    "SL_FIRST_THEN_TP2_RECOVERY": 44,
     "SL_FIRST_THEN_TP1_RECOVERY": 38,
-    "AMBIGUOUS_THEN_TP3": 2,
+    "AMBIGUOUS_THEN_TP3": 3,
     "AMBIGUOUS_WITH_TARGET": 1
   },
   "timing": {
-    "avg_minutes_prep_to_tp1": 72.12,
+    "avg_minutes_prep_to_tp1": 72.0,
     "avg_minutes_entry_condition_to_tp1": 87.12,
-    "tp1_within_30m": 479,
-    "tp1_within_60m": 587
+    "tp1_within_30m": 485,
+    "tp1_within_60m": 594
   },
   "top_missed": [
     {
@@ -669,6 +669,39 @@
       "first_at": 1788704241,
       "tp1_at": 1788719424,
       "resolved_at": 1788719424
+    },
+    {
+      "episode_id": "WLDUSDT:SHORT:1788953542",
+      "symbol": "WLDUSDT",
+      "direction": "SHORT",
+      "score": 90,
+      "miss_level": "TP3_MISSED",
+      "miss_stage": "BEFORE_ENTRY_CONDITION",
+      "reason": "ENTRY_CONDITION_NOT_REACHED",
+      "outcome": "SL_FIRST_THEN_TP3_RECOVERY",
+      "prep_price": 0.4471,
+      "last_price": 0.4443,
+      "best_favorable_percent": 1.4538,
+      "best_favorable_r": 5.4559,
+      "worst_adverse_percent": 1.6998,
+      "entry_condition_met": false,
+      "entry_promoted": false,
+      "entry_signal_sent": false,
+      "tp1_before_entry_signal": true,
+      "minutes_prep_to_tp1": 149.9,
+      "minutes_entry_condition_to_tp1": null,
+      "market_regime": "BULL",
+      "structure_5m": "SHORT",
+      "structure_15m": "SHORT",
+      "structure_1h": "SHORT",
+      "volume_ratio_5m": 0.881,
+      "volume_ratio_15m": 0.9,
+      "extension_atr_5m": 0.545,
+      "risk_percent": 0.495,
+      "room_r": 3.4,
+      "first_at": 1788953542,
+      "tp1_at": 1788962536,
+      "resolved_at": 1788966132
     },
     {
       "episode_id": "STRKUSDT:SHORT:1788847347",
@@ -1329,39 +1362,6 @@
       "first_at": 1788727625,
       "tp1_at": 1788729382,
       "resolved_at": 1788731191
-    },
-    {
-      "episode_id": "BERAUSDT:LONG:1788616000",
-      "symbol": "BERAUSDT",
-      "direction": "LONG",
-      "score": 87,
-      "miss_level": "TP3_MISSED",
-      "miss_stage": "FINAL_DELIVERY_GATE",
-      "reason": "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED",
-      "outcome": "TP3_REACHED",
-      "prep_price": 0.1834,
-      "last_price": 0.1855,
-      "best_favorable_percent": 1.3086,
-      "best_favorable_r": 4.3636,
-      "worst_adverse_percent": 0.3817,
-      "entry_condition_met": true,
-      "entry_promoted": true,
-      "entry_signal_sent": false,
-      "tp1_before_entry_signal": true,
-      "minutes_prep_to_tp1": 29.7,
-      "minutes_entry_condition_to_tp1": null,
-      "market_regime": "BULL",
-      "structure_5m": "LONG",
-      "structure_15m": "LONG",
-      "structure_1h": "LONG",
-      "volume_ratio_5m": 1.249,
-      "volume_ratio_15m": 0.638,
-      "extension_atr_5m": 0.791,
-      "risk_percent": 0.501,
-      "room_r": 1.44,
-      "first_at": 1788616000,
-      "tp1_at": 1788617782,
-      "resolved_at": 1788630426
     }
   ]
 }
