@@ -169331,18 +169331,18 @@
             "directional_r_from_reference": -1.5144
           }
         },
-        "max_favorable_r": 0.1683,
+        "max_favorable_r": 1.4303,
         "max_adverse_r": 2.1034,
-        "last_checked_at": 1788964411,
+        "last_checked_at": 1788965303,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
-          "code": "SL_SONRASI_TERS_YON_DEVAMI",
-          "likely_cause": "YON_VEYA_SETUP_GECERSIZLESMESI",
-          "confidence": "HIGH",
-          "summary": "Stop sonrasi ters hareket devam etti; yon/setup hatasi olasiligi yuksek.",
+          "code": "SL_SONRASI_TOPARLANMA",
+          "likely_cause": "DAR_STOP_OLASILIGI",
+          "confidence": "MEDIUM",
+          "summary": "Stop sonrasi anlamli toparlanma var; giris/stop zamanlamasi incelenmeli.",
           "evidence": {
-            "max_favorable_r_after_close": 0.1683,
+            "max_favorable_r_after_close": 1.4303,
             "max_adverse_r_after_close": 2.1034,
             "risk_percent": 0.5812,
             "tp1_progress_at_send_percent": null,
@@ -169355,7 +169355,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.2034
+        "last_price": 0.2041
       }
     },
     "ZECUSDT_LONG_MARKET_FIRST_V5_1788962613": {
@@ -169374,13 +169374,13 @@
       "opened_day": "2026-09-09",
       "tp1_hit": true,
       "tp2_hit": true,
-      "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "tp3_hit": true,
+      "status": "CLOSED",
+      "final_result": "TP3",
+      "r_result": 2.3083,
+      "exit_price": 1298.05946334,
+      "closed_at": 1788965162,
+      "closed_day": "2026-09-09",
       "events": [
         {
           "time": 1788962613,
@@ -169396,6 +169396,11 @@
           "time": 1788964278,
           "event": "TP2",
           "price": 1290.187097505
+        },
+        {
+          "time": 1788965162,
+          "event": "TP3",
+          "price": 1298.05946334
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -169419,13 +169424,13 @@
       "rr_tp3": 3.078,
       "sent_price": 1265.79,
       "entry_distance_at_send_percent": 0.06158364717307158,
-      "best_favorable_percent": 1.9715,
+      "best_favorable_percent": 2.5605,
       "worst_adverse_percent": 0.049,
-      "best_favorable_r": 2.4405,
+      "best_favorable_r": 3.1696,
       "worst_adverse_r": 0.0606,
-      "best_favorable_price": 1291.54,
+      "best_favorable_price": 1299.0,
       "worst_adverse_price": 1265.95,
-      "last_market_price": 1280.57,
+      "last_market_price": 1289.27,
       "tp1_hit_at": 1788962700,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -169456,10 +169461,39 @@
         "15m": "LONG",
         "1h": "LONG"
       },
-      "last_tracking_at": 1788964260
+      "last_tracking_at": 1788964380,
+      "duration_minutes": 42,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "KURULUM BASARILI",
+        "confidence": "YUKSEK",
+        "factors": [
+          "Sinyal maksimum hedef TP3'e ulasti."
+        ],
+        "duration_minutes": 42,
+        "best_favorable_r": 3.1696,
+        "worst_adverse_r": 0.0606,
+        "provisional": false,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "tp3_post_follow": {
+        "version": "TP3_POST_FOLLOW_V1_2026_08_08",
+        "status": "TRACKING",
+        "started_at": 1788965162,
+        "tp3_price": 1298.05946334,
+        "timeframe": "1m",
+        "checkpoints": {},
+        "max_favorable_percent": 0.0,
+        "max_adverse_percent": 0.0,
+        "best_price": 1298.05946334,
+        "worst_price": 1298.05946334,
+        "last_checked_at": 0,
+        "completed_at": 0,
+        "shadow_only": true
+      }
     }
   },
-  "last_update": 1788964413,
+  "last_update": 1788965305,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -169476,8 +169510,8 @@
       "BE_SONRASI_TP3": 26,
       "BE_KORUMASI_DOGRU": 15,
       "BE_NOTR_KARISIK": 27,
-      "SL_SONRASI_TERS_YON_DEVAMI": 4,
-      "SL_SONRASI_TOPARLANMA": 40,
+      "SL_SONRASI_TERS_YON_DEVAMI": 3,
+      "SL_SONRASI_TOPARLANMA": 41,
       "BE_SONRASI_YENIDEN_HEDEF": 6,
       "SL_SONRASI_GUCLU_TOPARLANMA": 21,
       "SL_KARISIK_SONUC": 11
@@ -169486,16 +169520,16 @@
       "BE_KORUMASI_ERKEN_OLABILIR": 32,
       "SERMAYE_KORUMASI_ISABETLI": 15,
       "BE_AYARI_ICIN_DAHA_COK_VERI": 27,
-      "YON_VEYA_SETUP_GECERSIZLESMESI": 4,
+      "YON_VEYA_SETUP_GECERSIZLESMESI": 3,
       "ERKEN_GIRIS_OLASILIGI": 31,
       "GIRIS_STOP_ZAMANLAMASI": 11,
       "KESIN_NEDEN_YOK": 11,
-      "DAR_STOP_OLASILIGI": 19
+      "DAR_STOP_OLASILIGI": 20
     },
-    "sl_recovery_total": 61,
+    "sl_recovery_total": 62,
     "be_maybe_early_total": 32,
     "be_protection_correct_total": 15,
-    "updated_at": 1788961654
+    "updated_at": 1788965305
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
