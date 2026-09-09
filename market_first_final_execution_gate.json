@@ -1,6 +1,6 @@
 {
-  "version": "MARKET_FIRST_FINAL_EXECUTION_GATE_V2_2026_09_09",
-  "mode": "FINAL_DECISION_ONLY_NO_STOP_WIDENING_NO_ORDERS",
+  "version": "MARKET_FIRST_FINAL_EXECUTION_GATE_V2_1_2026_09_09",
+  "mode": "FINAL_DECISION_AFTER_UPSTREAM_QUALITY_NO_STOP_WIDENING_NO_ORDERS",
   "thresholds": {
     "min_direction_confirmations": 3,
     "min_technical_expected_move_percent": 0.85,
@@ -10,8 +10,9 @@
     "min_derivatives_soft_score_without_fresh_micro": 0
   },
   "run_counts": {
-    "DIRECTION_CONFIRMATIONS_BELOW_3": 1
+    "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 1,
+    "UPSTREAM_REJECTED": 1
   },
   "accepted": [],
-  "note": "Execution-gate observations only; not realised PnL. Stops are not widened by this module."
+  "note": "Execution-gate observations only; not realised PnL. Upstream Profit Quality/TAO pipeline runs before this gate. Stops are not widened by this module."
 }
