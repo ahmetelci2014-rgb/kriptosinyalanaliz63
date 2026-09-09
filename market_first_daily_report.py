@@ -1,14 +1,13 @@
-"""Simple once-per-day outcome report for Market First.
+"""Once-per-day outcome and missed-opportunity report for Market First.
 
-Telegram stays quiet during the day (real trades/results only).  Near the end of
-Türkiye's trading day this module summarizes two things in one compact report:
-1) REAL TRADES that were actually sent/opened by the live system,
-2) BACKGROUND OPPORTUNITIES that the internal early/prep/swing ledgers watched but
-   never became the same real trade.
+This module is measurement-only. It does not change strategy filters, scores,
+directions, entries, stops, targets, leverage, or exchange requests.
 
-Background movement is observational and must never be presented as realised P&L.
-No strategy, score, direction, entry, stop, target or exchange request is changed
-here.
+V2 fixes an important reporting ambiguity: a large eventual favorable move is
+not automatically called a "correct direction". When the ledgers contain enough
+timing information, the report distinguishes TP-first from SL-first. When event
+order is unknown, it explicitly says so instead of overstating the opportunity.
+It also carries episode/rejection metadata forward for diagnosis.
 """
 from __future__ import annotations
 
@@ -16,7 +15,7 @@ from datetime import date, datetime, time as dt_time, timedelta, timezone
 import math
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
-VERSION = "MARKET_FIRST_DAILY_REPORT_V1_2026_09_06"
+VERSION = "MARKET_FIRST_DAILY_REPORT_V2_2026_09_09"
 STATE_FILE = "market_first_daily_report_state.json"
 REPORT_FILE = "market_first_daily_report.json"
 REPORT_HOUR = 23
@@ -74,6 +73,7 @@ _TIME_FIELDS = (
     "first_at", "alert_time", "opened_at", "created_at", "timestamp",
     "entry_time", "signal_time", "sent_at", "updated_at", "resolved_at",
     "closed_at", "last_update", "last_plan_at", "last_seen_at",
+    "candidate_at", "first_seen_at",
 )
 
 
@@ -84,7 +84,12 @@ def _record_touches_date(record: Mapping[str, Any], target: date) -> bool:
     return False
 
 
-def _iter_records(payload: Any, containers: Sequence[str] = ("trades", "episodes")) -> Iterable[Mapping[str, Any]]:
+def _iter_records(
+    payload: Any,
+    containers: Sequence[str] = ("trades", "episodes"),
+) -> Iterable[Mapping[str, Any]]:
+    if isinstance(payload, list):
+        return [item for item in payload if isinstance(item, Mapping)]
     if not isinstance(payload, Mapping):
         return []
     for key in containers:
@@ -93,7 +98,6 @@ def _iter_records(payload: Any, containers: Sequence[str] = ("trades", "episodes
             return [item for item in nested.values() if isinstance(item, Mapping)]
         if isinstance(nested, list):
             return [item for item in nested if isinstance(item, Mapping)]
-    # Some repo state files store records directly under their ids.
     values = [item for item in payload.values() if isinstance(item, Mapping)]
     return values
 
@@ -115,7 +119,12 @@ def _favorable(record: Mapping[str, Any]) -> float:
     ):
         if record.get(key) is not None:
             return max(0.0, _sf(record.get(key)))
-    initial = _sf(record.get("initial_price") or record.get("prep_price") or record.get("entry"))
+    initial = _sf(
+        record.get("initial_price")
+        or record.get("prep_price")
+        or record.get("reference_price")
+        or record.get("entry")
+    )
     best = _sf(record.get("best_price"))
     direction = str(record.get("direction") or "").upper()
     if initial > 0 and best > 0:
@@ -131,7 +140,12 @@ def _adverse(record: Mapping[str, Any]) -> float:
     ):
         if record.get(key) is not None:
             return abs(_sf(record.get(key)))
-    initial = _sf(record.get("initial_price") or record.get("prep_price") or record.get("entry"))
+    initial = _sf(
+        record.get("initial_price")
+        or record.get("prep_price")
+        or record.get("reference_price")
+        or record.get("entry")
+    )
     worst = _sf(record.get("worst_price"))
     direction = str(record.get("direction") or "").upper()
     if initial > 0 and worst > 0:
@@ -153,6 +167,95 @@ def _result_text(record: Mapping[str, Any]) -> str:
     return str(value).upper().strip()
 
 
+def _first_nonzero_ts(record: Mapping[str, Any], names: Sequence[str]) -> int:
+    values = [_timestamp(record.get(name)) for name in names]
+    values = [value for value in values if value > 0]
+    return min(values) if values else 0
+
+
+def _first_touch(record: Mapping[str, Any]) -> str:
+    """Return TP_FIRST, SL_FIRST or UNKNOWN without guessing from final MFE alone."""
+    text = _result_text(record)
+    explicit = str(
+        record.get("first_decisive_event")
+        or record.get("first_touch")
+        or record.get("first_event")
+        or ""
+    ).upper()
+
+    combined = f"{explicit} {text}"
+    if "SL_FIRST" in combined or "STOP_FIRST" in combined:
+        return "SL_FIRST"
+    if any(token in combined for token in (
+        "TP1_FIRST", "TP2_FIRST", "TP3_FIRST", "TP_FIRST",
+    )):
+        return "TP_FIRST"
+
+    tp_ts = _first_nonzero_ts(
+        record,
+        ("tp1_at", "tp2_at", "tp3_at", "tp_hit_at", "first_tp_at"),
+    )
+    sl_ts = _first_nonzero_ts(
+        record,
+        ("sl_at", "stop_at", "stop_hit_at", "sl_hit_at", "first_sl_at"),
+    )
+    if tp_ts and sl_ts:
+        return "TP_FIRST" if tp_ts < sl_ts else "SL_FIRST"
+    if tp_ts and not sl_ts:
+        return "TP_FIRST"
+    if sl_ts and not tp_ts:
+        return "SL_FIRST"
+
+    if (
+        ("TP3_REACHED" in text or "TP2_REACHED" in text or "TP1_REACHED" in text)
+        and "SL" not in text and "STOP" not in text
+    ):
+        return "TP_FIRST"
+    return "UNKNOWN"
+
+
+def _candidate_at(record: Mapping[str, Any]) -> int:
+    for key in (
+        "candidate_at", "first_at", "first_seen_at", "created_at", "alert_time",
+        "signal_time", "entry_time", "timestamp", "last_plan_at",
+    ):
+        ts = _timestamp(record.get(key))
+        if ts:
+            return ts
+    return 0
+
+
+def _reference_price(record: Mapping[str, Any]) -> float:
+    for key in ("reference_price", "initial_price", "prep_price", "entry", "entry_price"):
+        value = _sf(record.get(key))
+        if value > 0:
+            return value
+    return 0.0
+
+
+def _episode_id(record: Mapping[str, Any]) -> str:
+    return str(
+        record.get("episode_id")
+        or record.get("id")
+        or record.get("trade_id")
+        or ""
+    ).strip()
+
+
+def _rejection_reason(record: Mapping[str, Any]) -> str:
+    for key in (
+        "primary_obstacle", "rejection_reason", "reject_reason", "blocked_by",
+        "entry_block_reason", "skip_reason", "reason",
+    ):
+        value = record.get(key)
+        if value:
+            return str(value).strip()
+    flags = record.get("diagnostic_flags")
+    if isinstance(flags, list) and flags:
+        return str(flags[0])
+    return ""
+
+
 def _real_result(record: Mapping[str, Any]) -> str:
     text = _result_text(record)
     if "TP3" in text or _has(record, "tp3_hit", "tp3_at"):
@@ -172,36 +275,44 @@ def _real_result(record: Mapping[str, Any]) -> str:
     return "AÇIK"
 
 
+def _real_diagnosis(result: str, favorable: float, adverse: float) -> str:
+    if result == "STOP":
+        if favorable >= 0.50:
+            return "KÂR GÖRDÜ → STOP"
+        if favorable >= 0.15:
+            return "AZ LEHTE → STOP"
+        return "DİREKT/ZAYIF STOP"
+    if result == "TP1 + BE":
+        return "BE SONRASI TAKİP"
+    return ""
+
+
 def _background_result(record: Mapping[str, Any]) -> str:
-    text = _result_text(record)
-    first = str(record.get("first_decisive_event") or "").upper()
     entry_sent = bool(record.get("entry_signal_sent") or record.get("real_entry_signal_sent"))
+    first = _first_touch(record)
 
-    if _has(record, "tp3_at") or "TP3" in first or "TP3" in text:
-        return "DOĞRU YÖN / GİRİŞ YOK" if not entry_sent else "TP3 YÖNÜ"
-    if _has(record, "tp2_at") or "TP2" in first or "TP2" in text:
-        return "DOĞRU YÖN / GİRİŞ YOK" if not entry_sent else "TP2 YÖNÜ"
-    if _has(record, "tp1_at") or "TP1" in first or "TP1_FIRST" in text:
-        return "DOĞRU YÖN / GİRİŞ YOK" if not entry_sent else "TP1 YÖNÜ"
+    if first == "TP_FIRST":
+        return "TP ÖNCE / GİRİŞ YOK" if not entry_sent else "TP ÖNCE"
+    if first == "SL_FIRST":
+        return "SL ÖNCE / GİRİŞ YOK" if not entry_sent else "SL ÖNCE"
 
-    if (
-        "SL_FIRST" in first or "SL_FIRST" in text or "STOP_FIRST" in text
-        or "BAD_MOVE" in text or "NO_FOLLOWTHROUGH" in text
-    ):
-        return "YÖN TERS"
-    if "STRONG_MOVE" in text or "GOOD_MOVE" in text or "FAVORABLE_MOVE" in text:
-        return "DOĞRU YÖN / GİRİŞ YOK"
+    text = _result_text(record)
     if "MIXED" in text or "AMBIGUOUS" in text:
         return "KARIŞIK"
+    if "BAD_MOVE" in text or "NO_FOLLOWTHROUGH" in text:
+        return "YÖN TERS"
     if "CHASED" in text or "NO_ENTRY" in text or bool(record.get("tp1_before_entry_signal")):
         if _favorable(record) >= 0.8:
-            return "DOĞRU YÖN / GİRİŞ YOK"
+            return "LEHTE HAREKET / SIRA BELİRSİZ"
         return "GİRİŞ OLMADI"
+
+    favorable = _favorable(record)
+    adverse = _adverse(record)
+    if favorable >= 0.8:
+        return "LEHTE HAREKET / SIRA BELİRSİZ"
+    if bool(record.get("resolved")) and adverse >= 0.8 and adverse > favorable:
+        return "YÖN TERS"
     if bool(record.get("resolved")):
-        if _favorable(record) >= max(1.0, _adverse(record)):
-            return "DOĞRU YÖN / GİRİŞ YOK"
-        if _adverse(record) > _favorable(record) and _adverse(record) >= 0.8:
-            return "YÖN TERS"
         return "BİTTİ"
     return "TAKİPTE"
 
@@ -211,34 +322,98 @@ def _progress_text(favorable: float, adverse: float, result: str) -> str:
     adverse = max(0.0, adverse)
     if favorable > 0.0:
         return f"+{favorable:.1f}%"
-    if adverse > 0.0 and ("STOP" in result or "TERS" in result):
+    if adverse > 0.0 and ("STOP" in result or "TERS" in result or "SL ÖNCE" in result):
         return f"-{adverse:.1f}%"
     return "0.0%"
 
 
-def _merge_row(target: Dict[Tuple[str, str], Dict[str, Any]], row: Dict[str, Any]) -> None:
+def _diagnosis_index(payload: Any) -> Tuple[Dict[str, Mapping[str, Any]], Dict[Tuple[str, str], Mapping[str, Any]]]:
+    by_episode: Dict[str, Mapping[str, Any]] = {}
+    by_pair: Dict[Tuple[str, str], Mapping[str, Any]] = {}
+    for record in _iter_records(
+        payload,
+        containers=("diagnostics", "episodes", "records", "items"),
+    ):
+        episode = _episode_id(record)
+        if episode:
+            by_episode[episode] = record
+        symbol, direction = _symbol_direction(record)
+        if symbol and direction in {"LONG", "SHORT"}:
+            old = by_pair.get((symbol, direction))
+            if old is None or _candidate_at(record) >= _candidate_at(old):
+                by_pair[(symbol, direction)] = record
+    return by_episode, by_pair
+
+
+def _enrich_with_diagnosis(
+    row: Dict[str, Any],
+    record: Mapping[str, Any],
+    by_episode: Mapping[str, Mapping[str, Any]],
+    by_pair: Mapping[Tuple[str, str], Mapping[str, Any]],
+) -> None:
+    reason = _rejection_reason(record)
+    diagnosis: Optional[Mapping[str, Any]] = None
+    episode = str(row.get("episode_id") or "")
+    if episode:
+        diagnosis = by_episode.get(episode)
+    if diagnosis is None:
+        diagnosis = by_pair.get((str(row.get("symbol")), str(row.get("direction"))))
+    if not reason and diagnosis is not None:
+        reason = _rejection_reason(diagnosis)
+    if reason:
+        row["rejection_reason"] = reason
+    if diagnosis is not None:
+        outcome = str(diagnosis.get("outcome") or "")
+        if outcome:
+            row["diagnostic_outcome"] = outcome
+
+
+def _merge_background_row(
+    target: Dict[Tuple[str, str], Dict[str, Any]],
+    row: Dict[str, Any],
+) -> None:
+    """Keep favorable/adverse from the same representative episode.
+
+    V1 independently maxed favorable and adverse across sources/episodes, which
+    could create a synthetic row that never existed. V2 replaces the representative
+    episode as a unit and only merges source/episode metadata.
+    """
     key = (row["symbol"], row["direction"])
     old = target.get(key)
     if old is None:
+        row["episode_count"] = 1
         target[key] = row
         return
-    old["favorable_percent"] = max(_sf(old.get("favorable_percent")), _sf(row.get("favorable_percent")))
-    old["adverse_percent"] = max(_sf(old.get("adverse_percent")), _sf(row.get("adverse_percent")))
-    old.setdefault("sources", [])
-    for source in row.get("sources", []):
-        if source not in old["sources"]:
-            old["sources"].append(source)
 
-    priority = {
-        "DOĞRU YÖN / GİRİŞ YOK": 6,
-        "YÖN TERS": 5,
-        "KARIŞIK": 4,
-        "GİRİŞ OLMADI": 3,
-        "BİTTİ": 2,
-        "TAKİPTE": 1,
-    }
-    if priority.get(str(row.get("result")), 0) > priority.get(str(old.get("result")), 0):
-        old["result"] = row["result"]
+    old["episode_count"] = int(old.get("episode_count") or 1) + 1
+    old_sources = old.setdefault("sources", [])
+    for source in row.get("sources", []):
+        if source not in old_sources:
+            old_sources.append(source)
+
+    strict_rank = {"TP_FIRST": 3, "SL_FIRST": 2, "UNKNOWN": 1}
+    old_rank = strict_rank.get(str(old.get("first_touch")), 0)
+    new_rank = strict_rank.get(str(row.get("first_touch")), 0)
+    replace = False
+    if new_rank > old_rank:
+        replace = True
+    elif new_rank == old_rank and _sf(row.get("favorable_percent")) > _sf(old.get("favorable_percent")):
+        replace = True
+
+    if replace:
+        preserved_sources = list(old_sources)
+        preserved_count = int(old.get("episode_count") or 1)
+        target[key] = row
+        target[key]["sources"] = preserved_sources
+        target[key]["episode_count"] = preserved_count
+
+
+def _add_opposite_direction_flags(rows: List[Dict[str, Any]]) -> None:
+    directions: Dict[str, set] = {}
+    for row in rows:
+        directions.setdefault(str(row.get("symbol")), set()).add(str(row.get("direction")))
+    for row in rows:
+        row["opposite_direction_seen"] = len(directions.get(str(row.get("symbol")), set())) > 1
 
 
 def build_report(bot: Any, now: Optional[int] = None, target_date: Optional[date] = None) -> Dict[str, Any]:
@@ -247,6 +422,8 @@ def build_report(bot: Any, now: Optional[int] = None, target_date: Optional[date
 
     trade_payload = bot.load_json_file(getattr(bot, "TRADE_LEDGER_FILE", "trade_ledger.json"), {})
     open_payload = bot.load_json_file(getattr(bot, "OPEN_SIGNALS_FILE", "open_signals.json"), {})
+    diagnosis_payload = bot.load_json_file("market_first_entry_condition_diagnosis.json", {})
+    diagnosis_by_episode, diagnosis_by_pair = _diagnosis_index(diagnosis_payload)
 
     real: Dict[Tuple[str, str], Dict[str, Any]] = {}
     for payload in (trade_payload, open_payload):
@@ -254,22 +431,31 @@ def build_report(bot: Any, now: Optional[int] = None, target_date: Optional[date
             symbol, direction = _symbol_direction(record)
             if not symbol or direction not in {"LONG", "SHORT"} or not _record_touches_date(record, target):
                 continue
+            favorable = round(_favorable(record), 4)
+            adverse = round(_adverse(record), 4)
+            result = _real_result(record)
             row = {
                 "symbol": symbol,
                 "direction": direction,
-                "favorable_percent": round(_favorable(record), 4),
-                "adverse_percent": round(_adverse(record), 4),
-                "result": _real_result(record),
+                "favorable_percent": favorable,
+                "adverse_percent": adverse,
+                "result": result,
+                "diagnosis": _real_diagnosis(result, favorable, adverse),
             }
             key = (symbol, direction)
             old = real.get(key)
             if old is None:
                 real[key] = row
             else:
-                old["favorable_percent"] = max(_sf(old.get("favorable_percent")), row["favorable_percent"])
-                old["adverse_percent"] = max(_sf(old.get("adverse_percent")), row["adverse_percent"])
-                if old.get("result") == "AÇIK" and row["result"] != "AÇIK":
-                    old["result"] = row["result"]
+                old["favorable_percent"] = max(_sf(old.get("favorable_percent")), favorable)
+                old["adverse_percent"] = max(_sf(old.get("adverse_percent")), adverse)
+                if old.get("result") == "AÇIK" and result != "AÇIK":
+                    old["result"] = result
+                    old["diagnosis"] = _real_diagnosis(
+                        result,
+                        _sf(old.get("favorable_percent")),
+                        _sf(old.get("adverse_percent")),
+                    )
 
     background: Dict[Tuple[str, str], Dict[str, Any]] = {}
     background_sources = (
@@ -285,21 +471,41 @@ def build_report(bot: Any, now: Optional[int] = None, target_date: Optional[date
                 continue
             if (symbol, direction) in real:
                 continue
-            row = {
+
+            first_touch = _first_touch(record)
+            row: Dict[str, Any] = {
                 "symbol": symbol,
                 "direction": direction,
                 "favorable_percent": round(_favorable(record), 4),
                 "adverse_percent": round(_adverse(record), 4),
                 "result": _background_result(record),
+                "first_touch": first_touch,
+                "candidate_at": _candidate_at(record),
+                "reference_price": _reference_price(record),
+                "episode_id": _episode_id(record),
                 "sources": [source],
             }
-            _merge_row(background, row)
+            _enrich_with_diagnosis(
+                row, record, diagnosis_by_episode, diagnosis_by_pair,
+            )
+            _merge_background_row(background, row)
 
     real_rows = sorted(real.values(), key=lambda item: (item["symbol"], item["direction"]))
     background_rows = sorted(
         background.values(),
         key=lambda item: (-_sf(item.get("favorable_percent")), item["symbol"], item["direction"]),
     )
+    _add_opposite_direction_flags(background_rows)
+
+    strict_tp_first = sum(1 for item in background_rows if item.get("first_touch") == "TP_FIRST")
+    strict_sl_first = sum(1 for item in background_rows if item.get("first_touch") == "SL_FIRST")
+    unknown_order = sum(1 for item in background_rows if item.get("first_touch") == "UNKNOWN")
+    stop_after_profit = sum(
+        1 for item in real_rows
+        if item.get("result") == "STOP" and _sf(item.get("favorable_percent")) >= 0.15
+    )
+    be_followup = sum(1 for item in real_rows if item.get("result") == "TP1 + BE")
+
     return {
         "version": VERSION,
         "date": target.isoformat(),
@@ -309,15 +515,22 @@ def build_report(bot: Any, now: Optional[int] = None, target_date: Optional[date
         "summary": {
             "real_trade_count": len(real_rows),
             "background_count": len(background_rows),
-            "background_correct_direction": sum(1 for item in background_rows if "DOĞRU YÖN" in str(item.get("result"))),
-            "background_wrong_direction": sum(1 for item in background_rows if item.get("result") == "YÖN TERS"),
+            "background_tp_first": strict_tp_first,
+            "background_sl_first": strict_sl_first,
+            "background_unknown_order": unknown_order,
+            "real_stop_after_positive_move": stop_after_profit,
+            "tp1_be_needs_followup": be_followup,
         },
     }
 
 
 def _row_line(row: Mapping[str, Any]) -> str:
     result = str(row.get("result") or "-")
-    progress = _progress_text(_sf(row.get("favorable_percent")), _sf(row.get("adverse_percent")), result)
+    progress = _progress_text(
+        _sf(row.get("favorable_percent")),
+        _sf(row.get("adverse_percent")),
+        result,
+    )
     return f"{row.get('symbol')} {row.get('direction')} | {progress} | {result}"
 
 
@@ -327,6 +540,7 @@ def _sections(report: Mapping[str, Any]) -> List[str]:
         date_text = datetime.strptime(date_text, "%Y-%m-%d").strftime("%d.%m.%Y")
     except Exception:
         pass
+
     lines = [f"📋 GÜNLÜK İŞLEM ÖZETİ | {date_text}", "", "✅ GERÇEK İŞLEMLER"]
     real_rows = report.get("real_trades") if isinstance(report.get("real_trades"), list) else []
     if real_rows:
@@ -344,8 +558,16 @@ def _sections(report: Mapping[str, Any]) -> List[str]:
     summary = report.get("summary") if isinstance(report.get("summary"), Mapping) else {}
     lines.extend([
         "",
-        f"📌 Toplam: {int(_sf(summary.get('real_trade_count')))} gerçek | {int(_sf(summary.get('background_count')))} izleme",
-        "ℹ️ Arka plan yüzdeleri gerçekleşmiş kâr değildir; sistemin izlediği yönün hareketidir.",
+        f"📌 Toplam: {int(_sf(summary.get('real_trade_count')))} gerçek | "
+        f"{int(_sf(summary.get('background_count')))} izleme",
+        f"🧪 Arka plan: {int(_sf(summary.get('background_tp_first')))} TP önce | "
+        f"{int(_sf(summary.get('background_sl_first')))} SL önce | "
+        f"{int(_sf(summary.get('background_unknown_order')))} sıra belirsiz",
+        f"🔎 Gerçek stop teşhisi: {int(_sf(summary.get('real_stop_after_positive_move')))} "
+        "işlem stop öncesi lehte hareket gördü",
+        f"🟡 TP1+BE sonrası takip adayı: {int(_sf(summary.get('tp1_be_needs_followup')))}",
+        "ℹ️ Arka plan yüzdeleri gerçekleşmiş kâr değildir. "
+        "'Sıra belirsiz' kayıtları TP/SL olay sırası kanıtlanmadan başarılı sayılmaz.",
     ])
     return lines
 
