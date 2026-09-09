@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import market_first_big_move_capture as big_move_capture
 import market_first_daily_report as daily_report
+import market_first_daily_report_origin_patch as daily_report_origin_patch
 import market_first_entry_accelerator as entry_accelerator
 import market_first_final_execution_gate as final_execution_gate
 import market_first_live_complete_tracking as complete_tracking
@@ -31,6 +32,8 @@ def main() -> None:
     # outside that so a qualifying PREP can enter the normal trade pipeline.
     # Final Execution Gate is installed last: it never promotes a setup, it only
     # vetoes a would-be final signal when continuation/flow evidence is too weak.
+    # Daily report origin/BE patch is reporting-only and changes no live decision.
+    daily_report_origin_patch.install()
     entry_accelerator.install()
     promotion_reason_patch.install()
     swing_tracking_fix.install()
@@ -45,6 +48,7 @@ def main() -> None:
     tao_profit_patch.install()
     tao_quality_bridge.install()
     final_execution_gate.install()
+    print("MARKET FIRST DAILY REPORT ORIGIN/BE:", daily_report_origin_patch.summary())
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
     print("MARKET FIRST PROMOTION REASONS:", promotion_reason_patch.summary())
     print("MARKET FIRST 2H SWING TRACKING FIX:", swing_tracking_fix.status())
