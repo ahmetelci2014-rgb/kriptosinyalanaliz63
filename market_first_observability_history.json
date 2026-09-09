@@ -1,6 +1,6 @@
 {
   "version": "MARKET_FIRST_OBSERVABILITY_V1_2026_09_08",
-  "updated_at": 1788911267,
+  "updated_at": 1788912199,
   "snapshots": [
     {
       "generated_at": 1788891449,
@@ -826,6 +826,42 @@
       },
       "miss_stages": {
         "BEFORE_ENTRY_CONDITION": 485,
+        "PROMOTION_GATE": 234,
+        "FINAL_DELIVERY_GATE": 24
+      }
+    },
+    {
+      "generated_at": 1788912199,
+      "market_regime": "CHOP",
+      "deep_scan_count": 128,
+      "funnel": {
+        "clean_preparations": 991,
+        "resolved": 954,
+        "zone_touched": 815,
+        "entry_condition_met": 361,
+        "entry_promoted": 62,
+        "entry_signal_sent": 21,
+        "tp1_before_entry_signal": 771
+      },
+      "conversion_rates": {
+        "prep_to_zone": 0.8224,
+        "zone_to_entry_condition": 0.4429,
+        "entry_condition_to_promotion": 0.1717,
+        "promotion_to_real_signal": 0.3387,
+        "entry_condition_to_real_signal": 0.0582,
+        "prep_to_real_signal": 0.0212,
+        "tp1_before_signal_share": 0.778
+      },
+      "largest_promotion_blocker": "ENTRY_CONDITION_NOT_PROMOTED_UNKNOWN",
+      "total_missed_moves": 745,
+      "miss_rate_of_clean_resolved": 0.7809,
+      "miss_levels": {
+        "TP3_MISSED": 521,
+        "TP2_MISSED": 131,
+        "TP1_MISSED": 93
+      },
+      "miss_stages": {
+        "BEFORE_ENTRY_CONDITION": 487,
         "PROMOTION_GATE": 234,
         "FINAL_DELIVERY_GATE": 24
       }
