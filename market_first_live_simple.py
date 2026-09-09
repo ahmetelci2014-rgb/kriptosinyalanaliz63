@@ -7,6 +7,7 @@ eligibility or live safety guards.
 """
 from __future__ import annotations
 
+import market_first_big_move_capture as big_move_capture
 import market_first_daily_report as daily_report
 import market_first_entry_accelerator as entry_accelerator
 import market_first_live_complete_tracking as complete_tracking
@@ -28,7 +29,9 @@ def main() -> None:
     # PRE-ENTRY Shadow sits after tracking and only observes selected PREP setups;
     # it never changes the returned live decision. Reversal Capture stays outside
     # that stack so recent DEAD alerts and open shadow positions can both keep
-    # scan priority.
+    # scan priority. Big Move Capture is installed after Simple Mode so its
+    # separate large-move heads-up uses the same deduplicated Telegram transport;
+    # it observes the final analysis stack but never promotes a real trade.
     entry_accelerator.install()
     promotion_reason_patch.install()
     swing_tracking_fix.install()
@@ -38,6 +41,7 @@ def main() -> None:
     target_overlay.install_target_overlay()
     simple_mode.install_simple_mode()
     target_display.install_target_display()
+    big_move_capture.install()
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
     print("MARKET FIRST PROMOTION REASONS:", promotion_reason_patch.summary())
     print("MARKET FIRST 2H SWING TRACKING FIX:", swing_tracking_fix.status())
@@ -46,7 +50,10 @@ def main() -> None:
     print("MARKET FIRST TARGET OVERLAY:", target_overlay.summary())
     print("MARKET FIRST TARGET DISPLAY:", target_display.summary())
     print("MARKET FIRST SIMPLE MODE:", simple_mode.summary())
-    runner.run()
+    try:
+        runner.run()
+    finally:
+        print("MARKET FIRST BIG MOVE CAPTURE:", big_move_capture.finish())
     sent = daily_report.maybe_send(runner.bot, runner._send)
     if sent:
         print("GÜNLÜK ÖZET TELEGRAM'A GÖNDERİLDİ.")
