@@ -171215,37 +171215,39 @@
       "duration_minutes": 58,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "ONCE LEHE GITTI, SONRA TERS DONDU",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
-          "Stop oncesinde islem en az 0.35R lehe hareket etti."
+          "Stop oncesinde islem en az 0.35R lehe hareket etti.",
+          "Stop sonrasi fiyat TP3 seviyesine dondu."
         ],
         "duration_minutes": 58,
         "best_favorable_r": 1.6593,
         "worst_adverse_r": 1.2859,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ONCE_LEHE_SONRA_TERS",
-        "preliminary_label": "Önce lehe, sonra ters",
+        "primary": "FITIL_DAR_STOP",
+        "label": "Fitil/dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası fiyat TP3 seviyesine 165 dakikada döndü.",
+          "Stop yüzdesi teşhis eşiğine göre dardı."
         ],
         "metrics": {
           "duration_minutes": 58,
           "mfe_r": 1.6593,
           "mae_r": 1.2859,
           "risk_percent": 0.627,
-          "return_minutes": null
+          "return_minutes": 165.0
         },
-        "updated_at": 1789035361
+        "updated_at": 1789045279
       },
       "result_diagnostics": {
         "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
@@ -171306,7 +171308,7 @@
         },
         "max_favorable_r": 6.0148,
         "max_adverse_r": 0.4978,
-        "last_checked_at": 1789044495,
+        "last_checked_at": 1789045414,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -171328,11 +171330,17 @@
             "tp3_minutes_after_close": 150
           }
         },
-        "last_price": 3.76
+        "last_price": 3.828
+      },
+      "post_stop_follow": {
+        "returned_level": "TP3",
+        "age_minutes": 165,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1789045279
       }
     }
   },
-  "last_update": 1789044497,
+  "last_update": 1789045416,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
