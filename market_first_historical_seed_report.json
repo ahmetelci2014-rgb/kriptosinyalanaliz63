@@ -1,39 +1,39 @@
 {
   "batch_symbols": 12,
-  "cursor_end": 48,
-  "cursor_start": 36,
+  "cursor_end": 60,
+  "cursor_start": 48,
   "eligible_research_universe": 277,
-  "generated_at": 1788939317,
+  "generated_at": 1789025516,
   "historical_breadth_mode": "NEUTRAL_0_50_NO_LOOKAHEAD",
   "historical_derivatives_mode": "UNAVAILABLE_FLAGS_ZERO",
-  "historical_labeled_total": 23,
+  "historical_labeled_total": 30,
   "labeled_added": 7,
-  "labeled_after": 86,
-  "labeled_before": 79,
+  "labeled_after": 101,
+  "labeled_before": 94,
   "liquidity_note": "Historical order-book depth unavailable; quote-volume gate used, live depth guard remains unchanged.",
   "lookback_days": 45,
   "max_evals_per_symbol": 160,
   "ml_quality_after_seed": {
     "active_min_each_class": 25,
     "active_min_labeled": 120,
-    "labeled_count": 86,
+    "labeled_count": 101,
     "live_block_probability": 0.42,
     "metrics": {},
     "mode": "SHADOW",
-    "negative_count": 42,
-    "positive_count": 44,
+    "negative_count": 52,
+    "positive_count": 49,
     "reason": "Erken gölge model çalışıyor; olasılık üretir ama canlı işlemi engellemez veya tek başına işlem oluşturmaz.",
     "shadow_min_each_class": 2,
     "shadow_min_labeled": 5,
     "top_feature_importance": {
-      "breadth_24h_alignment": 0.101485,
-      "breadth_5m_alignment": 0.046768,
-      "extension_atr_5m": 0.069431,
-      "major_move_5m_alignment": 0.051678,
-      "market_score_alignment": 0.052602,
-      "room_r_capped": 0.052828,
-      "rule_score": 0.045994,
-      "taker_imbalance_alignment": 0.04527
+      "book_opposing_wall_ratio": 0.045083,
+      "breadth_24h_alignment": 0.073592,
+      "extension_atr_5m": 0.082759,
+      "major_move_5m_alignment": 0.053207,
+      "market_score_alignment": 0.043607,
+      "risk_percent": 0.055585,
+      "room_r_capped": 0.073903,
+      "volume_ratio_1m": 0.043586
     },
     "validation_count": 0,
     "version": "MARKET_FIRST_RF_QUALITY_V4_EARLY_POOL_2026_08_30"
@@ -41,101 +41,34 @@
   "outcome_hours": 18,
   "round_trip_cost_percent": 0.12,
   "run_totals": {
-    "GUARD_FRESH_MAJOR_REVERSAL": 1,
-    "LOW_HIST_VOLUME": 429,
-    "LOW_SCORE": 436,
+    "LOW_HIST_VOLUME": 447,
+    "LOW_SCORE": 514,
     "MARKET_OPPOSED": 1,
-    "NO_ACCELERATION": 307,
-    "RESEARCH_LATE_SKIP": 11,
-    "RESEARCH_RISK_WIDE": 3,
-    "STALE_EXTENSION": 125,
-    "eval_times": 1320,
-    "negative": 5,
-    "positive": 2,
+    "NO_ACCELERATION": 302,
+    "RESEARCH_LATE_SKIP": 16,
+    "RESEARCH_RISK_WIDE": 16,
+    "STALE_EXTENSION": 137,
+    "eval_times": 1440,
+    "negative": 4,
+    "positive": 3,
     "seeded": 7,
     "seeded_counterfactual": 7,
-    "stage_EARLY": 10,
-    "stage_LATE": 11,
-    "stage_READY": 1
+    "stage_EARLY": 23,
+    "stage_LATE": 16
   },
   "strategy_version": "MARKET_FIRST_V5_2026_08_28",
   "symbols": [
     {
       "stats": {
-        "LOW_SCORE": 52,
-        "NO_ACCELERATION": 49,
-        "STALE_EXTENSION": 18,
+        "LOW_SCORE": 56,
+        "NO_ACCELERATION": 52,
+        "RESEARCH_LATE_SKIP": 1,
+        "STALE_EXTENSION": 10,
         "eval_times": 120,
         "negative": 1,
         "seeded": 1,
         "seeded_counterfactual": 1,
-        "stage_EARLY": 1
-      },
-      "status": "OK",
-      "symbol": "APTUSDT"
-    },
-    {
-      "stats": {
-        "LOW_HIST_VOLUME": 105,
-        "LOW_SCORE": 9,
-        "NO_ACCELERATION": 3,
-        "STALE_EXTENSION": 3,
-        "eval_times": 120
-      },
-      "status": "OK",
-      "symbol": "COMPUSDT"
-    },
-    {
-      "stats": {},
-      "status": "DATA_MISSING",
-      "symbol": "PONSUSDT"
-    },
-    {
-      "stats": {
-        "LOW_HIST_VOLUME": 82,
-        "LOW_SCORE": 17,
-        "MARKET_OPPOSED": 1,
-        "NO_ACCELERATION": 13,
-        "STALE_EXTENSION": 7,
-        "eval_times": 120
-      },
-      "status": "OK",
-      "symbol": "AXSUSDT"
-    },
-    {
-      "stats": {
-        "LOW_SCORE": 48,
-        "NO_ACCELERATION": 46,
-        "RESEARCH_LATE_SKIP": 1,
-        "STALE_EXTENSION": 22,
-        "eval_times": 120,
-        "negative": 2,
-        "positive": 1,
-        "seeded": 3,
-        "seeded_counterfactual": 3,
-        "stage_EARLY": 3,
-        "stage_LATE": 1
-      },
-      "status": "OK",
-      "symbol": "OPUSDT"
-    },
-    {
-      "stats": {
-        "LOW_SCORE": 54,
-        "NO_ACCELERATION": 46,
-        "STALE_EXTENSION": 20,
-        "eval_times": 120
-      },
-      "status": "OK",
-      "symbol": "ATOMUSDT"
-    },
-    {
-      "stats": {
-        "LOW_SCORE": 57,
-        "NO_ACCELERATION": 53,
-        "RESEARCH_LATE_SKIP": 1,
-        "STALE_EXTENSION": 9,
-        "eval_times": 120,
+        "stage_EARLY": 1,
         "stage_LATE": 1
       },
       "status": "OK",
@@ -143,10 +76,42 @@
     },
     {
       "stats": {
-        "LOW_HIST_VOLUME": 106,
+        "LOW_SCORE": 67,
+        "MARKET_OPPOSED": 1,
+        "NO_ACCELERATION": 28,
+        "RESEARCH_LATE_SKIP": 3,
+        "RESEARCH_RISK_WIDE": 1,
+        "STALE_EXTENSION": 19,
+        "eval_times": 120,
+        "negative": 1,
+        "seeded": 1,
+        "seeded_counterfactual": 1,
+        "stage_EARLY": 2,
+        "stage_LATE": 3
+      },
+      "status": "OK",
+      "symbol": "KAITOUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 62,
+        "NO_ACCELERATION": 37,
+        "RESEARCH_LATE_SKIP": 2,
+        "RESEARCH_RISK_WIDE": 1,
+        "STALE_EXTENSION": 18,
+        "eval_times": 120,
+        "stage_EARLY": 1,
+        "stage_LATE": 2
+      },
+      "status": "OK",
+      "symbol": "GRASSUSDT"
+    },
+    {
+      "stats": {
+        "LOW_HIST_VOLUME": 104,
         "LOW_SCORE": 6,
-        "NO_ACCELERATION": 5,
-        "STALE_EXTENSION": 3,
+        "NO_ACCELERATION": 6,
+        "STALE_EXTENSION": 4,
         "eval_times": 120
       },
       "status": "OK",
@@ -154,63 +119,115 @@
     },
     {
       "stats": {
-        "GUARD_FRESH_MAJOR_REVERSAL": 1,
-        "LOW_HIST_VOLUME": 33,
-        "LOW_SCORE": 46,
-        "NO_ACCELERATION": 28,
-        "RESEARCH_LATE_SKIP": 1,
-        "STALE_EXTENSION": 11,
-        "eval_times": 120,
-        "stage_EARLY": 1,
-        "stage_LATE": 1
-      },
-      "status": "OK",
-      "symbol": "PROSUSDT"
-    },
-    {
-      "stats": {
-        "LOW_HIST_VOLUME": 4,
         "LOW_SCORE": 73,
-        "NO_ACCELERATION": 16,
-        "RESEARCH_LATE_SKIP": 8,
-        "RESEARCH_RISK_WIDE": 2,
+        "NO_ACCELERATION": 30,
         "STALE_EXTENSION": 16,
         "eval_times": 120,
         "positive": 1,
         "seeded": 1,
         "seeded_counterfactual": 1,
-        "stage_EARLY": 2,
-        "stage_LATE": 8,
-        "stage_READY": 1
+        "stage_EARLY": 1
+      },
+      "status": "OK",
+      "symbol": "FARTCOINUSDT"
+    },
+    {
+      "stats": {
+        "LOW_HIST_VOLUME": 116,
+        "LOW_SCORE": 3,
+        "NO_ACCELERATION": 1,
+        "eval_times": 120
+      },
+      "status": "OK",
+      "symbol": "UMAUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 60,
+        "NO_ACCELERATION": 44,
+        "RESEARCH_LATE_SKIP": 1,
+        "STALE_EXTENSION": 14,
+        "eval_times": 120,
+        "positive": 1,
+        "seeded": 1,
+        "seeded_counterfactual": 1,
+        "stage_EARLY": 1,
+        "stage_LATE": 1
+      },
+      "status": "OK",
+      "symbol": "WIFUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 52,
+        "NO_ACCELERATION": 47,
+        "RESEARCH_RISK_WIDE": 1,
+        "STALE_EXTENSION": 19,
+        "eval_times": 120,
+        "negative": 1,
+        "seeded": 1,
+        "seeded_counterfactual": 1,
+        "stage_EARLY": 2
+      },
+      "status": "OK",
+      "symbol": "JTOUSDT"
+    },
+    {
+      "stats": {
+        "LOW_HIST_VOLUME": 2,
+        "LOW_SCORE": 67,
+        "NO_ACCELERATION": 21,
+        "RESEARCH_LATE_SKIP": 7,
+        "RESEARCH_RISK_WIDE": 8,
+        "STALE_EXTENSION": 14,
+        "eval_times": 120,
+        "positive": 1,
+        "seeded": 1,
+        "seeded_counterfactual": 1,
+        "stage_EARLY": 9,
+        "stage_LATE": 7
       },
       "status": "OK",
       "symbol": "BICOUSDT"
     },
     {
       "stats": {
-        "LOW_HIST_VOLUME": 99,
-        "LOW_SCORE": 11,
-        "NO_ACCELERATION": 8,
-        "STALE_EXTENSION": 2,
-        "eval_times": 120
+        "LOW_HIST_VOLUME": 109,
+        "LOW_SCORE": 5,
+        "NO_ACCELERATION": 1,
+        "RESEARCH_RISK_WIDE": 1,
+        "STALE_EXTENSION": 4,
+        "eval_times": 120,
+        "stage_EARLY": 1
       },
       "status": "OK",
-      "symbol": "BERAUSDT"
+      "symbol": "AUCTIONUSDT"
     },
     {
       "stats": {
-        "LOW_SCORE": 63,
-        "NO_ACCELERATION": 40,
-        "RESEARCH_RISK_WIDE": 1,
-        "STALE_EXTENSION": 14,
-        "eval_times": 120,
-        "negative": 2,
-        "seeded": 2,
-        "seeded_counterfactual": 2,
-        "stage_EARLY": 3
+        "LOW_HIST_VOLUME": 116,
+        "LOW_SCORE": 4,
+        "eval_times": 120
       },
       "status": "OK",
-      "symbol": "JTOUSDT"
+      "symbol": "METISUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 59,
+        "NO_ACCELERATION": 35,
+        "RESEARCH_LATE_SKIP": 2,
+        "RESEARCH_RISK_WIDE": 4,
+        "STALE_EXTENSION": 19,
+        "eval_times": 120,
+        "negative": 1,
+        "seeded": 1,
+        "seeded_counterfactual": 1,
+        "stage_EARLY": 5,
+        "stage_LATE": 2
+      },
+      "status": "OK",
+      "symbol": "ENAUSDT"
     }
   ],
   "version": "MARKET_FIRST_HISTORICAL_ML_SEED_V1_2026_08_29"
