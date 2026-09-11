@@ -1,33 +1,33 @@
 {
   "version": "MARKET_FIRST_OBSERVABILITY_V1_2026_09_08",
-  "generated_at": 1789129950,
+  "generated_at": 1789130848,
   "definition": "Clean resolved preparation that reached TP1 or better without a real Telegram entry signal.",
-  "total_missed_moves": 1147,
-  "miss_rate_of_clean_resolved": 0.8409,
+  "total_missed_moves": 1148,
+  "miss_rate_of_clean_resolved": 0.841,
   "levels": {
-    "TP3_MISSED": 882,
+    "TP3_MISSED": 883,
     "TP2_MISSED": 162,
     "TP1_MISSED": 103
   },
   "stages": {
-    "BEFORE_ENTRY_CONDITION": 820,
+    "BEFORE_ENTRY_CONDITION": 822,
     "FINAL_DELIVERY_GATE": 254,
-    "PROMOTION_GATE": 73
+    "PROMOTION_GATE": 72
   },
   "reasons": {
-    "ENTRY_CONDITION_NOT_REACHED": 820,
+    "ENTRY_CONDITION_NOT_REACHED": 822,
     "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED": 239,
-    "ENTRY_PLAN_STALE_MICRO": 72,
+    "ENTRY_PLAN_STALE_MICRO": 71,
     "TELEGRAM_SEND_FAILED": 15,
     "NO_ACCELERATION": 1
   },
   "directions": {
-    "SHORT": 916,
-    "LONG": 231
+    "SHORT": 915,
+    "LONG": 233
   },
   "outcomes": {
     "TP3_REACHED": 696,
-    "SL_FIRST_THEN_TP3_RECOVERY": 178,
+    "SL_FIRST_THEN_TP3_RECOVERY": 179,
     "TP2_REACHED": 113,
     "TP1_REACHED": 72,
     "SL_FIRST_THEN_TP2_RECOVERY": 49,
@@ -35,10 +35,10 @@
     "AMBIGUOUS_THEN_TP3": 8
   },
   "timing": {
-    "avg_minutes_prep_to_tp1": 65.67,
-    "avg_minutes_entry_condition_to_tp1": 77.44,
+    "avg_minutes_prep_to_tp1": 65.56,
+    "avg_minutes_entry_condition_to_tp1": 77.04,
     "tp1_within_30m": 626,
-    "tp1_within_60m": 807
+    "tp1_within_60m": 809
   },
   "top_missed": [
     {
@@ -172,6 +172,39 @@
       "first_at": 1788905789,
       "tp1_at": 1788922955,
       "resolved_at": 1788926563
+    },
+    {
+      "episode_id": "NEARUSDT:LONG:1789112839",
+      "symbol": "NEARUSDT",
+      "direction": "LONG",
+      "score": 81,
+      "miss_level": "TP3_MISSED",
+      "miss_stage": "BEFORE_ENTRY_CONDITION",
+      "reason": "ENTRY_CONDITION_NOT_REACHED",
+      "outcome": "SL_FIRST_THEN_TP3_RECOVERY",
+      "prep_price": 2.472,
+      "last_price": 2.551,
+      "best_favorable_percent": 3.3576,
+      "best_favorable_r": 8.394,
+      "worst_adverse_percent": 2.3867,
+      "entry_condition_met": false,
+      "entry_promoted": false,
+      "entry_signal_sent": false,
+      "tp1_before_entry_signal": true,
+      "minutes_prep_to_tp1": 44.6,
+      "minutes_entry_condition_to_tp1": null,
+      "market_regime": "BEAR",
+      "structure_5m": "NEUTRAL",
+      "structure_15m": "LONG",
+      "structure_1h": "LONG",
+      "volume_ratio_5m": 0.973,
+      "volume_ratio_15m": 0.572,
+      "extension_atr_5m": 0.169,
+      "risk_percent": 1.355,
+      "room_r": 2.27,
+      "first_at": 1789112839,
+      "tp1_at": 1789115515,
+      "resolved_at": 1789130807
     },
     {
       "episode_id": "AUCTIONUSDT:SHORT:1788971515",
@@ -1327,39 +1360,6 @@
       "first_at": 1788987701,
       "tp1_at": 1788992200,
       "resolved_at": 1789003051
-    },
-    {
-      "episode_id": "NEARUSDT:SHORT:1789045357",
-      "symbol": "NEARUSDT",
-      "direction": "SHORT",
-      "score": 96,
-      "miss_level": "TP3_MISSED",
-      "miss_stage": "FINAL_DELIVERY_GATE",
-      "reason": "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED",
-      "outcome": "TP3_REACHED",
-      "prep_price": 2.421,
-      "last_price": 2.382,
-      "best_favorable_percent": 1.8587,
-      "best_favorable_r": 4.6468,
-      "worst_adverse_percent": 0.0,
-      "entry_condition_met": true,
-      "entry_promoted": true,
-      "entry_signal_sent": false,
-      "tp1_before_entry_signal": true,
-      "minutes_prep_to_tp1": 14.12,
-      "minutes_entry_condition_to_tp1": 14.12,
-      "market_regime": "BEAR_STRONG",
-      "structure_5m": "SHORT",
-      "structure_15m": "SHORT",
-      "structure_1h": "SHORT",
-      "volume_ratio_5m": 1.311,
-      "volume_ratio_15m": 4.317,
-      "extension_atr_5m": 0.741,
-      "risk_percent": 0.4,
-      "room_r": 6.61,
-      "first_at": 1789045357,
-      "tp1_at": 1789046204,
-      "resolved_at": 1789046204
     }
   ]
 }
