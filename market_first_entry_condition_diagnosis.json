@@ -1,6 +1,6 @@
 {
   "version": "MARKET_FIRST_ENTRY_CONDITION_DIAGNOSIS_V1_2026_09_08",
-  "generated_at": 1789139890,
+  "generated_at": 1789140811,
   "source_ledger_version": "MARKET_FIRST_OPPORTUNITY_LEDGER_V1_2026_09_05",
   "definition": "Clean resolved preparations that reached TP1+ without a Telegram trade and never recorded ENTRY condition. Latest-plan flags are diagnostic snapshots, not guaranteed co-temporal blocker proofs.",
   "reference_thresholds_observational_only": {
@@ -12,29 +12,29 @@
     "max_extension_atr": 1.25
   },
   "summary": {
-    "before_entry_condition_missed": 820,
-    "tp3_missed": 668,
-    "tp1_within_30m": 491,
-    "tp1_within_60m": 622,
-    "shadow_pre_entry_profile_count": 365,
-    "shadow_pre_entry_profile_share": 0.4451
+    "before_entry_condition_missed": 835,
+    "tp3_missed": 684,
+    "tp1_within_30m": 507,
+    "tp1_within_60m": 637,
+    "shadow_pre_entry_profile_count": 367,
+    "shadow_pre_entry_profile_share": 0.4395
   },
   "primary_obstacles": {
-    "ZONE_NEVER_TOUCHED": 252,
-    "STRUCTURE_5M_NEUTRAL_LATEST": 202,
+    "ZONE_NEVER_TOUCHED": 263,
+    "STRUCTURE_5M_NEUTRAL_LATEST": 205,
     "LIKELY_TIMING_WINDOW_MISSED": 187,
-    "VOLUME_5M_BELOW_0_50_LATEST": 92,
+    "VOLUME_5M_BELOW_0_50_LATEST": 93,
     "STRUCTURE_5M_OPPOSITE_LATEST": 59,
     "SCORE_BELOW_76_LATEST": 15,
     "EXTENSION_ABOVE_1_25_LATEST": 12,
     "RISK_ABOVE_1_45_LATEST": 1
   },
   "diagnostic_flags": {
-    "TP1_WITHIN_30M": 491,
-    "VOLUME_5M_BELOW_0_50_LATEST": 255,
-    "ZONE_NEVER_TOUCHED": 252,
-    "STRUCTURE_5M_NEUTRAL_LATEST": 229,
-    "TP1_WITHIN_60M": 131,
+    "TP1_WITHIN_30M": 507,
+    "ZONE_NEVER_TOUCHED": 263,
+    "VOLUME_5M_BELOW_0_50_LATEST": 263,
+    "STRUCTURE_5M_NEUTRAL_LATEST": 233,
+    "TP1_WITHIN_60M": 130,
     "STRUCTURE_5M_OPPOSITE_LATEST": 84,
     "EXTENSION_ABOVE_1_25_LATEST": 35,
     "SCORE_BELOW_76_LATEST": 22,
@@ -43,50 +43,50 @@
   },
   "obstacle_stats": {
     "ZONE_NEVER_TOUCHED": {
-      "count": 252,
-      "share": 0.3073,
-      "tp3_count": 247,
-      "tp1_within_30m": 239,
-      "avg_best_favorable_r": 1.4643
+      "count": 263,
+      "share": 0.315,
+      "tp3_count": 258,
+      "tp1_within_30m": 250,
+      "avg_best_favorable_r": 1.4553
+    },
+    "STRUCTURE_5M_NEUTRAL_LATEST": {
+      "count": 205,
+      "share": 0.2455,
+      "tp3_count": 143,
+      "tp1_within_30m": 92,
+      "avg_best_favorable_r": 2.8372
+    },
+    "VOLUME_5M_BELOW_0_50_LATEST": {
+      "count": 93,
+      "share": 0.1114,
+      "tp3_count": 72,
+      "tp1_within_30m": 39,
+      "avg_best_favorable_r": 2.418
+    },
+    "LIKELY_TIMING_WINDOW_MISSED": {
+      "count": 187,
+      "share": 0.224,
+      "tp3_count": 153,
+      "tp1_within_30m": 87,
+      "avg_best_favorable_r": 2.3163
     },
     "STRUCTURE_5M_OPPOSITE_LATEST": {
       "count": 59,
-      "share": 0.072,
+      "share": 0.0707,
       "tp3_count": 39,
       "tp1_within_30m": 31,
       "avg_best_favorable_r": 2.8536
     },
-    "LIKELY_TIMING_WINDOW_MISSED": {
-      "count": 187,
-      "share": 0.228,
-      "tp3_count": 153,
-      "tp1_within_30m": 86,
-      "avg_best_favorable_r": 2.3255
-    },
     "EXTENSION_ABOVE_1_25_LATEST": {
       "count": 12,
-      "share": 0.0146,
+      "share": 0.0144,
       "tp3_count": 7,
       "tp1_within_30m": 2,
       "avg_best_favorable_r": 2.3972
     },
-    "STRUCTURE_5M_NEUTRAL_LATEST": {
-      "count": 202,
-      "share": 0.2463,
-      "tp3_count": 139,
-      "tp1_within_30m": 89,
-      "avg_best_favorable_r": 2.8809
-    },
-    "VOLUME_5M_BELOW_0_50_LATEST": {
-      "count": 92,
-      "share": 0.1122,
-      "tp3_count": 71,
-      "tp1_within_30m": 38,
-      "avg_best_favorable_r": 2.4306
-    },
     "SCORE_BELOW_76_LATEST": {
       "count": 15,
-      "share": 0.0183,
+      "share": 0.018,
       "tp3_count": 11,
       "tp1_within_30m": 6,
       "avg_best_favorable_r": 2.9194
@@ -1408,35 +1408,6 @@
       "outcome": "SL_FIRST_THEN_TP2_RECOVERY"
     },
     {
-      "episode_id": "ENSUSDT:SHORT:1788823010",
-      "symbol": "ENSUSDT",
-      "direction": "SHORT",
-      "score": 90,
-      "primary_obstacle": "STRUCTURE_5M_NEUTRAL_LATEST",
-      "diagnostic_flags": [
-        "STRUCTURE_5M_NEUTRAL_LATEST",
-        "TP1_WITHIN_30M"
-      ],
-      "shadow_pre_entry_profile": true,
-      "zone_touched": true,
-      "structure_5m": "NEUTRAL",
-      "structure_15m": "SHORT",
-      "structure_1h": "SHORT",
-      "volume_ratio_5m": 0.986,
-      "volume_ratio_15m": 1.058,
-      "extension_atr_5m": 0.23,
-      "risk_percent": 0.587,
-      "room_r": 3.5,
-      "market_regime": "BEAR_STRONG",
-      "best_favorable_r": 7.4184,
-      "best_favorable_percent": 0.3132,
-      "worst_adverse_percent": 3.4454,
-      "tp1_minutes": 14.7,
-      "tp2_reached": false,
-      "tp3_reached": false,
-      "outcome": "TP1_REACHED"
-    },
-    {
       "episode_id": "NMRUSDT:LONG:1788860822",
       "symbol": "NMRUSDT",
       "direction": "LONG",
@@ -2354,6 +2325,35 @@
       "best_favorable_percent": 1.4163,
       "worst_adverse_percent": 0.0,
       "tp1_minutes": 30.38,
+      "tp2_reached": true,
+      "tp3_reached": true,
+      "outcome": "TP3_REACHED"
+    },
+    {
+      "episode_id": "ZENUSDT:SHORT:1789045353",
+      "symbol": "ZENUSDT",
+      "direction": "SHORT",
+      "score": 90,
+      "primary_obstacle": "STRUCTURE_5M_NEUTRAL_LATEST",
+      "diagnostic_flags": [
+        "STRUCTURE_5M_NEUTRAL_LATEST",
+        "TP1_WITHIN_30M"
+      ],
+      "shadow_pre_entry_profile": true,
+      "zone_touched": true,
+      "structure_5m": "NEUTRAL",
+      "structure_15m": "SHORT",
+      "structure_1h": "SHORT",
+      "volume_ratio_5m": 1.028,
+      "volume_ratio_15m": 6.631,
+      "extension_atr_5m": 0.966,
+      "risk_percent": 0.463,
+      "room_r": 4.52,
+      "market_regime": "BEAR_STRONG",
+      "best_favorable_r": 4.4274,
+      "best_favorable_percent": 2.0504,
+      "worst_adverse_percent": 2.2554,
+      "tp1_minutes": 13.83,
       "tp2_reached": true,
       "tp3_reached": true,
       "outcome": "TP3_REACHED"
