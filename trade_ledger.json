@@ -171407,7 +171407,7 @@
       "worst_adverse_r": 0.6155,
       "best_favorable_price": 0.2843,
       "worst_adverse_price": 0.2889,
-      "last_market_price": 0.2867,
+      "last_market_price": 0.2865,
       "tp1_hit_at": 1789083660,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -171438,7 +171438,7 @@
         "15m": "SHORT",
         "1h": "SHORT"
       },
-      "last_tracking_at": 1789085700
+      "last_tracking_at": 1789086660
     },
     "ATOMUSDT_SHORT_MARKET_FIRST_V5_1789085016": {
       "trade_id": "ATOMUSDT_SHORT_MARKET_FIRST_V5_1789085016",
@@ -171585,20 +171585,27 @@
           "TP3": 1.745000478
         },
         "reached_levels": {},
-        "checkpoints": {},
-        "max_favorable_r": 0.0,
-        "max_adverse_r": 0.7027,
-        "last_checked_at": 1789085889,
+        "checkpoints": {
+          "15": {
+            "target_at": 1789086661,
+            "candle_time": 1789086600,
+            "close_price": 1.814,
+            "directional_r_from_reference": -0.7808
+          }
+        },
+        "max_favorable_r": 1.0151,
+        "max_adverse_r": 1.6397,
+        "last_checked_at": 1789086778,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
-          "code": "SL_KARISIK_SONUC",
-          "likely_cause": "KESIN_NEDEN_YOK",
-          "confidence": "LOW",
-          "summary": "Stop sonrasi fiyat yolu tek bir nedene isaret etmiyor.",
+          "code": "SL_SONRASI_TOPARLANMA",
+          "likely_cause": "GIRIS_STOP_ZAMANLAMASI",
+          "confidence": "MEDIUM",
+          "summary": "Stop sonrasi anlamli toparlanma var; giris/stop zamanlamasi incelenmeli.",
           "evidence": {
-            "max_favorable_r_after_close": 0.0,
-            "max_adverse_r_after_close": 0.7027,
+            "max_favorable_r_after_close": 1.0151,
+            "max_adverse_r_after_close": 1.6397,
             "risk_percent": 0.7139,
             "tp1_progress_at_send_percent": null,
             "entry_distance_at_send_percent": 0.16722408026755248,
@@ -171610,11 +171617,11 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 1.813
+        "last_price": 1.793
       }
     }
   },
-  "last_update": 1789085891,
+  "last_update": 1789086780,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -171632,10 +171639,10 @@
       "BE_KORUMASI_DOGRU": 15,
       "BE_NOTR_KARISIK": 27,
       "SL_SONRASI_TERS_YON_DEVAMI": 3,
-      "SL_SONRASI_TOPARLANMA": 42,
+      "SL_SONRASI_TOPARLANMA": 43,
       "BE_SONRASI_YENIDEN_HEDEF": 6,
       "SL_SONRASI_GUCLU_TOPARLANMA": 23,
-      "SL_KARISIK_SONUC": 12
+      "SL_KARISIK_SONUC": 11
     },
     "likely_cause_counts": {
       "BE_KORUMASI_ERKEN_OLABILIR": 32,
@@ -171643,14 +171650,14 @@
       "BE_AYARI_ICIN_DAHA_COK_VERI": 27,
       "YON_VEYA_SETUP_GECERSIZLESMESI": 3,
       "ERKEN_GIRIS_OLASILIGI": 31,
-      "GIRIS_STOP_ZAMANLAMASI": 11,
-      "KESIN_NEDEN_YOK": 12,
+      "GIRIS_STOP_ZAMANLAMASI": 12,
+      "KESIN_NEDEN_YOK": 11,
       "DAR_STOP_OLASILIGI": 23
     },
-    "sl_recovery_total": 65,
+    "sl_recovery_total": 66,
     "be_maybe_early_total": 32,
     "be_protection_correct_total": 15,
-    "updated_at": 1789085891
+    "updated_at": 1789086780
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
