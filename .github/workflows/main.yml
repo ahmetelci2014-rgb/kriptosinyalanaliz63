@@ -1,8 +1,9 @@
 name: Market First V5 - Simplified Live
 
 on:
-  # cron-job.org is the single external scheduler. Keep this workflow
-  # dispatch-only so a second native GitHub schedule cannot overlap with it.
+  # cron-job.org remains the single external dispatcher. Observed dispatches are
+  # roughly 15 minutes apart, so each dispatch now performs three stateful scans
+  # at an effective 5-minute cadence inside one workflow run.
   workflow_dispatch:
 
 permissions:
@@ -10,12 +11,14 @@ permissions:
 
 concurrency:
   group: market-first-v5-live
-  cancel-in-progress: true
+  # A run now deliberately spans ~10+ minutes. Never cancel it mid-state when the
+  # next external dispatch arrives; queue the next run instead.
+  cancel-in-progress: false
 
 jobs:
   market-first:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     steps:
       - name: Repo indir
@@ -30,9 +33,6 @@ jobs:
           git fetch origin main
           git reset --hard origin/main
           echo "Market First run SHA: $(git rev-parse HEAD)"
-
-      - name: Scheduler cadence health
-        run: python market_first_scheduler_health.py
 
       - name: Python kur
         uses: actions/setup-python@v5
@@ -53,7 +53,7 @@ jobs:
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
         run: python untradable_futures_cleanup.py
 
-      - name: Market First tek tarama - sadece islem ve sonuc Telegram
+      - name: Market First - 5 dakikalik uc stateful tarama
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -65,12 +65,39 @@ jobs:
           OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
         run: |
           set -e
-          # Onceki kapanmis TP1/TP2->BE ve TP3 islemlerinin sessiz golge
-          # takibini once guncelle; 23:45 gunluk raporu bu veriyi gorebilsin.
-          # Sinyal/emir/Telegram uretmez; hata olursa ana taramayi durdurmaz.
-          python post_result_shadow.py || true
-          python market_first_live_simple.py
-          python result_diagnostics.py || true
+          cycles=3
+          target_interval=300
+
+          for pass in $(seq 1 "$cycles")
+          do
+            cycle_started=$(date +%s)
+            echo "===== MARKET FIRST LIVE SCAN $pass/$cycles ====="
+
+            # Health is recorded per actual scan now, not merely per external
+            # workflow dispatch. This exposes the cadence that trading logic sees.
+            python market_first_scheduler_health.py
+
+            # Onceki kapanmis TP1/TP2->BE ve TP3 islemlerinin sessiz golge
+            # takibini her taramadan once guncelle. Sinyal/emir/Telegram uretmez.
+            python post_result_shadow.py || true
+            python market_first_live_simple.py
+            python result_diagnostics.py || true
+
+            if [ "$pass" -lt "$cycles" ]; then
+              cycle_finished=$(date +%s)
+              elapsed=$((cycle_finished - cycle_started))
+              sleep_for=$((target_interval - elapsed))
+              if [ "$sleep_for" -gt 0 ]; then
+                echo "Sonraki 5dk taramasina ${sleep_for}s kaldi."
+                sleep "$sleep_for"
+              else
+                echo "Tarama 5dk penceresini asti; sonraki tarama hemen basliyor."
+              fi
+            fi
+          done
+
+          # Agir raporlari her 5dk taramasinda tekrar calistirmak yerine son
+          # taramadan sonra bir kez guncelle; canli giris ritmini yavaslatmasin.
           python market_first_observability_report.py
           python market_first_entry_condition_diagnosis.py
 
@@ -101,6 +128,7 @@ jobs:
             market_first_pre_entry_shadow.json \
             market_first_big_move_capture.json \
             market_first_profit_quality.json \
+            market_first_shadow_edge.json \
             market_first_final_execution_gate.json \
             premium_big_move_state.json \
             market_first_scheduler_health.json \

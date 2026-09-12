@@ -17,6 +17,7 @@ import market_first_profit_quality_v1 as profit_quality
 import market_first_promotion_reason_patch as promotion_reason_patch
 import market_first_reversal_capture_v2 as reversal_capture
 import market_first_runner as runner
+import market_first_shadow_edge as shadow_edge
 import market_first_simple_mode as simple_mode
 import market_first_swing_2h_tracking_fix as swing_tracking_fix
 import market_first_tao_quality_bridge as tao_quality_bridge
@@ -30,6 +31,10 @@ def main() -> None:
     # gate. The TAO compatibility patch then permits only the strict volume-burst
     # -> pullback profile to use a 0.50x current-volume floor, and the bridge sits
     # outside that so a qualifying PREP can enter the normal trade pipeline.
+    # Shadow Edge is installed after those layers so it can use their final plan
+    # shape and historical ledgers. It may only relax the structural target floor
+    # for exceptionally strong aligned plans when the measured background edge is
+    # positive and real-signal conversion is abnormally low.
     # Final Execution Gate is installed last: it never promotes a setup, it only
     # vetoes a would-be final signal when continuation/flow evidence is too weak.
     # Daily report origin/BE patch is reporting-only and changes no live decision.
@@ -47,6 +52,7 @@ def main() -> None:
     profit_quality.install()
     tao_profit_patch.install()
     tao_quality_bridge.install()
+    shadow_edge.install()
     final_execution_gate.install()
     print("MARKET FIRST DAILY REPORT ORIGIN/BE:", daily_report_origin_patch.summary())
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
@@ -60,6 +66,7 @@ def main() -> None:
     print("MARKET FIRST PROFIT QUALITY:", profit_quality.summary())
     print("MARKET FIRST TAO PROFIT PATCH:", tao_profit_patch.status())
     print("MARKET FIRST TAO QUALITY BRIDGE:", tao_quality_bridge.summary())
+    print("MARKET FIRST SHADOW EDGE:", shadow_edge.summary())
     print("MARKET FIRST FINAL EXECUTION GATE:", final_execution_gate.summary())
     try:
         runner.run()
@@ -67,6 +74,7 @@ def main() -> None:
         print("MARKET FIRST BIG MOVE CAPTURE:", big_move_capture.finish())
         print("MARKET FIRST PROFIT QUALITY RUN:", profit_quality.finish())
         print("MARKET FIRST TAO QUALITY RUN:", tao_quality_bridge.summary())
+        print("MARKET FIRST SHADOW EDGE RUN:", shadow_edge.finish())
         print("MARKET FIRST FINAL EXECUTION RUN:", final_execution_gate.finish())
     sent = daily_report.maybe_send(runner.bot, runner._send)
     if sent:
