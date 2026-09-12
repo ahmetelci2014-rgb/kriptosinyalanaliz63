@@ -37326,7 +37326,7 @@
       "tp1": 1,
       "tp2": 1,
       "tp3": 1,
-      "sl": 1,
+      "sl": 2,
       "be": 0,
       "expired": 0,
       "long": 1,
@@ -37380,16 +37380,18 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         }
       },
       "direction_stops": {
-        "SHORT": 1
+        "SHORT": 1,
+        "LONG": 1
       },
       "stop_times": {
-        "EIGENUSDT": 1789182081
+        "EIGENUSDT": 1789182081,
+        "METISUSDT": 1789196482
       },
       "closed_times": {
         "CRVUSDT": 1789164090
@@ -37437,14 +37439,24 @@
           "exit": 0.2144,
           "source": "MARKET_FIRST_V5",
           "score": 94
+        },
+        {
+          "time": "10:01:22",
+          "symbol": "METISUSDT",
+          "direction": "LONG",
+          "result": "SL",
+          "entry": 2.925,
+          "exit": 2.918,
+          "source": "MARKET_FIRST_V5",
+          "score": 94
         }
       ],
       "sl_after_tp1": 0,
       "sl_after_tp2": 0,
-      "sl_after_no_return": 0
+      "sl_after_no_return": 1
     }
   },
-  "last_update": 1789195647,
+  "last_update": 1789196484,
   "last_open_summary": 1787843763,
   "last_status_message": 1787906216,
   "last_daily_report": "2026-08-27",
@@ -37467,8 +37479,31 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-09-12"
+    },
+    "METISUSDT_LONG_1789196482": {
+      "trade_id": "METISUSDT_LONG_MARKET_FIRST_V5_1789195647",
+      "symbol": "METISUSDT",
+      "direction": "LONG",
+      "source": "MARKET_FIRST_V5",
+      "entry": 2.925,
+      "tp1": 2.998125,
+      "tp2": 3.0346875,
+      "tp3": 3.07125,
+      "sl": 2.9115214286,
+      "score": 94,
+      "risk_percent": 0.461,
+      "stopped_at": 1789196482,
+      "stop_exit": 2.918,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
