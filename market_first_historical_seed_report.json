@@ -1,70 +1,164 @@
 {
   "batch_symbols": 12,
-  "cursor_end": 72,
-  "cursor_start": 60,
+  "cursor_end": 84,
+  "cursor_start": 72,
   "eligible_research_universe": 277,
-  "generated_at": 1789111764,
+  "generated_at": 1789197779,
   "historical_breadth_mode": "NEUTRAL_0_50_NO_LOOKAHEAD",
   "historical_derivatives_mode": "UNAVAILABLE_FLAGS_ZERO",
-  "historical_labeled_total": 40,
-  "labeled_added": 10,
-  "labeled_after": 114,
-  "labeled_before": 104,
+  "historical_labeled_total": 49,
+  "labeled_added": 9,
+  "labeled_after": 126,
+  "labeled_before": 117,
   "liquidity_note": "Historical order-book depth unavailable; quote-volume gate used, live depth guard remains unchanged.",
   "lookback_days": 45,
   "max_evals_per_symbol": 160,
   "ml_quality_after_seed": {
     "active_min_each_class": 25,
     "active_min_labeled": 120,
-    "labeled_count": 114,
+    "labeled_count": 126,
     "live_block_probability": 0.42,
-    "metrics": {},
+    "metrics": {
+      "balanced_accuracy": 0.5,
+      "roc_auc": 0.5281
+    },
     "mode": "SHADOW",
-    "negative_count": 59,
-    "positive_count": 55,
-    "reason": "Erken gölge model çalışıyor; olasılık üretir ama canlı işlemi engellemez veya tek başına işlem oluşturmaz.",
+    "negative_count": 63,
+    "positive_count": 63,
+    "reason": "Model eğitildi fakat kronolojik doğrulama henüz canlı etki için yeterli değil.",
     "shadow_min_each_class": 2,
     "shadow_min_labeled": 5,
     "top_feature_importance": {
-      "breadth_24h_alignment": 0.066286,
-      "extension_atr_5m": 0.093477,
-      "log10_quote_volume_24h": 0.046723,
-      "major_move_5m_alignment": 0.048675,
-      "market_score_alignment": 0.051714,
-      "risk_percent": 0.052317,
-      "room_r_capped": 0.073946,
-      "volume_ratio_1m": 0.046068
+      "book_opposing_wall_ratio": 0.04959,
+      "breadth_24h_alignment": 0.050996,
+      "extension_atr_5m": 0.083612,
+      "major_move_5m_alignment": 0.058275,
+      "market_score_alignment": 0.065113,
+      "market_strength": 0.06943,
+      "risk_percent": 0.051925,
+      "room_r_capped": 0.067438
     },
-    "validation_count": 0,
+    "validation_count": 32,
     "version": "MARKET_FIRST_RF_QUALITY_V4_EARLY_POOL_2026_08_30"
   },
   "outcome_hours": 18,
   "round_trip_cost_percent": 0.12,
   "run_totals": {
-    "LOW_HIST_VOLUME": 274,
-    "LOW_SCORE": 494,
-    "MARKET_OPPOSED": 2,
-    "NO_ACCELERATION": 346,
-    "RESEARCH_LATE_SKIP": 17,
-    "RESEARCH_RISK_WIDE": 11,
-    "STALE_EXTENSION": 166,
+    "LOW_HIST_VOLUME": 232,
+    "LOW_SCORE": 517,
+    "MARKET_OPPOSED": 1,
+    "NO_ACCELERATION": 400,
+    "RESEARCH_LATE_SKIP": 7,
+    "RESEARCH_RISK_WIDE": 7,
+    "STALE_EXTENSION": 147,
     "eval_times": 1320,
-    "negative": 5,
-    "positive": 5,
-    "seeded": 10,
-    "seeded_counterfactual": 10,
-    "stage_EARLY": 21,
-    "stage_LATE": 17
+    "negative": 2,
+    "positive": 7,
+    "seeded": 9,
+    "seeded_counterfactual": 9,
+    "stage_EARLY": 16,
+    "stage_LATE": 7
   },
   "strategy_version": "MARKET_FIRST_V5_2026_08_28",
   "symbols": [
     {
       "stats": {
-        "LOW_SCORE": 63,
-        "NO_ACCELERATION": 35,
+        "LOW_SCORE": 42,
+        "NO_ACCELERATION": 67,
+        "STALE_EXTENSION": 11,
+        "eval_times": 120
+      },
+      "status": "OK",
+      "symbol": "WLFIUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 55,
+        "NO_ACCELERATION": 52,
+        "STALE_EXTENSION": 12,
+        "eval_times": 120,
+        "positive": 1,
+        "seeded": 1,
+        "seeded_counterfactual": 1,
+        "stage_EARLY": 1
+      },
+      "status": "OK",
+      "symbol": "RENDERUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 66,
+        "NO_ACCELERATION": 34,
+        "RESEARCH_RISK_WIDE": 1,
+        "STALE_EXTENSION": 18,
+        "eval_times": 120,
+        "positive": 1,
+        "seeded": 1,
+        "seeded_counterfactual": 1,
+        "stage_EARLY": 2
+      },
+      "status": "OK",
+      "symbol": "0GUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 48,
+        "NO_ACCELERATION": 42,
+        "RESEARCH_RISK_WIDE": 3,
+        "STALE_EXTENSION": 26,
+        "eval_times": 120,
+        "negative": 1,
+        "seeded": 1,
+        "seeded_counterfactual": 1,
+        "stage_EARLY": 4
+      },
+      "status": "OK",
+      "symbol": "GRASSUSDT"
+    },
+    {
+      "stats": {
+        "LOW_HIST_VOLUME": 112,
+        "LOW_SCORE": 5,
+        "NO_ACCELERATION": 1,
+        "RESEARCH_LATE_SKIP": 1,
+        "STALE_EXTENSION": 1,
+        "eval_times": 120,
+        "stage_LATE": 1
+      },
+      "status": "OK",
+      "symbol": "COAIUSDT"
+    },
+    {
+      "stats": {
+        "LOW_HIST_VOLUME": 120,
+        "eval_times": 120
+      },
+      "status": "OK",
+      "symbol": "GMXUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 69,
+        "NO_ACCELERATION": 30,
+        "RESEARCH_LATE_SKIP": 2,
+        "STALE_EXTENSION": 18,
+        "eval_times": 120,
+        "negative": 1,
+        "seeded": 1,
+        "seeded_counterfactual": 1,
+        "stage_EARLY": 1,
+        "stage_LATE": 2
+      },
+      "status": "OK",
+      "symbol": "XPLUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 51,
+        "NO_ACCELERATION": 51,
         "RESEARCH_LATE_SKIP": 1,
         "RESEARCH_RISK_WIDE": 1,
-        "STALE_EXTENSION": 19,
+        "STALE_EXTENSION": 15,
         "eval_times": 120,
         "positive": 1,
         "seeded": 1,
@@ -73,156 +167,60 @@
         "stage_LATE": 1
       },
       "status": "OK",
-      "symbol": "ENAUSDT"
+      "symbol": "MORPHOUSDT"
     },
     {
       "stats": {
-        "LOW_SCORE": 53,
-        "NO_ACCELERATION": 39,
-        "RESEARCH_LATE_SKIP": 2,
-        "STALE_EXTENSION": 26,
-        "eval_times": 120,
-        "stage_LATE": 2
-      },
-      "status": "OK",
-      "symbol": "STRKUSDT"
-    },
-    {
-      "stats": {
-        "LOW_SCORE": 51,
+        "LOW_SCORE": 59,
         "NO_ACCELERATION": 40,
-        "RESEARCH_LATE_SKIP": 1,
-        "STALE_EXTENSION": 27,
-        "eval_times": 120,
-        "negative": 1,
-        "seeded": 1,
-        "seeded_counterfactual": 1,
-        "stage_EARLY": 1,
-        "stage_LATE": 1
-      },
-      "status": "OK",
-      "symbol": "LDOUSDT"
-    },
-    {
-      "stats": {
-        "LOW_SCORE": 41,
-        "MARKET_OPPOSED": 1,
-        "NO_ACCELERATION": 54,
-        "RESEARCH_LATE_SKIP": 3,
-        "RESEARCH_RISK_WIDE": 3,
-        "STALE_EXTENSION": 14,
-        "eval_times": 120,
-        "negative": 2,
-        "positive": 2,
-        "seeded": 4,
-        "seeded_counterfactual": 4,
-        "stage_EARLY": 7,
-        "stage_LATE": 3
-      },
-      "status": "OK",
-      "symbol": "XRPUSDT"
-    },
-    {
-      "stats": {
-        "LOW_HIST_VOLUME": 115,
-        "LOW_SCORE": 4,
-        "STALE_EXTENSION": 1,
-        "eval_times": 120
-      },
-      "status": "OK",
-      "symbol": "METISUSDT"
-    },
-    {
-      "stats": {
-        "LOW_HIST_VOLUME": 1,
-        "LOW_SCORE": 71,
-        "NO_ACCELERATION": 24,
-        "RESEARCH_LATE_SKIP": 9,
-        "RESEARCH_RISK_WIDE": 3,
-        "STALE_EXTENSION": 11,
-        "eval_times": 120,
-        "positive": 1,
-        "seeded": 1,
-        "seeded_counterfactual": 1,
-        "stage_EARLY": 4,
-        "stage_LATE": 9
-      },
-      "status": "OK",
-      "symbol": "BICOUSDT"
-    },
-    {
-      "stats": {
-        "LOW_SCORE": 65,
-        "NO_ACCELERATION": 34,
         "RESEARCH_RISK_WIDE": 2,
         "STALE_EXTENSION": 18,
         "eval_times": 120,
-        "negative": 1,
+        "positive": 1,
         "seeded": 1,
         "seeded_counterfactual": 1,
         "stage_EARLY": 3
       },
       "status": "OK",
-      "symbol": "ZROUSDT"
+      "symbol": "ONDOUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 61,
+        "MARKET_OPPOSED": 1,
+        "NO_ACCELERATION": 36,
+        "RESEARCH_LATE_SKIP": 2,
+        "STALE_EXTENSION": 19,
+        "eval_times": 120,
+        "positive": 1,
+        "seeded": 1,
+        "seeded_counterfactual": 1,
+        "stage_EARLY": 1,
+        "stage_LATE": 2
+      },
+      "status": "OK",
+      "symbol": "LIGHTUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 61,
+        "NO_ACCELERATION": 47,
+        "RESEARCH_LATE_SKIP": 1,
+        "STALE_EXTENSION": 9,
+        "eval_times": 120,
+        "positive": 2,
+        "seeded": 2,
+        "seeded_counterfactual": 2,
+        "stage_EARLY": 2,
+        "stage_LATE": 1
+      },
+      "status": "OK",
+      "symbol": "MERLUSDT"
     },
     {
       "stats": {},
       "status": "DATA_MISSING",
       "symbol": "CNPYUSDT"
-    },
-    {
-      "stats": {
-        "LOW_SCORE": 47,
-        "MARKET_OPPOSED": 1,
-        "NO_ACCELERATION": 49,
-        "RESEARCH_RISK_WIDE": 1,
-        "STALE_EXTENSION": 21,
-        "eval_times": 120,
-        "positive": 1,
-        "seeded": 1,
-        "seeded_counterfactual": 1,
-        "stage_EARLY": 2
-      },
-      "status": "OK",
-      "symbol": "TIAUSDT"
-    },
-    {
-      "stats": {
-        "LOW_HIST_VOLUME": 41,
-        "LOW_SCORE": 41,
-        "NO_ACCELERATION": 21,
-        "RESEARCH_LATE_SKIP": 1,
-        "RESEARCH_RISK_WIDE": 1,
-        "STALE_EXTENSION": 15,
-        "eval_times": 120,
-        "stage_EARLY": 1,
-        "stage_LATE": 1
-      },
-      "status": "OK",
-      "symbol": "MINAUSDT"
-    },
-    {
-      "stats": {
-        "LOW_SCORE": 58,
-        "NO_ACCELERATION": 47,
-        "STALE_EXTENSION": 14,
-        "eval_times": 120,
-        "negative": 1,
-        "seeded": 1,
-        "seeded_counterfactual": 1,
-        "stage_EARLY": 1
-      },
-      "status": "OK",
-      "symbol": "GRASSUSDT"
-    },
-    {
-      "stats": {
-        "LOW_HIST_VOLUME": 117,
-        "NO_ACCELERATION": 3,
-        "eval_times": 120
-      },
-      "status": "OK",
-      "symbol": "NMRUSDT"
     }
   ],
   "version": "MARKET_FIRST_HISTORICAL_ML_SEED_V1_2026_08_29"
