@@ -77,6 +77,11 @@ jobs:
             # workflow dispatch. This exposes the cadence that trading logic sees.
             python market_first_scheduler_health.py
 
+            # Scan the entire OKX USDT spot universe for explosive moves that can
+            # exist outside the futures universe (for example delisted perpetuals).
+            # Radar failure must never stop the main futures strategy.
+            python spot_extreme_move_radar.py || true
+
             # Onceki kapanmis TP1/TP2->BE ve TP3 islemlerinin sessiz golge
             # takibini her taramadan once guncelle. Sinyal/emir/Telegram uretmez.
             python post_result_shadow.py || true
@@ -113,6 +118,7 @@ jobs:
             performance.json \
             last_signals.json \
             trade_ledger.json \
+            spot_extreme_move_state.json \
             market_first_state.json \
             market_first_diagnostics.json \
             market_first_ml_samples.json \
