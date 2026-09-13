@@ -14,6 +14,7 @@ import market_first_final_execution_gate as final_execution_gate
 import market_first_live_complete_tracking as complete_tracking
 import market_first_pre_entry_shadow as pre_entry_shadow
 import market_first_profit_quality_v1 as profit_quality
+import market_first_profit_survival_gate as profit_survival_gate
 import market_first_promotion_reason_patch as promotion_reason_patch
 import market_first_reversal_capture_v2 as reversal_capture
 import market_first_runner as runner
@@ -35,8 +36,11 @@ def main() -> None:
     # shape and historical ledgers. It may only relax the structural target floor
     # for exceptionally strong aligned plans when the measured background edge is
     # positive and real-signal conversion is abnormally low.
-    # Final Execution Gate is installed last: it never promotes a setup, it only
-    # vetoes a would-be final signal when continuation/flow evidence is too weak.
+    # Final Execution Gate then vetoes weak continuation/flow evidence.
+    # Profit Survival is deliberately installed LAST: it never promotes a setup;
+    # after every other gate has accepted it, this layer can still refuse the
+    # trade when recent realised outcomes are poor or the daily stop circuit
+    # breaker has fired.
     # Daily report origin/BE patch is reporting-only and changes no live decision.
     daily_report_origin_patch.install()
     entry_accelerator.install()
@@ -54,6 +58,7 @@ def main() -> None:
     tao_quality_bridge.install()
     shadow_edge.install()
     final_execution_gate.install()
+    profit_survival_gate.install()
     print("MARKET FIRST DAILY REPORT ORIGIN/BE:", daily_report_origin_patch.summary())
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
     print("MARKET FIRST PROMOTION REASONS:", promotion_reason_patch.summary())
@@ -68,6 +73,7 @@ def main() -> None:
     print("MARKET FIRST TAO QUALITY BRIDGE:", tao_quality_bridge.summary())
     print("MARKET FIRST SHADOW EDGE:", shadow_edge.summary())
     print("MARKET FIRST FINAL EXECUTION GATE:", final_execution_gate.summary())
+    print("MARKET FIRST PROFIT SURVIVAL GATE:", profit_survival_gate.summary())
     try:
         runner.run()
     finally:
@@ -76,6 +82,7 @@ def main() -> None:
         print("MARKET FIRST TAO QUALITY RUN:", tao_quality_bridge.summary())
         print("MARKET FIRST SHADOW EDGE RUN:", shadow_edge.finish())
         print("MARKET FIRST FINAL EXECUTION RUN:", final_execution_gate.finish())
+        print("MARKET FIRST PROFIT SURVIVAL RUN:", profit_survival_gate.finish())
     sent = daily_report.maybe_send(runner.bot, runner._send)
     if sent:
         print("GÜNLÜK ÖZET TELEGRAM'A GÖNDERİLDİ.")
