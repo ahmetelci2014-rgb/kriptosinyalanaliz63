@@ -173666,6 +173666,11 @@
           "time": 1789285860,
           "event": "EXPIRED",
           "price": 17.08
+        },
+        {
+          "time": 1789312200,
+          "event": "POST_EXPIRY_PROTECTION",
+          "price": 17.39
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -173743,7 +173748,7 @@
       },
       "post_expiry_follow": {
         "version": "POST_EXPIRY_V1",
-        "status": "TRACKING",
+        "status": "RESOLVED",
         "restored": false,
         "expired_at": 1789285860,
         "expiry_price": 17.08,
@@ -173762,26 +173767,29 @@
             "directional_r": 6.613
           }
         ],
-        "last_checked_at": 1789311354,
+        "last_checked_at": 1789312284,
         "best_directional_r": 8.1944,
-        "worst_directional_r": 4.4566,
+        "worst_directional_r": -0.1438,
         "best_price": 16.82,
-        "worst_price": 17.08,
-        "first_event": null,
-        "first_event_at": null,
-        "resolved_at": null,
-        "elapsed_minutes": null,
-        "diagnosis": null,
-        "telegram_notified": false,
-        "last_price": 17.04,
-        "last_directional_r": 5.0316
+        "worst_price": 17.4,
+        "first_event": "PROTECTION",
+        "first_event_at": 1789312200,
+        "resolved_at": 1789312285,
+        "elapsed_minutes": 439,
+        "diagnosis": "Süre sınırı daha büyük kayıptan korudu; koruma seviyesi süre dolduktan sonra önce görüldü.",
+        "telegram_notified": true,
+        "last_price": 17.03,
+        "last_directional_r": 5.1754,
+        "first_event_price": 17.39
       },
-      "post_expiry_status": "TRACKING",
+      "post_expiry_status": "BE_AFTER_EXPIRY",
       "post_expiry_tp1": false,
       "post_expiry_sl": false,
       "post_expiry_best_r": 8.1944,
-      "post_expiry_worst_r": 4.4566,
-      "expiry_diagnosis": null
+      "post_expiry_worst_r": -0.1438,
+      "expiry_diagnosis": "Süre sınırı daha büyük kayıptan korudu; koruma seviyesi süre dolduktan sonra önce görüldü.",
+      "post_expiry_target": false,
+      "post_expiry_protection": true
     },
     "WIFUSDT_SHORT_MARKET_FIRST_V5_1789232580": {
       "trade_id": "WIFUSDT_SHORT_MARKET_FIRST_V5_1789232580",
@@ -175098,18 +175106,18 @@
             "directional_r_from_reference": -0.4495
           }
         },
-        "max_favorable_r": 0.3211,
+        "max_favorable_r": 1.2202,
         "max_adverse_r": 0.578,
-        "last_checked_at": 1789311439,
+        "last_checked_at": 1789312418,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
-          "code": "SL_KARISIK_SONUC",
-          "likely_cause": "KESIN_NEDEN_YOK",
-          "confidence": "LOW",
-          "summary": "Stop sonrasi fiyat yolu tek bir nedene isaret etmiyor.",
+          "code": "SL_SONRASI_TOPARLANMA",
+          "likely_cause": "DAR_STOP_OLASILIGI",
+          "confidence": "MEDIUM",
+          "summary": "Stop sonrasi anlamli toparlanma var; giris/stop zamanlamasi incelenmeli.",
           "evidence": {
-            "max_favorable_r_after_close": 0.3211,
+            "max_favorable_r_after_close": 1.2202,
             "max_adverse_r_after_close": 0.578,
             "risk_percent": 0.4498,
             "tp1_progress_at_send_percent": null,
@@ -175122,11 +175130,11 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 34.8
+        "last_price": 34.64
       }
     }
   },
-  "last_update": 1789311441,
+  "last_update": 1789312420,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -175144,10 +175152,10 @@
       "BE_KORUMASI_DOGRU": 16,
       "BE_NOTR_KARISIK": 28,
       "SL_SONRASI_TERS_YON_DEVAMI": 4,
-      "SL_SONRASI_TOPARLANMA": 50,
+      "SL_SONRASI_TOPARLANMA": 51,
       "BE_SONRASI_YENIDEN_HEDEF": 6,
       "SL_SONRASI_GUCLU_TOPARLANMA": 24,
-      "SL_KARISIK_SONUC": 12
+      "SL_KARISIK_SONUC": 11
     },
     "likely_cause_counts": {
       "BE_KORUMASI_ERKEN_OLABILIR": 33,
@@ -175156,13 +175164,13 @@
       "YON_VEYA_SETUP_GECERSIZLESMESI": 4,
       "ERKEN_GIRIS_OLASILIGI": 31,
       "GIRIS_STOP_ZAMANLAMASI": 12,
-      "KESIN_NEDEN_YOK": 12,
-      "DAR_STOP_OLASILIGI": 31
+      "KESIN_NEDEN_YOK": 11,
+      "DAR_STOP_OLASILIGI": 32
     },
-    "sl_recovery_total": 74,
+    "sl_recovery_total": 75,
     "be_maybe_early_total": 33,
     "be_protection_correct_total": 16,
-    "updated_at": 1789309085
+    "updated_at": 1789312120
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
