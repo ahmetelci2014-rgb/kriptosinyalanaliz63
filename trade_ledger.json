@@ -173071,7 +173071,7 @@
         },
         "max_favorable_r": 1.7448,
         "max_adverse_r": 0.5816,
-        "last_checked_at": 1789262842,
+        "last_checked_at": 1789263766,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -173093,7 +173093,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.4368
+        "last_price": 0.436
       },
       "post_result_shadow": {
         "version": "POST_RESULT_SHADOW_V1_2026_08_10",
@@ -173154,9 +173154,9 @@
         "max_adverse_r": 0.5816,
         "best_price": 0.4403,
         "worst_price": 0.4347,
-        "last_checked_at": 1789262748,
+        "last_checked_at": 1789263663,
         "completed_at": 0,
-        "last_price": 0.4376
+        "last_price": 0.4361
       }
     },
     "INJUSDT_LONG_MARKET_FIRST_V5_1789207411": {
@@ -173641,7 +173641,7 @@
       "worst_adverse_r": 0.2875,
       "best_favorable_price": 17.16,
       "worst_adverse_price": 17.41,
-      "last_market_price": 17.3,
+      "last_market_price": 17.29,
       "tp1_hit_at": 0,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -173672,7 +173672,7 @@
         "15m": "SHORT",
         "1h": "SHORT"
       },
-      "last_tracking_at": 1789262700
+      "last_tracking_at": 1789263660
     },
     "WIFUSDT_SHORT_MARKET_FIRST_V5_1789232580": {
       "trade_id": "WIFUSDT_SHORT_MARKET_FIRST_V5_1789232580",
@@ -173986,35 +173986,37 @@
         "confidence": "ORTA",
         "factors": [
           "Stop oncesinde islem en az 0.35R lehe hareket etti.",
-          "15M hacim kendi ortalamasinin altinda veya sinirdaydi."
+          "15M hacim kendi ortalamasinin altinda veya sinirdaydi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 27,
         "best_favorable_r": 0.438,
         "worst_adverse_r": 1.2044,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ZAYIF_TREND_HACIM",
-        "preliminary_label": "Zayıf trend/hacim",
+        "primary": "ONCE_LEHE_SONRA_TERS",
+        "label": "Önce lehe, sonra ters",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
-          "15M hacim oranı sınırın altındaydı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "15M hacim oranı sınırın altındaydı.",
+          "İşlem stop öncesinde anlamlı lehe hareket üretmişti."
         ],
         "metrics": {
           "duration_minutes": 27,
           "mfe_r": 0.438,
           "mae_r": 1.2044,
           "risk_percent": 0.4,
-          "return_minutes": null
+          "return_minutes": 245.0
         },
-        "updated_at": 1789248361
+        "updated_at": 1789263071
       },
       "result_diagnostics": {
         "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
@@ -174088,6 +174090,12 @@
           }
         },
         "last_price": 0.6907
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 245,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1789263071
       }
     },
     "HYPEUSDT_SHORT_MARKET_FIRST_V5_1789251447": {
@@ -174147,7 +174155,7 @@
       "worst_adverse_r": 0.6342,
       "best_favorable_price": 79.046,
       "worst_adverse_price": 79.833,
-      "last_market_price": 79.488,
+      "last_market_price": 79.373,
       "tp1_hit_at": 0,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -174178,10 +174186,10 @@
         "15m": "SHORT",
         "1h": "SHORT"
       },
-      "last_tracking_at": 1789262700
+      "last_tracking_at": 1789263660
     }
   },
-  "last_update": 1789262843,
+  "last_update": 1789263768,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
