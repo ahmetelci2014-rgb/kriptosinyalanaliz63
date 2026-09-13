@@ -7,6 +7,7 @@ outcome summary. PREP/EARLY/Big-Move observations remain internal evidence.
 from __future__ import annotations
 
 import market_first_big_move_capture as big_move_capture
+import market_first_candidate_visibility as candidate_visibility
 import market_first_daily_report as daily_report
 import market_first_daily_report_origin_patch as daily_report_origin_patch
 import market_first_entry_accelerator as entry_accelerator
@@ -37,10 +38,14 @@ def main() -> None:
     # for exceptionally strong aligned plans when the measured background edge is
     # positive and real-signal conversion is abnormally low.
     # Final Execution Gate then vetoes weak continuation/flow evidence.
-    # Profit Survival is deliberately installed LAST: it never promotes a setup;
-    # after every other gate has accepted it, this layer can still refuse the
-    # trade when recent realised outcomes are poor or the daily stop circuit
-    # breaker has fired.
+    # Profit Survival is deliberately installed after all trade gates: it never
+    # promotes a setup; after every other gate has accepted it, this layer can
+    # still refuse the trade when recent realised outcomes are poor or the daily
+    # stop circuit breaker has fired.
+    # Candidate Visibility is installed outside all of those gates. It does not
+    # turn a rejected candidate into a trade; it only exposes up to two very strong
+    # rejected trade-eligible candidates as clearly labelled non-final Telegram
+    # observations so the live funnel is no longer invisible.
     # Daily report origin/BE patch is reporting-only and changes no live decision.
     daily_report_origin_patch.install()
     entry_accelerator.install()
@@ -59,6 +64,7 @@ def main() -> None:
     shadow_edge.install()
     final_execution_gate.install()
     profit_survival_gate.install()
+    candidate_visibility.install()
     print("MARKET FIRST DAILY REPORT ORIGIN/BE:", daily_report_origin_patch.summary())
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
     print("MARKET FIRST PROMOTION REASONS:", promotion_reason_patch.summary())
@@ -74,6 +80,7 @@ def main() -> None:
     print("MARKET FIRST SHADOW EDGE:", shadow_edge.summary())
     print("MARKET FIRST FINAL EXECUTION GATE:", final_execution_gate.summary())
     print("MARKET FIRST PROFIT SURVIVAL GATE:", profit_survival_gate.summary())
+    print("MARKET FIRST CANDIDATE VISIBILITY:", candidate_visibility.summary())
     try:
         runner.run()
     finally:
@@ -83,6 +90,7 @@ def main() -> None:
         print("MARKET FIRST SHADOW EDGE RUN:", shadow_edge.finish())
         print("MARKET FIRST FINAL EXECUTION RUN:", final_execution_gate.finish())
         print("MARKET FIRST PROFIT SURVIVAL RUN:", profit_survival_gate.finish())
+        print("MARKET FIRST CANDIDATE VISIBILITY RUN:", candidate_visibility.summary())
     sent = daily_report.maybe_send(runner.bot, runner._send)
     if sent:
         print("GÜNLÜK ÖZET TELEGRAM'A GÖNDERİLDİ.")
