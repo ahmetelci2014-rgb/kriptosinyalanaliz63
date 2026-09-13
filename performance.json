@@ -37593,10 +37593,10 @@
     "2026-09-13": {
       "opened": 3,
       "radar": 0,
-      "tp1": 2,
-      "tp2": 0,
+      "tp1": 3,
+      "tp2": 1,
       "tp3": 0,
-      "sl": 1,
+      "sl": 2,
       "be": 1,
       "expired": 0,
       "long": 2,
@@ -37618,7 +37618,7 @@
           "opened": 1,
           "radar": 0,
           "tp1": 1,
-          "tp2": 0,
+          "tp2": 1,
           "tp3": 0,
           "sl": 0,
           "be": 0,
@@ -37650,16 +37650,28 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
+          "sl": 1,
+          "be": 0,
+          "expired": 0
+        },
+        "TRBUSDT": {
+          "opened": 0,
+          "radar": 0,
+          "tp1": 1,
+          "tp2": 0,
+          "tp3": 0,
           "sl": 0,
           "be": 0,
           "expired": 0
         }
       },
       "direction_stops": {
-        "SHORT": 1
+        "SHORT": 1,
+        "LONG": 1
       },
       "stop_times": {
-        "ASTERUSDT": 1789248361
+        "ASTERUSDT": 1789248361,
+        "UNIUSDT": 1789282568
       },
       "closed_times": {
         "JTOUSDT": 1789252267
@@ -37707,6 +37719,36 @@
           "exit": 0.8163498157,
           "source": "MARKET_FIRST_V5",
           "score": 92
+        },
+        {
+          "time": "09:55:59",
+          "symbol": "TRBUSDT",
+          "direction": "SHORT",
+          "result": "TP1",
+          "entry": 17.39,
+          "exit": 17.02500129,
+          "source": "MARKET_FIRST_V5",
+          "score": 94
+        },
+        {
+          "time": "09:56:03",
+          "symbol": "HYPEUSDT",
+          "direction": "SHORT",
+          "result": "TP2",
+          "entry": 79.631,
+          "exit": 78.65900410625,
+          "source": "MARKET_FIRST_V5",
+          "score": 96
+        },
+        {
+          "time": "09:56:08",
+          "symbol": "UNIUSDT",
+          "direction": "LONG",
+          "result": "SL",
+          "entry": 6.393,
+          "exit": 6.357,
+          "source": "MARKET_FIRST_V5",
+          "score": 94
         }
       ],
       "sl_after_tp1": 0,
@@ -37714,11 +37756,32 @@
       "sl_after_no_return": 2
     }
   },
-  "last_update": 1789280283,
+  "last_update": 1789282568,
   "last_open_summary": 1787843763,
   "last_status_message": 1787906216,
   "last_daily_report": "2026-08-27",
-  "sl_after_follow": {},
+  "sl_after_follow": {
+    "UNIUSDT_LONG_1789282568": {
+      "trade_id": "UNIUSDT_LONG_MARKET_FIRST_V5_1789280282",
+      "symbol": "UNIUSDT",
+      "direction": "LONG",
+      "source": "MARKET_FIRST_V5",
+      "entry": 6.393,
+      "tp1": 6.4799991405,
+      "tp2": 6.52349871075,
+      "tp3": 6.566998281,
+      "sl": 6.3592714286,
+      "score": 94,
+      "risk_percent": 0.528,
+      "stopped_at": 1789282568,
+      "stop_exit": 6.357,
+      "reported_checkpoints": [],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    }
+  },
   "telegram_result_guard": {
     "dc48c6f2bc36af573d20eab458cf05251738c17135a933dc77b333bb7ea769ac": 1786185949,
     "5ded6b782edb86bab37329fb38ea1d25718e7bd51b77ead037e620cbbf64909c": 1786189550,
