@@ -1,31 +1,31 @@
 {
   "version": "MARKET_FIRST_OBSERVABILITY_V1_2026_09_08",
-  "generated_at": 1789301592,
+  "generated_at": 1789302489,
   "definition": "Clean resolved preparation that reached TP1 or better without a real Telegram entry signal.",
-  "total_missed_moves": 1246,
-  "miss_rate_of_clean_resolved": 0.8402,
+  "total_missed_moves": 1244,
+  "miss_rate_of_clean_resolved": 0.84,
   "levels": {
-    "TP3_MISSED": 937,
-    "TP2_MISSED": 189,
+    "TP3_MISSED": 936,
+    "TP2_MISSED": 188,
     "TP1_MISSED": 120
   },
   "stages": {
-    "BEFORE_ENTRY_CONDITION": 860,
-    "FINAL_DELIVERY_GATE": 386
+    "BEFORE_ENTRY_CONDITION": 861,
+    "FINAL_DELIVERY_GATE": 383
   },
   "reasons": {
-    "ENTRY_CONDITION_NOT_REACHED": 860,
-    "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED": 379,
+    "ENTRY_CONDITION_NOT_REACHED": 861,
+    "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED": 376,
     "TELEGRAM_SEND_FAILED": 7
   },
   "directions": {
-    "SHORT": 906,
-    "LONG": 340
+    "SHORT": 901,
+    "LONG": 343
   },
   "outcomes": {
-    "TP3_REACHED": 793,
-    "SL_FIRST_THEN_TP3_RECOVERY": 139,
-    "TP2_REACHED": 139,
+    "TP3_REACHED": 791,
+    "SL_FIRST_THEN_TP3_RECOVERY": 140,
+    "TP2_REACHED": 138,
     "TP1_REACHED": 87,
     "SL_FIRST_THEN_TP2_RECOVERY": 44,
     "SL_FIRST_THEN_TP1_RECOVERY": 32,
@@ -33,12 +33,45 @@
     "AMBIGUOUS_THEN_TP3": 5
   },
   "timing": {
-    "avg_minutes_prep_to_tp1": 55.11,
-    "avg_minutes_entry_condition_to_tp1": 65.49,
-    "tp1_within_30m": 727,
-    "tp1_within_60m": 956
+    "avg_minutes_prep_to_tp1": 55.41,
+    "avg_minutes_entry_condition_to_tp1": 65.7,
+    "tp1_within_30m": 724,
+    "tp1_within_60m": 953
   },
   "top_missed": [
+    {
+      "episode_id": "XTZUSDT:LONG:1789283275",
+      "symbol": "XTZUSDT",
+      "direction": "LONG",
+      "score": 86,
+      "miss_level": "TP3_MISSED",
+      "miss_stage": "BEFORE_ENTRY_CONDITION",
+      "reason": "ENTRY_CONDITION_NOT_REACHED",
+      "outcome": "SL_FIRST_THEN_TP3_RECOVERY",
+      "prep_price": 0.2702,
+      "last_price": 0.2728,
+      "best_favorable_percent": 1.2213,
+      "best_favorable_r": 10.9565,
+      "worst_adverse_percent": 2.7017,
+      "entry_condition_met": false,
+      "entry_promoted": false,
+      "entry_signal_sent": false,
+      "tp1_before_entry_signal": true,
+      "minutes_prep_to_tp1": 314.63,
+      "minutes_entry_condition_to_tp1": null,
+      "market_regime": "BEAR",
+      "structure_5m": "LONG",
+      "structure_15m": "LONG",
+      "structure_1h": "LONG",
+      "volume_ratio_5m": 2.559,
+      "volume_ratio_15m": 2.032,
+      "extension_atr_5m": 1.355,
+      "risk_percent": 1.332,
+      "room_r": 2.31,
+      "first_at": 1789283275,
+      "tp1_at": 1789302153,
+      "resolved_at": 1789302153
+    },
     {
       "episode_id": "ETHFIUSDT:LONG:1789149791",
       "symbol": "ETHFIUSDT",
@@ -1325,39 +1358,6 @@
       "first_at": 1789127204,
       "tp1_at": 1789129014,
       "resolved_at": 1789129900
-    },
-    {
-      "episode_id": "ATOMUSDT:SHORT:1789047974",
-      "symbol": "ATOMUSDT",
-      "direction": "SHORT",
-      "score": 94,
-      "miss_level": "TP3_MISSED",
-      "miss_stage": "FINAL_DELIVERY_GATE",
-      "reason": "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED",
-      "outcome": "TP3_REACHED",
-      "prep_price": 1.799,
-      "last_price": 1.765,
-      "best_favorable_percent": 2.0567,
-      "best_favorable_r": 4.4965,
-      "worst_adverse_percent": 0.2779,
-      "entry_condition_met": true,
-      "entry_promoted": true,
-      "entry_signal_sent": false,
-      "tp1_before_entry_signal": true,
-      "minutes_prep_to_tp1": 29.95,
-      "minutes_entry_condition_to_tp1": null,
-      "market_regime": "BEAR",
-      "structure_5m": "SHORT",
-      "structure_15m": "SHORT",
-      "structure_1h": "SHORT",
-      "volume_ratio_5m": 0.831,
-      "volume_ratio_15m": 0.88,
-      "extension_atr_5m": 0.565,
-      "risk_percent": 0.608,
-      "room_r": 3.0,
-      "first_at": 1789047974,
-      "tp1_at": 1789049771,
-      "resolved_at": 1789054290
     }
   ]
 }
