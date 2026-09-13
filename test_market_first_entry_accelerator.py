@@ -77,6 +77,49 @@ class EntryAcceleratorTests(unittest.TestCase):
         self.assertEqual(diag.get("reason"), "FAST_SCORE_WEAK")
         self.assertFalse(promoted.get("trade_eligible"))
 
+    def _strict_plan(self):
+        return {
+            "status": "PREP",
+            "direction": "SHORT",
+            "score": 94,
+            "structure_5m": "SHORT",
+            "structure_15m": "SHORT",
+            "structure_1h": "SHORT",
+            "market_preferred_direction": "SHORT",
+            "zone_distance_percent": 0.42,
+            "volume_ratio_5m": 1.72,
+            "volume_ratio_15m": 1.58,
+            "risk_percent": 0.566,
+            "room_r": 3.26,
+            "extension_atr_5m": 1.249,
+        }
+
+    def test_a_plus_plus_prep_can_use_strict_early_path(self):
+        allowed, diag = accelerator.strict_early_entry_qualifies(self._strict_plan())
+        self.assertTrue(allowed)
+        self.assertEqual(diag.get("reason"), "STRICT_EARLY_A_PLUS_PLUS")
+
+    def test_countertrend_prep_cannot_use_strict_early_path(self):
+        plan = self._strict_plan()
+        plan["market_preferred_direction"] = "LONG"
+        allowed, diag = accelerator.strict_early_entry_qualifies(plan)
+        self.assertFalse(allowed)
+        self.assertEqual(diag.get("reason"), "MARKET_DIRECTION_NOT_ALIGNED")
+
+    def test_weak_volume_prep_cannot_use_strict_early_path(self):
+        plan = self._strict_plan()
+        plan["volume_ratio_5m"] = 1.10
+        allowed, diag = accelerator.strict_early_entry_qualifies(plan)
+        self.assertFalse(allowed)
+        self.assertEqual(diag.get("reason"), "VOLUME_5M")
+
+    def test_wide_risk_prep_cannot_use_strict_early_path(self):
+        plan = self._strict_plan()
+        plan["risk_percent"] = 0.95
+        allowed, diag = accelerator.strict_early_entry_qualifies(plan)
+        self.assertFalse(allowed)
+        self.assertEqual(diag.get("reason"), "RISK")
+
 
 if __name__ == "__main__":
     unittest.main()
