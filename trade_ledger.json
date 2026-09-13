@@ -173645,12 +173645,12 @@
       "tp1_hit": true,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "EXPIRED",
+      "r_result": 4.8519,
+      "exit_price": 17.08,
+      "closed_at": 1789285860,
+      "closed_day": "2026-09-13",
       "events": [
         {
           "time": 1789220880,
@@ -173661,6 +173661,11 @@
           "time": 1789282559,
           "event": "TP1",
           "price": 17.02500129
+        },
+        {
+          "time": 1789285860,
+          "event": "EXPIRED",
+          "price": 17.08
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -173690,7 +173695,7 @@
       "worst_adverse_r": 0.2875,
       "best_favorable_price": 17.02,
       "worst_adverse_price": 17.41,
-      "last_market_price": 17.1,
+      "last_market_price": 17.09,
       "tp1_hit_at": 1789282500,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -173721,7 +173726,55 @@
         "15m": "SHORT",
         "1h": "SHORT"
       },
-      "last_tracking_at": 1789285260
+      "last_tracking_at": 1789285500,
+      "duration_minutes": 1083,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "YON KISMEN DOGRU, HEDEF TAMAMLANMADI",
+        "confidence": "ORTA",
+        "factors": [
+          "Islem belirlenen takip suresi icinde TP3 veya SL ile kapanmadi."
+        ],
+        "duration_minutes": 1083,
+        "best_favorable_r": 5.3191,
+        "worst_adverse_r": 0.2875,
+        "provisional": false,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "post_expiry_follow": {
+        "version": "POST_EXPIRY_V1",
+        "status": "TRACKING",
+        "restored": false,
+        "expired_at": 1789285860,
+        "expiry_price": 17.08,
+        "expiry_net_r": 4.8519,
+        "target_label": "TP3",
+        "target_price": 16.66000258,
+        "protection_label": "BE",
+        "protection_price": 17.39,
+        "timeframe": "5m",
+        "max_track_hours": 24,
+        "checkpoints": [],
+        "last_checked_at": 1789286160,
+        "best_directional_r": 5.0316,
+        "worst_directional_r": 4.4566,
+        "best_price": 17.04,
+        "worst_price": 17.08,
+        "first_event": null,
+        "first_event_at": null,
+        "resolved_at": null,
+        "elapsed_minutes": null,
+        "diagnosis": null,
+        "telegram_notified": false,
+        "last_price": 17.04,
+        "last_directional_r": 5.0316
+      },
+      "post_expiry_status": "TRACKING",
+      "post_expiry_tp1": false,
+      "post_expiry_sl": false,
+      "post_expiry_best_r": 5.0316,
+      "post_expiry_worst_r": 4.4566,
+      "expiry_diagnosis": null
     },
     "WIFUSDT_SHORT_MARKET_FIRST_V5_1789232580": {
       "trade_id": "WIFUSDT_SHORT_MARKET_FIRST_V5_1789232580",
@@ -174208,13 +174261,13 @@
       "rr_tp3": 4.069,
       "sent_price": 79.632,
       "entry_distance_at_send_percent": 0.0012557923421842936,
-      "best_favorable_percent": 1.3914,
+      "best_favorable_percent": 1.458,
       "worst_adverse_percent": 0.2537,
-      "best_favorable_r": 3.4785,
+      "best_favorable_r": 3.6449,
       "worst_adverse_r": 0.6342,
-      "best_favorable_price": 78.523,
+      "best_favorable_price": 78.47,
       "worst_adverse_price": 79.833,
-      "last_market_price": 78.66,
+      "last_market_price": 78.51,
       "tp1_hit_at": 1789271880,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -174245,7 +174298,7 @@
         "15m": "SHORT",
         "1h": "SHORT"
       },
-      "last_tracking_at": 1789285260
+      "last_tracking_at": 1789286100
     },
     "FILUSDT_LONG_MARKET_FIRST_V5_1789267397": {
       "trade_id": "FILUSDT_LONG_MARKET_FIRST_V5_1789267397",
@@ -174309,7 +174362,7 @@
       "worst_adverse_r": 0.2173,
       "best_favorable_price": 0.8218,
       "worst_adverse_price": 0.8047,
-      "last_market_price": 0.8123,
+      "last_market_price": 0.8102,
       "tp1_hit_at": 1789273800,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -174340,7 +174393,7 @@
         "15m": "LONG",
         "1h": "LONG"
       },
-      "last_tracking_at": 1789285260
+      "last_tracking_at": 1789286100
     },
     "UNIUSDT_LONG_MARKET_FIRST_V5_1789280282": {
       "trade_id": "UNIUSDT_LONG_MARKET_FIRST_V5_1789280282",
@@ -174498,11 +174551,17 @@
             "candle_time": 1789284300,
             "close_price": 6.328,
             "directional_r_from_reference": -0.8598
+          },
+          "60": {
+            "target_at": 1789286168,
+            "candle_time": 1789286100,
+            "close_price": 6.295,
+            "directional_r_from_reference": -1.8382
           }
         },
         "max_favorable_r": 0.0296,
-        "max_adverse_r": 2.0457,
-        "last_checked_at": 1789285371,
+        "max_adverse_r": 2.0754,
+        "last_checked_at": 1789286269,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -174512,7 +174571,7 @@
           "summary": "Stop sonrasi ters hareket devam etti; yon/setup hatasi olasiligi yuksek.",
           "evidence": {
             "max_favorable_r_after_close": 0.0296,
-            "max_adverse_r_after_close": 2.0457,
+            "max_adverse_r_after_close": 2.0754,
             "risk_percent": 0.5276,
             "tp1_progress_at_send_percent": null,
             "entry_distance_at_send_percent": 0.06256843422494053,
@@ -174524,11 +174583,11 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 6.319
+        "last_price": 6.296
       }
     }
   },
-  "last_update": 1789285373,
+  "last_update": 1789286271,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
