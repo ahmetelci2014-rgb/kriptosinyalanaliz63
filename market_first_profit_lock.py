@@ -17,7 +17,7 @@ PROFIT_LOCK_BE instead of a full stop.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
+from typing import Any, Dict, Iterable, Mapping, Optional
 
 import main as bot
 
@@ -179,8 +179,6 @@ def _correct_profit_lock_ledger(signal: Mapping[str, Any]) -> None:
                 "Manuel koruma talimatı sonrası kalan işlem girişten kapandı.",
             ],
         }
-        # Keep the standard BE event for durable duplicate protection, but attach
-        # an explicit semantic event for later cohort analysis.
         events = trade.setdefault("events", [])
         if not any(str(item.get("event") or "").upper() == "PROFIT_LOCK_BE" for item in events):
             events.append({
@@ -233,13 +231,34 @@ def _arm_message(symbol: str, signal: Mapping[str, Any]) -> str:
     )
 
 
-def _new_candles(signal: Mapping[str, Any], candles: Iterable[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
-    last_checked = int(_sf(signal.get("last_checked_at"), _sf(signal.get("opened_at"), 0.0)) or 0)
+def _new_closed_candles(
+    signal: Mapping[str, Any],
+    candles: Iterable[Mapping[str, Any]],
+    timeframe_seconds: int,
+    now: Optional[int] = None,
+) -> list[Mapping[str, Any]]:
+    """Select candles that closed after the previous wall-clock check.
+
+    main.py stores last_checked_at as now_ts(), not as the candle start time. A
+    raw `candle_time > last_checked_at` comparison would therefore miss normal
+    completed candles. Compare candle END time to the previous check instead and
+    exclude the still-forming candle.
+    """
+    last_checked = int(
+        _sf(signal.get("last_checked_at"), _sf(signal.get("opened_at"), 0.0)) or 0
+    )
+    now_value = int(now if now is not None else bot.now_ts())
+    selected = []
+    for item in candles:
+        candle_time = int(_sf(item.get("time"), 0.0) or 0)
+        candle_end = candle_time + timeframe_seconds
+        if candle_end <= last_checked:
+            continue
+        if candle_end > now_value:
+            continue
+        selected.append(item)
     return sorted(
-        [
-            item for item in candles
-            if int(_sf(item.get("time"), 0.0) or 0) > last_checked
-        ],
+        selected,
         key=lambda item: int(_sf(item.get("time"), 0.0) or 0),
     )
 
@@ -260,7 +279,6 @@ def install() -> None:
 
         updated = dict(open_signals)
         changed = False
-        removed = set()
         timeframe_seconds = _timeframe_seconds(getattr(bot, "TRACK_TIMEFRAME", "5m"))
 
         for key, raw_signal in list(updated.items()):
@@ -286,7 +304,12 @@ def install() -> None:
                 since_seconds=max(opened_at, last_checked - 10 * 60),
                 limit=getattr(bot, "TRACK_LIMIT", 120),
             )
-            fresh = _new_candles(signal, candles or [])
+            fresh = _new_closed_candles(
+                signal,
+                candles or [],
+                timeframe_seconds,
+                now=bot.now_ts(),
+            )
             if not fresh:
                 continue
 
@@ -301,17 +324,13 @@ def install() -> None:
                     outcome = protected_candle_outcome(signal, candle)
                     if outcome == "BE":
                         if _close_at_profit_lock_be(symbol, signal, original_close):
-                            removed.add(key)
                             updated.pop(key, None)
                             changed = True
                         break
                     if outcome in {"TP1", "AMBIGUOUS"}:
-                        # Existing TP1/same-candle resolver remains authoritative.
                         break
                 continue
 
-            # Find a fresh, confirmed trigger. Protection starts with the next
-            # candle, never retroactively inside the trigger candle.
             arm_index = None
             for idx, candle in enumerate(fresh):
                 if candle_can_arm(signal, candle):
@@ -338,8 +357,8 @@ def install() -> None:
             changed = True
             print("PROFIT LOCK AKTİF:", symbol, direction, f"{TRIGGER_R:.2f}R")
 
-            # If already-fetched later candles returned to entry, resolve them now
-            # before the legacy SL logic sees the original stop.
+            # If already-fetched later closed candles returned to entry, resolve
+            # them before legacy SL logic sees the original stop.
             for candle in fresh[arm_index + 1:]:
                 candle_time = int(_sf(candle.get("time"), 0.0) or 0)
                 if candle_time < int(signal["profit_lock_effective_at"]):
@@ -347,7 +366,6 @@ def install() -> None:
                 outcome = protected_candle_outcome(signal, candle)
                 if outcome == "BE":
                     if _close_at_profit_lock_be(symbol, signal, original_close):
-                        removed.add(key)
                         updated.pop(key, None)
                         changed = True
                     break
@@ -357,8 +375,7 @@ def install() -> None:
         if changed:
             bot.save_json_file(bot.OPEN_SIGNALS_FILE, updated)
 
-        # The original lifecycle remains authoritative for every non-profit-lock
-        # event and for all still-open signals.
+        # Existing lifecycle stays authoritative for every non-profit-lock event.
         return original_check(exchange)
 
     bot.check_open_signals = check_open_signals_with_profit_lock
@@ -370,6 +387,7 @@ def summary() -> Dict[str, Any]:
         "trigger_r": TRIGGER_R,
         "min_trigger_close_r": MIN_TRIGGER_CLOSE_R,
         "pre_tp1_only": True,
+        "closed_candles_only": True,
         "effective_from_next_candle": True,
         "manual_sl_instruction": True,
         "exchange_orders": False,
