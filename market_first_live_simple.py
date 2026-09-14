@@ -25,6 +25,7 @@ import market_first_reversal_capture_v2 as reversal_capture
 import market_first_runner as runner
 import market_first_shadow_edge as shadow_edge
 import market_first_simple_mode as simple_mode
+import market_first_structure_fibo_contact as structure_fibo
 import market_first_swing_2h_tracking_fix as swing_tracking_fix
 import market_first_tao_quality_bridge as tao_quality_bridge
 import market_first_tao_quality_profit_patch as tao_profit_patch
@@ -33,25 +34,15 @@ import market_first_target_overlay as target_overlay
 
 
 def main() -> None:
-    # Order matters. Entry Accelerator first installs the ordinary/current-market
-    # PREP->ENTRY path. Background Live Bridge then wraps that evaluator and may
-    # promote only the PREP plans that the normal accelerator did not promote,
-    # using validated background TP-first evidence. Every downstream live gate
-    # remains mandatory.
-    #
-    # Profit Quality installs the high-profit structural gate. TAO and Shadow Edge
-    # remain conservative bridges; neither may bypass final execution or survival.
-    #
-    # Profit Survival V2 patches the V1 health source BEFORE V1 installs its final
-    # decision wrapper. This gives the same final gate a two-day realised memory,
-    # 2-stop intraday RECOVERY and 3-stop HALT without duplicating trade logic.
-    # Candidate Survival then makes observational candidate messages obey exactly
-    # the same health state; HALT cannot leak a tempting manual candidate alert.
-    # Profit Lock patches lifecycle tracking only: after a confirmed +1.50R move it
-    # can recommend BE protection before TP1. It never places an exchange order.
+    # Order matters. Entry Accelerator installs the ordinary PREP->ENTRY path.
+    # Background Live Bridge adds validated shadow-history promotion. Structure
+    # Fibo then sees only the PREPs still not promoted and may convert a confirmed
+    # 1H HL->HH/LH->LL + closed 5M 0.618-0.65 contact into ENTRY. None of these
+    # bridges bypass the common downstream quality/execution/survival stack.
     daily_report_origin_patch.install()
     entry_accelerator.install()
     background_live_bridge.install()
+    structure_fibo.install()
     promotion_reason_patch.install()
     swing_tracking_fix.install()
     complete_tracking.install_complete_tracking()
@@ -67,15 +58,22 @@ def main() -> None:
     shadow_edge.install()
     final_execution_gate.install()
 
+    # Profit Survival V2 patches the V1 health source before V1 installs its final
+    # wrapper. Candidate visibility and FIB entries remain subordinate to it.
     profit_survival_v2.install()
     profit_survival_gate.install()
     candidate_survival_patch.install()
     candidate_visibility.install()
     profit_lock.install()
 
+    # Profit Quality owns the final trade text, so add the FIB model label only
+    # after all message-formatting layers are installed.
+    structure_fibo.install_presentation()
+
     print("MARKET FIRST DAILY REPORT ORIGIN/BE:", daily_report_origin_patch.summary())
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
     print("MARKET FIRST BACKGROUND LIVE BRIDGE:", background_live_bridge.summary())
+    print("MARKET FIRST STRUCTURE FIBO CONTACT:", structure_fibo.summary())
     print("MARKET FIRST PROMOTION REASONS:", promotion_reason_patch.summary())
     print("MARKET FIRST 2H SWING TRACKING FIX:", swing_tracking_fix.status())
     print("MARKET FIRST PRE-ENTRY SHADOW:", pre_entry_shadow.summary())
@@ -104,6 +102,7 @@ def main() -> None:
         print("MARKET FIRST PROFIT SURVIVAL RUN:", profit_survival_gate.finish())
         print("MARKET FIRST PROFIT SURVIVAL V2 RUN:", profit_survival_v2.finish())
         print("MARKET FIRST BACKGROUND LIVE BRIDGE RUN:", background_live_bridge.finish())
+        print("MARKET FIRST STRUCTURE FIBO RUN:", structure_fibo.finish())
         print("MARKET FIRST CANDIDATE SURVIVAL RUN:", candidate_survival_patch.summary())
         print("MARKET FIRST CANDIDATE VISIBILITY RUN:", candidate_visibility.summary())
         print("MARKET FIRST PROFIT LOCK RUN:", profit_lock.summary())
