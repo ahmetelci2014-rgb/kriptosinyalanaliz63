@@ -105,7 +105,7 @@ def test_weak_recent_background_does_not_enable_bridge():
 
 
 def test_directional_background_weakness_blocks_that_side():
-    history = _history(wins=12, losses=4, direction="LONG")
+    history = _history(wins=30, losses=4, direction="LONG")
     # Add a poor SHORT cohort while keeping global ENTRY_PLAN evidence positive.
     for index in range(2):
         history["episodes"][f"sw{index}"] = {
@@ -130,6 +130,7 @@ def test_directional_background_weakness_blocks_that_side():
         {"entry_plan_clean": {"tp1_first": 1019, "sl_first": 438}},
         {"v2_tp1_first": 254, "v2_sl_first": 177},
     )
+    assert profile["enabled"] is True
     plan = _plan()
     plan["direction"] = "SHORT"
     plan["structure_5m"] = "SHORT"
