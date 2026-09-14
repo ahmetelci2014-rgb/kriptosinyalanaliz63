@@ -66,18 +66,21 @@ def test_short_fibonacci_band_is_symmetric():
 
 
 def test_pivots_require_confirmed_right_hand_bars():
+    # The helper intentionally asks for a little more context than the bare
+    # mathematical pivot minimum. Keep enough bars while still proving that a
+    # late high without two bars on its right cannot be confirmed/repainted in.
     frame = pd.DataFrame({
-        "open": [10, 10, 10, 10, 10, 10, 10],
-        "high": [10, 11, 15, 12, 11, 17, 20],
-        "low": [9, 8, 7, 8, 9, 8, 7],
-        "close": [10, 10, 10, 10, 10, 10, 10],
-        "volume": [100] * 7,
+        "open": [10] * 9,
+        "high": [10, 11, 15, 12, 11, 13, 12, 17, 20],
+        "low": [9, 8, 7, 8, 9, 8, 9, 8, 7],
+        "close": [10] * 9,
+        "volume": [100] * 9,
     })
     points = fib._pivot_points(frame)
-    # index 2 is confirmed by two bars to its right. The later high at index 5/6
+    # index 2 is confirmed by two bars to its right. The later high at index 7/8
     # cannot become a pivot because two closed right-side bars do not exist.
     assert any(item["type"] == "H" and item["index"] == 2 for item in points)
-    assert not any(item["type"] == "H" and item["index"] >= 5 for item in points)
+    assert not any(item["type"] == "H" and item["index"] >= 7 for item in points)
 
 
 def test_contact_uses_closed_candle_and_ignores_forming_last_bar():
