@@ -6,6 +6,7 @@ small number of strong candidates when survival mode permits them.
 """
 from __future__ import annotations
 
+import market_first_background_live_bridge as background_live_bridge
 import market_first_big_move_capture as big_move_capture
 import market_first_candidate_survival_patch as candidate_survival_patch
 import market_first_candidate_visibility as candidate_visibility
@@ -32,9 +33,14 @@ import market_first_target_overlay as target_overlay
 
 
 def main() -> None:
-    # Order matters. Profit Quality first installs the high-profit structural gate.
-    # TAO and Shadow Edge remain conservative bridges; neither may bypass the final
-    # execution or survival layers.
+    # Order matters. Entry Accelerator first installs the ordinary/current-market
+    # PREP->ENTRY path. Background Live Bridge then wraps that evaluator and may
+    # promote only the PREP plans that the normal accelerator did not promote,
+    # using validated background TP-first evidence. Every downstream live gate
+    # remains mandatory.
+    #
+    # Profit Quality installs the high-profit structural gate. TAO and Shadow Edge
+    # remain conservative bridges; neither may bypass final execution or survival.
     #
     # Profit Survival V2 patches the V1 health source BEFORE V1 installs its final
     # decision wrapper. This gives the same final gate a two-day realised memory,
@@ -45,6 +51,7 @@ def main() -> None:
     # can recommend BE protection before TP1. It never places an exchange order.
     daily_report_origin_patch.install()
     entry_accelerator.install()
+    background_live_bridge.install()
     promotion_reason_patch.install()
     swing_tracking_fix.install()
     complete_tracking.install_complete_tracking()
@@ -68,6 +75,7 @@ def main() -> None:
 
     print("MARKET FIRST DAILY REPORT ORIGIN/BE:", daily_report_origin_patch.summary())
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
+    print("MARKET FIRST BACKGROUND LIVE BRIDGE:", background_live_bridge.summary())
     print("MARKET FIRST PROMOTION REASONS:", promotion_reason_patch.summary())
     print("MARKET FIRST 2H SWING TRACKING FIX:", swing_tracking_fix.status())
     print("MARKET FIRST PRE-ENTRY SHADOW:", pre_entry_shadow.summary())
@@ -95,6 +103,7 @@ def main() -> None:
         print("MARKET FIRST FINAL EXECUTION RUN:", final_execution_gate.finish())
         print("MARKET FIRST PROFIT SURVIVAL RUN:", profit_survival_gate.finish())
         print("MARKET FIRST PROFIT SURVIVAL V2 RUN:", profit_survival_v2.finish())
+        print("MARKET FIRST BACKGROUND LIVE BRIDGE RUN:", background_live_bridge.finish())
         print("MARKET FIRST CANDIDATE SURVIVAL RUN:", candidate_survival_patch.summary())
         print("MARKET FIRST CANDIDATE VISIBILITY RUN:", candidate_visibility.summary())
         print("MARKET FIRST PROFIT LOCK RUN:", profit_lock.summary())
