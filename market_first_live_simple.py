@@ -1,12 +1,13 @@
 """Simplified live entry point for Market First.
 
-All analysis/tracking layers stay active internally. Telegram shows only the
-single final quality-filtered trade entry, trade results and the compact daily
-outcome summary. PREP/EARLY/Big-Move observations remain internal evidence.
+All analysis/tracking layers stay active internally. Telegram shows only useful
+live decisions: final trades/results, capital-protection instructions and a very
+small number of strong candidates when survival mode permits them.
 """
 from __future__ import annotations
 
 import market_first_big_move_capture as big_move_capture
+import market_first_candidate_survival_patch as candidate_survival_patch
 import market_first_candidate_visibility as candidate_visibility
 import market_first_daily_report as daily_report
 import market_first_daily_report_origin_patch as daily_report_origin_patch
@@ -14,8 +15,10 @@ import market_first_entry_accelerator as entry_accelerator
 import market_first_final_execution_gate as final_execution_gate
 import market_first_live_complete_tracking as complete_tracking
 import market_first_pre_entry_shadow as pre_entry_shadow
+import market_first_profit_lock as profit_lock
 import market_first_profit_quality_v1 as profit_quality
 import market_first_profit_survival_gate as profit_survival_gate
+import market_first_profit_survival_v2 as profit_survival_v2
 import market_first_promotion_reason_patch as promotion_reason_patch
 import market_first_reversal_capture_v2 as reversal_capture
 import market_first_runner as runner
@@ -29,24 +32,17 @@ import market_first_target_overlay as target_overlay
 
 
 def main() -> None:
-    # Order matters. Profit Quality first installs the single-message/high-profit
-    # gate. The TAO compatibility patch then permits only the strict volume-burst
-    # -> pullback profile to use a 0.50x current-volume floor, and the bridge sits
-    # outside that so a qualifying PREP can enter the normal trade pipeline.
-    # Shadow Edge is installed after those layers so it can use their final plan
-    # shape and historical ledgers. It may only relax the structural target floor
-    # for exceptionally strong aligned plans when the measured background edge is
-    # positive and real-signal conversion is abnormally low.
-    # Final Execution Gate then vetoes weak continuation/flow evidence.
-    # Profit Survival is deliberately installed after all trade gates: it never
-    # promotes a setup; after every other gate has accepted it, this layer can
-    # still refuse the trade when recent realised outcomes are poor or the daily
-    # stop circuit breaker has fired.
-    # Candidate Visibility is installed outside all of those gates. It does not
-    # turn a rejected candidate into a trade; it only exposes up to two very strong
-    # rejected trade-eligible candidates as clearly labelled non-final Telegram
-    # observations so the live funnel is no longer invisible.
-    # Daily report origin/BE patch is reporting-only and changes no live decision.
+    # Order matters. Profit Quality first installs the high-profit structural gate.
+    # TAO and Shadow Edge remain conservative bridges; neither may bypass the final
+    # execution or survival layers.
+    #
+    # Profit Survival V2 patches the V1 health source BEFORE V1 installs its final
+    # decision wrapper. This gives the same final gate a two-day realised memory,
+    # 2-stop intraday RECOVERY and 3-stop HALT without duplicating trade logic.
+    # Candidate Survival then makes observational candidate messages obey exactly
+    # the same health state; HALT cannot leak a tempting manual candidate alert.
+    # Profit Lock patches lifecycle tracking only: after a confirmed +1.50R move it
+    # can recommend BE protection before TP1. It never places an exchange order.
     daily_report_origin_patch.install()
     entry_accelerator.install()
     promotion_reason_patch.install()
@@ -63,8 +59,13 @@ def main() -> None:
     tao_quality_bridge.install()
     shadow_edge.install()
     final_execution_gate.install()
+
+    profit_survival_v2.install()
     profit_survival_gate.install()
+    candidate_survival_patch.install()
     candidate_visibility.install()
+    profit_lock.install()
+
     print("MARKET FIRST DAILY REPORT ORIGIN/BE:", daily_report_origin_patch.summary())
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
     print("MARKET FIRST PROMOTION REASONS:", promotion_reason_patch.summary())
@@ -79,8 +80,11 @@ def main() -> None:
     print("MARKET FIRST TAO QUALITY BRIDGE:", tao_quality_bridge.summary())
     print("MARKET FIRST SHADOW EDGE:", shadow_edge.summary())
     print("MARKET FIRST FINAL EXECUTION GATE:", final_execution_gate.summary())
+    print("MARKET FIRST PROFIT SURVIVAL V2:", profit_survival_v2.summary())
     print("MARKET FIRST PROFIT SURVIVAL GATE:", profit_survival_gate.summary())
+    print("MARKET FIRST CANDIDATE SURVIVAL:", candidate_survival_patch.summary())
     print("MARKET FIRST CANDIDATE VISIBILITY:", candidate_visibility.summary())
+    print("MARKET FIRST PROFIT LOCK:", profit_lock.summary())
     try:
         runner.run()
     finally:
@@ -90,7 +94,10 @@ def main() -> None:
         print("MARKET FIRST SHADOW EDGE RUN:", shadow_edge.finish())
         print("MARKET FIRST FINAL EXECUTION RUN:", final_execution_gate.finish())
         print("MARKET FIRST PROFIT SURVIVAL RUN:", profit_survival_gate.finish())
+        print("MARKET FIRST PROFIT SURVIVAL V2 RUN:", profit_survival_v2.finish())
+        print("MARKET FIRST CANDIDATE SURVIVAL RUN:", candidate_survival_patch.summary())
         print("MARKET FIRST CANDIDATE VISIBILITY RUN:", candidate_visibility.summary())
+        print("MARKET FIRST PROFIT LOCK RUN:", profit_lock.summary())
     sent = daily_report.maybe_send(runner.bot, runner._send)
     if sent:
         print("GÜNLÜK ÖZET TELEGRAM'A GÖNDERİLDİ.")
