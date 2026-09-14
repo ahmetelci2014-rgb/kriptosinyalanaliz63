@@ -175445,12 +175445,12 @@
       "tp1_hit": true,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "TP1_SONRASI_BE",
+      "r_result": 3.07,
+      "exit_price": 4.091,
+      "closed_at": 1789352164,
+      "closed_day": "2026-09-14",
       "events": [
         {
           "time": 1789334296,
@@ -175461,6 +175461,11 @@
           "time": 1789338055,
           "event": "TP1",
           "price": 3.988725
+        },
+        {
+          "time": 1789352164,
+          "event": "BE",
+          "price": 4.091
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -175490,7 +175495,7 @@
       "worst_adverse_r": 0.2401,
       "best_favorable_price": 3.966,
       "worst_adverse_price": 4.095,
-      "last_market_price": 4.077,
+      "last_market_price": 4.092,
       "tp1_hit_at": 1789337760,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -175521,7 +175526,89 @@
         "15m": "SHORT",
         "1h": "SHORT"
       },
-      "last_tracking_at": 1789351860
+      "last_tracking_at": 1789352040,
+      "duration_minutes": 297,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "YON DOGRU, DEVAM GUCU ZAYIFLADI",
+        "confidence": "YUKSEK",
+        "factors": [
+          "Islem hedef gordukten sonra kalan kisim giristen kapandi."
+        ],
+        "duration_minutes": 297,
+        "best_favorable_r": 7.5043,
+        "worst_adverse_r": 0.2401,
+        "provisional": false,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "result_diagnostics": {
+        "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
+        "shadow_only": true,
+        "status": "TRACKING",
+        "final_result": "TP1_SONRASI_BE",
+        "started_at": 1789352164,
+        "measurement_start_at": 1789352220,
+        "reference_price": 4.091,
+        "reference_label": "BE_EXIT",
+        "watched_levels": {
+          "TP2": 3.9375875,
+          "TP3": 3.88645
+        },
+        "reached_levels": {},
+        "checkpoints": {},
+        "max_favorable_r": 0.3602,
+        "max_adverse_r": 1.681,
+        "last_checked_at": 1789352860,
+        "completed_at": 0,
+        "diagnosis": {
+          "status": "PROVISIONAL",
+          "code": "BE_NOTR_KARISIK",
+          "likely_cause": "BE_AYARI_ICIN_DAHA_COK_VERI",
+          "confidence": "LOW",
+          "summary": "BE icin net erken/koruyucu sonuc yok; daha fazla ornek gerekli.",
+          "evidence": {
+            "max_favorable_r_after_close": 0.3602,
+            "max_adverse_r_after_close": 1.681,
+            "risk_percent": 0.4072,
+            "tp1_progress_at_send_percent": null,
+            "entry_distance_at_send_percent": 0.14666340747983933,
+            "reached_tp1_after_close": false,
+            "reached_tp2_after_close": false,
+            "reached_tp3_after_close": false,
+            "tp1_minutes_after_close": null,
+            "tp2_minutes_after_close": null,
+            "tp3_minutes_after_close": null
+          }
+        },
+        "last_price": 4.115
+      },
+      "post_result_shadow": {
+        "version": "POST_RESULT_SHADOW_V1_2026_08_10",
+        "shadow_only": true,
+        "status": "TRACKING",
+        "final_result": "TP1_SONRASI_BE",
+        "started_at": 1789352164,
+        "measurement_start_at": 1789352220,
+        "reference_label": "BE_ENTRY",
+        "reference_price": 4.091,
+        "timeframe": "1m",
+        "checkpoints": {},
+        "watched_levels": {
+          "TP1": 3.988725,
+          "TP2": 3.9375875,
+          "TP3": 3.88645
+        },
+        "reached_levels": {},
+        "max_favorable_percent": 0.1467,
+        "max_adverse_percent": 0.6844,
+        "max_favorable_r": 0.3602,
+        "max_adverse_r": 1.681,
+        "best_price": 4.085,
+        "worst_price": 4.119,
+        "last_checked_at": 1789352760,
+        "completed_at": 0,
+        "last_price": 4.112
+      }
     },
     "AAVEUSDT_LONG_MARKET_FIRST_V5_1789335187": {
       "trade_id": "AAVEUSDT_LONG_MARKET_FIRST_V5_1789335187",
@@ -175904,7 +175991,7 @@
         },
         "max_favorable_r": 0.9977,
         "max_adverse_r": 4.4092,
-        "last_checked_at": 1789351997,
+        "last_checked_at": 1789352860,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -175926,11 +176013,11 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.00767
+        "last_price": 0.007696
       }
     }
   },
-  "last_update": 1789351999,
+  "last_update": 1789352862,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -175941,12 +176028,12 @@
   },
   "result_diagnostics_summary": {
     "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
-    "tracked_total": 170,
+    "tracked_total": 171,
     "completed_total": 169,
     "diagnosis_counts": {
       "BE_SONRASI_TP3": 27,
       "BE_KORUMASI_DOGRU": 16,
-      "BE_NOTR_KARISIK": 28,
+      "BE_NOTR_KARISIK": 29,
       "SL_SONRASI_TERS_YON_DEVAMI": 5,
       "SL_SONRASI_TOPARLANMA": 52,
       "BE_SONRASI_YENIDEN_HEDEF": 6,
@@ -175956,7 +176043,7 @@
     "likely_cause_counts": {
       "BE_KORUMASI_ERKEN_OLABILIR": 33,
       "SERMAYE_KORUMASI_ISABETLI": 16,
-      "BE_AYARI_ICIN_DAHA_COK_VERI": 28,
+      "BE_AYARI_ICIN_DAHA_COK_VERI": 29,
       "YON_VEYA_SETUP_GECERSIZLESMESI": 5,
       "ERKEN_GIRIS_OLASILIGI": 31,
       "GIRIS_STOP_ZAMANLAMASI": 12,
@@ -175966,7 +176053,7 @@
     "sl_recovery_total": 76,
     "be_maybe_early_total": 33,
     "be_protection_correct_total": 16,
-    "updated_at": 1789350824
+    "updated_at": 1789352265
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
