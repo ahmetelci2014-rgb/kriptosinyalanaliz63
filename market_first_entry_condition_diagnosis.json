@@ -1,6 +1,6 @@
 {
   "version": "MARKET_FIRST_ENTRY_CONDITION_DIAGNOSIS_V1_2026_09_08",
-  "generated_at": 1789415004,
+  "generated_at": 1789415883,
   "source_ledger_version": "MARKET_FIRST_OPPORTUNITY_LEDGER_V1_2026_09_05",
   "definition": "Clean resolved preparations that reached TP1+ without a Telegram trade and never recorded ENTRY condition. Latest-plan flags are diagnostic snapshots, not guaranteed co-temporal blocker proofs.",
   "reference_thresholds_observational_only": {
@@ -12,81 +12,81 @@
     "max_extension_atr": 1.25
   },
   "summary": {
-    "before_entry_condition_missed": 757,
+    "before_entry_condition_missed": 759,
     "tp3_missed": 611,
-    "tp1_within_30m": 545,
-    "tp1_within_60m": 642,
-    "shadow_pre_entry_profile_count": 255,
-    "shadow_pre_entry_profile_share": 0.3369
+    "tp1_within_30m": 549,
+    "tp1_within_60m": 645,
+    "shadow_pre_entry_profile_count": 257,
+    "shadow_pre_entry_profile_share": 0.3386
   },
   "primary_obstacles": {
-    "ZONE_NEVER_TOUCHED": 297,
+    "ZONE_NEVER_TOUCHED": 298,
     "LIKELY_TIMING_WINDOW_MISSED": 151,
-    "STRUCTURE_5M_NEUTRAL_LATEST": 124,
+    "STRUCTURE_5M_NEUTRAL_LATEST": 125,
     "STRUCTURE_5M_OPPOSITE_LATEST": 86,
-    "VOLUME_5M_BELOW_0_50_LATEST": 62,
+    "VOLUME_5M_BELOW_0_50_LATEST": 63,
     "SCORE_BELOW_76_LATEST": 27,
-    "EXTENSION_ABOVE_1_25_LATEST": 10
+    "EXTENSION_ABOVE_1_25_LATEST": 9
   },
   "diagnostic_flags": {
-    "TP1_WITHIN_30M": 545,
-    "ZONE_NEVER_TOUCHED": 297,
-    "VOLUME_5M_BELOW_0_50_LATEST": 206,
-    "STRUCTURE_5M_NEUTRAL_LATEST": 148,
+    "TP1_WITHIN_30M": 549,
+    "ZONE_NEVER_TOUCHED": 298,
+    "VOLUME_5M_BELOW_0_50_LATEST": 207,
+    "STRUCTURE_5M_NEUTRAL_LATEST": 149,
     "STRUCTURE_5M_OPPOSITE_LATEST": 121,
-    "TP1_WITHIN_60M": 97,
-    "EXTENSION_ABOVE_1_25_LATEST": 62,
+    "TP1_WITHIN_60M": 96,
+    "EXTENSION_ABOVE_1_25_LATEST": 61,
     "SCORE_BELOW_76_LATEST": 32
   },
   "obstacle_stats": {
+    "STRUCTURE_5M_NEUTRAL_LATEST": {
+      "count": 125,
+      "share": 0.1647,
+      "tp3_count": 93,
+      "tp1_within_30m": 69,
+      "avg_best_favorable_r": 2.7602
+    },
+    "ZONE_NEVER_TOUCHED": {
+      "count": 298,
+      "share": 0.3926,
+      "tp3_count": 293,
+      "tp1_within_30m": 291,
+      "avg_best_favorable_r": 1.2682
+    },
     "SCORE_BELOW_76_LATEST": {
       "count": 27,
-      "share": 0.0357,
+      "share": 0.0356,
       "tp3_count": 11,
       "tp1_within_30m": 16,
       "avg_best_favorable_r": 2.9402
     },
-    "ZONE_NEVER_TOUCHED": {
-      "count": 297,
-      "share": 0.3923,
-      "tp3_count": 292,
-      "tp1_within_30m": 290,
-      "avg_best_favorable_r": 1.2687
-    },
     "STRUCTURE_5M_OPPOSITE_LATEST": {
       "count": 86,
-      "share": 0.1136,
+      "share": 0.1133,
       "tp3_count": 37,
       "tp1_within_30m": 48,
       "avg_best_favorable_r": 3.5334
     },
     "LIKELY_TIMING_WINDOW_MISSED": {
       "count": 151,
-      "share": 0.1995,
+      "share": 0.1989,
       "tp3_count": 124,
       "tp1_within_30m": 89,
       "avg_best_favorable_r": 2.4367
     },
     "VOLUME_5M_BELOW_0_50_LATEST": {
-      "count": 62,
-      "share": 0.0819,
+      "count": 63,
+      "share": 0.083,
       "tp3_count": 47,
-      "tp1_within_30m": 31,
-      "avg_best_favorable_r": 2.1367
-    },
-    "STRUCTURE_5M_NEUTRAL_LATEST": {
-      "count": 124,
-      "share": 0.1638,
-      "tp3_count": 93,
-      "tp1_within_30m": 67,
-      "avg_best_favorable_r": 2.7371
+      "tp1_within_30m": 32,
+      "avg_best_favorable_r": 2.1364
     },
     "EXTENSION_ABOVE_1_25_LATEST": {
-      "count": 10,
-      "share": 0.0132,
-      "tp3_count": 7,
+      "count": 9,
+      "share": 0.0119,
+      "tp3_count": 6,
       "tp1_within_30m": 4,
-      "avg_best_favorable_r": 2.6226
+      "avg_best_favorable_r": 2.731
     }
   },
   "top_before_entry_misses": [
@@ -1467,6 +1467,35 @@
       "outcome": "SL_FIRST_THEN_TP1_RECOVERY"
     },
     {
+      "episode_id": "CASHCATUSDT:SHORT:1789394183",
+      "symbol": "CASHCATUSDT",
+      "direction": "SHORT",
+      "score": 82,
+      "primary_obstacle": "STRUCTURE_5M_NEUTRAL_LATEST",
+      "diagnostic_flags": [
+        "STRUCTURE_5M_NEUTRAL_LATEST",
+        "TP1_WITHIN_30M"
+      ],
+      "shadow_pre_entry_profile": true,
+      "zone_touched": true,
+      "structure_5m": "NEUTRAL",
+      "structure_15m": "SHORT",
+      "structure_1h": "SHORT",
+      "volume_ratio_5m": 0.682,
+      "volume_ratio_15m": 1.18,
+      "extension_atr_5m": 0.252,
+      "risk_percent": 0.549,
+      "room_r": 10.53,
+      "market_regime": "BULL",
+      "best_favorable_r": 7.2671,
+      "best_favorable_percent": 0.9278,
+      "worst_adverse_percent": 13.055,
+      "tp1_minutes": 5.57,
+      "tp2_reached": false,
+      "tp3_reached": false,
+      "outcome": "TP1_REACHED"
+    },
+    {
       "episode_id": "UPUSDT:LONG:1789286632",
       "symbol": "UPUSDT",
       "direction": "LONG",
@@ -2341,34 +2370,6 @@
       "tp2_reached": true,
       "tp3_reached": true,
       "outcome": "SL_FIRST_THEN_TP3_RECOVERY"
-    },
-    {
-      "episode_id": "AVAXUSDT:SHORT:1789127186",
-      "symbol": "AVAXUSDT",
-      "direction": "SHORT",
-      "score": 92,
-      "primary_obstacle": "LIKELY_TIMING_WINDOW_MISSED",
-      "diagnostic_flags": [
-        "TP1_WITHIN_60M"
-      ],
-      "shadow_pre_entry_profile": true,
-      "zone_touched": true,
-      "structure_5m": "SHORT",
-      "structure_15m": "SHORT",
-      "structure_1h": "SHORT",
-      "volume_ratio_5m": 0.982,
-      "volume_ratio_15m": 1.403,
-      "extension_atr_5m": 0.819,
-      "risk_percent": 0.4,
-      "room_r": 1.99,
-      "market_regime": "BEAR_STRONG",
-      "best_favorable_r": 4.0399,
-      "best_favorable_percent": 1.616,
-      "worst_adverse_percent": 0.0136,
-      "tp1_minutes": 30.53,
-      "tp2_reached": true,
-      "tp3_reached": true,
-      "outcome": "TP3_REACHED"
     }
   ],
   "next_step_hint": "Do not loosen live thresholds from this report alone. Compare several post-accelerator snapshots; if one obstacle/profile remains dominant, test that change in shadow before live promotion."
