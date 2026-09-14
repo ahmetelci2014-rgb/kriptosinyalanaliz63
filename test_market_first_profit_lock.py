@@ -78,3 +78,14 @@ def test_same_candle_tp1_and_entry_is_not_guessed():
 def test_directional_r_uses_original_stop_distance():
     assert lock.directional_r("LONG", 100.0, 99.0, 101.5) == 1.5
     assert lock.directional_r("SHORT", 100.0, 101.0, 98.5) == 1.5
+
+
+def test_new_closed_candles_compare_candle_end_to_wall_clock_check():
+    signal = {"opened_at": 1000, "last_checked_at": 1300}
+    candles = [
+        {"time": 900},    # ends 1200: already covered
+        {"time": 1200},   # ends 1500: newly closed after last check
+        {"time": 1500},   # ends 1800: still forming at now=1600
+    ]
+    selected = lock._new_closed_candles(signal, candles, 300, now=1600)
+    assert [item["time"] for item in selected] == [1200]
