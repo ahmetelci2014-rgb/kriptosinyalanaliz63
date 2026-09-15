@@ -1,6 +1,6 @@
 {
   "version": "MARKET_FIRST_ENTRY_CONDITION_DIAGNOSIS_V1_2026_09_08",
-  "generated_at": 1789438378,
+  "generated_at": 1789439256,
   "source_ledger_version": "MARKET_FIRST_OPPORTUNITY_LEDGER_V1_2026_09_05",
   "definition": "Clean resolved preparations that reached TP1+ without a Telegram trade and never recorded ENTRY condition. Latest-plan flags are diagnostic snapshots, not guaranteed co-temporal blocker proofs.",
   "reference_thresholds_observational_only": {
@@ -12,71 +12,71 @@
     "max_extension_atr": 1.25
   },
   "summary": {
-    "before_entry_condition_missed": 700,
-    "tp3_missed": 559,
-    "tp1_within_30m": 517,
-    "tp1_within_60m": 585,
-    "shadow_pre_entry_profile_count": 232,
+    "before_entry_condition_missed": 697,
+    "tp3_missed": 556,
+    "tp1_within_30m": 514,
+    "tp1_within_60m": 582,
+    "shadow_pre_entry_profile_count": 231,
     "shadow_pre_entry_profile_share": 0.3314
   },
   "primary_obstacles": {
-    "ZONE_NEVER_TOUCHED": 270,
+    "ZONE_NEVER_TOUCHED": 269,
     "LIKELY_TIMING_WINDOW_MISSED": 133,
-    "STRUCTURE_5M_NEUTRAL_LATEST": 116,
+    "STRUCTURE_5M_NEUTRAL_LATEST": 114,
     "STRUCTURE_5M_OPPOSITE_LATEST": 86,
     "VOLUME_5M_BELOW_0_50_LATEST": 58,
     "SCORE_BELOW_76_LATEST": 28,
     "EXTENSION_ABOVE_1_25_LATEST": 9
   },
   "diagnostic_flags": {
-    "TP1_WITHIN_30M": 517,
-    "ZONE_NEVER_TOUCHED": 270,
-    "VOLUME_5M_BELOW_0_50_LATEST": 191,
-    "STRUCTURE_5M_NEUTRAL_LATEST": 135,
+    "TP1_WITHIN_30M": 514,
+    "ZONE_NEVER_TOUCHED": 269,
+    "VOLUME_5M_BELOW_0_50_LATEST": 189,
+    "STRUCTURE_5M_NEUTRAL_LATEST": 133,
     "STRUCTURE_5M_OPPOSITE_LATEST": 122,
     "TP1_WITHIN_60M": 68,
     "EXTENSION_ABOVE_1_25_LATEST": 64,
     "SCORE_BELOW_76_LATEST": 33
   },
   "obstacle_stats": {
-    "STRUCTURE_5M_NEUTRAL_LATEST": {
-      "count": 116,
-      "share": 0.1657,
-      "tp3_count": 86,
-      "tp1_within_30m": 68,
-      "avg_best_favorable_r": 2.4372
-    },
     "ZONE_NEVER_TOUCHED": {
-      "count": 270,
-      "share": 0.3857,
-      "tp3_count": 267,
-      "tp1_within_30m": 265,
-      "avg_best_favorable_r": 1.2037
+      "count": 269,
+      "share": 0.3859,
+      "tp3_count": 266,
+      "tp1_within_30m": 264,
+      "avg_best_favorable_r": 1.2075
+    },
+    "STRUCTURE_5M_NEUTRAL_LATEST": {
+      "count": 114,
+      "share": 0.1636,
+      "tp3_count": 84,
+      "tp1_within_30m": 66,
+      "avg_best_favorable_r": 2.4328
     },
     "LIKELY_TIMING_WINDOW_MISSED": {
       "count": 133,
-      "share": 0.19,
+      "share": 0.1908,
       "tp3_count": 108,
       "tp1_within_30m": 84,
       "avg_best_favorable_r": 2.1462
     },
     "VOLUME_5M_BELOW_0_50_LATEST": {
       "count": 58,
-      "share": 0.0829,
+      "share": 0.0832,
       "tp3_count": 43,
       "tp1_within_30m": 32,
       "avg_best_favorable_r": 2.0812
     },
     "STRUCTURE_5M_OPPOSITE_LATEST": {
       "count": 86,
-      "share": 0.1229,
+      "share": 0.1234,
       "tp3_count": 38,
       "tp1_within_30m": 47,
       "avg_best_favorable_r": 3.161
     },
     "SCORE_BELOW_76_LATEST": {
       "count": 28,
-      "share": 0.04,
+      "share": 0.0402,
       "tp3_count": 12,
       "tp1_within_30m": 17,
       "avg_best_favorable_r": 2.9166
@@ -951,36 +951,6 @@
       "outcome": "TP3_REACHED"
     },
     {
-      "episode_id": "ETHFIUSDT:LONG:1789138925",
-      "symbol": "ETHFIUSDT",
-      "direction": "LONG",
-      "score": 79,
-      "primary_obstacle": "STRUCTURE_5M_NEUTRAL_LATEST",
-      "diagnostic_flags": [
-        "STRUCTURE_5M_NEUTRAL_LATEST",
-        "VOLUME_5M_BELOW_0_50_LATEST",
-        "TP1_WITHIN_30M"
-      ],
-      "shadow_pre_entry_profile": false,
-      "zone_touched": true,
-      "structure_5m": "NEUTRAL",
-      "structure_15m": "LONG",
-      "structure_1h": "LONG",
-      "volume_ratio_5m": 0.49,
-      "volume_ratio_15m": 0.668,
-      "extension_atr_5m": 0.341,
-      "risk_percent": 0.734,
-      "room_r": 5.09,
-      "market_regime": "CHOP",
-      "best_favorable_r": 4.0599,
-      "best_favorable_percent": 1.624,
-      "worst_adverse_percent": 0.4172,
-      "tp1_minutes": 14.17,
-      "tp2_reached": true,
-      "tp3_reached": true,
-      "outcome": "AMBIGUOUS_THEN_TP3"
-    },
-    {
       "episode_id": "ONDOUSDT:SHORT:1789156975",
       "symbol": "ONDOUSDT",
       "direction": "SHORT",
@@ -1230,6 +1200,34 @@
       "best_favorable_percent": 1.294,
       "worst_adverse_percent": 0.6188,
       "tp1_minutes": 108.88,
+      "tp2_reached": true,
+      "tp3_reached": true,
+      "outcome": "SL_FIRST_THEN_TP3_RECOVERY"
+    },
+    {
+      "episode_id": "ETHFIUSDT:LONG:1789187537",
+      "symbol": "ETHFIUSDT",
+      "direction": "LONG",
+      "score": 82,
+      "primary_obstacle": "STRUCTURE_5M_OPPOSITE_LATEST",
+      "diagnostic_flags": [
+        "STRUCTURE_5M_OPPOSITE_LATEST"
+      ],
+      "shadow_pre_entry_profile": false,
+      "zone_touched": true,
+      "structure_5m": "SHORT",
+      "structure_15m": "LONG",
+      "structure_1h": "LONG",
+      "volume_ratio_5m": 1.042,
+      "volume_ratio_15m": 1.72,
+      "extension_atr_5m": 0.883,
+      "risk_percent": 0.4,
+      "room_r": 8.9,
+      "market_regime": "BEAR",
+      "best_favorable_r": 3.5843,
+      "best_favorable_percent": 2.5965,
+      "worst_adverse_percent": 2.5544,
+      "tp1_minutes": 134.42,
       "tp2_reached": true,
       "tp3_reached": true,
       "outcome": "SL_FIRST_THEN_TP3_RECOVERY"
