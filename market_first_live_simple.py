@@ -13,6 +13,7 @@ import market_first_candidate_visibility as candidate_visibility
 import market_first_daily_report as daily_report
 import market_first_daily_report_origin_patch as daily_report_origin_patch
 import market_first_entry_accelerator as entry_accelerator
+import market_first_fast_common_gate as fast_common_gate
 import market_first_final_execution_gate as final_execution_gate
 import market_first_live_complete_tracking as complete_tracking
 import market_first_pre_entry_shadow as pre_entry_shadow
@@ -70,6 +71,12 @@ def main() -> None:
     candidate_visibility.install()
     profit_lock.install()
 
+    # This must remain the last decision/send wrapper. The legacy fast-entry
+    # path may attempt an immediate _send_trade from inside an older inner
+    # decision wrapper. Block that premature send, let every common gate finish,
+    # then allow only the normally ranked final send for surviving fast entries.
+    fast_common_gate.install()
+
     # Profit Quality owns the final trade text, so add the FIB model label only
     # after all message-formatting layers are installed.
     structure_fibo.install_presentation()
@@ -96,6 +103,7 @@ def main() -> None:
     print("MARKET FIRST CANDIDATE SURVIVAL:", candidate_survival_patch.summary())
     print("MARKET FIRST CANDIDATE VISIBILITY:", candidate_visibility.summary())
     print("MARKET FIRST PROFIT LOCK:", profit_lock.summary())
+    print("MARKET FIRST FAST COMMON GATE:", fast_common_gate.summary())
     try:
         runner.run()
     finally:
@@ -112,6 +120,7 @@ def main() -> None:
         print("MARKET FIRST CANDIDATE SURVIVAL RUN:", candidate_survival_patch.summary())
         print("MARKET FIRST CANDIDATE VISIBILITY RUN:", candidate_visibility.summary())
         print("MARKET FIRST PROFIT LOCK RUN:", profit_lock.summary())
+        print("MARKET FIRST FAST COMMON GATE RUN:", fast_common_gate.summary())
     sent = daily_report.maybe_send(runner.bot, runner._send)
     if sent:
         print("GÜNLÜK ÖZET TELEGRAM'A GÖNDERİLDİ.")
