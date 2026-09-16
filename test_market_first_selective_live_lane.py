@@ -1,5 +1,6 @@
 from copy import deepcopy
 
+from market_first_entry_plan_context_patch import decorate_promoted
 from market_first_selective_live_lane import selective_lane_qualifies
 
 
@@ -56,6 +57,15 @@ def _decision(direction="SHORT"):
             },
         },
     }
+
+
+def test_entry_plan_context_keeps_5m_and_15m_volume():
+    promoted = decorate_promoted(
+        {"symbol": "TESTUSDT"},
+        {"volume_ratio_5m": 1.23, "volume_ratio_15m": 0.94},
+    )
+    assert promoted["volume_ratio_5m"] == 1.23
+    assert promoted["volume_ratio_15m"] == 0.94
 
 
 def test_strong_directional_short_can_use_selective_lane():
