@@ -1,59 +1,41 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1789563484,
-  "status": "CAPITAL_RECOVERY_STRICT",
+  "generated_at": 1789564418,
+  "status": "TELEGRAM_DELIVERY_FAILURE_PRESENT",
   "survival": {
-    "mode": "RECOVERY_STRICT",
-    "reason": "POOR_ROLLING_STOP_RATE"
+    "mode": "NORMAL",
+    "reason": "OK"
   },
   "funnel_truth": {
-    "internal_promoted": 680,
+    "internal_promoted": 682,
     "real_signal_sent": 5,
-    "promoted_unsent": 675,
+    "promoted_unsent": 677,
     "real_telegram_send_failures": 4,
-    "internal_final_admission_gap": 671,
+    "internal_final_admission_gap": 673,
     "promotion_is_send_attempt": false
   },
   "latest_gate_layers": {
     "profit_quality": {
-      "accepted": 2,
-      "run_counts": {
-        "OK": 2,
-        "ACCEPTED": 2,
-        "EXPECTED_MOVE_BELOW_2P": 1
-      },
-      "blocks": {
-        "EXPECTED_MOVE_BELOW_2P": 1
-      }
+      "accepted": 0,
+      "run_counts": {},
+      "blocks": {}
     },
     "final_execution": {
-      "accepted": 1,
+      "accepted": 0,
       "run_counts": {
-        "OK": 1,
-        "ACCEPTED": 1,
-        "UPSTREAM_REJECTED": 2,
-        "DIRECTION_CONFIRMATIONS_BELOW_3": 1
+        "UPSTREAM_REJECTED": 3
       },
-      "blocks": {
-        "DIRECTION_CONFIRMATIONS_BELOW_3": 1
-      }
+      "blocks": {}
     },
     "capital_survival": {
       "accepted": 0,
       "run_counts": {
-        "RECOVERY_SCORE": 1,
         "UPSTREAM_REJECTED": 3
       },
-      "blocks": {
-        "RECOVERY_SCORE": 1
-      }
+      "blocks": {}
     }
   },
-  "top_latest_blocker": {
-    "layer": "profit_quality",
-    "reason": "EXPECTED_MOVE_BELOW_2P",
-    "count": 1
-  },
+  "top_latest_blocker": null,
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
     "real_telegram_send_failures": "Ledger rows where the system actually attempted the final send path and recorded failure.",

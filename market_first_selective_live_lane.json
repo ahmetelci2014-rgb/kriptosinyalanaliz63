@@ -1,5 +1,5 @@
 {
-  "version": "MARKET_FIRST_SELECTIVE_LIVE_LANE_V2_2026_09_16",
+  "version": "MARKET_FIRST_SELECTIVE_LIVE_LANE_V3_MOMENTUM_2026_09_16",
   "mode": "RECOVERY_STRICT_DIRECTIONAL_A_PLUS_PLUS_ONLY",
   "thresholds": {
     "min_score": 94,
@@ -24,10 +24,10 @@
       "entry_swing_rate": 0.876,
       "direction_samples": 161,
       "direction_rate": 0.9565,
-      "long_run_samples": 1378,
-      "long_run_rate": 0.6988,
-      "swing_samples": 567,
-      "swing_rate": 0.6014
+      "long_run_samples": 1381,
+      "long_run_rate": 0.698,
+      "swing_samples": 568,
+      "swing_rate": 0.6004
     },
     "LONG": {
       "general_recent_samples": 250,
@@ -38,28 +38,35 @@
       "entry_swing_rate": 0.876,
       "direction_samples": 139,
       "direction_rate": 0.7266,
-      "long_run_samples": 1378,
-      "long_run_rate": 0.6988,
-      "swing_samples": 567,
-      "swing_rate": 0.6014
+      "long_run_samples": 1381,
+      "long_run_rate": 0.698,
+      "swing_samples": 568,
+      "swing_rate": 0.6004
     }
   },
   "relaxed_accepts_this_run": 0,
-  "run_counts": {
-    "FINAL_HISTORY_LONG_RUN_RATE": 1
-  },
+  "run_counts": {},
   "accepted": [],
   "halt_bypass": false,
   "opposite_flow_bypass": false,
   "profit_quality_bypass": false,
   "exchange_orders": false,
   "stop_widening": false,
-  "v2_rules": {
-    "min_confirmations": 1,
+  "v3_rules": {
+    "min_confirmations_96_plus": 1,
+    "min_confirmations_94_95": 2,
+    "min_continuation_score": 92,
+    "min_continuation_confirmations": 2,
+    "min_continuation_volume_5m": 0.9,
+    "min_continuation_volume_15m": 0.8,
+    "min_continuation_move_3m": 0.08,
+    "min_continuation_move_5m": 0.15,
+    "min_continuation_breakout_move_5m": 0.1,
     "min_flow_when_no_fresh": 0.1,
     "min_impulse_when_flow_neutral": 0.2,
     "min_book_when_flow_neutral": -0.05,
     "min_derivatives_soft_score": -1,
+    "post_final_recovery_score_exception": true,
     "shadow_edge_relaxed_bypass": false
   }
 }
