@@ -13,6 +13,7 @@ import market_first_candidate_visibility as candidate_visibility
 import market_first_daily_report as daily_report
 import market_first_daily_report_origin_patch as daily_report_origin_patch
 import market_first_entry_accelerator as entry_accelerator
+import market_first_entry_plan_context_patch as entry_plan_context_patch
 import market_first_final_execution_gate as final_execution_gate
 import market_first_live_complete_tracking as complete_tracking
 import market_first_pre_entry_shadow as pre_entry_shadow
@@ -24,6 +25,7 @@ import market_first_promotion_reason_patch as promotion_reason_patch
 import market_first_recovery_evidence_lane as recovery_evidence_lane
 import market_first_reversal_capture_v2 as reversal_capture
 import market_first_runner as runner
+import market_first_selective_live_lane_v2 as selective_live_lane
 import market_first_shadow_edge as shadow_edge
 import market_first_simple_mode as simple_mode
 import market_first_structure_fibo_contact as structure_fibo
@@ -60,11 +62,13 @@ def main() -> None:
     final_execution_gate.install()
 
     # Profit Survival V2 patches the V1 health source. The Recovery Evidence Lane
-    # then permits only historically validated ENTRY_PLAN A++ profiles to use a
-    # score-94 exception while RECOVERY_STRICT is active. HALT and every common
-    # downstream execution/flow/risk guard remain absolute.
+    # remains the ordinary strict exception. Preserve the original 5M/15M plan
+    # volume context, then add only a directional, history-backed A++ recovery
+    # exception. HALT, opposite-flow vetoes and upstream quality remain absolute.
     profit_survival_v2.install()
     recovery_evidence_lane.install()
+    entry_plan_context_patch.install()
+    selective_live_lane.install()
     profit_survival_gate.install()
     candidate_survival_patch.install()
     candidate_visibility.install()
@@ -76,6 +80,7 @@ def main() -> None:
 
     print("MARKET FIRST DAILY REPORT ORIGIN/BE:", daily_report_origin_patch.summary())
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
+    print("MARKET FIRST ENTRY PLAN CONTEXT:", entry_plan_context_patch.summary())
     print("MARKET FIRST BACKGROUND LIVE BRIDGE:", background_live_bridge.summary())
     print("MARKET FIRST STRUCTURE FIBO CONTACT:", structure_fibo.summary())
     print("MARKET FIRST PROMOTION REASONS:", promotion_reason_patch.summary())
@@ -92,6 +97,7 @@ def main() -> None:
     print("MARKET FIRST FINAL EXECUTION GATE:", final_execution_gate.summary())
     print("MARKET FIRST PROFIT SURVIVAL V2:", profit_survival_v2.summary())
     print("MARKET FIRST RECOVERY EVIDENCE LANE:", recovery_evidence_lane.summary())
+    print("MARKET FIRST SELECTIVE LIVE LANE:", selective_live_lane.summary())
     print("MARKET FIRST PROFIT SURVIVAL GATE:", profit_survival_gate.summary())
     print("MARKET FIRST CANDIDATE SURVIVAL:", candidate_survival_patch.summary())
     print("MARKET FIRST CANDIDATE VISIBILITY:", candidate_visibility.summary())
@@ -107,6 +113,7 @@ def main() -> None:
         print("MARKET FIRST PROFIT SURVIVAL RUN:", profit_survival_gate.finish())
         print("MARKET FIRST PROFIT SURVIVAL V2 RUN:", profit_survival_v2.finish())
         print("MARKET FIRST RECOVERY EVIDENCE LANE RUN:", recovery_evidence_lane.summary())
+        print("MARKET FIRST SELECTIVE LIVE LANE RUN:", selective_live_lane.finish())
         print("MARKET FIRST BACKGROUND LIVE BRIDGE RUN:", background_live_bridge.finish())
         print("MARKET FIRST STRUCTURE FIBO RUN:", structure_fibo.finish())
         print("MARKET FIRST CANDIDATE SURVIVAL RUN:", candidate_survival_patch.summary())
