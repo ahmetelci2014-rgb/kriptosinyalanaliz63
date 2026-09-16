@@ -1,6 +1,6 @@
 {
   "version": "MARKET_FIRST_OBSERVABILITY_V1_2026_09_08",
-  "generated_at": 1789560815,
+  "generated_at": 1789561664,
   "definition": "Clean resolved preparation that reached TP1 or better without a real Telegram entry signal.",
   "total_missed_moves": 1175,
   "miss_rate_of_clean_resolved": 0.8875,
@@ -10,20 +10,20 @@
     "TP1_MISSED": 110
   },
   "stages": {
-    "BEFORE_ENTRY_CONDITION": 611,
-    "FINAL_DELIVERY_GATE": 559,
+    "BEFORE_ENTRY_CONDITION": 608,
+    "FINAL_DELIVERY_GATE": 562,
     "PROMOTION_GATE": 5
   },
   "reasons": {
-    "ENTRY_CONDITION_NOT_REACHED": 611,
-    "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED": 557,
+    "ENTRY_CONDITION_NOT_REACHED": 608,
+    "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED": 560,
     "LOW_SCORE": 3,
     "TELEGRAM_SEND_FAILED": 2,
     "NO_ACCELERATION": 2
   },
   "directions": {
-    "SHORT": 864,
-    "LONG": 311
+    "SHORT": 867,
+    "LONG": 308
   },
   "outcomes": {
     "TP3_REACHED": 698,
@@ -35,10 +35,10 @@
     "AMBIGUOUS_THEN_TP3": 4
   },
   "timing": {
-    "avg_minutes_prep_to_tp1": 45.96,
-    "avg_minutes_entry_condition_to_tp1": 71.81,
-    "tp1_within_30m": 753,
-    "tp1_within_60m": 896
+    "avg_minutes_prep_to_tp1": 45.87,
+    "avg_minutes_entry_condition_to_tp1": 72.47,
+    "tp1_within_30m": 754,
+    "tp1_within_60m": 897
   },
   "top_missed": [
     {
@@ -73,39 +73,6 @@
       "first_at": 1789462969,
       "tp1_at": 1789483330,
       "resolved_at": 1789483330
-    },
-    {
-      "episode_id": "XTZUSDT:LONG:1789283275",
-      "symbol": "XTZUSDT",
-      "direction": "LONG",
-      "score": 86,
-      "miss_level": "TP3_MISSED",
-      "miss_stage": "BEFORE_ENTRY_CONDITION",
-      "reason": "ENTRY_CONDITION_NOT_REACHED",
-      "outcome": "SL_FIRST_THEN_TP3_RECOVERY",
-      "prep_price": 0.2702,
-      "last_price": 0.2728,
-      "best_favorable_percent": 1.2213,
-      "best_favorable_r": 10.9565,
-      "worst_adverse_percent": 2.7017,
-      "entry_condition_met": false,
-      "entry_promoted": false,
-      "entry_signal_sent": false,
-      "tp1_before_entry_signal": true,
-      "minutes_prep_to_tp1": 314.63,
-      "minutes_entry_condition_to_tp1": null,
-      "market_regime": "BEAR",
-      "structure_5m": "LONG",
-      "structure_15m": "LONG",
-      "structure_1h": "LONG",
-      "volume_ratio_5m": 2.559,
-      "volume_ratio_15m": 2.032,
-      "extension_atr_5m": 1.355,
-      "risk_percent": 1.332,
-      "room_r": 2.31,
-      "first_at": 1789283275,
-      "tp1_at": 1789302153,
-      "resolved_at": 1789302153
     },
     {
       "episode_id": "BERAUSDT:SHORT:1789502585",
@@ -1360,6 +1327,39 @@
       "first_at": 1789330038,
       "tp1_at": 1789331192,
       "resolved_at": 1789351098
+    },
+    {
+      "episode_id": "ENAUSDT:SHORT:1789293087",
+      "symbol": "ENAUSDT",
+      "direction": "SHORT",
+      "score": 78,
+      "miss_level": "TP3_MISSED",
+      "miss_stage": "FINAL_DELIVERY_GATE",
+      "reason": "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED",
+      "outcome": "TP3_REACHED",
+      "prep_price": 0.13957,
+      "last_price": 0.13841,
+      "best_favorable_percent": 1.5834,
+      "best_favorable_r": 3.9586,
+      "worst_adverse_percent": 0.738,
+      "entry_condition_met": true,
+      "entry_promoted": true,
+      "entry_signal_sent": false,
+      "tp1_before_entry_signal": true,
+      "minutes_prep_to_tp1": 60.47,
+      "minutes_entry_condition_to_tp1": null,
+      "market_regime": "BEAR_STRONG",
+      "structure_5m": "NEUTRAL",
+      "structure_15m": "SHORT",
+      "structure_1h": "SHORT",
+      "volume_ratio_5m": 0.414,
+      "volume_ratio_15m": 0.342,
+      "extension_atr_5m": 0.347,
+      "risk_percent": 0.485,
+      "room_r": 2.14,
+      "first_at": 1789293087,
+      "tp1_at": 1789296715,
+      "resolved_at": 1789305984
     }
   ]
 }
