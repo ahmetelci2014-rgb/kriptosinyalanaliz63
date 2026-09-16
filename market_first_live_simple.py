@@ -24,6 +24,7 @@ import market_first_promotion_reason_patch as promotion_reason_patch
 import market_first_recovery_evidence_lane as recovery_evidence_lane
 import market_first_reversal_capture_v2 as reversal_capture
 import market_first_runner as runner
+import market_first_selective_live_lane as selective_live_lane
 import market_first_shadow_edge as shadow_edge
 import market_first_simple_mode as simple_mode
 import market_first_structure_fibo_contact as structure_fibo
@@ -60,11 +61,12 @@ def main() -> None:
     final_execution_gate.install()
 
     # Profit Survival V2 patches the V1 health source. The Recovery Evidence Lane
-    # then permits only historically validated ENTRY_PLAN A++ profiles to use a
-    # score-94 exception while RECOVERY_STRICT is active. HALT and every common
-    # downstream execution/flow/risk guard remain absolute.
+    # remains the ordinary strict exception. Selective Live Lane then adds only a
+    # directional, history-backed A++ recovery exception for ENTRY_PLAN setups;
+    # HALT, opposite-flow vetoes and all upstream quality gates remain absolute.
     profit_survival_v2.install()
     recovery_evidence_lane.install()
+    selective_live_lane.install()
     profit_survival_gate.install()
     candidate_survival_patch.install()
     candidate_visibility.install()
@@ -92,6 +94,7 @@ def main() -> None:
     print("MARKET FIRST FINAL EXECUTION GATE:", final_execution_gate.summary())
     print("MARKET FIRST PROFIT SURVIVAL V2:", profit_survival_v2.summary())
     print("MARKET FIRST RECOVERY EVIDENCE LANE:", recovery_evidence_lane.summary())
+    print("MARKET FIRST SELECTIVE LIVE LANE:", selective_live_lane.summary())
     print("MARKET FIRST PROFIT SURVIVAL GATE:", profit_survival_gate.summary())
     print("MARKET FIRST CANDIDATE SURVIVAL:", candidate_survival_patch.summary())
     print("MARKET FIRST CANDIDATE VISIBILITY:", candidate_visibility.summary())
@@ -107,6 +110,7 @@ def main() -> None:
         print("MARKET FIRST PROFIT SURVIVAL RUN:", profit_survival_gate.finish())
         print("MARKET FIRST PROFIT SURVIVAL V2 RUN:", profit_survival_v2.finish())
         print("MARKET FIRST RECOVERY EVIDENCE LANE RUN:", recovery_evidence_lane.summary())
+        print("MARKET FIRST SELECTIVE LIVE LANE RUN:", selective_live_lane.finish())
         print("MARKET FIRST BACKGROUND LIVE BRIDGE RUN:", background_live_bridge.finish())
         print("MARKET FIRST STRUCTURE FIBO RUN:", structure_fibo.finish())
         print("MARKET FIRST CANDIDATE SURVIVAL RUN:", candidate_survival_patch.summary())
