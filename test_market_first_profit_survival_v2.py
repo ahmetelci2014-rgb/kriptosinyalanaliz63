@@ -26,6 +26,8 @@ def test_two_day_memory_keeps_recovery_after_one_better_day():
     assert rolling["losses"] == 10
     assert rolling["closed_directional"] == 16
     assert abs(rolling["stop_rate"] - 0.625) < 1e-9
+    assert rolling["latest_date"] == "2026-09-13"
+    assert rolling["latest_age_days"] == 1
 
     daily = {
         "date": "2026-09-13",
@@ -70,6 +72,8 @@ def test_healthy_rolling_cohort_can_return_normal():
         "wins": 9,
         "losses": 3,
         "stop_rate": 0.25,
+        "latest_date": "2026-09-13",
+        "latest_age_days": 1,
     }
     daily = {
         "date": "2026-09-13",
@@ -84,3 +88,48 @@ def test_healthy_rolling_cohort_can_return_normal():
     )
     assert mode == "NORMAL"
     assert reason == "OK"
+
+
+def test_stale_bad_rolling_cohort_does_not_lock_quiet_day():
+    rolling = {
+        "closed_directional": 11,
+        "wins": 4,
+        "losses": 7,
+        "stop_rate": 7 / 11,
+        "latest_date": "2026-09-14",
+        "latest_age_days": 2,
+    }
+    daily = {
+        "date": "2026-09-15",
+        "closed_directional": 0,
+        "wins": 0,
+        "losses": 0,
+        "stop_rate": 0.0,
+    }
+    mode, reason = v2.mode_from_health(
+        daily,
+        rolling,
+        {"sl": 1, "direct_stops": 0, "consecutive_stops": 1},
+        "2026-09-16",
+    )
+    assert mode == "NORMAL"
+    assert reason == "OK"
+
+
+def test_stale_history_never_disables_same_day_stop_brake():
+    rolling = {
+        "closed_directional": 11,
+        "wins": 4,
+        "losses": 7,
+        "stop_rate": 7 / 11,
+        "latest_date": "2026-09-14",
+        "latest_age_days": 2,
+    }
+    mode, reason = v2.mode_from_health(
+        {},
+        rolling,
+        {"sl": 2, "direct_stops": 2, "consecutive_stops": 2},
+        "2026-09-16",
+    )
+    assert mode == "RECOVERY_STRICT"
+    assert reason == "INTRADAY_STOP_WARNING"
