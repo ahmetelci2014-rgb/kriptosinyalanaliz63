@@ -1,13 +1,14 @@
-"""Market First Profit Survival V2: rolling realised-health memory.
+"""Market First Profit Survival V3: rolling realised-health memory with decay.
 
 V1 protected the account after a bad daily report, but it could return to NORMAL
-as soon as the next single day looked better. That forgets recent losses too
-quickly. V2 keeps a two-completed-day realised memory and adds an intraday
-warning mode before the hard daily stop limit.
+as soon as the next single day looked better. V2 kept a two-completed-day realised
+memory. V3 keeps that protection while preventing an old bad cohort from locking
+live entries indefinitely when no newer directional results exist.
 
-This is an additive patch around market_first_profit_survival_gate. It does not
-create trades, place exchange orders, widen stops, or weaken the existing A++
-RECOVERY_STRICT rules.
+Hard intraday stop brakes remain authoritative. Rolling/recent history is used for
+RECOVERY_STRICT only while it is fresh (latest directional day <= 1 day old).
+This module does not create trades, place exchange orders, widen stops, or bypass
+HALT.
 """
 from __future__ import annotations
 
@@ -20,13 +21,14 @@ from typing import Any, Dict, Mapping, Tuple
 
 import market_first_profit_survival_gate as gate
 
-VERSION = "MARKET_FIRST_PROFIT_SURVIVAL_V2_ROLLING_2026_09_14"
+VERSION = "MARKET_FIRST_PROFIT_SURVIVAL_V3_DECAY_2026_09_16"
 STATE_FILE = "market_first_profit_survival_v2.json"
 
 ROLLING_COMPLETED_DAYS = 2
 ROLLING_MIN_CLOSED = 8
 ROLLING_RECOVERY_STOP_RATE = 0.55
 ROLLING_CRITICAL_STOP_RATE = 0.70
+ROLLING_MAX_LATEST_AGE_DAYS = 1
 INTRADAY_RECOVERY_STOPS = 2
 MAX_DAILY_STOPS = 3
 MAX_CONSECUTIVE_STOPS = 3
@@ -54,6 +56,15 @@ def _day_before(day_key: str, today: str) -> bool:
         return datetime.fromisoformat(day_key).date() < datetime.fromisoformat(today).date()
     except Exception:
         return False
+
+
+def _days_old(day_key: str, today: str) -> int:
+    try:
+        left = datetime.fromisoformat(day_key).date()
+        right = datetime.fromisoformat(today).date()
+        return max(0, (right - left).days)
+    except Exception:
+        return 999
 
 
 def _performance_day_health(day_key: str, payload: Mapping[str, Any]) -> Dict[str, Any]:
@@ -86,6 +97,7 @@ def rolling_completed_health(
 
     The compact daily report is preferred for its date because it classifies
     TP/BE/SL at trade level. Earlier completed days fall back to performance.json.
+    The latest directional date is retained so old poor cohorts can age out.
     """
     days = performance.get("days") if isinstance(performance, Mapping) else {}
     days = days if isinstance(days, Mapping) else {}
@@ -131,8 +143,6 @@ def rolling_completed_health(
         selected.append(health)
         used_dates.add(day_key)
 
-    # Keep the most recent completed dates even when daily-report insertion order
-    # differs from the performance fallback order.
     selected = sorted(selected, key=lambda item: str(item.get("date") or ""), reverse=True)
     selected = selected[:ROLLING_COMPLETED_DAYS]
 
@@ -140,6 +150,8 @@ def rolling_completed_health(
     losses = sum(_si(item.get("losses")) for item in selected)
     closed = wins + losses
     stop_rate = losses / closed if closed else 0.0
+    latest_date = str((selected[0] or {}).get("date") or "") if selected else ""
+    latest_age_days = _days_old(latest_date, today) if latest_date else None
     return {
         "days": selected,
         "day_count": len(selected),
@@ -148,6 +160,8 @@ def rolling_completed_health(
         "closed_directional": closed,
         "stop_rate": round(stop_rate, 6),
         "win_rate": round(wins / closed, 6) if closed else 0.0,
+        "latest_date": latest_date,
+        "latest_age_days": latest_age_days,
     }
 
 
@@ -177,24 +191,28 @@ def mode_from_health(
     if consecutive >= MAX_CONSECUTIVE_STOPS:
         return "HALT", "CONSECUTIVE_STOP_LIMIT"
 
-    # Do not wait for a third/fourth loss to tighten. After two same-day stops,
-    # only the existing A++ recovery profile may pass.
+    # Same-day losses are always fresh. Two stops tighten immediately regardless
+    # of historical decay; three still halt the live entry path.
     if total_stops >= INTRADAY_RECOVERY_STOPS or direct_stops >= INTRADAY_RECOVERY_STOPS:
         return "RECOVERY_STRICT", "INTRADAY_STOP_WARNING"
 
     rolling_closed = _si(rolling.get("closed_directional"))
     rolling_rate = _sf(rolling.get("stop_rate"))
-    if rolling_closed >= ROLLING_MIN_CLOSED:
+    rolling_age = _si(rolling.get("latest_age_days"), 999)
+    rolling_fresh = rolling_age <= ROLLING_MAX_LATEST_AGE_DAYS
+    if rolling_closed >= ROLLING_MIN_CLOSED and rolling_fresh:
         if rolling_rate >= ROLLING_CRITICAL_STOP_RATE:
             return "RECOVERY_STRICT", "CRITICAL_ROLLING_STOP_RATE"
         if rolling_rate >= ROLLING_RECOVERY_STOP_RATE:
             return "RECOVERY_STRICT", "POOR_ROLLING_STOP_RATE"
 
-    # Preserve V1's single-report protection as a fallback when the rolling
-    # cohort is still too small.
+    # Preserve V1's single-report protection only while that report is genuinely
+    # fresh. A two-day-old bad report must not recreate an indefinite lock after
+    # the rolling cohort has already aged out.
     closed = _si(daily.get("closed_directional"))
     stop_rate = _sf(daily.get("stop_rate"))
-    recent = gate._report_is_recent(str(daily.get("date") or ""), today)
+    daily_date = str(daily.get("date") or "")
+    recent = _days_old(daily_date, today) <= ROLLING_MAX_LATEST_AGE_DAYS
     if recent and closed >= gate.MIN_RECENT_CLOSED and stop_rate >= gate.CRITICAL_STOP_RATE:
         return "RECOVERY_STRICT", "CRITICAL_RECENT_STOP_RATE"
     if recent and closed >= gate.MIN_RECENT_CLOSED and stop_rate >= gate.RECOVERY_STOP_RATE:
@@ -279,6 +297,7 @@ def summary() -> Dict[str, Any]:
         "rolling_completed_days": ROLLING_COMPLETED_DAYS,
         "rolling_min_closed": ROLLING_MIN_CLOSED,
         "rolling_recovery_stop_rate": ROLLING_RECOVERY_STOP_RATE,
+        "rolling_max_latest_age_days": ROLLING_MAX_LATEST_AGE_DAYS,
         "intraday_recovery_stops": INTRADAY_RECOVERY_STOPS,
         "max_daily_stops": MAX_DAILY_STOPS,
         "max_consecutive_stops": MAX_CONSECUTIVE_STOPS,
