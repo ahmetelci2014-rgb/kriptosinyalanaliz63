@@ -72,12 +72,13 @@ def test_entry_plan_context_keeps_5m_and_15m_volume():
 def test_strong_directional_short_can_use_selective_lane():
     ok, evidence = selective_lane_qualifies(_decision("SHORT"), _profile())
     assert ok is True
-    assert evidence["reason"] == "SELECTIVE_A_PLUS_PLUS_V2"
+    assert evidence["reason"] == "SELECTIVE_A_PLUS_PLUS_V3"
     assert evidence["direction_rate"] == 0.9565
     assert evidence["flow_path"] == "FLOW_ALIGNED"
+    assert evidence["score_path"] == "STANDARD_96_PLUS"
 
 
-def test_one_confirmation_can_pass_when_cvd_impulse_is_improving():
+def test_one_confirmation_can_pass_only_for_96_plus_when_cvd_impulse_is_improving():
     decision = deepcopy(_decision("SHORT"))
     decision["direction_engine"]["confirmations"] = 1
     decision["taker_imbalance_alignment"] = -0.05
@@ -91,6 +92,61 @@ def test_one_confirmation_can_pass_when_cvd_impulse_is_improving():
     ok, evidence = selective_lane_qualifies(decision, _profile())
     assert ok is True
     assert evidence["flow_path"] == "IMPROVING_CVD_IMPULSE"
+    assert evidence["score_path"] == "STANDARD_96_PLUS"
+
+
+def test_borderline_94_95_requires_two_confirmations():
+    decision = deepcopy(_decision("SHORT"))
+    decision["score"] = 94
+    decision["direction_engine"]["confirmations"] = 1
+    decision["direction_engine"]["confirmation_flags"]["fresh_micro"] = True
+
+    ok, evidence = selective_lane_qualifies(decision, _profile())
+    assert ok is False
+    assert evidence["reason"] == "CONFIRMATIONS"
+    assert evidence["score_path"] == "BORDERLINE_94_95"
+    assert evidence["required_confirmations"] == 2
+
+
+def test_score_92_momentum_continuation_can_pass():
+    decision = deepcopy(_decision("SHORT"))
+    decision["score"] = 92
+    decision["direction_engine"]["confirmations"] = 2
+    decision["move_3m_percent"] = -0.11
+    decision["move_5m_percent"] = -0.22
+    decision["volume_ratio_5m"] = 1.25
+    decision["volume_ratio_15m"] = 1.05
+
+    ok, evidence = selective_lane_qualifies(decision, _profile())
+    assert ok is True
+    assert evidence["reason"] == "SELECTIVE_MOMENTUM_CONTINUATION_V3"
+    assert evidence["score_path"] == "MOMENTUM_CONTINUATION_92_93"
+    assert evidence["directional_momentum"] is True
+    assert evidence["required_confirmations"] == 2
+
+
+def test_score_92_without_continuation_momentum_stays_blocked():
+    decision = deepcopy(_decision("SHORT"))
+    decision["score"] = 92
+    decision["direction_engine"]["confirmations"] = 2
+    decision["move_3m_percent"] = -0.01
+    decision["move_5m_percent"] = -0.02
+    decision["breakout_20m"] = False
+
+    ok, evidence = selective_lane_qualifies(decision, _profile())
+    assert ok is False
+    assert evidence["reason"] == "LOW_SCORE_NO_CONTINUATION"
+
+
+def test_score_below_92_stays_blocked():
+    decision = deepcopy(_decision("SHORT"))
+    decision["score"] = 91
+    decision["direction_engine"]["confirmations"] = 3
+    decision["direction_engine"]["confirmation_flags"]["fresh_micro"] = True
+
+    ok, evidence = selective_lane_qualifies(decision, _profile())
+    assert ok is False
+    assert evidence["reason"] == "SCORE"
 
 
 def test_weak_direction_history_cannot_use_lane():
