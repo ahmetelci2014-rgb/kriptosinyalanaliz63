@@ -25,7 +25,7 @@ import market_first_promotion_reason_patch as promotion_reason_patch
 import market_first_recovery_evidence_lane as recovery_evidence_lane
 import market_first_reversal_capture_v2 as reversal_capture
 import market_first_runner as runner
-import market_first_selective_live_lane as selective_live_lane
+import market_first_selective_live_lane_v2 as selective_live_lane
 import market_first_shadow_edge as shadow_edge
 import market_first_simple_mode as simple_mode
 import market_first_structure_fibo_contact as structure_fibo
