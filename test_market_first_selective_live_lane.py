@@ -1,7 +1,7 @@
 from copy import deepcopy
 
 from market_first_entry_plan_context_patch import decorate_promoted
-from market_first_selective_live_lane import selective_lane_qualifies
+from market_first_selective_live_lane_v2 import selective_lane_qualifies
 
 
 def _profile():
@@ -33,6 +33,7 @@ def _decision(direction="SHORT"):
         "volume_ratio_5m": 1.2,
         "volume_ratio_15m": 1.0,
         "extension_atr_5m": 0.6,
+        "derivatives_soft_score": 0,
         "market_regime": "BEAR" if direction == "SHORT" else "BULL",
         "market_preferred_direction": direction,
         "structure_5m": direction,
@@ -71,8 +72,25 @@ def test_entry_plan_context_keeps_5m_and_15m_volume():
 def test_strong_directional_short_can_use_selective_lane():
     ok, evidence = selective_lane_qualifies(_decision("SHORT"), _profile())
     assert ok is True
-    assert evidence["reason"] == "SELECTIVE_A_PLUS_PLUS"
+    assert evidence["reason"] == "SELECTIVE_A_PLUS_PLUS_V2"
     assert evidence["direction_rate"] == 0.9565
+    assert evidence["flow_path"] == "FLOW_ALIGNED"
+
+
+def test_one_confirmation_can_pass_when_cvd_impulse_is_improving():
+    decision = deepcopy(_decision("SHORT"))
+    decision["direction_engine"]["confirmations"] = 1
+    decision["taker_imbalance_alignment"] = -0.05
+    decision["cvd_ratio"] = -0.04
+    decision["cvd_impulse_alignment"] = 0.42
+    decision["book_imbalance_alignment"] = 0.02
+    decision["derivatives_soft_score"] = -1
+    decision["direction_engine"]["short"]["taker_alignment"] = -0.05
+    decision["direction_engine"]["short"]["cvd_alignment"] = -0.04
+
+    ok, evidence = selective_lane_qualifies(decision, _profile())
+    assert ok is True
+    assert evidence["flow_path"] == "IMPROVING_CVD_IMPULSE"
 
 
 def test_weak_direction_history_cannot_use_lane():
@@ -90,6 +108,14 @@ def test_opposite_live_flow_remains_hard_block():
     ok, evidence = selective_lane_qualifies(decision, _profile())
     assert ok is False
     assert evidence["reason"] == "TAKER_CVD_OPPOSITE"
+
+
+def test_relaxed_shadow_edge_cannot_use_lane():
+    decision = deepcopy(_decision("SHORT"))
+    decision["shadow_edge_relaxed_profit_gate"] = True
+    ok, evidence = selective_lane_qualifies(decision, _profile())
+    assert ok is False
+    assert evidence["reason"] == "NO_RELAXED_SHADOW_EDGE"
 
 
 def test_wide_risk_remains_blocked():
