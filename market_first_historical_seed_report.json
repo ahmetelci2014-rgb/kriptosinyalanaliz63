@@ -1,91 +1,134 @@
 {
   "batch_symbols": 12,
-  "cursor_end": 132,
-  "cursor_start": 120,
+  "cursor_end": 144,
+  "cursor_start": 132,
   "eligible_research_universe": 279,
-  "generated_at": 1789545255,
+  "generated_at": 1789631750,
   "historical_breadth_mode": "NEUTRAL_0_50_NO_LOOKAHEAD",
   "historical_derivatives_mode": "UNAVAILABLE_FLAGS_ZERO",
-  "historical_labeled_total": 84,
+  "historical_labeled_total": 95,
   "labeled_added": 11,
-  "labeled_after": 179,
-  "labeled_before": 168,
+  "labeled_after": 194,
+  "labeled_before": 183,
   "liquidity_note": "Historical order-book depth unavailable; quote-volume gate used, live depth guard remains unchanged.",
   "lookback_days": 45,
   "max_evals_per_symbol": 160,
   "ml_quality_after_seed": {
     "active_min_each_class": 25,
     "active_min_labeled": 120,
-    "labeled_count": 179,
+    "labeled_count": 194,
     "live_block_probability": 0.42,
     "metrics": {
-      "balanced_accuracy": 0.4804,
-      "roc_auc": 0.4355
+      "balanced_accuracy": 0.4818,
+      "roc_auc": 0.3919
     },
     "mode": "SHADOW",
-    "negative_count": 89,
-    "positive_count": 90,
+    "negative_count": 96,
+    "positive_count": 98,
     "reason": "Model eğitildi fakat kronolojik doğrulama henüz canlı etki için yeterli değil.",
     "shadow_min_each_class": 2,
     "shadow_min_labeled": 5,
     "top_feature_importance": {
-      "breadth_24h_alignment": 0.049835,
-      "extension_atr_5m": 0.064882,
-      "log10_quote_volume_24h": 0.065353,
-      "major_move_5m_alignment": 0.048483,
-      "market_score_alignment": 0.047505,
-      "risk_percent": 0.049517,
-      "room_r_capped": 0.118971,
-      "volume_ratio_1m": 0.053809
+      "breadth_24h_alignment": 0.043043,
+      "extension_atr_5m": 0.071108,
+      "log10_quote_volume_24h": 0.077354,
+      "major_move_5m_alignment": 0.051242,
+      "market_score_alignment": 0.046481,
+      "move_5m_alignment": 0.055139,
+      "room_r_capped": 0.108519,
+      "volume_ratio_1m": 0.049177
     },
-    "validation_count": 45,
+    "validation_count": 48,
     "version": "MARKET_FIRST_RF_QUALITY_V4_EARLY_POOL_2026_08_30"
   },
   "outcome_hours": 18,
   "round_trip_cost_percent": 0.12,
   "run_totals": {
-    "LOW_HIST_VOLUME": 109,
-    "LOW_SCORE": 642,
+    "LOW_HIST_VOLUME": 125,
+    "LOW_SCORE": 572,
     "MARKET_OPPOSED": 1,
-    "NO_ACCELERATION": 460,
+    "NO_ACCELERATION": 538,
     "RESEARCH_LATE_SKIP": 14,
-    "RESEARCH_RISK_WIDE": 10,
-    "STALE_EXTENSION": 193,
+    "RESEARCH_RISK_WIDE": 5,
+    "STALE_EXTENSION": 174,
     "eval_times": 1440,
-    "negative": 6,
-    "positive": 5,
+    "negative": 3,
+    "positive": 8,
     "seeded": 11,
     "seeded_counterfactual": 11,
-    "stage_EARLY": 21,
-    "stage_LATE": 14
+    "stage_EARLY": 15,
+    "stage_LATE": 14,
+    "stage_READY": 1
   },
   "strategy_version": "MARKET_FIRST_V5_2026_08_28",
   "symbols": [
     {
       "stats": {
-        "LOW_SCORE": 65,
-        "MARKET_OPPOSED": 1,
-        "NO_ACCELERATION": 31,
-        "RESEARCH_LATE_SKIP": 3,
+        "LOW_SCORE": 48,
+        "NO_ACCELERATION": 57,
+        "RESEARCH_LATE_SKIP": 2,
         "RESEARCH_RISK_WIDE": 1,
-        "STALE_EXTENSION": 16,
+        "STALE_EXTENSION": 12,
+        "eval_times": 120,
+        "stage_EARLY": 1,
+        "stage_LATE": 2
+      },
+      "status": "OK",
+      "symbol": "LUNAUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 44,
+        "NO_ACCELERATION": 52,
+        "RESEARCH_LATE_SKIP": 1,
+        "STALE_EXTENSION": 20,
         "eval_times": 120,
         "negative": 1,
         "positive": 2,
         "seeded": 3,
         "seeded_counterfactual": 3,
+        "stage_EARLY": 3,
+        "stage_LATE": 1
+      },
+      "status": "OK",
+      "symbol": "CCUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 71,
+        "NO_ACCELERATION": 30,
+        "RESEARCH_LATE_SKIP": 1,
+        "RESEARCH_RISK_WIDE": 4,
+        "STALE_EXTENSION": 13,
+        "eval_times": 120,
+        "positive": 1,
+        "seeded": 1,
+        "seeded_counterfactual": 1,
         "stage_EARLY": 4,
-        "stage_LATE": 3
+        "stage_LATE": 1,
+        "stage_READY": 1
+      },
+      "status": "OK",
+      "symbol": "MMTUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 57,
+        "NO_ACCELERATION": 42,
+        "RESEARCH_LATE_SKIP": 5,
+        "STALE_EXTENSION": 16,
+        "eval_times": 120,
+        "stage_LATE": 5
       },
       "status": "OK",
       "symbol": "REUSDT"
     },
     {
       "stats": {
-        "LOW_HIST_VOLUME": 5,
-        "LOW_SCORE": 53,
-        "NO_ACCELERATION": 47,
-        "STALE_EXTENSION": 14,
+        "LOW_HIST_VOLUME": 20,
+        "LOW_SCORE": 40,
+        "NO_ACCELERATION": 43,
+        "STALE_EXTENSION": 16,
         "eval_times": 120,
         "positive": 1,
         "seeded": 1,
@@ -93,140 +136,53 @@
         "stage_EARLY": 1
       },
       "status": "OK",
-      "symbol": "MEUSDT"
-    },
-    {
-      "stats": {
-        "LOW_SCORE": 75,
-        "NO_ACCELERATION": 28,
-        "RESEARCH_RISK_WIDE": 3,
-        "STALE_EXTENSION": 14,
-        "eval_times": 120,
-        "stage_EARLY": 3
-      },
-      "status": "OK",
-      "symbol": "LAUSDT"
-    },
-    {
-      "stats": {
-        "LOW_SCORE": 59,
-        "NO_ACCELERATION": 40,
-        "RESEARCH_LATE_SKIP": 1,
-        "STALE_EXTENSION": 20,
-        "eval_times": 120,
-        "stage_LATE": 1
-      },
-      "status": "OK",
-      "symbol": "ENSOUSDT"
-    },
-    {
-      "stats": {
-        "LOW_SCORE": 77,
-        "NO_ACCELERATION": 20,
-        "RESEARCH_LATE_SKIP": 5,
-        "RESEARCH_RISK_WIDE": 2,
-        "STALE_EXTENSION": 15,
-        "eval_times": 120,
-        "positive": 1,
-        "seeded": 1,
-        "seeded_counterfactual": 1,
-        "stage_EARLY": 3,
-        "stage_LATE": 5
-      },
-      "status": "OK",
-      "symbol": "CAPUSDT"
-    },
-    {
-      "stats": {
-        "LOW_SCORE": 45,
-        "NO_ACCELERATION": 54,
-        "RESEARCH_LATE_SKIP": 2,
-        "RESEARCH_RISK_WIDE": 2,
-        "STALE_EXTENSION": 17,
-        "eval_times": 120,
-        "stage_EARLY": 2,
-        "stage_LATE": 2
-      },
-      "status": "OK",
-      "symbol": "ADAUSDT"
-    },
-    {
-      "stats": {
-        "LOW_SCORE": 47,
-        "NO_ACCELERATION": 46,
-        "RESEARCH_RISK_WIDE": 1,
-        "STALE_EXTENSION": 24,
-        "eval_times": 120,
-        "negative": 2,
-        "seeded": 2,
-        "seeded_counterfactual": 2,
-        "stage_EARLY": 3
-      },
-      "status": "OK",
-      "symbol": "AVNTUSDT"
-    },
-    {
-      "stats": {
-        "LOW_HIST_VOLUME": 37,
-        "LOW_SCORE": 41,
-        "NO_ACCELERATION": 21,
-        "STALE_EXTENSION": 19,
-        "eval_times": 120,
-        "negative": 2,
-        "seeded": 2,
-        "seeded_counterfactual": 2,
-        "stage_EARLY": 2
-      },
-      "status": "OK",
-      "symbol": "CVXUSDT"
-    },
-    {
-      "stats": {
-        "LOW_SCORE": 43,
-        "NO_ACCELERATION": 62,
-        "STALE_EXTENSION": 15,
-        "eval_times": 120
-      },
-      "status": "OK",
-      "symbol": "LUNAUSDT"
-    },
-    {
-      "stats": {
-        "LOW_HIST_VOLUME": 24,
-        "LOW_SCORE": 47,
-        "NO_ACCELERATION": 39,
-        "RESEARCH_LATE_SKIP": 1,
-        "STALE_EXTENSION": 9,
-        "eval_times": 120,
-        "stage_LATE": 1
-      },
-      "status": "OK",
       "symbol": "AEVOUSDT"
     },
     {
       "stats": {
-        "LOW_SCORE": 56,
-        "NO_ACCELERATION": 46,
-        "RESEARCH_LATE_SKIP": 1,
-        "RESEARCH_RISK_WIDE": 1,
+        "LOW_HIST_VOLUME": 20,
+        "LOW_SCORE": 40,
+        "NO_ACCELERATION": 44,
         "STALE_EXTENSION": 15,
         "eval_times": 120,
         "positive": 1,
         "seeded": 1,
         "seeded_counterfactual": 1,
-        "stage_EARLY": 2,
-        "stage_LATE": 1
+        "stage_EARLY": 1
       },
       "status": "OK",
-      "symbol": "MONUSDT"
+      "symbol": "LAYERUSDT"
     },
     {
       "stats": {
-        "LOW_HIST_VOLUME": 43,
-        "LOW_SCORE": 34,
-        "NO_ACCELERATION": 26,
+        "LOW_HIST_VOLUME": 33,
+        "LOW_SCORE": 40,
+        "NO_ACCELERATION": 35,
         "RESEARCH_LATE_SKIP": 1,
-        "STALE_EXTENSION": 15,
+        "STALE_EXTENSION": 11,
+        "eval_times": 120,
+        "stage_LATE": 1
+      },
+      "status": "OK",
+      "symbol": "PROSUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 56,
+        "NO_ACCELERATION": 53,
+        "STALE_EXTENSION": 11,
+        "eval_times": 120
+      },
+      "status": "OK",
+      "symbol": "BASEDUSDT"
+    },
+    {
+      "stats": {
+        "LOW_HIST_VOLUME": 10,
+        "LOW_SCORE": 37,
+        "NO_ACCELERATION": 58,
+        "RESEARCH_LATE_SKIP": 1,
+        "STALE_EXTENSION": 13,
         "eval_times": 120,
         "negative": 1,
         "seeded": 1,
@@ -235,7 +191,52 @@
         "stage_LATE": 1
       },
       "status": "OK",
-      "symbol": "QTUMUSDT"
+      "symbol": "GMTUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 48,
+        "MARKET_OPPOSED": 1,
+        "NO_ACCELERATION": 50,
+        "RESEARCH_LATE_SKIP": 1,
+        "STALE_EXTENSION": 20,
+        "eval_times": 120,
+        "stage_LATE": 1
+      },
+      "status": "OK",
+      "symbol": "KITEUSDT"
+    },
+    {
+      "stats": {
+        "LOW_HIST_VOLUME": 42,
+        "LOW_SCORE": 39,
+        "NO_ACCELERATION": 28,
+        "RESEARCH_LATE_SKIP": 2,
+        "STALE_EXTENSION": 7,
+        "eval_times": 120,
+        "negative": 1,
+        "positive": 1,
+        "seeded": 2,
+        "seeded_counterfactual": 2,
+        "stage_EARLY": 2,
+        "stage_LATE": 2
+      },
+      "status": "OK",
+      "symbol": "GASUSDT"
+    },
+    {
+      "stats": {
+        "LOW_SCORE": 52,
+        "NO_ACCELERATION": 46,
+        "STALE_EXTENSION": 20,
+        "eval_times": 120,
+        "positive": 2,
+        "seeded": 2,
+        "seeded_counterfactual": 2,
+        "stage_EARLY": 2
+      },
+      "status": "OK",
+      "symbol": "PNUTUSDT"
     }
   ],
   "version": "MARKET_FIRST_HISTORICAL_ML_SEED_V1_2026_08_29"
