@@ -177508,17 +177508,22 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "SL",
+      "r_result": -1.0,
+      "exit_price": 34.35,
+      "closed_at": 1789652171,
+      "closed_day": "2026-09-17",
       "events": [
         {
           "time": 1789651058,
           "event": "OPENED",
           "price": 34.53
+        },
+        {
+          "time": 1789652171,
+          "event": "SL",
+          "price": 34.35
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -177543,12 +177548,12 @@
       "sent_price": 34.47,
       "entry_distance_at_send_percent": 0.17376194613380327,
       "best_favorable_percent": 0.1738,
-      "worst_adverse_percent": 0.1448,
+      "worst_adverse_percent": 0.5213,
       "best_favorable_r": 0.4344,
-      "worst_adverse_r": 0.362,
+      "worst_adverse_r": 1.3032,
       "best_favorable_price": 34.59,
-      "worst_adverse_price": 34.48,
-      "last_market_price": 34.49,
+      "worst_adverse_price": 34.35,
+      "last_market_price": 34.35,
       "tp1_hit_at": 0,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -177579,7 +177584,87 @@
         "15m": "LONG",
         "1h": "LONG"
       },
-      "last_tracking_at": 1789651500
+      "last_tracking_at": 1789651860,
+      "duration_minutes": 18,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "ONCE LEHE GITTI, SONRA TERS DONDU",
+        "confidence": "ORTA",
+        "factors": [
+          "Stop oncesinde islem en az 0.35R lehe hareket etti.",
+          "15M hacim kendi ortalamasinin altinda veya sinirdaydi.",
+          "Stop mesafesi cok kisa surede tamamen tuketildi."
+        ],
+        "duration_minutes": 18,
+        "best_favorable_r": 0.4344,
+        "worst_adverse_r": 1.3032,
+        "provisional": true,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "stop_root_cause": {
+        "version": "STOP_ROOT_CAUSE_V1",
+        "primary": "TAKIP_SURUYOR",
+        "label": "Takip sürüyor",
+        "preliminary": "ZAYIF_TREND_HACIM",
+        "preliminary_label": "Zayıf trend/hacim",
+        "secondary": [],
+        "confidence": "DUSUK",
+        "provisional": true,
+        "factors": [
+          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "15M hacim oranı sınırın altındaydı."
+        ],
+        "metrics": {
+          "duration_minutes": 18,
+          "mfe_r": 0.4344,
+          "mae_r": 1.3032,
+          "risk_percent": 0.4,
+          "return_minutes": null
+        },
+        "updated_at": 1789652171
+      },
+      "result_diagnostics": {
+        "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
+        "shadow_only": true,
+        "status": "TRACKING",
+        "final_result": "SL",
+        "started_at": 1789652171,
+        "measurement_start_at": 1789652220,
+        "reference_price": 34.35,
+        "reference_label": "SL_EXIT",
+        "watched_levels": {
+          "TP1": 34.96000209,
+          "TP2": 35.175003135,
+          "TP3": 35.39000418
+        },
+        "reached_levels": {},
+        "checkpoints": {},
+        "max_favorable_r": 0.0,
+        "max_adverse_r": 0.9412,
+        "last_checked_at": 1789652584,
+        "completed_at": 0,
+        "diagnosis": {
+          "status": "PROVISIONAL",
+          "code": "SL_SONRASI_TERS_YON_DEVAMI",
+          "likely_cause": "YON_VEYA_SETUP_GECERSIZLESMESI",
+          "confidence": "HIGH",
+          "summary": "Stop sonrasi ters hareket devam etti; yon/setup hatasi olasiligi yuksek.",
+          "evidence": {
+            "max_favorable_r_after_close": 0.0,
+            "max_adverse_r_after_close": 0.9412,
+            "risk_percent": 0.4,
+            "tp1_progress_at_send_percent": null,
+            "entry_distance_at_send_percent": 0.17376194613380327,
+            "reached_tp1_after_close": false,
+            "reached_tp2_after_close": false,
+            "reached_tp3_after_close": false,
+            "tp1_minutes_after_close": null,
+            "tp2_minutes_after_close": null,
+            "tp3_minutes_after_close": null
+          }
+        },
+        "last_price": 34.35
+      }
     },
     "EGLDUSDT_LONG_MARKET_FIRST_V5_1789651308": {
       "trade_id": "EGLDUSDT_LONG_MARKET_FIRST_V5_1789651308",
@@ -177598,17 +177683,22 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "SL",
+      "r_result": -1.0,
+      "exit_price": 3.916,
+      "closed_at": 1789652174,
+      "closed_day": "2026-09-17",
       "events": [
         {
           "time": 1789651308,
           "event": "OPENED",
           "price": 3.943
+        },
+        {
+          "time": 1789652174,
+          "event": "SL",
+          "price": 3.916
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -177633,18 +177723,96 @@
       "sent_price": 3.937,
       "entry_distance_at_send_percent": 0.15216839969566898,
       "best_favorable_percent": 0.0,
-      "worst_adverse_percent": 0.279,
+      "worst_adverse_percent": 0.7608,
       "best_favorable_r": 0.0,
-      "worst_adverse_r": 0.4169,
+      "worst_adverse_r": 1.137,
       "best_favorable_price": 3.943,
-      "worst_adverse_price": 3.932,
-      "last_market_price": 3.932,
+      "worst_adverse_price": 3.913,
+      "last_market_price": 3.916,
       "tp1_hit_at": 0,
       "entry_type": "MARKET_FIRST_FAST",
-      "last_tracking_at": 1789651500
+      "last_tracking_at": 1789651920,
+      "duration_minutes": 14,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "HIZLI TERS HAREKET / YON UYUMSUZLUGU",
+        "confidence": "ORTA",
+        "factors": [
+          "Islem ilk 20 dakikada anlamli lehe hareket yapmadan stop oldu.",
+          "Stop mesafesi cok kisa surede tamamen tuketildi."
+        ],
+        "duration_minutes": 14,
+        "best_favorable_r": 0.0,
+        "worst_adverse_r": 1.137,
+        "provisional": true,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "stop_root_cause": {
+        "version": "STOP_ROOT_CAUSE_V1",
+        "primary": "TAKIP_SURUYOR",
+        "label": "Takip sürüyor",
+        "preliminary": "MUHTEMEL_YANLIS_YON",
+        "preliminary_label": "Muhtemel yanlış yön",
+        "secondary": [],
+        "confidence": "DUSUK",
+        "provisional": true,
+        "factors": [
+          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+        ],
+        "metrics": {
+          "duration_minutes": 14,
+          "mfe_r": 0.0,
+          "mae_r": 1.137,
+          "risk_percent": 0.669,
+          "return_minutes": null
+        },
+        "updated_at": 1789652174
+      },
+      "result_diagnostics": {
+        "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
+        "shadow_only": true,
+        "status": "TRACKING",
+        "final_result": "SL",
+        "started_at": 1789652174,
+        "measurement_start_at": 1789652220,
+        "reference_price": 3.916,
+        "reference_label": "SL_EXIT",
+        "watched_levels": {
+          "TP1": 3.9575121429,
+          "TP2": 3.9693857143,
+          "TP3": 3.9825785714
+        },
+        "reached_levels": {},
+        "checkpoints": {},
+        "max_favorable_r": 0.0,
+        "max_adverse_r": 1.3265,
+        "last_checked_at": 1789652584,
+        "completed_at": 0,
+        "diagnosis": {
+          "status": "PROVISIONAL",
+          "code": "SL_SONRASI_TERS_YON_DEVAMI",
+          "likely_cause": "YON_VEYA_SETUP_GECERSIZLESMESI",
+          "confidence": "HIGH",
+          "summary": "Stop sonrasi ters hareket devam etti; yon/setup hatasi olasiligi yuksek.",
+          "evidence": {
+            "max_favorable_r_after_close": 0.0,
+            "max_adverse_r_after_close": 1.3265,
+            "risk_percent": 0.6692,
+            "tp1_progress_at_send_percent": null,
+            "entry_distance_at_send_percent": 0.15216839969566898,
+            "reached_tp1_after_close": false,
+            "reached_tp2_after_close": false,
+            "reached_tp3_after_close": false,
+            "tp1_minutes_after_close": null,
+            "tp2_minutes_after_close": null,
+            "tp3_minutes_after_close": null
+          }
+        },
+        "last_price": 3.887
+      }
     }
   },
-  "last_update": 1789651564,
+  "last_update": 1789652587,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -177655,13 +177823,13 @@
   },
   "result_diagnostics_summary": {
     "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
-    "tracked_total": 177,
+    "tracked_total": 179,
     "completed_total": 177,
     "diagnosis_counts": {
       "BE_SONRASI_TP3": 28,
       "BE_KORUMASI_DOGRU": 16,
       "BE_NOTR_KARISIK": 29,
-      "SL_SONRASI_TERS_YON_DEVAMI": 5,
+      "SL_SONRASI_TERS_YON_DEVAMI": 7,
       "SL_SONRASI_TOPARLANMA": 55,
       "BE_SONRASI_YENIDEN_HEDEF": 6,
       "SL_SONRASI_GUCLU_TOPARLANMA": 26,
@@ -177671,7 +177839,7 @@
       "BE_KORUMASI_ERKEN_OLABILIR": 34,
       "SERMAYE_KORUMASI_ISABETLI": 16,
       "BE_AYARI_ICIN_DAHA_COK_VERI": 29,
-      "YON_VEYA_SETUP_GECERSIZLESMESI": 5,
+      "YON_VEYA_SETUP_GECERSIZLESMESI": 7,
       "ERKEN_GIRIS_OLASILIGI": 31,
       "GIRIS_STOP_ZAMANLAMASI": 12,
       "KESIN_NEDEN_YOK": 12,
@@ -177680,7 +177848,7 @@
     "sl_recovery_total": 81,
     "be_maybe_early_total": 34,
     "be_protection_correct_total": 16,
-    "updated_at": 1789581201
+    "updated_at": 1789652587
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
