@@ -38293,8 +38293,8 @@
       "opened": 2,
       "radar": 0,
       "tp1": 1,
-      "tp2": 0,
-      "tp3": 0,
+      "tp2": 1,
+      "tp3": 1,
       "sl": 3,
       "be": 1,
       "expired": 0,
@@ -38347,8 +38347,8 @@
           "opened": 1,
           "radar": 0,
           "tp1": 1,
-          "tp2": 0,
-          "tp3": 0,
+          "tp2": 1,
+          "tp3": 1,
           "sl": 0,
           "be": 0,
           "expired": 0
@@ -38363,10 +38363,12 @@
         "ENSUSDT": 1789683086
       },
       "closed_times": {
-        "APEUSDT": 1789679766
+        "APEUSDT": 1789679766,
+        "NEARUSDT": 1789685463
       },
       "closed_results": {
-        "APEUSDT": "BE"
+        "APEUSDT": "BE",
+        "NEARUSDT": "TP3"
       },
       "closed_history": [
         {
@@ -38418,6 +38420,26 @@
           "exit": 3.041000361,
           "source": "MARKET_FIRST_V5",
           "score": 89
+        },
+        {
+          "time": "01:46:03",
+          "symbol": "NEARUSDT",
+          "direction": "LONG",
+          "result": "TP2",
+          "entry": 3.006,
+          "exit": 3.0585005415,
+          "source": "MARKET_FIRST_V5",
+          "score": 89
+        },
+        {
+          "time": "01:51:03",
+          "symbol": "NEARUSDT",
+          "direction": "LONG",
+          "result": "TP3",
+          "entry": 3.006,
+          "exit": 3.076000722,
+          "source": "MARKET_FIRST_V5",
+          "score": 89
         }
       ],
       "sl_after_tp1": 1,
@@ -38425,39 +38447,11 @@
       "sl_after_no_return": 2
     }
   },
-  "last_update": 1789684879,
+  "last_update": 1789685463,
   "last_open_summary": 1787843763,
   "last_status_message": 1787906216,
   "last_daily_report": "2026-08-27",
   "sl_after_follow": {
-    "GRASSUSDT_LONG_1789666879": {
-      "trade_id": "GRASSUSDT_LONG_MARKET_FIRST_V5_1789666413",
-      "symbol": "GRASSUSDT",
-      "direction": "LONG",
-      "source": "MARKET_FIRST_V5",
-      "entry": 0.3345,
-      "tp1": 0.33790002525,
-      "tp2": 0.339600037875,
-      "tp3": 0.3413000505,
-      "sl": 0.3327942857,
-      "score": 90,
-      "risk_percent": 0.51,
-      "stopped_at": 1789666879,
-      "stop_exit": 0.3325,
-      "reported_checkpoints": [
-        30,
-        60,
-        120,
-        180,
-        240
-      ],
-      "after_sl_tp1": false,
-      "after_sl_tp2": false,
-      "after_sl_tp3": false,
-      "resolved": true,
-      "no_return_counted": true,
-      "no_return_counted_day": "2026-09-18"
-    },
     "METUSDT_LONG_1789668391": {
       "trade_id": "METUSDT_LONG_MARKET_FIRST_V5_1789667848",
       "symbol": "METUSDT",
@@ -38570,7 +38564,9 @@
       "risk_percent": 0.485,
       "stopped_at": 1789683086,
       "stop_exit": 5.669,
-      "reported_checkpoints": [],
+      "reported_checkpoints": [
+        30
+      ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
