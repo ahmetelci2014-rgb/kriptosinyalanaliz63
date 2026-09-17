@@ -7,7 +7,8 @@ promoted opportunity. Live admission is intentionally simple again:
 1) the existing analysis/entry engine finds the setup,
 2) Profit Quality checks trade quality and risk/reward,
 3) Final Execution checks the last micro/flow execution conditions,
-4) Profit Lock manages already-open trade protection/tracking.
+4) the Balanced Core Guard enforces final send invariants,
+5) Profit Lock manages already-open trade protection/tracking.
 
 The removed layers are not deleted from the repository. Their historical state
 and reports remain available for diagnostics, so this rollback is reversible.
@@ -15,6 +16,7 @@ and reports remain available for diagnostics, so this rollback is reversible.
 from __future__ import annotations
 
 import market_first_background_live_bridge as background_live_bridge
+import market_first_balanced_core_guard as balanced_core_guard
 import market_first_big_move_capture as big_move_capture
 import market_first_daily_report as daily_report
 import market_first_daily_report_origin_patch as daily_report_origin_patch
@@ -69,6 +71,14 @@ def main() -> None:
     # Profit Quality owns final trade text; attach the FIB model label afterwards.
     structure_fibo.install_presentation()
 
+    # This is deliberately installed last. The historical fast-entry path calls
+    # runner._send_trade from inside the candidate scan, before outer wrappers
+    # have returned. The final guard prevents that call from bypassing Profit
+    # Quality / Final Execution while still letting the candidate continue
+    # through the ordinary pipeline. It also protects minimum-floor stops from
+    # being sent without a fresh micro trigger.
+    balanced_core_guard.install()
+
     print("MARKET FIRST V6 MODE: BALANCED CORE LIVE")
     print("MARKET FIRST DAILY REPORT ORIGIN/BE:", daily_report_origin_patch.summary())
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
@@ -86,6 +96,7 @@ def main() -> None:
     print("MARKET FIRST TAO PROFIT PATCH:", tao_profit_patch.status())
     print("MARKET FIRST TAO QUALITY BRIDGE:", tao_quality_bridge.summary())
     print("MARKET FIRST FINAL EXECUTION GATE:", final_execution_gate.summary())
+    print("MARKET FIRST V6 CORE GUARD:", balanced_core_guard.summary())
     print("MARKET FIRST PROFIT LOCK:", profit_lock.summary())
 
     try:
@@ -95,6 +106,7 @@ def main() -> None:
         print("MARKET FIRST PROFIT QUALITY RUN:", profit_quality.finish())
         print("MARKET FIRST TAO QUALITY RUN:", tao_quality_bridge.summary())
         print("MARKET FIRST FINAL EXECUTION RUN:", final_execution_gate.finish())
+        print("MARKET FIRST V6 CORE GUARD RUN:", balanced_core_guard.summary())
         print("MARKET FIRST BACKGROUND LIVE BRIDGE RUN:", background_live_bridge.finish())
         print("MARKET FIRST STRUCTURE FIBO RUN:", structure_fibo.finish())
         print("MARKET FIRST PROFIT LOCK RUN:", profit_lock.summary())
