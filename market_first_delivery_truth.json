@@ -1,59 +1,60 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1789630099,
+  "generated_at": 1789630968,
   "status": "CAPITAL_RECOVERY_STRICT",
   "survival": {
     "mode": "RECOVERY_STRICT",
     "reason": "CRITICAL_ROLLING_STOP_RATE"
   },
   "funnel_truth": {
-    "internal_promoted": 640,
+    "internal_promoted": 638,
     "real_signal_sent": 4,
-    "promoted_unsent": 636,
+    "promoted_unsent": 634,
     "real_telegram_send_failures": 0,
-    "internal_final_admission_gap": 636,
+    "internal_final_admission_gap": 634,
     "promotion_is_send_attempt": false
   },
   "latest_gate_layers": {
     "profit_quality": {
-      "accepted": 5,
+      "accepted": 6,
       "run_counts": {
-        "EXPECTED_MOVE_BELOW_2P": 1,
-        "VOLUME_BELOW_0_65": 2,
         "OK": 5,
-        "ACCEPTED": 5
+        "ACCEPTED": 6,
+        "OK_SHADOW_EDGE": 1
       },
-      "blocks": {
-        "EXPECTED_MOVE_BELOW_2P": 1,
-        "VOLUME_BELOW_0_65": 2
-      }
+      "blocks": {}
     },
     "final_execution": {
-      "accepted": 0,
+      "accepted": 2,
       "run_counts": {
-        "UPSTREAM_REJECTED": 4,
-        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 3,
-        "TAKER_CVD_OPPOSITE": 1,
-        "DIRECTION_CONFIRMATIONS_BELOW_3": 1
+        "UPSTREAM_REJECTED": 3,
+        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 1,
+        "TAKER_CVD_OPPOSITE": 2,
+        "OK": 2,
+        "ACCEPTED": 2,
+        "CVD_IMPULSE_OPPOSITE": 1
       },
       "blocks": {
-        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 3,
-        "TAKER_CVD_OPPOSITE": 1,
-        "DIRECTION_CONFIRMATIONS_BELOW_3": 1
+        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 1,
+        "TAKER_CVD_OPPOSITE": 2,
+        "CVD_IMPULSE_OPPOSITE": 1
       }
     },
     "capital_survival": {
       "accepted": 0,
       "run_counts": {
-        "UPSTREAM_REJECTED": 9
+        "UPSTREAM_REJECTED": 7,
+        "RECOVERY_SCORE": 2
       },
-      "blocks": {}
+      "blocks": {
+        "RECOVERY_SCORE": 2
+      }
     }
   },
   "top_latest_blocker": {
     "layer": "final_execution",
-    "reason": "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL",
-    "count": 3
+    "reason": "TAKER_CVD_OPPOSITE",
+    "count": 2
   },
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
