@@ -1,15 +1,21 @@
-"""Simplified live entry point for Market First.
+"""Balanced live entry point for Market First V6.
 
-All analysis/tracking layers stay active internally. Telegram shows only useful
-live decisions: final trades/results, capital-protection instructions and a very
-small number of strong candidates when survival mode permits them.
+V6 keeps the full analysis/tracking engine, but removes the stack of late-stage
+survival/recovery/selective vetoes that was suppressing almost every internally
+promoted opportunity. Live admission is intentionally simple again:
+
+1) the existing analysis/entry engine finds the setup,
+2) Profit Quality checks trade quality and risk/reward,
+3) Final Execution checks the last micro/flow execution conditions,
+4) Profit Lock manages already-open trade protection/tracking.
+
+The removed layers are not deleted from the repository. Their historical state
+and reports remain available for diagnostics, so this rollback is reversible.
 """
 from __future__ import annotations
 
 import market_first_background_live_bridge as background_live_bridge
 import market_first_big_move_capture as big_move_capture
-import market_first_candidate_survival_patch as candidate_survival_patch
-import market_first_candidate_visibility as candidate_visibility
 import market_first_daily_report as daily_report
 import market_first_daily_report_origin_patch as daily_report_origin_patch
 import market_first_entry_accelerator as entry_accelerator
@@ -19,14 +25,9 @@ import market_first_live_complete_tracking as complete_tracking
 import market_first_pre_entry_shadow as pre_entry_shadow
 import market_first_profit_lock as profit_lock
 import market_first_profit_quality_v1 as profit_quality
-import market_first_profit_survival_gate as profit_survival_gate
-import market_first_profit_survival_v2 as profit_survival_v2
 import market_first_promotion_reason_patch as promotion_reason_patch
-import market_first_recovery_evidence_lane as recovery_evidence_lane
 import market_first_reversal_capture_v2 as reversal_capture
 import market_first_runner as runner
-import market_first_selective_live_lane_v2 as selective_live_lane
-import market_first_shadow_edge as shadow_edge
 import market_first_simple_mode as simple_mode
 import market_first_structure_fibo_contact as structure_fibo
 import market_first_swing_2h_tracking_fix as swing_tracking_fix
@@ -37,11 +38,7 @@ import market_first_target_overlay as target_overlay
 
 
 def main() -> None:
-    # Order matters. Entry Accelerator installs the ordinary PREP->ENTRY path.
-    # Background Live Bridge adds validated shadow-history promotion. Structure
-    # Fibo then sees only the PREPs still not promoted and may convert a confirmed
-    # 1H HL->HH/LH->LL + closed 5M 0.618-0.65 contact into ENTRY. None of these
-    # bridges bypass the common downstream quality/execution/survival stack.
+    # --- Analysis / entry generation ---
     daily_report_origin_patch.install()
     entry_accelerator.install()
     background_live_bridge.install()
@@ -55,29 +52,24 @@ def main() -> None:
     simple_mode.install_simple_mode()
     target_display.install_target_display()
     big_move_capture.install()
+
+    # --- V6 live admission core ---
+    # Keep one quality gate and one final execution gate. Do NOT install the old
+    # Recovery/Survival/Selective/Candidate veto stack here. Those modules remain
+    # in the repo for diagnostics and can be re-enabled if data later supports it.
     profit_quality.install()
     tao_profit_patch.install()
     tao_quality_bridge.install()
-    shadow_edge.install()
     final_execution_gate.install()
 
-    # Profit Survival V2 patches the V1 health source. The Recovery Evidence Lane
-    # remains the ordinary strict exception. Preserve the original 5M/15M plan
-    # volume context, then add only a directional, history-backed A++ recovery
-    # exception. HALT, opposite-flow vetoes and upstream quality remain absolute.
-    profit_survival_v2.install()
-    recovery_evidence_lane.install()
+    # Preserve original plan context for reports and trade tracking.
     entry_plan_context_patch.install()
-    selective_live_lane.install()
-    profit_survival_gate.install()
-    candidate_survival_patch.install()
-    candidate_visibility.install()
     profit_lock.install()
 
-    # Profit Quality owns the final trade text, so add the FIB model label only
-    # after all message-formatting layers are installed.
+    # Profit Quality owns final trade text; attach the FIB model label afterwards.
     structure_fibo.install_presentation()
 
+    print("MARKET FIRST V6 MODE: BALANCED CORE LIVE")
     print("MARKET FIRST DAILY REPORT ORIGIN/BE:", daily_report_origin_patch.summary())
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
     print("MARKET FIRST ENTRY PLAN CONTEXT:", entry_plan_context_patch.summary())
@@ -93,32 +85,20 @@ def main() -> None:
     print("MARKET FIRST PROFIT QUALITY:", profit_quality.summary())
     print("MARKET FIRST TAO PROFIT PATCH:", tao_profit_patch.status())
     print("MARKET FIRST TAO QUALITY BRIDGE:", tao_quality_bridge.summary())
-    print("MARKET FIRST SHADOW EDGE:", shadow_edge.summary())
     print("MARKET FIRST FINAL EXECUTION GATE:", final_execution_gate.summary())
-    print("MARKET FIRST PROFIT SURVIVAL V2:", profit_survival_v2.summary())
-    print("MARKET FIRST RECOVERY EVIDENCE LANE:", recovery_evidence_lane.summary())
-    print("MARKET FIRST SELECTIVE LIVE LANE:", selective_live_lane.summary())
-    print("MARKET FIRST PROFIT SURVIVAL GATE:", profit_survival_gate.summary())
-    print("MARKET FIRST CANDIDATE SURVIVAL:", candidate_survival_patch.summary())
-    print("MARKET FIRST CANDIDATE VISIBILITY:", candidate_visibility.summary())
     print("MARKET FIRST PROFIT LOCK:", profit_lock.summary())
+
     try:
         runner.run()
     finally:
         print("MARKET FIRST BIG MOVE CAPTURE:", big_move_capture.finish())
         print("MARKET FIRST PROFIT QUALITY RUN:", profit_quality.finish())
         print("MARKET FIRST TAO QUALITY RUN:", tao_quality_bridge.summary())
-        print("MARKET FIRST SHADOW EDGE RUN:", shadow_edge.finish())
         print("MARKET FIRST FINAL EXECUTION RUN:", final_execution_gate.finish())
-        print("MARKET FIRST PROFIT SURVIVAL RUN:", profit_survival_gate.finish())
-        print("MARKET FIRST PROFIT SURVIVAL V2 RUN:", profit_survival_v2.finish())
-        print("MARKET FIRST RECOVERY EVIDENCE LANE RUN:", recovery_evidence_lane.summary())
-        print("MARKET FIRST SELECTIVE LIVE LANE RUN:", selective_live_lane.finish())
         print("MARKET FIRST BACKGROUND LIVE BRIDGE RUN:", background_live_bridge.finish())
         print("MARKET FIRST STRUCTURE FIBO RUN:", structure_fibo.finish())
-        print("MARKET FIRST CANDIDATE SURVIVAL RUN:", candidate_survival_patch.summary())
-        print("MARKET FIRST CANDIDATE VISIBILITY RUN:", candidate_visibility.summary())
         print("MARKET FIRST PROFIT LOCK RUN:", profit_lock.summary())
+
     sent = daily_report.maybe_send(runner.bot, runner._send)
     if sent:
         print("GÜNLÜK ÖZET TELEGRAM'A GÖNDERİLDİ.")
