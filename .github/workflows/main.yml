@@ -1,8 +1,8 @@
-name: Market First V5 - Simplified Live
+name: Market First V6 - Balanced Core Live
 
 on:
   # cron-job.org remains the single external dispatcher. Observed dispatches are
-  # roughly 15 minutes apart, so each dispatch now performs three stateful scans
+  # roughly 15 minutes apart, so each dispatch performs three stateful scans
   # at an effective 5-minute cadence inside one workflow run.
   workflow_dispatch:
 
@@ -10,8 +10,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: market-first-v5-live
-  # A run now deliberately spans ~10+ minutes. Never cancel it mid-state when the
+  group: market-first-v6-live
+  # A run deliberately spans ~10+ minutes. Never cancel it mid-state when the
   # next external dispatch arrives; queue the next run instead.
   cancel-in-progress: false
 
@@ -71,14 +71,11 @@ jobs:
           for pass in $(seq 1 "$cycles")
           do
             cycle_started=$(date +%s)
-            echo "===== MARKET FIRST LIVE SCAN $pass/$cycles ====="
+            echo "===== MARKET FIRST V6 LIVE SCAN $pass/$cycles ====="
 
-            # Health is recorded per actual scan now, not merely per external
+            # Health is recorded per actual scan, not merely per external
             # workflow dispatch. This exposes the cadence that trading logic sees.
             python market_first_scheduler_health.py
-
-            # Spot-only extreme-move radar is intentionally disabled from the live
-            # workflow. Telegram should contain only actionable futures trades/results.
 
             # Onceki kapanmis TP1/TP2->BE ve TP3 islemlerinin sessiz golge
             # takibini her taramadan once guncelle. Sinyal/emir/Telegram uretmez.
@@ -99,12 +96,10 @@ jobs:
             fi
           done
 
-          # Agir raporlari her 5dk taramasinda tekrar calistirmak yerine son
-          # taramadan sonra bir kez guncelle; canli giris ritmini yavaslatmasin.
+          # Heavy reports run once after the final scan so live entry cadence
+          # stays fast while all learning/diagnostic data remains available.
           python market_first_observability_report.py
           python market_first_entry_condition_diagnosis.py
-          # Internal ENTRY promotion is not a Telegram send attempt. Keep the
-          # final-admission layers and real delivery failures separately visible.
           python market_first_delivery_truth.py
 
       - name: Durum ve Market First verisini kaydet
@@ -165,7 +160,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Update Market First V5 state"
+          git commit -m "Update Market First V6 state"
 
           for attempt in 1 2 3
           do
