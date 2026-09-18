@@ -179101,9 +179101,9 @@
             "directional_r_from_reference": 1.085
           }
         },
-        "max_favorable_r": 1.6998,
+        "max_favorable_r": 1.9892,
         "max_adverse_r": 1.1935,
-        "last_checked_at": 1789694021,
+        "last_checked_at": 1789694851,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -179112,7 +179112,7 @@
           "confidence": "MEDIUM",
           "summary": "Stop sonrasi anlamli toparlanma var; giris/stop zamanlamasi incelenmeli.",
           "evidence": {
-            "max_favorable_r_after_close": 1.6998,
+            "max_favorable_r_after_close": 1.9892,
             "max_adverse_r_after_close": 1.1935,
             "risk_percent": 0.4851,
             "tp1_progress_at_send_percent": null,
@@ -179125,7 +179125,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 5.696
+        "last_price": 5.713
       }
     },
     "TIAUSDT_LONG_MARKET_FIRST_V5_1789677200": {
@@ -179228,39 +179228,41 @@
         "primary": "ONCE LEHE GITTI, SONRA TERS DONDU",
         "confidence": "ORTA",
         "factors": [
-          "Stop oncesinde islem en az 0.35R lehe hareket etti."
+          "Stop oncesinde islem en az 0.35R lehe hareket etti.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 47,
         "best_favorable_r": 0.5297,
         "worst_adverse_r": 1.1653,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ONCE_LEHE_SONRA_TERS",
-        "preliminary_label": "Önce lehe, sonra ters",
+        "primary": "ONCE_LEHE_SONRA_TERS",
+        "label": "Önce lehe, sonra ters",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "İşlem stop öncesinde anlamlı lehe hareket üretmişti."
         ],
         "metrics": {
           "duration_minutes": 47,
           "mfe_r": 0.5297,
           "mae_r": 1.1653,
           "risk_percent": 0.535,
-          "return_minutes": null
+          "return_minutes": 244.0
         },
-        "updated_at": 1789680066
+        "updated_at": 1789694758
       },
       "result_diagnostics": {
         "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
         "shadow_only": true,
-        "status": "TRACKING",
+        "status": "COMPLETED",
         "final_result": "SL",
         "started_at": 1789680066,
         "measurement_start_at": 1789680120,
@@ -179296,20 +179298,26 @@
             "candle_time": 1789687200,
             "close_price": 0.3522,
             "directional_r_from_reference": 0.7416
+          },
+          "240": {
+            "target_at": 1789694466,
+            "candle_time": 1789694400,
+            "close_price": 0.3601,
+            "directional_r_from_reference": 4.9262
           }
         },
-        "max_favorable_r": 4.9262,
+        "max_favorable_r": 4.9792,
         "max_adverse_r": 2.3837,
-        "last_checked_at": 1789694021,
-        "completed_at": 0,
+        "last_checked_at": 1789694547,
+        "completed_at": 1789694547,
         "diagnosis": {
-          "status": "PROVISIONAL",
+          "status": "FINAL",
           "code": "SL_SONRASI_TOPARLANMA",
           "likely_cause": "DAR_STOP_OLASILIGI",
           "confidence": "MEDIUM",
           "summary": "Stop sonrasi anlamli toparlanma var; giris/stop zamanlamasi incelenmeli.",
           "evidence": {
-            "max_favorable_r_after_close": 4.9262,
+            "max_favorable_r_after_close": 4.9792,
             "max_adverse_r_after_close": 2.3837,
             "risk_percent": 0.5353,
             "tp1_progress_at_send_percent": null,
@@ -179322,7 +179330,13 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.359
+        "last_price": 0.3601
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 244,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1789694758
       }
     },
     "CRVUSDT_LONG_MARKET_FIRST_V5_1789681958": {
@@ -179498,7 +179512,7 @@
         },
         "max_favorable_r": 3.3777,
         "max_adverse_r": 1.98,
-        "last_checked_at": 1789694021,
+        "last_checked_at": 1789694851,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -179520,7 +179534,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.3298
+        "last_price": 0.3284
       }
     },
     "NEARUSDT_LONG_MARKET_FIRST_V5_1789683785": {
@@ -179739,15 +179753,15 @@
         },
         "watched_levels": {},
         "reached_levels": {},
-        "max_favorable_percent": 4.1287,
+        "max_favorable_percent": 4.7464,
         "max_adverse_percent": 0.2276,
-        "max_favorable_r": 6.7914,
+        "max_favorable_r": 7.8074,
         "max_adverse_r": 0.3744,
-        "best_price": 3.203,
+        "best_price": 3.222,
         "worst_price": 3.069,
-        "last_checked_at": 1789693880,
+        "last_checked_at": 1789694753,
         "completed_at": 0,
-        "last_price": 3.188
+        "last_price": 3.208
       }
     },
     "DASHUSDT_LONG_MARKET_FIRST_V5_1789688870": {
@@ -179906,11 +179920,17 @@
             "candle_time": 1789692300,
             "close_price": 60.35,
             "directional_r_from_reference": -0.524
+          },
+          "60": {
+            "target_at": 1789694165,
+            "candle_time": 1789694100,
+            "close_price": 60.56,
+            "directional_r_from_reference": -0.0655
           }
         },
         "max_favorable_r": 0.786,
         "max_adverse_r": 1.2227,
-        "last_checked_at": 1789694021,
+        "last_checked_at": 1789694851,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -179932,7 +179952,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 60.88
+        "last_price": 60.56
       }
     },
     "ONDOUSDT_LONG_MARKET_FIRST_V5_1789689165": {
@@ -180077,11 +180097,11 @@
             "max_adverse_percent": 0.0
           }
         },
-        "max_favorable_percent": 1.5295,
+        "max_favorable_percent": 2.1888,
         "max_adverse_percent": 0.0,
-        "best_price": 0.385,
+        "best_price": 0.3875,
         "worst_price": 0.3791999632,
-        "last_checked_at": 1789693887,
+        "last_checked_at": 1789694759,
         "completed_at": 0,
         "shadow_only": true
       },
@@ -180117,19 +180137,19 @@
         },
         "watched_levels": {},
         "reached_levels": {},
-        "max_favorable_percent": 1.5295,
+        "max_favorable_percent": 2.1888,
         "max_adverse_percent": 0.0,
-        "max_favorable_r": 3.4247,
+        "max_favorable_r": 4.9009,
         "max_adverse_r": 0.0,
-        "best_price": 0.385,
+        "best_price": 0.3875,
         "worst_price": 0.3791999632,
-        "last_checked_at": 1789693880,
+        "last_checked_at": 1789694753,
         "completed_at": 0,
-        "last_price": 0.3849
+        "last_price": 0.3873
       }
     }
   },
-  "last_update": 1789694024,
+  "last_update": 1789694853,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -180141,7 +180161,7 @@
   "result_diagnostics_summary": {
     "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
     "tracked_total": 187,
-    "completed_total": 183,
+    "completed_total": 184,
     "diagnosis_counts": {
       "BE_SONRASI_TP3": 28,
       "BE_KORUMASI_DOGRU": 16,
@@ -180165,7 +180185,7 @@
     "sl_recovery_total": 91,
     "be_maybe_early_total": 34,
     "be_protection_correct_total": 16,
-    "updated_at": 1789693422
+    "updated_at": 1789694549
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
