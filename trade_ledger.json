@@ -181762,9 +181762,9 @@
         "max_adverse_r": 0.4307,
         "best_price": 0.11985,
         "worst_price": 0.11528,
-        "last_checked_at": 1789771274,
+        "last_checked_at": 1789772164,
         "completed_at": 0,
-        "last_price": 0.11666
+        "last_price": 0.11751
       }
     },
     "ZROUSDT_LONG_MARKET_FIRST_V5_1789746501": {
@@ -181914,7 +181914,7 @@
         },
         "max_favorable_r": 0.0082,
         "max_adverse_r": 0.7264,
-        "last_checked_at": 1789771374,
+        "last_checked_at": 1789772273,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -181936,7 +181936,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 1.1127
+        "last_price": 1.1159
       },
       "post_result_shadow": {
         "version": "POST_RESULT_SHADOW_V1_2026_08_10",
@@ -181979,9 +181979,9 @@
         "max_adverse_r": 0.7264,
         "best_price": 1.1192,
         "worst_price": 1.1102,
-        "last_checked_at": 1789771274,
+        "last_checked_at": 1789772164,
         "completed_at": 0,
-        "last_price": 1.1137
+        "last_price": 1.1161
       }
     },
     "ARUSDT_LONG_MARKET_FIRST_V5_1789751325": {
@@ -182320,34 +182320,36 @@
         "primary": "ONCE LEHE GITTI, SONRA TERS DONDU",
         "confidence": "ORTA",
         "factors": [
-          "Stop oncesinde islem en az 0.35R lehe hareket etti."
+          "Stop oncesinde islem en az 0.35R lehe hareket etti.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 33,
         "best_favorable_r": 0.5575,
         "worst_adverse_r": 1.0088,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ONCE_LEHE_SONRA_TERS",
-        "preliminary_label": "Önce lehe, sonra ters",
+        "primary": "ONCE_LEHE_SONRA_TERS",
+        "label": "Önce lehe, sonra ters",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "İşlem stop öncesinde anlamlı lehe hareket üretmişti."
         ],
         "metrics": {
           "duration_minutes": 33,
           "mfe_r": 0.5575,
           "mae_r": 1.0088,
           "risk_percent": 0.776,
-          "return_minutes": null
+          "return_minutes": 244.0
         },
-        "updated_at": 1789756880
+        "updated_at": 1789771570
       },
       "result_diagnostics": {
         "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
@@ -182421,6 +182423,12 @@
           }
         },
         "last_price": 0.9709
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 244,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1789771570
       }
     },
     "DOTUSDT_LONG_MARKET_FIRST_V5_1789761824": {
@@ -182539,7 +182547,7 @@
       "profit_lock_effective_at": 1789767540
     }
   },
-  "last_update": 1789771376,
+  "last_update": 1789772274,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
