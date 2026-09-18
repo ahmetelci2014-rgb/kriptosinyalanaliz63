@@ -1,6 +1,6 @@
 {
   "version": "MARKET_FIRST_ENTRY_CONDITION_DIAGNOSIS_V1_2026_09_08",
-  "generated_at": 1789732675,
+  "generated_at": 1789733584,
   "source_ledger_version": "MARKET_FIRST_OPPORTUNITY_LEDGER_V1_2026_09_05",
   "definition": "Clean resolved preparations that reached TP1+ without a Telegram trade and never recorded ENTRY condition. Latest-plan flags are diagnostic snapshots, not guaranteed co-temporal blocker proofs.",
   "reference_thresholds_observational_only": {
@@ -14,7 +14,7 @@
   "summary": {
     "before_entry_condition_missed": 581,
     "tp3_missed": 523,
-    "tp1_within_30m": 462,
+    "tp1_within_30m": 463,
     "tp1_within_60m": 517,
     "shadow_pre_entry_profile_count": 189,
     "shadow_pre_entry_profile_share": 0.3253
@@ -29,16 +29,23 @@
     "EXTENSION_ABOVE_1_25_LATEST": 4
   },
   "diagnostic_flags": {
-    "TP1_WITHIN_30M": 462,
+    "TP1_WITHIN_30M": 463,
     "ZONE_NEVER_TOUCHED": 226,
     "VOLUME_5M_BELOW_0_50_LATEST": 144,
     "STRUCTURE_5M_NEUTRAL_LATEST": 120,
     "STRUCTURE_5M_OPPOSITE_LATEST": 96,
     "EXTENSION_ABOVE_1_25_LATEST": 69,
-    "TP1_WITHIN_60M": 55,
+    "TP1_WITHIN_60M": 54,
     "SCORE_BELOW_76_LATEST": 26
   },
   "obstacle_stats": {
+    "ZONE_NEVER_TOUCHED": {
+      "count": 226,
+      "share": 0.389,
+      "tp3_count": 226,
+      "tp1_within_30m": 224,
+      "avg_best_favorable_r": 1.0275
+    },
     "STRUCTURE_5M_OPPOSITE_LATEST": {
       "count": 73,
       "share": 0.1256,
@@ -53,12 +60,12 @@
       "tp1_within_30m": 66,
       "avg_best_favorable_r": 2.6999
     },
-    "ZONE_NEVER_TOUCHED": {
-      "count": 226,
-      "share": 0.389,
-      "tp3_count": 226,
-      "tp1_within_30m": 224,
-      "avg_best_favorable_r": 1.0323
+    "LIKELY_TIMING_WINDOW_MISSED": {
+      "count": 104,
+      "share": 0.179,
+      "tp3_count": 93,
+      "tp1_within_30m": 77,
+      "avg_best_favorable_r": 2.0236
     },
     "VOLUME_5M_BELOW_0_50_LATEST": {
       "count": 51,
@@ -66,13 +73,6 @@
       "tp3_count": 48,
       "tp1_within_30m": 37,
       "avg_best_favorable_r": 1.6399
-    },
-    "LIKELY_TIMING_WINDOW_MISSED": {
-      "count": 104,
-      "share": 0.179,
-      "tp3_count": 93,
-      "tp1_within_30m": 76,
-      "avg_best_favorable_r": 2.0201
     },
     "SCORE_BELOW_76_LATEST": {
       "count": 20,
