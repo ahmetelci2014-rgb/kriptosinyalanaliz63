@@ -1,35 +1,45 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1789696679,
+  "generated_at": 1789697622,
   "status": "CAPITAL_RECOVERY_STRICT",
   "survival": {
     "mode": "RECOVERY_STRICT",
     "reason": "CRITICAL_ROLLING_STOP_RATE"
   },
   "funnel_truth": {
-    "internal_promoted": 642,
-    "real_signal_sent": 11,
-    "promoted_unsent": 631,
+    "internal_promoted": 638,
+    "real_signal_sent": 12,
+    "promoted_unsent": 626,
     "real_telegram_send_failures": 4,
-    "internal_final_admission_gap": 627,
+    "internal_final_admission_gap": 622,
     "promotion_is_send_attempt": false
   },
   "latest_gate_layers": {
     "profit_quality": {
-      "accepted": 1,
+      "accepted": 3,
       "run_counts": {
-        "OK": 1,
-        "ACCEPTED": 1
-      },
-      "blocks": {}
-    },
-    "final_execution": {
-      "accepted": 0,
-      "run_counts": {
-        "TAKER_CVD_OPPOSITE": 1
+        "SCORE_BELOW_88": 1,
+        "OK": 3,
+        "ACCEPTED": 3,
+        "VOLUME_BELOW_0_65": 1
       },
       "blocks": {
-        "TAKER_CVD_OPPOSITE": 1
+        "SCORE_BELOW_88": 1,
+        "VOLUME_BELOW_0_65": 1
+      }
+    },
+    "final_execution": {
+      "accepted": 1,
+      "run_counts": {
+        "UPSTREAM_REJECTED": 2,
+        "OK": 1,
+        "ACCEPTED": 1,
+        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 1,
+        "CVD_IMPULSE_OPPOSITE": 1
+      },
+      "blocks": {
+        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 1,
+        "CVD_IMPULSE_OPPOSITE": 1
       }
     },
     "capital_survival": {
@@ -41,8 +51,8 @@
     }
   },
   "top_latest_blocker": {
-    "layer": "final_execution",
-    "reason": "TAKER_CVD_OPPOSITE",
+    "layer": "profit_quality",
+    "reason": "VOLUME_BELOW_0_65",
     "count": 1
   },
   "interpretation": {
