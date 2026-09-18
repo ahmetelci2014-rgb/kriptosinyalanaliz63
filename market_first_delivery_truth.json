@@ -1,43 +1,43 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1789766897,
+  "generated_at": 1789767828,
   "status": "CAPITAL_RECOVERY_STRICT",
   "survival": {
     "mode": "RECOVERY_STRICT",
     "reason": "CRITICAL_ROLLING_STOP_RATE"
   },
   "funnel_truth": {
-    "internal_promoted": 571,
+    "internal_promoted": 569,
     "real_signal_sent": 18,
-    "promoted_unsent": 553,
+    "promoted_unsent": 551,
     "real_telegram_send_failures": 10,
-    "internal_final_admission_gap": 543,
+    "internal_final_admission_gap": 541,
     "promotion_is_send_attempt": false
   },
   "latest_gate_layers": {
     "profit_quality": {
-      "accepted": 2,
+      "accepted": 3,
       "run_counts": {
-        "EXPECTED_MOVE_BELOW_2P": 3,
-        "OK": 2,
-        "ACCEPTED": 2,
-        "VOLUME_BELOW_0_65": 1
+        "OK": 3,
+        "ACCEPTED": 3,
+        "VOLUME_BELOW_0_65": 1,
+        "SCORE_BELOW_88": 2
       },
       "blocks": {
-        "EXPECTED_MOVE_BELOW_2P": 3,
-        "VOLUME_BELOW_0_65": 1
+        "VOLUME_BELOW_0_65": 1,
+        "SCORE_BELOW_88": 2
       }
     },
     "final_execution": {
       "accepted": 0,
       "run_counts": {
-        "UPSTREAM_REJECTED": 6,
-        "TAKER_CVD_OPPOSITE": 1,
-        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 1
+        "UPSTREAM_REJECTED": 8,
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 2,
+        "TAKER_CVD_OPPOSITE": 1
       },
       "blocks": {
-        "TAKER_CVD_OPPOSITE": 1,
-        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 1
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 2,
+        "TAKER_CVD_OPPOSITE": 1
       }
     },
     "capital_survival": {
@@ -50,8 +50,8 @@
   },
   "top_latest_blocker": {
     "layer": "profit_quality",
-    "reason": "EXPECTED_MOVE_BELOW_2P",
-    "count": 3
+    "reason": "SCORE_BELOW_88",
+    "count": 2
   },
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
