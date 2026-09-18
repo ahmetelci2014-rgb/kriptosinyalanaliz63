@@ -1,43 +1,45 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1789704804,
+  "generated_at": 1789705678,
   "status": "CAPITAL_RECOVERY_STRICT",
   "survival": {
     "mode": "RECOVERY_STRICT",
     "reason": "CRITICAL_ROLLING_STOP_RATE"
   },
   "funnel_truth": {
-    "internal_promoted": 629,
+    "internal_promoted": 626,
     "real_signal_sent": 12,
-    "promoted_unsent": 617,
+    "promoted_unsent": 614,
     "real_telegram_send_failures": 6,
-    "internal_final_admission_gap": 611,
+    "internal_final_admission_gap": 608,
     "promotion_is_send_attempt": false
   },
   "latest_gate_layers": {
     "profit_quality": {
-      "accepted": 4,
+      "accepted": 3,
       "run_counts": {
-        "EXPECTED_MOVE_BELOW_2P": 1,
-        "OK": 4,
-        "ACCEPTED": 4,
-        "RISK_ABOVE_1_25": 1
+        "EXPECTED_MOVE_BELOW_2P": 3,
+        "OK": 3,
+        "ACCEPTED": 3,
+        "VOLUME_BELOW_0_65": 1
       },
       "blocks": {
-        "EXPECTED_MOVE_BELOW_2P": 1,
-        "RISK_ABOVE_1_25": 1
+        "EXPECTED_MOVE_BELOW_2P": 3,
+        "VOLUME_BELOW_0_65": 1
       }
     },
     "final_execution": {
       "accepted": 0,
       "run_counts": {
-        "UPSTREAM_REJECTED": 3,
-        "DIRECTION_CONFIRMATIONS_BELOW_3": 3,
-        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 1
+        "UPSTREAM_REJECTED": 6,
+        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 1,
+        "TAKER_CVD_OPPOSITE": 1,
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 1
       },
       "blocks": {
-        "DIRECTION_CONFIRMATIONS_BELOW_3": 3,
-        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 1
+        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 1,
+        "TAKER_CVD_OPPOSITE": 1,
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 1
       }
     },
     "capital_survival": {
@@ -49,8 +51,8 @@
     }
   },
   "top_latest_blocker": {
-    "layer": "final_execution",
-    "reason": "DIRECTION_CONFIRMATIONS_BELOW_3",
+    "layer": "profit_quality",
+    "reason": "EXPECTED_MOVE_BELOW_2P",
     "count": 3
   },
   "interpretation": {
