@@ -180650,7 +180650,7 @@
         },
         "max_favorable_r": 4.4101,
         "max_adverse_r": 0.8269,
-        "last_checked_at": 1789719181,
+        "last_checked_at": 1789720059,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -180672,7 +180672,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.8676
+        "last_price": 0.8707
       }
     },
     "ONDOUSDT_LONG_MARKET_FIRST_V5_1789714998": {
@@ -180732,7 +180732,7 @@
       "worst_adverse_r": 0.8394,
       "best_favorable_price": 0.3875,
       "worst_adverse_price": 0.3827,
-      "last_market_price": 0.3831,
+      "last_market_price": 0.3856,
       "tp1_hit_at": 0,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -180763,7 +180763,7 @@
         "15m": "LONG",
         "1h": "LONG"
       },
-      "last_tracking_at": 1789719060
+      "last_tracking_at": 1789719960
     },
     "PROVEUSDT_LONG_MARKET_FIRST_V5_1789715591": {
       "trade_id": "PROVEUSDT_LONG_MARKET_FIRST_V5_1789715591",
@@ -180782,16 +180782,26 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "PROFIT_LOCK_BE",
+      "r_result": 0.0,
+      "exit_price": 0.1973,
+      "closed_at": 1789719963,
+      "closed_day": "2026-09-18",
       "events": [
         {
           "time": 1789715591,
           "event": "OPENED",
+          "price": 0.1973
+        },
+        {
+          "time": 1789719963,
+          "event": "BE",
+          "price": 0.1973
+        },
+        {
+          "time": 1789719963,
+          "event": "PROFIT_LOCK_BE",
           "price": 0.1973
         }
       ],
@@ -180822,7 +180832,7 @@
       "worst_adverse_r": 0.0,
       "best_favorable_price": 0.1992,
       "worst_adverse_price": 0.1973,
-      "last_market_price": 0.1977,
+      "last_market_price": 0.1974,
       "tp1_hit_at": 0,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -180853,10 +180863,25 @@
         "15m": "LONG",
         "1h": "LONG"
       },
-      "last_tracking_at": 1789719060
+      "last_tracking_at": 1789719660,
+      "duration_minutes": 72,
+      "diagnosis": {
+        "version": "MARKET_FIRST_PROFIT_LOCK_V1_2026_09_14",
+        "primary": "KAR_KORUMA_BE",
+        "confidence": "YUKSEK",
+        "provisional": false,
+        "factors": [
+          "TP1 öncesi en az 1.50R lehe hareket görüldü.",
+          "Manuel koruma talimatı sonrası kalan işlem girişten kapandı."
+        ]
+      },
+      "profit_lock_version": "MARKET_FIRST_PROFIT_LOCK_V1_2026_09_14",
+      "profit_lock_trigger_r": 1.5,
+      "profit_lock_armed_at": 1789718280,
+      "profit_lock_effective_at": 1789718340
     }
   },
-  "last_update": 1789719183,
+  "last_update": 1789720061,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
