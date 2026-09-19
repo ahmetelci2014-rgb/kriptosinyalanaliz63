@@ -197,6 +197,19 @@ def safe_float(value, default=None):
 
 
 def send_telegram(message, delivery_key=None):
+    # Kullanici tercihi: SL olayi ledger/performance ve stop-sonrasi
+    # takipta kaydedilmeye devam eder, fakat anlik STOP Telegram mesaji
+    # gonderilmez. TP/BE/diger bildirimler aynen devam eder.
+    if (
+        delivery_key
+        and str(delivery_key).upper().endswith("|SL")
+    ):
+        print(
+            "SL Telegram bildirimi sessiz gecildi:",
+            delivery_key,
+        )
+        return True
+
     return send_telegram_once(
         message=message,
         telegram_token=TOKEN,
