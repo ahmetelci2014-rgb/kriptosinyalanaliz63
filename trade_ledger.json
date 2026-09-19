@@ -183730,7 +183730,7 @@
         },
         "max_favorable_r": 1.4426,
         "max_adverse_r": 3.0455,
-        "last_checked_at": 1789853291,
+        "last_checked_at": 1789854204,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -183752,7 +183752,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 6.282
+        "last_price": 6.279
       },
       "post_result_shadow": {
         "version": "POST_RESULT_SHADOW_V1_2026_08_10",
@@ -183813,9 +183813,9 @@
         "max_adverse_r": 3.0455,
         "best_price": 6.396,
         "worst_price": 6.2,
-        "last_checked_at": 1789853157,
+        "last_checked_at": 1789854109,
         "completed_at": 0,
-        "last_price": 6.257
+        "last_price": 6.284
       }
     },
     "SUSHIUSDT_LONG_MARKET_FIRST_V5_1789838303": {
@@ -183919,34 +183919,36 @@
         "confidence": "ORTA",
         "factors": [
           "Islem ilk 20 dakikada anlamli lehe hareket yapmadan stop oldu.",
-          "Stop mesafesi cok kisa surede tamamen tuketildi."
+          "Stop mesafesi cok kisa surede tamamen tuketildi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 7,
         "best_favorable_r": 0.0,
         "worst_adverse_r": 1.0171,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "MUHTEMEL_YANLIS_YON",
-        "preliminary_label": "Muhtemel yanlış yön",
+        "primary": "MUHTEMEL_YANLIS_YON",
+        "label": "Muhtemel yanlış yön",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "İşlem çok kısa sürede anlamlı lehe hareket üretmeden stop oldu."
         ],
         "metrics": {
           "duration_minutes": 7,
           "mfe_r": 0.0,
           "mae_r": 1.0171,
           "risk_percent": 0.455,
-          "return_minutes": null
+          "return_minutes": 245.0
         },
-        "updated_at": 1789838763
+        "updated_at": 1789853514
       },
       "result_diagnostics": {
         "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
@@ -184020,6 +184022,12 @@
           }
         },
         "last_price": 0.2487
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 245,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1789853514
       }
     },
     "VANAUSDT_LONG_MARKET_FIRST_V5_1789847294": {
@@ -184172,11 +184180,17 @@
             "candle_time": 1789853100,
             "close_price": 1.081,
             "directional_r_from_reference": 0.388
+          },
+          "30": {
+            "target_at": 1789854084,
+            "candle_time": 1789854000,
+            "close_price": 1.0779,
+            "directional_r_from_reference": -0.245
           }
         },
         "max_favorable_r": 0.388,
-        "max_adverse_r": 0.8781,
-        "last_checked_at": 1789853291,
+        "max_adverse_r": 1.0006,
+        "last_checked_at": 1789854204,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -184186,7 +184200,7 @@
           "summary": "Stop sonrasi fiyat yolu tek bir nedene isaret etmiyor.",
           "evidence": {
             "max_favorable_r_after_close": 0.388,
-            "max_adverse_r_after_close": 0.8781,
+            "max_adverse_r_after_close": 1.0006,
             "risk_percent": 0.4516,
             "tp1_progress_at_send_percent": null,
             "entry_distance_at_send_percent": 0.09221689413499537,
@@ -184198,7 +184212,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 1.0793
+        "last_price": 1.0778
       }
     },
     "LTCUSDT_LONG_MARKET_FIRST_V5_1789848826": {
@@ -184345,10 +184359,17 @@
           "TP3": 59.20001516
         },
         "reached_levels": {},
-        "checkpoints": {},
+        "checkpoints": {
+          "15": {
+            "target_at": 1789853465,
+            "candle_time": 1789853400,
+            "close_price": 57.25,
+            "directional_r_from_reference": -0.5478
+          }
+        },
         "max_favorable_r": 0.0421,
-        "max_adverse_r": 1.1377,
-        "last_checked_at": 1789853291,
+        "max_adverse_r": 1.4327,
+        "last_checked_at": 1789854204,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -184358,7 +184379,7 @@
           "summary": "Stop sonrasi ters hareket devam etti; yon/setup hatasi olasiligi yuksek.",
           "evidence": {
             "max_favorable_r_after_close": 0.0421,
-            "max_adverse_r_after_close": 1.1377,
+            "max_adverse_r_after_close": 1.4327,
             "risk_percent": 0.8186,
             "tp1_progress_at_send_percent": null,
             "entry_distance_at_send_percent": 0.0,
@@ -184370,11 +184391,11 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 57.38
+        "last_price": 57.06
       }
     }
   },
-  "last_update": 1789853294,
+  "last_update": 1789854206,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
