@@ -23,6 +23,7 @@ import market_first_daily_report_origin_patch as daily_report_origin_patch
 import market_first_entry_accelerator as entry_accelerator
 import market_first_entry_plan_context_patch as entry_plan_context_patch
 import market_first_final_execution_gate as final_execution_gate
+import market_first_selective_pre_signal as selective_pre_signal
 import market_first_live_complete_tracking as complete_tracking
 import market_first_pre_entry_shadow as pre_entry_shadow
 import market_first_profit_lock as profit_lock
@@ -63,6 +64,7 @@ def main() -> None:
     tao_profit_patch.install()
     tao_quality_bridge.install()
     final_execution_gate.install()
+    selective_pre_signal.install()
 
     # Preserve original plan context for reports and trade tracking.
     entry_plan_context_patch.install()
@@ -96,6 +98,7 @@ def main() -> None:
     print("MARKET FIRST TAO PROFIT PATCH:", tao_profit_patch.status())
     print("MARKET FIRST TAO QUALITY BRIDGE:", tao_quality_bridge.summary())
     print("MARKET FIRST FINAL EXECUTION GATE:", final_execution_gate.summary())
+    print("MARKET FIRST SELECTIVE PRE-SIGNAL:", selective_pre_signal.summary())
     print("MARKET FIRST V6 CORE GUARD:", balanced_core_guard.summary())
     print("MARKET FIRST PROFIT LOCK:", profit_lock.summary())
 
@@ -106,6 +109,7 @@ def main() -> None:
         print("MARKET FIRST PROFIT QUALITY RUN:", profit_quality.finish())
         print("MARKET FIRST TAO QUALITY RUN:", tao_quality_bridge.summary())
         print("MARKET FIRST FINAL EXECUTION RUN:", final_execution_gate.finish())
+        print("MARKET FIRST SELECTIVE PRE-SIGNAL RUN:", selective_pre_signal.summary())
         print("MARKET FIRST V6 CORE GUARD RUN:", balanced_core_guard.summary())
         print("MARKET FIRST BACKGROUND LIVE BRIDGE RUN:", background_live_bridge.finish())
         print("MARKET FIRST STRUCTURE FIBO RUN:", structure_fibo.finish())
