@@ -1,46 +1,80 @@
 {
   "version": "MARKET_FIRST_OBSERVABILITY_V1_2026_09_08",
-  "generated_at": 1789829904,
+  "generated_at": 1789830784,
   "definition": "Clean resolved preparation that reached TP1 or better without a real Telegram entry signal.",
-  "total_missed_moves": 1017,
-  "miss_rate_of_clean_resolved": 0.9496,
+  "total_missed_moves": 1021,
+  "miss_rate_of_clean_resolved": 0.9489,
   "levels": {
-    "TP3_MISSED": 861,
-    "TP2_MISSED": 100,
-    "TP1_MISSED": 56
+    "TP3_MISSED": 865,
+    "TP2_MISSED": 101,
+    "TP1_MISSED": 55
   },
   "stages": {
-    "BEFORE_ENTRY_CONDITION": 582,
+    "BEFORE_ENTRY_CONDITION": 585,
     "FINAL_DELIVERY_GATE": 433,
-    "PROMOTION_GATE": 2
+    "PROMOTION_GATE": 3
   },
   "reasons": {
-    "ENTRY_CONDITION_NOT_REACHED": 582,
+    "ENTRY_CONDITION_NOT_REACHED": 585,
     "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED": 421,
     "TELEGRAM_SEND_FAILED": 12,
-    "LOW_SCORE": 2
+    "LOW_SCORE": 2,
+    "NO_ACCELERATION": 1
   },
   "directions": {
-    "LONG": 981,
-    "SHORT": 36
+    "LONG": 984,
+    "SHORT": 37
   },
   "outcomes": {
-    "TP3_REACHED": 725,
-    "SL_FIRST_THEN_TP3_RECOVERY": 135,
-    "TP2_REACHED": 76,
+    "TP3_REACHED": 730,
+    "SL_FIRST_THEN_TP3_RECOVERY": 134,
+    "TP2_REACHED": 77,
     "TP1_REACHED": 38,
     "SL_FIRST_THEN_TP2_RECOVERY": 23,
-    "SL_FIRST_THEN_TP1_RECOVERY": 18,
+    "SL_FIRST_THEN_TP1_RECOVERY": 17,
     "AMBIGUOUS_THEN_TP3": 1,
     "AMBIGUOUS_WITH_TARGET": 1
   },
   "timing": {
-    "avg_minutes_prep_to_tp1": 37.45,
-    "avg_minutes_entry_condition_to_tp1": 66.75,
-    "tp1_within_30m": 736,
-    "tp1_within_60m": 838
+    "avg_minutes_prep_to_tp1": 37.08,
+    "avg_minutes_entry_condition_to_tp1": 65.89,
+    "tp1_within_30m": 741,
+    "tp1_within_60m": 842
   },
   "top_missed": [
+    {
+      "episode_id": "MERLUSDT:LONG:1789817855",
+      "symbol": "MERLUSDT",
+      "direction": "LONG",
+      "score": 81,
+      "miss_level": "TP3_MISSED",
+      "miss_stage": "FINAL_DELIVERY_GATE",
+      "reason": "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED",
+      "outcome": "TP3_REACHED",
+      "prep_price": 0.02513,
+      "last_price": 0.02544,
+      "best_favorable_percent": 1.7907,
+      "best_favorable_r": 9.4644,
+      "worst_adverse_percent": 2.3478,
+      "entry_condition_met": true,
+      "entry_promoted": true,
+      "entry_signal_sent": false,
+      "tp1_before_entry_signal": true,
+      "minutes_prep_to_tp1": 24.63,
+      "minutes_entry_condition_to_tp1": 20.5,
+      "market_regime": "BULL",
+      "structure_5m": "SHORT",
+      "structure_15m": "LONG",
+      "structure_1h": "LONG",
+      "volume_ratio_5m": 0.135,
+      "volume_ratio_15m": 1.023,
+      "extension_atr_5m": 0.697,
+      "risk_percent": 0.51,
+      "room_r": 2.89,
+      "first_at": 1789817855,
+      "tp1_at": 1789819333,
+      "resolved_at": 1789830749
+    },
     {
       "episode_id": "ONDOUSDT:LONG:1789632405",
       "symbol": "ONDOUSDT",
@@ -1327,39 +1361,6 @@
       "first_at": 1789711303,
       "tp1_at": 1789713412,
       "resolved_at": 1789716151
-    },
-    {
-      "episode_id": "DYDXUSDT:LONG:1789674770",
-      "symbol": "DYDXUSDT",
-      "direction": "LONG",
-      "score": 94,
-      "miss_level": "TP3_MISSED",
-      "miss_stage": "BEFORE_ENTRY_CONDITION",
-      "reason": "ENTRY_CONDITION_NOT_REACHED",
-      "outcome": "TP3_REACHED",
-      "prep_price": 0.11311,
-      "last_price": 0.11413,
-      "best_favorable_percent": 0.999,
-      "best_favorable_r": 4.2977,
-      "worst_adverse_percent": 0.0,
-      "entry_condition_met": false,
-      "entry_promoted": false,
-      "entry_signal_sent": false,
-      "tp1_before_entry_signal": true,
-      "minutes_prep_to_tp1": 3.72,
-      "minutes_entry_condition_to_tp1": null,
-      "market_regime": "BULL",
-      "structure_5m": "LONG",
-      "structure_15m": "LONG",
-      "structure_1h": "LONG",
-      "volume_ratio_5m": 1.809,
-      "volume_ratio_15m": 0.998,
-      "extension_atr_5m": 0.445,
-      "risk_percent": 0.401,
-      "room_r": 2.0,
-      "first_at": 1789674770,
-      "tp1_at": 1789674993,
-      "resolved_at": 1789674993
     }
   ]
 }
