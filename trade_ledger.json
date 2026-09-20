@@ -186474,12 +186474,12 @@
       "sent_price": 0.215,
       "entry_distance_at_send_percent": 0.2331002331002333,
       "best_favorable_percent": 0.4662,
-      "worst_adverse_percent": 0.0466,
+      "worst_adverse_percent": 0.5594,
       "best_favorable_r": 0.5562,
-      "worst_adverse_r": 0.0556,
+      "worst_adverse_r": 0.6675,
       "best_favorable_price": 0.2155,
-      "worst_adverse_price": 0.2144,
-      "last_market_price": 0.2152,
+      "worst_adverse_price": 0.2133,
+      "last_market_price": 0.2136,
       "tp1_hit_at": 0,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -186510,7 +186510,7 @@
         "15m": "LONG",
         "1h": "LONG"
       },
-      "last_tracking_at": 1789928760
+      "last_tracking_at": 1789929660
     },
     "COREUSDT_LONG_MARKET_FIRST_V5_1789928026": {
       "trade_id": "COREUSDT_LONG_MARKET_FIRST_V5_1789928026",
@@ -186529,17 +186529,22 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "SL",
+      "r_result": -1.0,
+      "exit_price": 0.02084,
+      "closed_at": 1789929677,
+      "closed_day": "2026-09-20",
       "events": [
         {
           "time": 1789928026,
           "event": "OPENED",
           "price": 0.02094
+        },
+        {
+          "time": 1789929677,
+          "event": "SL",
+          "price": 0.02084
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -186563,13 +186568,13 @@
       "rr_tp3": 10.645,
       "sent_price": 0.02092,
       "entry_distance_at_send_percent": 0.09551098376312886,
-      "best_favorable_percent": 0.2388,
-      "worst_adverse_percent": 0.191,
-      "best_favorable_r": 0.5084,
-      "worst_adverse_r": 0.4067,
-      "best_favorable_price": 0.02099,
-      "worst_adverse_price": 0.0209,
-      "last_market_price": 0.02098,
+      "best_favorable_percent": 0.3343,
+      "worst_adverse_percent": 0.4776,
+      "best_favorable_r": 0.7117,
+      "worst_adverse_r": 1.0167,
+      "best_favorable_price": 0.02101,
+      "worst_adverse_price": 0.02084,
+      "last_market_price": 0.02084,
       "tp1_hit_at": 0,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -186600,7 +186605,84 @@
         "15m": "LONG",
         "1h": "LONG"
       },
-      "last_tracking_at": 1789928760
+      "last_tracking_at": 1789929540,
+      "duration_minutes": 27,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "ONCE LEHE GITTI, SONRA TERS DONDU",
+        "confidence": "ORTA",
+        "factors": [
+          "Stop oncesinde islem en az 0.35R lehe hareket etti."
+        ],
+        "duration_minutes": 27,
+        "best_favorable_r": 0.7117,
+        "worst_adverse_r": 1.0167,
+        "provisional": true,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "stop_root_cause": {
+        "version": "STOP_ROOT_CAUSE_V1",
+        "primary": "TAKIP_SURUYOR",
+        "label": "Takip sürüyor",
+        "preliminary": "ONCE_LEHE_SONRA_TERS",
+        "preliminary_label": "Önce lehe, sonra ters",
+        "secondary": [],
+        "confidence": "DUSUK",
+        "provisional": true,
+        "factors": [
+          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+        ],
+        "metrics": {
+          "duration_minutes": 27,
+          "mfe_r": 0.7117,
+          "mae_r": 1.0167,
+          "risk_percent": 0.47,
+          "return_minutes": null
+        },
+        "updated_at": 1789929677
+      },
+      "result_diagnostics": {
+        "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
+        "shadow_only": true,
+        "status": "TRACKING",
+        "final_result": "SL",
+        "started_at": 1789929677,
+        "measurement_start_at": 1789929720,
+        "reference_price": 0.02084,
+        "reference_label": "SL_EXIT",
+        "watched_levels": {
+          "TP1": 0.0214635,
+          "TP2": 0.02172525,
+          "TP3": 0.021987
+        },
+        "reached_levels": {},
+        "checkpoints": {},
+        "max_favorable_r": 0.2033,
+        "max_adverse_r": 0.0,
+        "last_checked_at": 1789929821,
+        "completed_at": 0,
+        "diagnosis": {
+          "status": "PROVISIONAL",
+          "code": "SL_KARISIK_SONUC",
+          "likely_cause": "KESIN_NEDEN_YOK",
+          "confidence": "LOW",
+          "summary": "Stop sonrasi fiyat yolu tek bir nedene isaret etmiyor.",
+          "evidence": {
+            "max_favorable_r_after_close": 0.2033,
+            "max_adverse_r_after_close": 0.0,
+            "risk_percent": 0.4697,
+            "tp1_progress_at_send_percent": null,
+            "entry_distance_at_send_percent": 0.09551098376312886,
+            "reached_tp1_after_close": false,
+            "reached_tp2_after_close": false,
+            "reached_tp3_after_close": false,
+            "tp1_minutes_after_close": null,
+            "tp2_minutes_after_close": null,
+            "tp3_minutes_after_close": null
+          }
+        },
+        "last_price": 0.02085
+      }
     },
     "PENDLEUSDT_LONG_MARKET_FIRST_V5_1789928304": {
       "trade_id": "PENDLEUSDT_LONG_MARKET_FIRST_V5_1789928304",
@@ -186653,13 +186735,13 @@
       "rr_tp3": 4.971,
       "sent_price": 2.624,
       "entry_distance_at_send_percent": 0.07627765064836857,
-      "best_favorable_percent": 0.3814,
+      "best_favorable_percent": 0.4577,
       "worst_adverse_percent": 0.3051,
-      "best_favorable_r": 0.3792,
+      "best_favorable_r": 0.455,
       "worst_adverse_r": 0.3034,
-      "best_favorable_price": 2.632,
+      "best_favorable_price": 2.634,
       "worst_adverse_price": 2.614,
-      "last_market_price": 2.628,
+      "last_market_price": 2.623,
       "tp1_hit_at": 0,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -186690,10 +186772,10 @@
         "15m": "LONG",
         "1h": "LONG"
       },
-      "last_tracking_at": 1789928760
+      "last_tracking_at": 1789929660
     }
   },
-  "last_update": 1789928767,
+  "last_update": 1789929823,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -186704,7 +186786,7 @@
   },
   "result_diagnostics_summary": {
     "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
-    "tracked_total": 208,
+    "tracked_total": 209,
     "completed_total": 208,
     "diagnosis_counts": {
       "BE_SONRASI_TP3": 29,
@@ -186714,7 +186796,7 @@
       "SL_SONRASI_TOPARLANMA": 81,
       "BE_SONRASI_YENIDEN_HEDEF": 6,
       "SL_SONRASI_GUCLU_TOPARLANMA": 27,
-      "SL_KARISIK_SONUC": 12
+      "SL_KARISIK_SONUC": 13
     },
     "likely_cause_counts": {
       "BE_KORUMASI_ERKEN_OLABILIR": 35,
@@ -186723,13 +186805,13 @@
       "YON_VEYA_SETUP_GECERSIZLESMESI": 5,
       "ERKEN_GIRIS_OLASILIGI": 31,
       "GIRIS_STOP_ZAMANLAMASI": 18,
-      "KESIN_NEDEN_YOK": 12,
+      "KESIN_NEDEN_YOK": 13,
       "DAR_STOP_OLASILIGI": 59
     },
     "sl_recovery_total": 108,
     "be_maybe_early_total": 35,
     "be_protection_correct_total": 16,
-    "updated_at": 1789918656
+    "updated_at": 1789929823
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
