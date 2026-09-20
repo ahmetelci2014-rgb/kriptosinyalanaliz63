@@ -186073,15 +186073,15 @@
         },
         "watched_levels": {},
         "reached_levels": {},
-        "max_favorable_percent": 6.8856,
+        "max_favorable_percent": 9.5779,
         "max_adverse_percent": 1.3086,
-        "max_favorable_r": 10.7167,
+        "max_favorable_r": 14.9072,
         "max_adverse_r": 2.0368,
-        "best_price": 10.957,
+        "best_price": 11.233,
         "worst_price": 10.117,
-        "last_checked_at": 1789916158,
+        "last_checked_at": 1789917072,
         "completed_at": 0,
-        "last_price": 10.854
+        "last_price": 11.191
       }
     },
     "WLDUSDT_SHORT_MARKET_FIRST_V5_1789903702": {
@@ -186258,8 +186258,8 @@
           }
         },
         "max_favorable_r": 3.4532,
-        "max_adverse_r": 1.4868,
-        "last_checked_at": 1789916281,
+        "max_adverse_r": 2.5899,
+        "last_checked_at": 1789917172,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -186269,7 +186269,7 @@
           "summary": "Stop sonrasi anlamli toparlanma var; giris/stop zamanlamasi incelenmeli.",
           "evidence": {
             "max_favorable_r_after_close": 3.4532,
-            "max_adverse_r_after_close": 1.4868,
+            "max_adverse_r_after_close": 2.5899,
             "risk_percent": 0.496,
             "tp1_progress_at_send_percent": null,
             "entry_distance_at_send_percent": 0.07136060894386834,
@@ -186281,7 +186281,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.4204
+        "last_price": 0.4254
       }
     },
     "MERLUSDT_LONG_MARKET_FIRST_V5_1789913293": {
@@ -186301,16 +186301,26 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "PROFIT_LOCK_BE",
+      "r_result": 0.0,
+      "exit_price": 0.02547,
+      "closed_at": 1789916477,
+      "closed_day": "2026-09-20",
       "events": [
         {
           "time": 1789913293,
           "event": "OPENED",
+          "price": 0.02547
+        },
+        {
+          "time": 1789916477,
+          "event": "BE",
+          "price": 0.02547
+        },
+        {
+          "time": 1789916477,
+          "event": "PROFIT_LOCK_BE",
           "price": 0.02547
         }
       ],
@@ -186372,10 +186382,25 @@
         "15m": "LONG",
         "1h": "LONG"
       },
-      "last_tracking_at": 1789916160
+      "last_tracking_at": 1789916160,
+      "duration_minutes": 53,
+      "diagnosis": {
+        "version": "MARKET_FIRST_PROFIT_LOCK_V1_2026_09_14",
+        "primary": "KAR_KORUMA_BE",
+        "confidence": "YUKSEK",
+        "provisional": false,
+        "factors": [
+          "TP1 öncesi en az 1.50R lehe hareket görüldü.",
+          "Manuel koruma talimatı sonrası kalan işlem girişten kapandı."
+        ]
+      },
+      "profit_lock_version": "MARKET_FIRST_PROFIT_LOCK_V1_2026_09_14",
+      "profit_lock_trigger_r": 1.5,
+      "profit_lock_armed_at": 1789915980,
+      "profit_lock_effective_at": 1789916040
     }
   },
-  "last_update": 1789916283,
+  "last_update": 1789917173,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
