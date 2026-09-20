@@ -184217,7 +184217,7 @@
         },
         "max_favorable_r": 5.6972,
         "max_adverse_r": 1.0006,
-        "last_checked_at": 1789864053,
+        "last_checked_at": 1789865016,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -184239,7 +184239,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 1.1004
+        "last_price": 1.0999
       }
     },
     "LTCUSDT_LONG_MARKET_FIRST_V5_1789848826": {
@@ -184414,7 +184414,7 @@
         },
         "max_favorable_r": 1.9594,
         "max_adverse_r": 1.4748,
-        "last_checked_at": 1789864053,
+        "last_checked_at": 1789865016,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -184436,7 +184436,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 58.14
+        "last_price": 58.17
       }
     },
     "PIUSDT_SHORT_MARKET_FIRST_V5_1789856587": {
@@ -184602,11 +184602,17 @@
             "candle_time": 1789861200,
             "close_price": 0.08468,
             "directional_r_from_reference": 0.1806
+          },
+          "120": {
+            "target_at": 1789864877,
+            "candle_time": 1789864800,
+            "close_price": 0.08463,
+            "directional_r_from_reference": 0.2935
           }
         },
         "max_favorable_r": 1.851,
         "max_adverse_r": 0.5869,
-        "last_checked_at": 1789864053,
+        "last_checked_at": 1789865016,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -184628,7 +184634,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.08404
+        "last_price": 0.08463
       }
     },
     "WLDUSDT_LONG_MARKET_FIRST_V5_1789861355": {
@@ -184728,37 +184734,39 @@
       "duration_minutes": 28,
       "diagnosis": {
         "version": "TECH_DIAGNOSIS_V1",
-        "primary": "ONCE LEHE GITTI, SONRA TERS DONDU",
-        "confidence": "ORTA",
+        "primary": "FITIL / DAR STOP OLASILIGI",
+        "confidence": "YUKSEK",
         "factors": [
-          "Stop oncesinde islem en az 0.35R lehe hareket etti."
+          "Stop oncesinde islem en az 0.35R lehe hareket etti.",
+          "Stop sonrasi fiyat TP1 seviyesine dondu."
         ],
         "duration_minutes": 28,
         "best_favorable_r": 0.6079,
         "worst_adverse_r": 1.3462,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ONCE_LEHE_SONRA_TERS",
-        "preliminary_label": "Önce lehe, sonra ters",
+        "primary": "FITIL_DAR_STOP",
+        "label": "Fitil/dar stop",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası fiyat TP1 seviyesine 24 dakikada döndü.",
+          "Stop yüzdesi teşhis eşiğine göre dardı."
         ],
         "metrics": {
           "duration_minutes": 28,
           "mfe_r": 0.6079,
           "mae_r": 1.3462,
           "risk_percent": 0.533,
-          "return_minutes": null
+          "return_minutes": 24.0
         },
-        "updated_at": 1789863084
+        "updated_at": 1789864582
       },
       "result_diagnostics": {
         "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
@@ -184774,18 +184782,30 @@
           "TP2": 0.43880001815,
           "TP3": 0.4410000242
         },
-        "reached_levels": {},
+        "reached_levels": {
+          "TP1": {
+            "first_reached_at": 1789864440,
+            "minutes_after_close": 22,
+            "level_price": 0.4366000121
+          }
+        },
         "checkpoints": {
           "15": {
             "target_at": 1789863984,
             "candle_time": 1789863900,
             "close_price": 0.4314,
             "directional_r_from_reference": 0.6948
+          },
+          "30": {
+            "target_at": 1789864884,
+            "candle_time": 1789864800,
+            "close_price": 0.4354,
+            "directional_r_from_reference": 2.4318
           }
         },
-        "max_favorable_r": 1.737,
+        "max_favorable_r": 3.4739,
         "max_adverse_r": 0.1303,
-        "last_checked_at": 1789864053,
+        "last_checked_at": 1789865016,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -184794,24 +184814,30 @@
           "confidence": "MEDIUM",
           "summary": "Stop sonrasi anlamli toparlanma var; giris/stop zamanlamasi incelenmeli.",
           "evidence": {
-            "max_favorable_r_after_close": 1.737,
+            "max_favorable_r_after_close": 3.4739,
             "max_adverse_r_after_close": 0.1303,
             "risk_percent": 0.5328,
             "tp1_progress_at_send_percent": null,
             "entry_distance_at_send_percent": 0.0,
-            "reached_tp1_after_close": false,
+            "reached_tp1_after_close": true,
             "reached_tp2_after_close": false,
             "reached_tp3_after_close": false,
-            "tp1_minutes_after_close": null,
+            "tp1_minutes_after_close": 22,
             "tp2_minutes_after_close": null,
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.4318
+        "last_price": 0.4354
+      },
+      "post_stop_follow": {
+        "returned_level": "TP1",
+        "age_minutes": 24,
+        "status": "RETURNED_TO_TARGET",
+        "updated_at": 1789864582
       }
     }
   },
-  "last_update": 1789864054,
+  "last_update": 1789865018,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
