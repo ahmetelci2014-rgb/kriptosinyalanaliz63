@@ -1,17 +1,17 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1789883872,
+  "generated_at": 1789884809,
   "status": "CAPITAL_RECOVERY_STRICT",
   "survival": {
     "mode": "RECOVERY_STRICT",
     "reason": "CRITICAL_ROLLING_STOP_RATE"
   },
   "funnel_truth": {
-    "internal_promoted": 495,
+    "internal_promoted": 498,
     "real_signal_sent": 19,
-    "promoted_unsent": 476,
-    "real_telegram_send_failures": 19,
-    "internal_final_admission_gap": 457,
+    "promoted_unsent": 479,
+    "real_telegram_send_failures": 20,
+    "internal_final_admission_gap": 459,
     "promotion_is_send_attempt": false
   },
   "latest_gate_layers": {
@@ -19,23 +19,20 @@
       "accepted": 2,
       "run_counts": {
         "OK": 2,
-        "ACCEPTED": 2,
-        "VOLUME_BELOW_0_65": 1,
-        "EXPECTED_MOVE_BELOW_2P": 1
+        "ACCEPTED": 2
       },
-      "blocks": {
-        "VOLUME_BELOW_0_65": 1,
-        "EXPECTED_MOVE_BELOW_2P": 1
-      }
+      "blocks": {}
     },
     "final_execution": {
-      "accepted": 0,
+      "accepted": 1,
       "run_counts": {
-        "UPSTREAM_REJECTED": 5,
-        "CVD_IMPULSE_OPPOSITE": 2
+        "UPSTREAM_REJECTED": 3,
+        "TAKER_CVD_OPPOSITE": 1,
+        "OK": 1,
+        "ACCEPTED": 1
       },
       "blocks": {
-        "CVD_IMPULSE_OPPOSITE": 2
+        "TAKER_CVD_OPPOSITE": 1
       }
     },
     "capital_survival": {
@@ -48,8 +45,8 @@
   },
   "top_latest_blocker": {
     "layer": "final_execution",
-    "reason": "CVD_IMPULSE_OPPOSITE",
-    "count": 2
+    "reason": "TAKER_CVD_OPPOSITE",
+    "count": 1
   },
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
