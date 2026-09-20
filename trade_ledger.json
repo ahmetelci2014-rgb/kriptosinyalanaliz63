@@ -184998,25 +184998,26 @@
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
           "15M hacim kendi ortalamasinin altinda veya sinirdaydi.",
-          "Stop mesafesi cok kisa surede tamamen tuketildi."
+          "Stop mesafesi cok kisa surede tamamen tuketildi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 8,
         "best_favorable_r": 0.2596,
         "worst_adverse_r": 1.1965,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ZAYIF_TREND_HACIM",
-        "preliminary_label": "Zayıf trend/hacim",
+        "primary": "ZAYIF_TREND_HACIM",
+        "label": "Zayıf trend/hacim",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
           "15M hacim oranı sınırın altındaydı."
         ],
         "metrics": {
@@ -185024,14 +185025,14 @@
           "mfe_r": 0.2596,
           "mae_r": 1.1965,
           "risk_percent": 1.103,
-          "return_minutes": null
+          "return_minutes": 244.0
         },
-        "updated_at": 1789871779
+        "updated_at": 1789886477
       },
       "result_diagnostics": {
         "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
         "shadow_only": true,
-        "status": "TRACKING",
+        "status": "COMPLETED",
         "final_result": "SL",
         "started_at": 1789871779,
         "measurement_start_at": 1789871820,
@@ -185067,14 +185068,20 @@
             "candle_time": 1789878900,
             "close_price": 7.63,
             "directional_r_from_reference": -3.533
+          },
+          "240": {
+            "target_at": 1789886179,
+            "candle_time": 1789886100,
+            "close_price": 7.598,
+            "directional_r_from_reference": -3.8942
           }
         },
         "max_favorable_r": 0.5982,
         "max_adverse_r": 6.2646,
-        "last_checked_at": 1789885688,
-        "completed_at": 0,
+        "last_checked_at": 1789886304,
+        "completed_at": 1789886304,
         "diagnosis": {
-          "status": "PROVISIONAL",
+          "status": "FINAL",
           "code": "SL_SONRASI_TOPARLANMA",
           "likely_cause": "GIRIS_STOP_ZAMANLAMASI",
           "confidence": "MEDIUM",
@@ -185093,7 +185100,13 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 7.61
+        "last_price": 7.598
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 244,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1789886477
       }
     },
     "AXSUSDT_SHORT_MARKET_FIRST_V5_1789880591": {
@@ -185240,20 +185253,27 @@
           "TP3": 0.95342
         },
         "reached_levels": {},
-        "checkpoints": {},
-        "max_favorable_r": 0.1922,
-        "max_adverse_r": 0.2883,
-        "last_checked_at": 1789885688,
+        "checkpoints": {
+          "15": {
+            "target_at": 1789886159,
+            "candle_time": 1789886040,
+            "close_price": 1.0019,
+            "directional_r_from_reference": 0.442
+          }
+        },
+        "max_favorable_r": 1.1723,
+        "max_adverse_r": 0.3267,
+        "last_checked_at": 1789886610,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
-          "code": "SL_KARISIK_SONUC",
-          "likely_cause": "KESIN_NEDEN_YOK",
-          "confidence": "LOW",
-          "summary": "Stop sonrasi fiyat yolu tek bir nedene isaret etmiyor.",
+          "code": "SL_SONRASI_TOPARLANMA",
+          "likely_cause": "DAR_STOP_OLASILIGI",
+          "confidence": "MEDIUM",
+          "summary": "Stop sonrasi anlamli toparlanma var; giris/stop zamanlamasi incelenmeli.",
           "evidence": {
-            "max_favorable_r_after_close": 0.1922,
-            "max_adverse_r_after_close": 0.2883,
+            "max_favorable_r_after_close": 1.1723,
+            "max_adverse_r_after_close": 0.3267,
             "risk_percent": 0.5185,
             "tp1_progress_at_send_percent": null,
             "entry_distance_at_send_percent": 0.03985651654044998,
@@ -185265,11 +185285,11 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 1.0055
+        "last_price": 0.9987
       }
     }
   },
-  "last_update": 1789885690,
+  "last_update": 1789886612,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -185281,16 +185301,16 @@
   "result_diagnostics_summary": {
     "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
     "tracked_total": 205,
-    "completed_total": 203,
+    "completed_total": 204,
     "diagnosis_counts": {
       "BE_SONRASI_TP3": 29,
       "BE_KORUMASI_DOGRU": 16,
       "BE_NOTR_KARISIK": 32,
       "SL_SONRASI_TERS_YON_DEVAMI": 5,
-      "SL_SONRASI_TOPARLANMA": 77,
+      "SL_SONRASI_TOPARLANMA": 78,
       "BE_SONRASI_YENIDEN_HEDEF": 6,
       "SL_SONRASI_GUCLU_TOPARLANMA": 27,
-      "SL_KARISIK_SONUC": 13
+      "SL_KARISIK_SONUC": 12
     },
     "likely_cause_counts": {
       "BE_KORUMASI_ERKEN_OLABILIR": 35,
@@ -185299,13 +185319,13 @@
       "YON_VEYA_SETUP_GECERSIZLESMESI": 5,
       "ERKEN_GIRIS_OLASILIGI": 31,
       "GIRIS_STOP_ZAMANLAMASI": 18,
-      "KESIN_NEDEN_YOK": 13,
-      "DAR_STOP_OLASILIGI": 55
+      "KESIN_NEDEN_YOK": 12,
+      "DAR_STOP_OLASILIGI": 56
     },
-    "sl_recovery_total": 104,
+    "sl_recovery_total": 105,
     "be_maybe_early_total": 35,
     "be_protection_correct_total": 16,
-    "updated_at": 1789885398
+    "updated_at": 1789886306
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
