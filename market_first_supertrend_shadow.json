@@ -1,0 +1,42 @@
+{
+  "version": "MARKET_FIRST_SUPERTREND_SHADOW_V1_2026_09_22",
+  "mode": "SHADOW_ONLY_NO_TRADE_EFFECT",
+  "atr_period": 10,
+  "multiplier": 3.0,
+  "timeframes": [
+    "15m",
+    "1h"
+  ],
+  "uses_closed_candles_only": true,
+  "trade_gate": false,
+  "score_effect": false,
+  "telegram": false,
+  "run_counts": {
+    "ALIGNED_BOTH": 162,
+    "MIXED": 101,
+    "OPPOSED_BOTH": 3
+  },
+  "entry_plan_outcome_cohorts": {
+    "ALIGNED_BOTH": {
+      "total": 6,
+      "resolved": 1,
+      "entry_signal_sent": 0,
+      "tp1_first": 1,
+      "sl_first": 0,
+      "ambiguous_same_bar": 0,
+      "decided_ex_ambiguous": 1,
+      "tp1_first_rate_decided_ex_ambiguous": 1.0
+    },
+    "MIXED": {
+      "total": 4,
+      "resolved": 0,
+      "entry_signal_sent": 0,
+      "tp1_first": 0,
+      "sl_first": 1,
+      "ambiguous_same_bar": 0,
+      "decided_ex_ambiguous": 1,
+      "tp1_first_rate_decided_ex_ambiguous": 0.0
+    }
+  },
+  "note": "Supertrend is observational only. Compare ALIGNED_BOTH/MIXED/OPPOSED_BOTH TP1-first vs SL-first after enough new samples."
+}
