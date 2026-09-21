@@ -19,7 +19,7 @@ from typing import Any, Mapping, Optional
 import market_first_entry_plan as entry_plan
 import market_first_runner as runner
 
-VERSION = "MARKET_FIRST_SIMPLE_TELEGRAM_V5_TECHNICAL_TARGET_2026_09_07"
+VERSION = "MARKET_FIRST_SIMPLE_TELEGRAM_V6_TWO_MESSAGE_ONLY_2026_09_22"
 _INSTALLED = False
 
 # Qualified PREP -> selective Telegram early-entry alert.
@@ -59,6 +59,17 @@ SUPPRESSED_MARKERS = (
     " | BİTTİ\n",
     "İŞLEM DEĞİL",
     "İşlem teyidi değildir",
+)
+
+# User-facing V6 Telegram is intentionally reduced to two concepts:
+# 1) a real trade entry,
+# 2) a strong background candidate that is explicitly NOT a trade.
+# Different real-trade formatters use one of the prefixes below.
+ALLOWED_TELEGRAM_PREFIXES = (
+    "🚨 KALİTELİ KRİPTO İŞLEM",
+    "🚨 KRİPTO İŞLEM",
+    "✅ İŞLEM FIRSATI",
+    "👀 ARKA PLAN ADAYI",
 )
 
 
@@ -106,16 +117,11 @@ def _target_lines(item: Mapping[str, Any]) -> str:
 def should_suppress(text: Any) -> bool:
     message = str(text or "").strip()
     if not message:
-        return False
-
-    # V6 background visibility lane: these are intentionally Telegram-visible
-    # observation messages. They are clearly labelled as non-trades and must not
-    # be swallowed by the generic "İŞLEM DEĞİL" suppression marker below.
-    if message.startswith(("🟡 ÖN SİNYAL", "👀 ARKA PLAN ADAYI")):
-        return False
-    if any(message.startswith(prefix) for prefix in SUPPRESSED_PREFIXES):
         return True
-    return any(marker in message for marker in SUPPRESSED_MARKERS)
+
+    # Hard Telegram allow-list. Everything except a real trade entry or the
+    # explicit background-candidate message stays internal.
+    return not message.startswith(ALLOWED_TELEGRAM_PREFIXES)
 
 
 def early_entry_eligible(plan: Mapping[str, Any]) -> bool:
@@ -282,9 +288,20 @@ def install_simple_mode() -> None:
 
     def simple_send(text: str, delivery_key: Optional[str] = None) -> bool:
         if should_suppress(text):
-            print("TELEGRAM SIMPLE MODE | sessiz takip:", str(text).splitlines()[0])
-            return False
+            first_line = str(text or "").splitlines()[0] if str(text or "").splitlines() else "(boş)"
+            print("TELEGRAM V6 | sessiz iç takip:", first_line)
+            # Intentional silence is treated as handled so lifecycle/report code
+            # does not retry the same hidden notification every scan.
+            return True
         return original_send(text, delivery_key=delivery_key)
+
+    def silent_core_tracking_send(message, delivery_key=None):
+        # main.py TP/SL/BE/status tracking calls bot.send_telegram directly and
+        # therefore bypass runner._send. During Market First V6 we keep every
+        # ledger/performance update but silence those user-facing notifications.
+        first_line = str(message or "").splitlines()[0] if str(message or "").splitlines() else "(boş)"
+        print("TELEGRAM V6 | TP/SL/BE/status sessiz:", first_line)
+        return True
 
     def selective_early_formatter(decision: Mapping[str, Any]) -> str:
         original_text = original_early_formatter(decision)
@@ -294,15 +311,19 @@ def install_simple_mode() -> None:
     runner._format_early_message = selective_early_formatter
     runner._send = simple_send
     runner._format_trade_message = simple_trade_message
+    runner.bot.send_telegram = silent_core_tracking_send
 
 
 def summary() -> dict:
     return {
         "version": VERSION,
-        "telegram_mode": "SELECTIVE_EARLY_TARGET_TRADE_AND_RESULTS",
-        "ordinary_preparations": "INTERNAL_LEDGER_ONLY",
-        "qualified_entry_preparations": "SELECTIVE_TELEGRAM_WITH_TARGET",
-        "qualified_early_moves": "SELECTIVE_TELEGRAM_WITH_TARGET",
-        "real_trades": "TELEGRAM_WITH_TECHNICAL_TARGET_AND_EXPECTED_PERCENT",
+        "telegram_mode": "REAL_TRADE_PLUS_BACKGROUND_CANDIDATE_ONLY",
+        "allowed_prefixes": list(ALLOWED_TELEGRAM_PREFIXES),
+        "real_trades": "TELEGRAM",
+        "background_candidates": "TELEGRAM",
+        "tp_sl_be": "INTERNAL_LEDGER_ONLY",
+        "daily_report": "INTERNAL_ONLY",
+        "swing_preparations": "INTERNAL_ONLY",
+        "early_lifecycle_status": "INTERNAL_ONLY",
         "other_observations": "INTERNAL_LEDGER_ONLY",
     }
