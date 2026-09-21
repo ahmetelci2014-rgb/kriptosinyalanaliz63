@@ -118,7 +118,7 @@ def test_strong_preparation_becomes_early_entry_alert_with_target_plan():
     assert "Potansiyel aralık:" in text
     assert "1H direnç" in text
     assert "Teknik hedef tahmindir" in text
-    assert simple.should_suppress(text) is False
+    assert simple.should_suppress(text) is True
 
 
 def test_early_entry_rejects_opposite_5m_or_market_direction():
@@ -149,7 +149,7 @@ def test_link_like_raw_early_move_becomes_orange_alert_with_target():
     assert "3dk +0.28%" in text
     assert "5dk +0.43%" in text
     assert "Hacim: 1.25x" in text
-    assert simple.should_suppress(text) is False
+    assert simple.should_suppress(text) is True
 
 
 def test_weak_or_conflicted_raw_early_move_stays_silent():
@@ -184,10 +184,20 @@ def test_short_raw_early_move_is_symmetric():
     assert simple.early_move_eligible(decision) is True
 
 
-def test_trade_results_are_not_suppressed():
-    assert simple.should_suppress("❌ STOP OLDU\nCoin: AAVEUSDT") is False
-    assert simple.should_suppress("✅ TP1 GELDİ\nCoin: AAVEUSDT") is False
-    assert simple.should_suppress("✅ TP3 GELDİ\nCoin: AAVEUSDT") is False
+def test_trade_results_are_suppressed_in_two_message_mode():
+    assert simple.should_suppress("❌ STOP OLDU\nCoin: AAVEUSDT") is True
+    assert simple.should_suppress("✅ TP1 GELDİ\nCoin: AAVEUSDT") is True
+    assert simple.should_suppress("✅ TP3 GELDİ\nCoin: AAVEUSDT") is True
+    assert simple.should_suppress("🟡 BE AKTİF\nCoin: AAVEUSDT") is True
+
+
+def test_only_real_trade_and_background_candidate_are_visible():
+    assert simple.should_suppress("🚨 KALİTELİ KRİPTO İŞLEM\nAAVEUSDT") is False
+    assert simple.should_suppress("🚨 KRİPTO İŞLEM\nAAVEUSDT") is False
+    assert simple.should_suppress("✅ İŞLEM FIRSATI | AAVEUSDT") is False
+    assert simple.should_suppress("👀 ARKA PLAN ADAYI | AAVEUSDT") is False
+    assert simple.should_suppress("📋 GÜNLÜK İŞLEM ÖZETİ") is True
+    assert simple.should_suppress("🧭 2H SWING HAZIRLIĞI | AAVEUSDT") is True
 
 
 def test_real_trade_message_has_main_target_and_expected_percent():
