@@ -193,6 +193,17 @@ def _snapshot(plan: Mapping[str, Any]) -> Dict[str, Any]:
         "volume_ratio_15m",
         "extension_atr_5m",
         "quote_volume_24h",
+        "supertrend_shadow_version",
+        "supertrend_shadow_period",
+        "supertrend_shadow_multiplier",
+        "supertrend_15m",
+        "supertrend_1h",
+        "supertrend_15m_line",
+        "supertrend_1h_line",
+        "supertrend_15m_distance_percent",
+        "supertrend_1h_distance_percent",
+        "supertrend_shadow_alignment",
+        "supertrend_shadow_only",
     )
     return {field: plan.get(field) for field in fields if field in plan}
 
