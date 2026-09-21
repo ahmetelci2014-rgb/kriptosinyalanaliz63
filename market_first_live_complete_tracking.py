@@ -67,6 +67,7 @@ def _patch_persistent_trade_metadata(signal: Mapping[str, Any]) -> None:
         key: value
         for key, value in signal.items()
         if key.startswith("direction_engine_")
+        or key.startswith("supertrend_")
         or key in {
             "entry_type",
             "entry_plan_trade",
