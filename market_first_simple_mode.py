@@ -1,15 +1,13 @@
 """Simple Telegram presentation for the single Market First live system.
 
 All preparation, early-alert, swing and direction ledgers keep running internally.
-Telegram exposes only useful decision points and now includes a technical target
-plan at message time:
-- selective EARLY ENTRY alerts from qualified entry-plan preparations,
-- selective EARLY-MOVE alerts with enough structure/momentum quality,
-- real trade entries and TP/SL/BE lifecycle results.
+Telegram is deliberately limited to only two user-facing concepts:
+- real trade entry,
+- strong background candidate (explicitly labelled as NOT a trade).
 
-Ordinary PREP/BEKLE, lower-confidence early movement, breakout, chased, swing and
-lifecycle-noise messages remain silent. Presentation/target guidance never promotes
-an alert into a trade and never bypasses a live guard.
+TP/SL/BE, daily reports, early lifecycle updates, ordinary preparations, swing
+preparations and every other operational message stay internal. All ledgers and
+performance tracking continue normally.
 """
 from __future__ import annotations
 
@@ -290,9 +288,10 @@ def install_simple_mode() -> None:
         if should_suppress(text):
             first_line = str(text or "").splitlines()[0] if str(text or "").splitlines() else "(boş)"
             print("TELEGRAM V6 | sessiz iç takip:", first_line)
-            # Intentional silence is treated as handled so lifecycle/report code
-            # does not retry the same hidden notification every scan.
-            return True
+            # runner-level hidden messages are reported as not sent so their
+            # Telegram counters remain truthful. Core TP/SL/BE uses the separate
+            # silent_core_tracking_send below and is treated as handled there.
+            return False
         return original_send(text, delivery_key=delivery_key)
 
     def silent_core_tracking_send(message, delivery_key=None):
