@@ -80,14 +80,16 @@ def test_validated_background_edge_can_promote_a_plus_plus_prep_in_normal_mode()
     assert evidence["reason"] == "BACKGROUND_EDGE_A_PLUS_PLUS"
 
 
-def test_recovery_mode_disables_relaxed_background_promotion():
+def test_legacy_recovery_mode_is_observational_not_a_v6_veto():
     ok, evidence = bridge.background_promotion_qualifies(
         _plan(),
         _profile(),
         {"mode": "RECOVERY_STRICT", "reason": "POOR_ROLLING_STOP_RATE"},
     )
-    assert ok is False
-    assert evidence["reason"] == "SURVIVAL_RECOVERY_STRICT"
+    assert ok is True
+    assert evidence["reason"] == "BACKGROUND_EDGE_A_PLUS_PLUS"
+    assert evidence["live_admission_mode"] == "V6_BALANCED_CORE"
+    assert evidence["legacy_survival_mode_observed"] == "RECOVERY_STRICT"
 
 
 def test_weak_recent_background_does_not_enable_bridge():
