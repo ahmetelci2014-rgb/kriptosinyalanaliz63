@@ -107,6 +107,12 @@ def should_suppress(text: Any) -> bool:
     message = str(text or "").strip()
     if not message:
         return False
+
+    # V6 background visibility lane: these are intentionally Telegram-visible
+    # observation messages. They are clearly labelled as non-trades and must not
+    # be swallowed by the generic "İŞLEM DEĞİL" suppression marker below.
+    if message.startswith(("🟡 ÖN SİNYAL", "👀 ARKA PLAN ADAYI")):
+        return False
     if any(message.startswith(prefix) for prefix in SUPPRESSED_PREFIXES):
         return True
     return any(marker in message for marker in SUPPRESSED_MARKERS)
