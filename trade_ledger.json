@@ -158639,7 +158639,7 @@
       "quality": "A MARKET FIRST GİRİŞ PLANI",
       "quality_note": "15M+1H yön uyumu, pullback/retest bölgesi ve 5M giriş teyidi birlikte sağlandı.",
       "volume_ratio": 1.617,
-      "ideal_entry": 0.3108340983,
+      "ideal_entry": 0.3451517843,
       "zone_name": "LONG destek/retest",
       "zone_distance_percent": 0.0,
       "rr_tp1": 0.75,
@@ -158741,6 +158741,46 @@
           }
         },
         "last_price": 0.3087
+      },
+      "entry_type": "MARKET_FIRST_ENTRY_PLAN",
+      "entry_plan_trade": true,
+      "entry_plan_zone_low": 0.3448066325,
+      "entry_plan_zone_high": 0.3454969361,
+      "entry_plan_version": "MARKET_FIRST_ENTRY_PLAN_V1_2026_09_05",
+      "supertrend_shadow_version": "MARKET_FIRST_SUPERTREND_SHADOW_V1_2026_09_22",
+      "supertrend_shadow_period": 10,
+      "supertrend_shadow_multiplier": 3.0,
+      "supertrend_15m": "SHORT",
+      "supertrend_1h": "LONG",
+      "supertrend_15m_line": 0.3512443023,
+      "supertrend_1h_line": 0.3331215241,
+      "supertrend_15m_distance_percent": 1.6332,
+      "supertrend_1h_distance_percent": 3.0778,
+      "supertrend_shadow_alignment": "MIXED",
+      "supertrend_shadow_only": true,
+      "direction_engine_version": "MARKET_FIRST_DIRECTION_ENGINE_V2_2026_09_05",
+      "direction_engine_reason": "SELECTED",
+      "direction_engine_selected_direction": "LONG",
+      "direction_engine_current_direction": "LONG",
+      "direction_engine_long_score": 100,
+      "direction_engine_short_score": 0,
+      "direction_engine_selected_score": 100,
+      "direction_engine_other_score": 0,
+      "direction_engine_margin": 100,
+      "direction_engine_reversal": false,
+      "direction_engine_confirmations": 3,
+      "direction_engine_confirmation_flags": {
+        "structure_5m": true,
+        "fresh_micro": false,
+        "taker": true,
+        "cvd": true,
+        "breadth": false,
+        "opposing_wall": false
+      },
+      "direction_engine_structures": {
+        "5m": "LONG",
+        "15m": "LONG",
+        "1h": "LONG"
       }
     },
     "FILUSDT_LONG_MARKET_FIRST_V5_1788619687": {
@@ -190433,7 +190473,7 @@
       "worst_adverse_r": 0.0,
       "best_favorable_price": 0.2351,
       "worst_adverse_price": 0.2255,
-      "last_market_price": 0.2293,
+      "last_market_price": 0.2299,
       "tp1_hit_at": 1789979820,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -190464,7 +190504,7 @@
         "15m": "LONG",
         "1h": "LONG"
       },
-      "last_tracking_at": 1790029560
+      "last_tracking_at": 1790030460
     },
     "INJUSDT_LONG_MARKET_FIRST_V5_1789987102": {
       "trade_id": "INJUSDT_LONG_MARKET_FIRST_V5_1789987102",
@@ -191071,17 +191111,22 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "SL",
+      "r_result": -1.0,
+      "exit_price": 0.3225,
+      "closed_at": 1790030177,
+      "closed_day": "2026-09-22",
       "events": [
         {
           "time": 1790029407,
           "event": "OPENED",
           "price": 0.324
+        },
+        {
+          "time": 1790030177,
+          "event": "SL",
+          "price": 0.3225
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -191106,12 +191151,12 @@
       "sent_price": 0.3235,
       "entry_distance_at_send_percent": 0.15432098765432112,
       "best_favorable_percent": 0.0,
-      "worst_adverse_percent": 0.2778,
+      "worst_adverse_percent": 0.6481,
       "best_favorable_r": 0.0,
-      "worst_adverse_r": 0.5775,
+      "worst_adverse_r": 1.3474,
       "best_favorable_price": 0.324,
-      "worst_adverse_price": 0.3231,
-      "last_market_price": 0.3232,
+      "worst_adverse_price": 0.3219,
+      "last_market_price": 0.3225,
       "tp1_hit_at": 0,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -191153,10 +191198,191 @@
         "15m": "LONG",
         "1h": "LONG"
       },
-      "last_tracking_at": 1790029560
+      "last_tracking_at": 1790029920,
+      "duration_minutes": 12,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "HIZLI TERS HAREKET / YON UYUMSUZLUGU",
+        "confidence": "ORTA",
+        "factors": [
+          "Islem ilk 20 dakikada anlamli lehe hareket yapmadan stop oldu.",
+          "15M hacim kendi ortalamasinin altinda veya sinirdaydi.",
+          "Stop mesafesi cok kisa surede tamamen tuketildi."
+        ],
+        "duration_minutes": 12,
+        "best_favorable_r": 0.0,
+        "worst_adverse_r": 1.3474,
+        "provisional": true,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "stop_root_cause": {
+        "version": "STOP_ROOT_CAUSE_V1",
+        "primary": "TAKIP_SURUYOR",
+        "label": "Takip sürüyor",
+        "preliminary": "MUHTEMEL_YANLIS_YON",
+        "preliminary_label": "Muhtemel yanlış yön",
+        "secondary": [],
+        "confidence": "DUSUK",
+        "provisional": true,
+        "factors": [
+          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
+          "15M hacim oranı sınırın altındaydı."
+        ],
+        "metrics": {
+          "duration_minutes": 12,
+          "mfe_r": 0.0,
+          "mae_r": 1.3474,
+          "risk_percent": 0.481,
+          "return_minutes": null
+        },
+        "updated_at": 1790030177
+      },
+      "result_diagnostics": {
+        "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
+        "shadow_only": true,
+        "status": "TRACKING",
+        "final_result": "SL",
+        "started_at": 1790030177,
+        "measurement_start_at": 1790030220,
+        "reference_price": 0.3225,
+        "reference_label": "SL_EXIT",
+        "watched_levels": {
+          "TP1": 0.3321,
+          "TP2": 0.33615,
+          "TP3": 0.3402
+        },
+        "reached_levels": {},
+        "checkpoints": {},
+        "max_favorable_r": 0.4491,
+        "max_adverse_r": 0.0,
+        "last_checked_at": 1790030624,
+        "completed_at": 0,
+        "diagnosis": {
+          "status": "PROVISIONAL",
+          "code": "SL_KARISIK_SONUC",
+          "likely_cause": "KESIN_NEDEN_YOK",
+          "confidence": "LOW",
+          "summary": "Stop sonrasi fiyat yolu tek bir nedene isaret etmiyor.",
+          "evidence": {
+            "max_favorable_r_after_close": 0.4491,
+            "max_adverse_r_after_close": 0.0,
+            "risk_percent": 0.481,
+            "tp1_progress_at_send_percent": null,
+            "entry_distance_at_send_percent": 0.15432098765432112,
+            "reached_tp1_after_close": false,
+            "reached_tp2_after_close": false,
+            "reached_tp3_after_close": false,
+            "tp1_minutes_after_close": null,
+            "tp2_minutes_after_close": null,
+            "tp3_minutes_after_close": null
+          }
+        },
+        "last_price": 0.3228
+      }
+    },
+    "KAITOUSDT_LONG_MARKET_FIRST_V5_1790030336": {
+      "trade_id": "KAITOUSDT_LONG_MARKET_FIRST_V5_1790030336",
+      "symbol": "KAITOUSDT",
+      "direction": "LONG",
+      "source": "MARKET_FIRST_V5",
+      "entry": 0.3464,
+      "tp1": 0.3515000472,
+      "tp2": 0.3540500708,
+      "tp3": 0.3566000944,
+      "sl": 0.3431871429,
+      "score": 94,
+      "risk_percent": 0.569,
+      "opened_at": 1790030336,
+      "opened_day": "2026-09-22",
+      "tp1_hit": false,
+      "tp2_hit": false,
+      "tp3_hit": false,
+      "status": "OPEN",
+      "final_result": null,
+      "r_result": null,
+      "exit_price": null,
+      "closed_at": null,
+      "closed_day": null,
+      "events": [
+        {
+          "time": 1790030336,
+          "event": "OPENED",
+          "price": 0.3464
+        }
+      ],
+      "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
+      "strategy_version": "PREMIUM_MTF_TP_ODAKLI_V2",
+      "config_version": "CONFIG_2026_07_27",
+      "git_sha": "cc1262951b56e672c4ca0aca40ead5a1d7d08974",
+      "git_sha_short": "cc1262951b56",
+      "github_run_id": "35663027438",
+      "github_run_number": "8661",
+      "github_workflow": "Market First V6 - Balanced Core Live",
+      "github_ref_name": "main",
+      "version_backfilled": false,
+      "quality": "A MARKET FIRST GİRİŞ PLANI",
+      "quality_note": "15M+1H yön uyumu, pullback/retest bölgesi ve 5M giriş teyidi birlikte sağlandı.",
+      "volume_ratio": 1.576,
+      "ideal_entry": 0.3451517843,
+      "zone_name": "LONG destek/retest",
+      "zone_distance_percent": 0.0,
+      "rr_tp1": 1.587,
+      "rr_tp2": 2.381,
+      "rr_tp3": 3.175,
+      "sent_price": 0.3468,
+      "entry_distance_at_send_percent": 0.11547344110854835,
+      "best_favorable_percent": 0.2598,
+      "worst_adverse_percent": 0.0,
+      "best_favorable_r": 0.2801,
+      "worst_adverse_r": 0.0,
+      "best_favorable_price": 0.3473,
+      "worst_adverse_price": 0.3464,
+      "last_market_price": 0.347,
+      "tp1_hit_at": 0,
+      "entry_type": "MARKET_FIRST_ENTRY_PLAN",
+      "entry_plan_trade": true,
+      "entry_plan_zone_low": 0.3448066325,
+      "entry_plan_zone_high": 0.3454969361,
+      "entry_plan_version": "MARKET_FIRST_ENTRY_PLAN_V1_2026_09_05",
+      "supertrend_shadow_version": "MARKET_FIRST_SUPERTREND_SHADOW_V1_2026_09_22",
+      "supertrend_shadow_period": 10,
+      "supertrend_shadow_multiplier": 3.0,
+      "supertrend_15m": "SHORT",
+      "supertrend_1h": "LONG",
+      "supertrend_15m_line": 0.3512443023,
+      "supertrend_1h_line": 0.3331215241,
+      "supertrend_15m_distance_percent": 1.6332,
+      "supertrend_1h_distance_percent": 3.0778,
+      "supertrend_shadow_alignment": "MIXED",
+      "supertrend_shadow_only": true,
+      "direction_engine_version": "MARKET_FIRST_DIRECTION_ENGINE_V2_2026_09_05",
+      "direction_engine_reason": "SELECTED",
+      "direction_engine_selected_direction": "LONG",
+      "direction_engine_current_direction": "LONG",
+      "direction_engine_long_score": 100,
+      "direction_engine_short_score": 0,
+      "direction_engine_selected_score": 100,
+      "direction_engine_other_score": 0,
+      "direction_engine_margin": 100,
+      "direction_engine_reversal": false,
+      "direction_engine_confirmations": 3,
+      "direction_engine_confirmation_flags": {
+        "structure_5m": true,
+        "fresh_micro": false,
+        "taker": true,
+        "cvd": true,
+        "breadth": false,
+        "opposing_wall": false
+      },
+      "direction_engine_structures": {
+        "5m": "LONG",
+        "15m": "LONG",
+        "1h": "LONG"
+      },
+      "last_tracking_at": 1790030460
     }
   },
-  "last_update": 1790029567,
+  "last_update": 1790030626,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -191167,7 +191393,7 @@
   },
   "result_diagnostics_summary": {
     "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
-    "tracked_total": 225,
+    "tracked_total": 226,
     "completed_total": 225,
     "diagnosis_counts": {
       "BE_SONRASI_TP3": 31,
@@ -191177,7 +191403,7 @@
       "SL_SONRASI_TOPARLANMA": 90,
       "BE_SONRASI_YENIDEN_HEDEF": 6,
       "SL_SONRASI_GUCLU_TOPARLANMA": 30,
-      "SL_KARISIK_SONUC": 12
+      "SL_KARISIK_SONUC": 13
     },
     "likely_cause_counts": {
       "BE_KORUMASI_ERKEN_OLABILIR": 37,
@@ -191186,13 +191412,13 @@
       "YON_VEYA_SETUP_GECERSIZLESMESI": 6,
       "ERKEN_GIRIS_OLASILIGI": 31,
       "GIRIS_STOP_ZAMANLAMASI": 23,
-      "KESIN_NEDEN_YOK": 12,
+      "KESIN_NEDEN_YOK": 13,
       "DAR_STOP_OLASILIGI": 66
     },
     "sl_recovery_total": 120,
     "be_maybe_early_total": 37,
     "be_protection_correct_total": 16,
-    "updated_at": 1790012000
+    "updated_at": 1790030343
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
