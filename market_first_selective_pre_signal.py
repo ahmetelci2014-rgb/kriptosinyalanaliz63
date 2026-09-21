@@ -18,7 +18,7 @@ import market_first_runner as runner
 import market_first_profit_quality_v1 as profit_quality
 import market_first_final_execution_gate as final_execution
 
-VERSION = "MARKET_FIRST_SELECTIVE_PRE_SIGNAL_V1_2026_09_19"
+VERSION = "MARKET_FIRST_SELECTIVE_PRE_SIGNAL_V2_2026_09_22"
 MODE = "STRONG_ENTRY_NEAR_MISS_TELEGRAM_ONLY_NO_TRADE"
 
 MIN_SCORE = 92
@@ -182,28 +182,41 @@ def evaluate_near_signal(decision: Mapping[str, Any] | None) -> Tuple[bool, str,
     volume = _volume_ratio(decision)
     fresh_micro = bool(_flags(decision).get("fresh_micro"))
 
+    # Visibility lane: once the candidate itself is strong enough to pass
+    # _base_strength, a failed final trade gate should remain visible to the user
+    # as a BACKGROUND candidate instead of disappearing completely. This does not
+    # promote it to a trade and does not write open_signals/trade_ledger.
     if not quality_ok:
-        if quality_reason not in _SOFT_QUALITY_REASONS:
-            return False, f"HARD_QUALITY:{quality_reason}", evidence
-        if not execution_ok:
-            return False, f"MULTI_BLOCK:{quality_reason}+{execution_reason}", evidence
-        if quality_reason == "VOLUME_BELOW_0_65":
-            if volume < MIN_SOFT_VOLUME_RATIO or not fresh_micro:
-                return False, "SOFT_VOLUME_NOT_STRONG_ENOUGH", evidence
         out = dict(evidence)
         out["near_reason"] = quality_reason
         out["execution"] = execution_evidence
-        return True, quality_reason, out
+        out["visibility_only"] = True
+
+        if quality_reason == "VOLUME_BELOW_0_65":
+            if volume < MIN_SOFT_VOLUME_RATIO:
+                return False, "BACKGROUND_VOLUME_TOO_WEAK", evidence
+
+        if not execution_ok:
+            reason = f"BACKGROUND_MULTI_BLOCK:{quality_reason}+{execution_reason}"
+            return True, reason, out
+
+        if quality_reason in _SOFT_QUALITY_REASONS:
+            return True, quality_reason, out
+
+        return True, f"BACKGROUND_QUALITY:{quality_reason}", out
 
     if not execution_ok:
-        if execution_reason not in _SOFT_EXECUTION_REASONS:
-            return False, f"HARD_EXECUTION:{execution_reason}", evidence
-        if volume < MIN_VOLUME_RATIO:
-            return False, "EXECUTION_NEAR_BUT_VOLUME_WEAK", evidence
         out = dict(evidence)
         out["near_reason"] = execution_reason
         out["execution"] = execution_evidence
-        return True, execution_reason, out
+        out["visibility_only"] = True
+
+        if execution_reason in _SOFT_EXECUTION_REASONS:
+            if volume < MIN_VOLUME_RATIO:
+                return False, "EXECUTION_NEAR_BUT_VOLUME_WEAK", evidence
+            return True, execution_reason, out
+
+        return True, f"BACKGROUND_EXECUTION:{execution_reason}", out
 
     return False, "WOULD_PASS_REAL_PIPELINE", evidence
 
@@ -227,7 +240,14 @@ def _format_message(decision: Mapping[str, Any], reason: str, evidence: Mapping[
     target_r = _sf(evidence.get("technical_target_r"))
     risk = _sf(evidence.get("risk_percent"))
     score = _si(evidence.get("score"))
-    reason_text = _REASON_LABELS.get(reason, reason)
+    if reason.startswith("BACKGROUND_QUALITY:"):
+        reason_text = "Kalite kapısındaki son şart eksik: " + reason.split(":", 1)[1]
+    elif reason.startswith("BACKGROUND_EXECUTION:"):
+        reason_text = "Son giriş teyidi eksik: " + reason.split(":", 1)[1]
+    elif reason.startswith("BACKGROUND_MULTI_BLOCK:"):
+        reason_text = "Birden fazla son teyit eksik: " + reason.split(":", 1)[1]
+    else:
+        reason_text = _REASON_LABELS.get(reason, reason)
 
     if zone_low > 0 and zone_high > 0:
         zone_line = (
@@ -238,13 +258,13 @@ def _format_message(decision: Mapping[str, Any], reason: str, evidence: Mapping[
         zone_line = f"📍 İzleme fiyatı: {runner.bot.format_price(ideal)}\n"
 
     return (
-        f"🟡 ÖN SİNYAL | {decision.get('symbol')}\n"
+        f"👀 ARKA PLAN ADAYI | {decision.get('symbol')}\n"
         f"{icon} {direction} | Piyasa: {decision.get('market_label') or '-'}\n"
         f"{zone_line}"
         f"⭐ Skor: {score} | Risk: %{risk:.2f}\n"
         f"🎯 Teknik potansiyel: %{expected:.2f} | ~{target_r:.2f}R\n"
-        f"⏳ Eksik son teyit: {reason_text}\n"
-        f"⚠️ HENÜZ GERÇEK İŞLEM DEĞİL. Son teyit gelirse ayrı ✅ İŞLEM FIRSATI mesajı gelir."
+        f"⏳ İşleme dönüşmeme nedeni: {reason_text}\n"
+        f"⚠️ İZLEME AMAÇLIDIR — GERÇEK İŞLEM DEĞİL. Son teyit gelirse ayrıca ✅ İŞLEM FIRSATI mesajı gelir."
     )
 
 
@@ -304,7 +324,7 @@ def install() -> None:
 def summary() -> Dict[str, Any]:
     return {
         "version": VERSION,
-        "mode": MODE,
+        "mode": "STRONG_BACKGROUND_VISIBILITY_NO_TRADE",
         "max_per_run": MAX_PER_RUN,
         "min_score": MIN_SCORE,
         "max_risk_percent": MAX_RISK_PERCENT,
