@@ -49,10 +49,11 @@ jobs:
       - name: V6 core guard smoke check
         run: |
           set -e
-          python -m py_compile market_first_balanced_core_guard.py market_first_background_live_bridge.py market_first_selective_pre_signal.py market_first_simple_mode.py market_first_live_simple.py
+          python -m py_compile market_first_balanced_core_guard.py market_first_background_live_bridge.py market_first_selective_pre_signal.py market_first_supertrend_shadow.py market_first_simple_mode.py market_first_live_simple.py
           python -c "import market_first_balanced_core_guard as g; s={'symbol':'EGLDUSDT','direction':'LONG','entry':3.943,'sl':3.9166,'risk_percent':0.669,'score':83,'fast_entry':True}; ok,reason,_=g.evaluate_signal(s); assert (not ok and reason=='FAST_BEFORE_PROFIT_QUALITY'), (ok,reason)"
           python -c "import market_first_balanced_core_guard as g; s={'symbol':'GIGGLEUSDT','direction':'LONG','entry':34.53,'sl':34.39188,'risk_percent':0.4,'score':94,'profit_quality_version':'PQ','final_execution_gate_version':'FE','final_execution_gate':{'fresh_micro':False}}; ok,reason,_=g.evaluate_signal(s); assert (not ok and reason=='MIN_STOP_WITHOUT_FRESH_MICRO'), (ok,reason)"
           python -c "import market_first_simple_mode as s; assert not s.should_suppress('🚨 KALİTELİ KRİPTO İŞLEM\nTESTUSDT'); assert not s.should_suppress('👀 ARKA PLAN ADAYI | TESTUSDT'); assert s.should_suppress('✅ TP1 GELDİ\nTESTUSDT'); assert s.should_suppress('📋 GÜNLÜK İŞLEM ÖZETİ'); assert s.should_suppress('🧭 2H SWING HAZIRLIĞI | TESTUSDT')"
+          python -c "import market_first_supertrend_shadow as s; x=s.summary(); assert x['changes_trade_admission'] is False; assert x['telegram'] is False; assert x['atr_period']==10; assert x['multiplier']==3.0"
 
       - name: Kullanici arayuzunde acilamayan futures sinyallerini temizle
         env:
@@ -147,6 +148,7 @@ jobs:
             market_first_background_live_bridge.json \
             market_first_background_edge_history.json \
             market_first_structure_fibo_contact.json \
+            market_first_supertrend_shadow.json \
             market_first_candidate_visibility.json \
             premium_big_move_state.json \
             market_first_scheduler_health.json \
