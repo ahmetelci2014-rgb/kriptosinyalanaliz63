@@ -5,9 +5,15 @@ and the live trade pipeline. Historical/background evidence is allowed to change
 a PREP plan into an ENTRY plan only when that evidence is statistically strong
 and the current setup is A++ quality.
 
+V2 aligns this bridge with the V6 Balanced Core live architecture. The retired
+Profit Survival/Recovery mode is no longer allowed to veto every background
+promotion before the current quality/execution gates can inspect it. The legacy
+survival_health argument is retained only as observational metadata so older
+tests/callers remain compatible.
+
 It never sends Telegram directly, never places exchange orders, never widens a
 stop and never bypasses downstream Profit Quality, derivatives/order-flow, ML,
-Final Execution, Profit Survival, duplicate, cooldown or portfolio guards.
+Final Execution, duplicate, cooldown, portfolio or Balanced Core guards.
 """
 from __future__ import annotations
 
@@ -19,9 +25,8 @@ import tempfile
 from typing import Any, Dict, Mapping, Tuple
 
 import market_first_entry_plan as entry_plan
-import market_first_profit_survival_v2 as survival_v2
 
-VERSION = "MARKET_FIRST_BACKGROUND_LIVE_BRIDGE_V1_2026_09_14"
+VERSION = "MARKET_FIRST_BACKGROUND_LIVE_BRIDGE_V2_2026_09_22"
 STATE_FILE = "market_first_background_live_bridge.json"
 HISTORY_FILE = "market_first_background_edge_history.json"
 DAILY_FILE = "market_first_daily_report.json"
@@ -254,10 +259,14 @@ def background_promotion_qualifies(
     if not bool(profile.get("enabled")):
         return False, {"reason": "BACKGROUND_EDGE_NOT_VALIDATED"}
 
-    health = survival_health if isinstance(survival_health, Mapping) else survival_v2._current_health_v2()
-    mode = str(health.get("mode") or "NORMAL").upper()
-    if mode != "NORMAL":
-        return False, {"reason": f"SURVIVAL_{mode}", "survival_reason": health.get("reason")}
+    # V6 Balanced Core deliberately retired the old Survival/Recovery veto stack.
+    # Keeping that legacy mode as a hard prerequisite here made the bridge inert:
+    # PREP candidates were rejected before the current Profit Quality + Final
+    # Execution + Balanced Core gates could inspect them. Retain an explicitly
+    # supplied legacy health object only as diagnostic evidence; it is not a V6
+    # admission gate.
+    legacy_health = survival_health if isinstance(survival_health, Mapping) else {}
+    legacy_mode = str(legacy_health.get("mode") or "").upper()
 
     direction = str(plan.get("direction") or "").upper()
     if direction not in {"LONG", "SHORT"}:
@@ -295,6 +304,9 @@ def background_promotion_qualifies(
         "swing_v2_rate": _sf((profile.get("swing_v2") or {}).get("tp_first_rate")),
         "direction_rate": _sf(directional.get("tp_first_rate")),
         "direction_samples": _si(directional.get("samples")),
+        "live_admission_mode": "V6_BALANCED_CORE",
+        "legacy_survival_mode_observed": legacy_mode or None,
+        "legacy_survival_reason_observed": legacy_health.get("reason"),
     }
 
     checks = (
@@ -373,8 +385,9 @@ def finish() -> Dict[str, Any]:
         "run_counts": dict(_RUN_COUNTS),
         "promoted": _RUN_PROMOTED[-20:],
         "note": (
-            "Background first-touch evidence may promote PREP to ENTRY only while "
-            "capital survival is NORMAL. Every downstream live safety gate remains mandatory."
+            "Background first-touch evidence may promote A++ PREP to ENTRY under V6 Balanced Core. "
+            "Legacy Survival/Recovery mode is observational only; every current downstream "
+            "quality, execution, duplicate, cooldown, portfolio and core guard remains mandatory."
         ),
     }
     _atomic_save(STATE_FILE, payload)
@@ -389,5 +402,7 @@ def summary() -> Dict[str, Any]:
         "run_counts": dict(_RUN_COUNTS),
         "promotions_this_run": len(_RUN_PROMOTED),
         "exchange_orders": False,
+        "legacy_survival_veto": False,
+        "live_admission_mode": "V6_BALANCED_CORE",
         "downstream_gates_bypassed": False,
     }
