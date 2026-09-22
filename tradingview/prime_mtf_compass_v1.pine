@@ -188,21 +188,21 @@ marketCounter = coreLong ? structure15 == -1 : coreShort ? structure15 == 1 : fa
 marketRange = structure15 == 0
 
 shadowScore = 0
-shadowScore += coreLong or coreShort ? 4 : 0
+shadowScore += (coreLong or coreShort) ? 4 : 0
 shadowScore += marketAligned ? 3 : marketCounter ? -4 : marketRange ? -2 : 0
-shadowScore += coreLong and stAlignedLong or coreShort and stAlignedShort ? 2 : -2
-shadowScore += coreLong and ichiLong or coreShort and ichiShort ? 3 : ichiInside ? -1 : -3
-shadowScore += coreLong and breakLongConfirmed or coreShort and breakShortConfirmed ? 4 : coreLong and breakLongFake or coreShort and breakShortFake ? -6 : 0
-shadowScore += retestLong or retestShort ? 3 : 0
+shadowScore += ((coreLong and stAlignedLong) or (coreShort and stAlignedShort)) ? 2 : -2
+shadowScore += ((coreLong and ichiLong) or (coreShort and ichiShort)) ? 3 : ichiInside ? -1 : -3
+shadowScore += ((coreLong and breakLongConfirmed) or (coreShort and breakShortConfirmed)) ? 4 : ((coreLong and breakLongFake) or (coreShort and breakShortFake)) ? -6 : 0
+shadowScore += (retestLong or retestShort) ? 3 : 0
 shadowScore += fibIdeal ? 2 : fibChase ? -2 : 0
 
 shadowStatus = shadowScore >= 6 ? "GÜÇLÜ UYUM" : shadowScore >= 2 ? "UYUMLU" : shadowScore <= -4 ? "RİSKLİ" : "KARIŞIK"
 
 tvScore = 0.0
-tvScore += coreLong or coreShort ? 34 : 0
+tvScore += (coreLong or coreShort) ? 34 : 0
 tvScore += trend15 == (coreLong ? 1 : coreShort ? -1 : 0) ? 12 : 0
 tvScore += trend5 == (coreLong ? 1 : coreShort ? -1 : 0) ? 8 : 0
-tvScore += setupLong and coreLong or setupShort and coreShort ? 16 : 0
+tvScore += ((setupLong and coreLong) or (setupShort and coreShort)) ? 16 : 0
 tvScore += vol15 >= 1.30 ? 10 : volumeOk ? 6 : 0
 tvScore += adx15 >= 25 ? 8 : adxEntryOk ? 5 : 0
 tvScore += zoneDist <= 0.15 ? 7 : zoneOk ? 4 : 0
