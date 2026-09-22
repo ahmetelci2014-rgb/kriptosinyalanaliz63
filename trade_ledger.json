@@ -193433,14 +193433,14 @@
       "opened_at": 1790082246,
       "opened_day": "2026-09-22",
       "tp1_hit": true,
-      "tp2_hit": false,
-      "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "tp2_hit": true,
+      "tp3_hit": true,
+      "status": "CLOSED",
+      "final_result": "TP3",
+      "r_result": 2.1384,
+      "exit_price": 1.5744998348,
+      "closed_at": 1790085371,
+      "closed_day": "2026-09-22",
       "events": [
         {
           "time": 1790082246,
@@ -193451,6 +193451,16 @@
           "time": 1790084184,
           "event": "TP1",
           "price": 1.5574499174
+        },
+        {
+          "time": 1790085071,
+          "event": "TP2",
+          "price": 1.5659748761
+        },
+        {
+          "time": 1790085371,
+          "event": "TP3",
+          "price": 1.5744998348
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -193474,13 +193484,13 @@
       "rr_tp3": 2.851,
       "sent_price": 1.5437,
       "entry_distance_at_send_percent": 0.21423007011166453,
-      "best_favorable_percent": 1.3049,
+      "best_favorable_percent": 2.3825,
       "worst_adverse_percent": 0.1948,
-      "best_favorable_r": 1.6806,
+      "best_favorable_r": 3.0686,
       "worst_adverse_r": 0.2508,
-      "best_favorable_price": 1.5605,
+      "best_favorable_price": 1.5771,
       "worst_adverse_price": 1.5374,
-      "last_market_price": 1.5512,
+      "last_market_price": 1.5751,
       "tp1_hit_at": 1790084100,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -193522,10 +193532,39 @@
         "15m": "LONG",
         "1h": "LONG"
       },
-      "last_tracking_at": 1790084460
+      "last_tracking_at": 1790085300,
+      "duration_minutes": 52,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "KURULUM BASARILI",
+        "confidence": "YUKSEK",
+        "factors": [
+          "Sinyal maksimum hedef TP3'e ulasti."
+        ],
+        "duration_minutes": 52,
+        "best_favorable_r": 3.0686,
+        "worst_adverse_r": 0.2508,
+        "provisional": false,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "tp3_post_follow": {
+        "version": "TP3_POST_FOLLOW_V1_2026_08_08",
+        "status": "TRACKING",
+        "started_at": 1790085371,
+        "tp3_price": 1.5744998348,
+        "timeframe": "1m",
+        "checkpoints": {},
+        "max_favorable_percent": 0.0,
+        "max_adverse_percent": 0.0,
+        "best_price": 1.5744998348,
+        "worst_price": 1.5744998348,
+        "last_checked_at": 0,
+        "completed_at": 0,
+        "shadow_only": true
+      }
     }
   },
-  "last_update": 1790084484,
+  "last_update": 1790085371,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
