@@ -99,7 +99,7 @@ TRADE_LEDGER_FILE = "trade_ledger.json"
 
 # Bu sürüm bilgileri yalnız performans kayıtlarını ayrıştırmak içindir.
 # Sinyal üretimi, TP/SL ve filtre davranışını değiştirmez.
-BOT_BUILD_VERSION = "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11"
+BOT_BUILD_VERSION = "MAIN_MTF_ENTRY_QUALITY_SHADOW_V1_2026_09_22"
 STRATEGY_VERSION = "PREMIUM_MTF_TP_ODAKLI_V2"
 CONFIG_VERSION = "CONFIG_2026_07_27"
 
@@ -197,18 +197,25 @@ def safe_float(value, default=None):
 
 
 def send_telegram(message, delivery_key=None):
-    # Kullanici tercihi: SL olayi ledger/performance ve stop-sonrasi
-    # takipta kaydedilmeye devam eder, fakat anlik STOP Telegram mesaji
-    # gonderilmez. TP/BE/diger bildirimler aynen devam eder.
-    if (
-        delivery_key
-        and str(delivery_key).upper().endswith("|SL")
-    ):
-        print(
-            "SL Telegram bildirimi sessiz gecildi:",
-            delivery_key,
-        )
-        return True
+    # Kullanıcı tercihi:
+    # Telegram'da yalnız yeni İŞLEM ve GÖZLEM/YAKIN ADAY mesajları görünür.
+    # TP1/TP2/TP3/BE/SL olayları ledger/performance içinde izlenmeye
+    # devam eder fakat ayrı Telegram bildirimi üretmez.
+    if delivery_key:
+        event_name = str(delivery_key).upper().rsplit("|", 1)[-1]
+
+        if event_name in {
+            "TP1",
+            "TP2",
+            "TP3",
+            "BE",
+            "SL",
+        }:
+            print(
+                "Sonuç Telegram bildirimi sessiz geçildi:",
+                delivery_key,
+            )
+            return True
 
     return send_telegram_once(
         message=message,
@@ -685,6 +692,29 @@ def signal_diagnostic_snapshot(signal):
             "market_guard_short_allowed"
         ),
         "market_guard_reason": signal.get("market_guard_reason"),
+        "shadow_quality_version": signal.get(
+            "shadow_quality_version"
+        ),
+        "shadow_quality_score": safe_float(
+            signal.get("shadow_quality_score")
+        ),
+        "shadow_quality_status": signal.get(
+            "shadow_quality_status"
+        ),
+        "breakout_state": signal.get("breakout_state"),
+        "retest_confirmed": signal.get("retest_confirmed"),
+        "ichimoku_state": signal.get("ichimoku_state"),
+        "supertrend_state": signal.get("supertrend_state"),
+        "fib_entry_zone": signal.get("fib_entry_zone"),
+        "fib_retracement": safe_float(
+            signal.get("fib_retracement")
+        ),
+        "ema20_stretch_percent": safe_float(
+            signal.get("ema20_stretch_percent")
+        ),
+        "entry_quality_notes": signal.get(
+            "entry_quality_notes"
+        ),
     }
 
 
@@ -3966,6 +3996,49 @@ def build_short_trade_message(
         ):
             portfolio_text = "ALLOW ⚠️"
 
+    shadow_line = ""
+
+    shadow_status = str(
+        signal.get("shadow_quality_status")
+        or ""
+    ).strip()
+
+    if shadow_status:
+        shadow_labels = {
+            "STRONG_ALIGN": "Güçlü Uyum",
+            "ALIGNED": "Uyumlu",
+            "MIXED": "Karışık",
+            "RISKY": "Riskli",
+            "UNKNOWN": "Bilinmiyor",
+        }
+        shadow_score = int(
+            safe_float(
+                signal.get("shadow_quality_score"),
+                0,
+            )
+            or 0
+        )
+        breakout = str(
+            signal.get("breakout_state")
+            or "-"
+        )
+        ichi = str(
+            signal.get("ichimoku_state")
+            or "-"
+        )
+        supertrend = str(
+            signal.get("supertrend_state")
+            or "-"
+        )
+
+        shadow_line = (
+            f"\n🧪 Giriş Kalitesi: "
+            f"{shadow_labels.get(shadow_status, shadow_status)} "
+            f"({shadow_score:+d})"
+            f"\n↳ Breakout {breakout} | "
+            f"Ichi {ichi} | ST {supertrend}"
+        )
+
     current_line = ""
 
     if current_price is not None:
@@ -3993,6 +4066,7 @@ def build_short_trade_message(
         f"🔧 {leverage} | Isolated\n"
         f"⏱ {source}\n"
         f"🛡️ Portfolio: {portfolio_text}"
+        f"{shadow_line}"
         f"{current_line}\n\n"
         f"⚠️ Finansal tavsiye değildir."
     )
@@ -4049,6 +4123,60 @@ def build_limit_watch_message(
             f"Skor: {signal.get('score')}\n\n"
             f"Bu sinyal işlem olarak kaydedilmedi."
         )
+
+
+def build_watch_candidate_message(
+    signal,
+    current_price=None,
+):
+    """Güçlü fakat gerçek TRADE olmayan adayı kısa biçimde gösterir."""
+    direction = str(
+        signal.get("direction")
+        or ""
+    ).upper()
+    icon = "🟢" if direction == "LONG" else "🔴"
+
+    shadow_status = str(
+        signal.get("shadow_quality_status")
+        or "UNKNOWN"
+    )
+    shadow_score = int(
+        safe_float(
+            signal.get("shadow_quality_score"),
+            0,
+        )
+        or 0
+    )
+
+    notes = signal.get("entry_quality_notes")
+    if not isinstance(notes, list):
+        notes = []
+
+    note_text = (
+        "; ".join(str(x) for x in notes[:3])
+        if notes
+        else "Ek kalite notu yok"
+    )
+
+    price_line = ""
+    if current_price is not None:
+        price_line = (
+            f"\n💰 Güncel: {format_price(current_price)}"
+        )
+
+    return (
+        f"🟡 GÖZLEM / YAKIN ADAY — İŞLEM DEĞİL\n\n"
+        f"{icon} {direction} | {signal.get('symbol')}\n"
+        f"⭐ Ana Skor: {signal.get('score')}/100\n"
+        f"🧪 Ek Kalite: {shadow_status} ({shadow_score:+d})\n"
+        f"↳ Breakout: {signal.get('breakout_state')}\n"
+        f"↳ Ichimoku: {signal.get('ichimoku_state')}\n"
+        f"↳ Supertrend: {signal.get('supertrend_state')}\n"
+        f"↳ Fibonacci: {signal.get('fib_entry_zone')}"
+        f"{price_line}\n\n"
+        f"📌 {note_text}\n"
+        f"Bu aday işlem şartlarını tamamlamadı; sadece izle."
+    )
 
 
 # =========================================================
@@ -6532,6 +6660,27 @@ def save_open_signal(signal):
         ),
         "quality": signal.get("quality"),
         "quality_note": signal.get("quality_note"),
+        "shadow_quality_version": signal.get(
+            "shadow_quality_version"
+        ),
+        "shadow_quality_score": signal.get(
+            "shadow_quality_score"
+        ),
+        "shadow_quality_status": signal.get(
+            "shadow_quality_status"
+        ),
+        "breakout_state": signal.get("breakout_state"),
+        "retest_confirmed": signal.get("retest_confirmed"),
+        "ichimoku_state": signal.get("ichimoku_state"),
+        "supertrend_state": signal.get("supertrend_state"),
+        "fib_entry_zone": signal.get("fib_entry_zone"),
+        "fib_retracement": signal.get("fib_retracement"),
+        "ema20_stretch_percent": signal.get(
+            "ema20_stretch_percent"
+        ),
+        "entry_quality_notes": signal.get(
+            "entry_quality_notes"
+        ),
         "trend_reason": signal.get("trend_reason"),
         "confirm_reason": signal.get("confirm_reason"),
         "entry_reason": signal.get("entry_reason"),
@@ -7070,46 +7219,66 @@ def main():
             current_price=current_price,
         )
 
-        print(
-            signal["symbol"],
-            "limit-dolu güçlü aday Telegram yerine sessiz kaydedildi.",
-        )
-        mark_sent(
-            signal,
-            radar=True,
-        )
+        if send_telegram(watch_message):
+            print(
+                signal["symbol"],
+                "limit-dolu güçlü aday gözlem mesajı gönderildi.",
+            )
+            mark_sent(
+                signal,
+                radar=True,
+            )
 
     if selected_radar:
         print(
             BOT_NAME,
-            "radar adayları Telegram yerine sessiz izleniyor:",
+            "gözlem / yakın aday:",
             len(selected_radar),
         )
 
     for signal in selected_radar:
-        radar_message = signal["message"].replace(
-            "A KALİTE MTF FUTURES SİNYALİ",
-            "5M / 15M RADAR - İŞLEM AÇMA",
+        current_price = get_current_price(
+            exchange,
+            signal["symbol"],
         )
 
-        print(
-            signal["symbol"],
-            signal["direction"],
-            "5M/15M radar adayı sessiz kaydedildi.",
-        )
-        mark_sent(
+        valid, reason = is_entry_still_valid(
             signal,
-            radar=True,
+            current_price,
         )
 
-        update_performance(
-            signal["symbol"],
-            "RADAR",
-            direction=signal["direction"],
-            source=signal.get("source"),
-            entry=signal.get("entry"),
-            score=signal.get("score"),
+        if not valid:
+            print(
+                signal["symbol"],
+                "gözlem son kontrol elendi:",
+                reason,
+            )
+            continue
+
+        radar_message = build_watch_candidate_message(
+            signal,
+            current_price=current_price,
         )
+
+        if send_telegram(radar_message):
+            print(
+                signal["symbol"],
+                signal["direction"],
+                "gözlem / yakın aday Telegram'a gönderildi.",
+            )
+            mark_sent(
+                signal,
+                radar=True,
+            )
+
+            update_performance(
+                signal["symbol"],
+                "RADAR",
+                direction=signal["direction"],
+                source=signal.get("source"),
+                entry=signal.get("entry"),
+                score=signal.get("score"),
+            )
 
     if (
         not selected_trade
