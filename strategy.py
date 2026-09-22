@@ -87,6 +87,14 @@ EARLY_MIN_REJECTION_WICK_PERCENT = 18.0
 EARLY_LONG_MIN_CLOSE_POWER = 58.0
 EARLY_SHORT_MAX_CLOSE_POWER = 42.0
 
+# Yeni katman ilk aşamada yalnız SHADOW/teşhis amaçlıdır.
+# Mevcut MTF skorunu veya TRADE/RADAR kararını tek başına değiştirmez.
+ENTRY_QUALITY_SHADOW_VERSION = "ENTRY_QUALITY_SHADOW_V1_2026_09_22"
+SHADOW_BREAKOUT_LOOKBACK = 12
+SHADOW_FIB_LOOKBACK = 24
+SHADOW_RETEST_ATR_TOLERANCE = 0.18
+SHADOW_STRETCH_WARN_PERCENT = 0.60
+
 
 # =========================================================
 # TEMEL YARDIMCILAR
@@ -178,6 +186,328 @@ def lower_wick_percent(row: pd.Series) -> float:
     return max(0.0, lower_wick / candle_range * 100)
 
 
+def add_supertrend_columns(
+    frame: pd.DataFrame,
+    multiplier: float = 3.0,
+) -> pd.DataFrame:
+    """
+    Mevcut ATR(14) üzerinden hafif Supertrend teyidi üretir.
+    Bu kolonlar yalnız giriş-kalitesi shadow teşhisinde kullanılır.
+    """
+    if frame is None or frame.empty or "atr" not in frame.columns:
+        return frame
+
+    result = frame.copy()
+    hl2 = (result["high"] + result["low"]) / 2.0
+    basic_upper = hl2 + multiplier * result["atr"]
+    basic_lower = hl2 - multiplier * result["atr"]
+
+    final_upper = basic_upper.copy()
+    final_lower = basic_lower.copy()
+    supertrend = basic_upper.copy()
+    direction = pd.Series(0, index=result.index, dtype="int64")
+
+    for i in range(1, len(result)):
+        prev_close = safe_float(result["close"].iloc[i - 1])
+
+        if (
+            safe_float(basic_upper.iloc[i])
+            < safe_float(final_upper.iloc[i - 1])
+            or prev_close
+            > safe_float(final_upper.iloc[i - 1])
+        ):
+            final_upper.iloc[i] = basic_upper.iloc[i]
+        else:
+            final_upper.iloc[i] = final_upper.iloc[i - 1]
+
+        if (
+            safe_float(basic_lower.iloc[i])
+            > safe_float(final_lower.iloc[i - 1])
+            or prev_close
+            < safe_float(final_lower.iloc[i - 1])
+        ):
+            final_lower.iloc[i] = basic_lower.iloc[i]
+        else:
+            final_lower.iloc[i] = final_lower.iloc[i - 1]
+
+        previous_supertrend = safe_float(
+            supertrend.iloc[i - 1],
+            safe_float(final_upper.iloc[i - 1]),
+        )
+        previous_upper = safe_float(final_upper.iloc[i - 1])
+        close = safe_float(result["close"].iloc[i])
+
+        if abs(previous_supertrend - previous_upper) < 1e-12:
+            supertrend.iloc[i] = (
+                final_lower.iloc[i]
+                if close > safe_float(final_upper.iloc[i])
+                else final_upper.iloc[i]
+            )
+        else:
+            supertrend.iloc[i] = (
+                final_upper.iloc[i]
+                if close < safe_float(final_lower.iloc[i])
+                else final_lower.iloc[i]
+            )
+
+        direction.iloc[i] = (
+            1
+            if close >= safe_float(supertrend.iloc[i])
+            else -1
+        )
+
+    result["supertrend"] = supertrend
+    result["supertrend_direction"] = direction
+
+    return result
+
+
+def build_entry_quality_shadow(
+    direction: str,
+    entry: float,
+    df15: pd.DataFrame,
+    zone_distance: float = 0.0,
+) -> Dict[str, Any]:
+    """
+    Breakout/retest + Ichimoku + Supertrend + Fibonacci + uzama kontrolü.
+
+    ÖNEMLİ:
+    Bu fonksiyon ilk aşamada hard-block değildir ve ana skoru değiştirmez.
+    Sonuçlar ledger'a yazılır; birkaç günlük gerçek sonuçtan sonra
+    hangi maddelerin filtreye dönüşeceğine veriyle karar verilir.
+    """
+    default = {
+        "shadow_quality_version": ENTRY_QUALITY_SHADOW_VERSION,
+        "shadow_quality_score": 0,
+        "shadow_quality_status": "UNKNOWN",
+        "breakout_state": "UNKNOWN",
+        "retest_confirmed": False,
+        "ichimoku_state": "UNKNOWN",
+        "supertrend_state": "UNKNOWN",
+        "fib_entry_zone": "UNKNOWN",
+        "fib_retracement": None,
+        "ema20_stretch_percent": None,
+        "entry_quality_notes": [],
+    }
+
+    if df15 is None or len(df15) < max(
+        SHADOW_FIB_LOOKBACK + 4,
+        SHADOW_BREAKOUT_LOOKBACK + 4,
+    ):
+        return default
+
+    try:
+        last = df15.iloc[-2]
+        prior = df15.iloc[
+            -(SHADOW_BREAKOUT_LOOKBACK + 3):-3
+        ]
+
+        if prior.empty:
+            return default
+
+        close = safe_float(last["close"])
+        high = safe_float(last["high"])
+        low = safe_float(last["low"])
+        atr = safe_float(last.get("atr"))
+        ema20 = safe_float(last.get("ema20"))
+
+        swing_high = safe_float(prior["high"].max())
+        swing_low = safe_float(prior["low"].min())
+
+        tolerance = max(
+            atr * SHADOW_RETEST_ATR_TOLERANCE,
+            close * 0.0008,
+        )
+
+        breakout_state = "NONE"
+        retest_confirmed = False
+
+        if direction == "LONG":
+            if high > swing_high and close <= swing_high:
+                breakout_state = "FAKE_BREAK"
+            elif close > swing_high:
+                breakout_state = "CONFIRMED"
+                retest_confirmed = (
+                    low <= swing_high + tolerance
+                    and close >= swing_high
+                )
+        else:
+            if low < swing_low and close >= swing_low:
+                breakout_state = "FAKE_BREAK"
+            elif close < swing_low:
+                breakout_state = "CONFIRMED"
+                retest_confirmed = (
+                    high >= swing_low - tolerance
+                    and close <= swing_low
+                )
+
+        cloud_a = safe_float(last.get("ichimoku_a"))
+        cloud_b = safe_float(last.get("ichimoku_b"))
+        ichimoku_state = "UNKNOWN"
+
+        if cloud_a > 0 and cloud_b > 0:
+            cloud_top = max(cloud_a, cloud_b)
+            cloud_bottom = min(cloud_a, cloud_b)
+
+            if cloud_bottom <= close <= cloud_top:
+                ichimoku_state = "INSIDE"
+            elif (
+                direction == "LONG"
+                and close > cloud_top
+            ) or (
+                direction == "SHORT"
+                and close < cloud_bottom
+            ):
+                ichimoku_state = "ALIGNED"
+            else:
+                ichimoku_state = "COUNTER"
+
+        st_direction = int(
+            safe_float(
+                last.get("supertrend_direction"),
+                0.0,
+            )
+        )
+        supertrend_state = "UNKNOWN"
+
+        if st_direction in (-1, 1):
+            aligned = (
+                direction == "LONG"
+                and st_direction == 1
+            ) or (
+                direction == "SHORT"
+                and st_direction == -1
+            )
+            supertrend_state = (
+                "ALIGNED"
+                if aligned
+                else "COUNTER"
+            )
+
+        fib_window = df15.iloc[
+            -(SHADOW_FIB_LOOKBACK + 2):-2
+        ]
+        impulse_high = safe_float(
+            fib_window["high"].max()
+        )
+        impulse_low = safe_float(
+            fib_window["low"].min()
+        )
+        impulse_range = impulse_high - impulse_low
+
+        fib_retracement = None
+        fib_entry_zone = "UNKNOWN"
+
+        if impulse_range > 0:
+            if direction == "LONG":
+                fib_retracement = (
+                    impulse_high - entry
+                ) / impulse_range
+            else:
+                fib_retracement = (
+                    entry - impulse_low
+                ) / impulse_range
+
+            if 0.382 <= fib_retracement <= 0.618:
+                fib_entry_zone = "IDEAL_382_618"
+            elif fib_retracement < 0.20:
+                fib_entry_zone = "SHALLOW_CHASE"
+            elif fib_retracement > 0.72:
+                fib_entry_zone = "DEEP"
+            else:
+                fib_entry_zone = "NORMAL"
+
+        ema20_stretch = (
+            percent_distance(entry, ema20)
+            if ema20 > 0
+            else None
+        )
+
+        score = 0
+        notes = []
+
+        if breakout_state == "CONFIRMED":
+            score += 4
+            notes.append("15M kırılım kapanışla teyitli")
+        elif breakout_state == "FAKE_BREAK":
+            score -= 6
+            notes.append("15M fake-break riski")
+
+        if retest_confirmed:
+            score += 3
+            notes.append("kırılan seviye retest tuttu")
+
+        if ichimoku_state == "ALIGNED":
+            score += 3
+            notes.append("Ichimoku yönle uyumlu")
+        elif ichimoku_state == "COUNTER":
+            score -= 3
+            notes.append("Ichimoku ters")
+        elif ichimoku_state == "INSIDE":
+            score -= 1
+            notes.append("fiyat Ichimoku bulutu içinde")
+
+        if supertrend_state == "ALIGNED":
+            score += 2
+            notes.append("Supertrend uyumlu")
+        elif supertrend_state == "COUNTER":
+            score -= 2
+            notes.append("Supertrend ters")
+
+        if fib_entry_zone == "IDEAL_382_618":
+            score += 2
+            notes.append("Fibonacci 0.382-0.618 giriş bölgesi")
+        elif fib_entry_zone == "SHALLOW_CHASE":
+            score -= 2
+            notes.append("Fibonacci: hareket kovalanıyor olabilir")
+
+        if (
+            ema20_stretch is not None
+            and ema20_stretch
+            > SHADOW_STRETCH_WARN_PERCENT
+        ):
+            score -= 4
+            notes.append("EMA20'den fazla uzama")
+
+        if safe_float(zone_distance) > MAX_LATE_ENTRY_DISTANCE_PERCENT:
+            score -= 4
+            notes.append("ana giriş bölgesinden uzak")
+
+        if score >= 6:
+            status = "STRONG_ALIGN"
+        elif score >= 2:
+            status = "ALIGNED"
+        elif score <= -4:
+            status = "RISKY"
+        else:
+            status = "MIXED"
+
+        return {
+            "shadow_quality_version": ENTRY_QUALITY_SHADOW_VERSION,
+            "shadow_quality_score": int(score),
+            "shadow_quality_status": status,
+            "breakout_state": breakout_state,
+            "retest_confirmed": bool(retest_confirmed),
+            "ichimoku_state": ichimoku_state,
+            "supertrend_state": supertrend_state,
+            "fib_entry_zone": fib_entry_zone,
+            "fib_retracement": (
+                round(fib_retracement, 4)
+                if fib_retracement is not None
+                else None
+            ),
+            "ema20_stretch_percent": (
+                round(ema20_stretch, 4)
+                if ema20_stretch is not None
+                else None
+            ),
+            "entry_quality_notes": notes,
+        }
+
+    except Exception:
+        return default
+
+
 def add_indicators(df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
     if df is None or df.empty:
         return None
@@ -230,6 +560,25 @@ def add_indicators(df: Optional[pd.DataFrame]) -> Optional[pd.DataFrame]:
         frame["close"],
         window=14,
     ).average_true_range()
+
+    frame = add_supertrend_columns(frame)
+
+    tenkan_high = frame["high"].rolling(9).max()
+    tenkan_low = frame["low"].rolling(9).min()
+    kijun_high = frame["high"].rolling(26).max()
+    kijun_low = frame["low"].rolling(26).min()
+    span_b_high = frame["high"].rolling(52).max()
+    span_b_low = frame["low"].rolling(52).min()
+
+    tenkan = (tenkan_high + tenkan_low) / 2.0
+    kijun = (kijun_high + kijun_low) / 2.0
+
+    frame["ichimoku_a"] = (
+        (tenkan + kijun) / 2.0
+    ).shift(26)
+    frame["ichimoku_b"] = (
+        (span_b_high + span_b_low) / 2.0
+    ).shift(26)
 
     frame["adx"] = ADXIndicator(
         frame["high"],
@@ -797,6 +1146,7 @@ def build_signal(
     zone_distance: float,
     zone_name: str,
     extra_quality_note: str = "",
+    entry_quality: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     adx_4h = safe_float(trend_info.get("adx_4h", 0))
     adx_1h = safe_float(confirm_info.get("adx_1h", 0))
@@ -850,6 +1200,9 @@ def build_signal(
         "quality": quality,
         "quality_note": quality_note,
     }
+
+    if isinstance(entry_quality, dict):
+        signal.update(entry_quality)
 
     signal["leverage"] = leverage_suggestion(
         signal["risk_percent"]
@@ -1118,6 +1471,13 @@ def analyze_mtf_trade(
         and score >= MIN_SCORE_TRADE
     )
 
+    entry_quality = build_entry_quality_shadow(
+        direction,
+        entry,
+        df15,
+        zone_distance,
+    )
+
     signal_class = (
         "TRADE"
         if strict_trade_ok
@@ -1163,6 +1523,7 @@ def analyze_mtf_trade(
             "Giriş zamanlama kontrolü geçti; ideal bölgeden "
             f"uzaklık %{round(zone_distance, 3)}."
         ),
+        entry_quality=entry_quality,
     )
 
 
@@ -1439,6 +1800,13 @@ def analyze_5m_radar(
 
     signal_class = "TRADE"
 
+    entry_quality = build_entry_quality_shadow(
+        direction,
+        entry,
+        df15,
+        zone_distance,
+    )
+
     combined_volume = max(volume15, vol5_ratio)
 
     return build_signal(
@@ -1465,4 +1833,5 @@ def analyze_5m_radar(
             "Erken giriş: 15M dönüş tamamen bitmeden 5M teyidi alındı. "
             "Bu nedenle stop mutlaka kullanılmalı."
         ),
+        entry_quality=entry_quality,
     )
