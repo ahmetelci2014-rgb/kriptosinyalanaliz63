@@ -61,8 +61,9 @@ TRACK_LIMIT = 180
 # 1 sinyal fazla dar kalıyordu, 3 sinyal ise aynı anda yığılma oluşturabiliyordu.
 MAX_TRADE_SIGNALS_PER_RUN = 2
 
-# Ana bot içi radar kapalı kalacak.
-MAX_RADAR_ALERTS_PER_RUN = 0
+# İşlem olamayan güçlü adaylardan çalışma başına en fazla 1 tanesi
+# "GÖZLEM / YAKIN ADAY" olarak Telegram'a gelir.
+MAX_RADAR_ALERTS_PER_RUN = 1
 
 # TP1 görmemiş riskli açık sinyal sınırı.
 # Bu sayı botun takip ettiği sinyal sınırıdır.
@@ -78,7 +79,7 @@ RISK_MODE_STOP_COUNT = 5
 # Risk modu aktifken çalışma başına en fazla 1 yeni işlem sinyali.
 RISK_MODE_MAX_TRADE_SIGNALS = 1
 
-RISK_MODE_MAX_RADAR_ALERTS = 0
+RISK_MODE_MAX_RADAR_ALERTS = 1
 # 5M erken giriş, yalnız TRADE kalitesindeyse risk modunda da
 # çalışma başına 1 sinyal sınırına tabidir. Radar-only mesajlar kapalıdır.
 RISK_MODE_ALLOW_RADAR_TRADE = True
@@ -92,8 +93,9 @@ RISK_MODE_ALLOW_RADAR_TRADE = True
 # Kalite > miktar: yalnız daha güçlü Premium adaylar canlıya geçer.
 MIN_SCORE_TRADE = 91
 
-# Ana bot içi radar kapalı.
-MIN_SCORE_RADAR = 999
+# Gerçek işlem eşiğinin altında kalan ama hâlâ güçlü olan adayları
+# gözlem mesajına taşır. İşlem değildir; open_signals'a kaydedilmez.
+MIN_SCORE_RADAR = 84
 
 # Çok zayıf 4H ve 1H trendlerini elemek için dengeli ADX sınırı.
 # Prescription Engine ADX'i daha fazla sıkmanın çok sayıda kazananı da
@@ -114,9 +116,8 @@ SHORT_RSI_MAX = 60
 # 5M ERKEN GİRİŞ / RADAR
 # =========================
 
-# Radar-only Telegram mesajları kapalı kalır:
-# MAX_RADAR_ALERTS_PER_RUN = 0 ve MIN_SCORE_RADAR = 999.
-#
+# 15M'de güçlü ama tam TRADE şartını geçemeyen en iyi tek aday
+# "GÖZLEM / YAKIN ADAY" olarak gösterilebilir.
 # Buna karşılık 4H + 1H kesin yön onayı alan, 15M bölgesine yakın
 # ve 5M dönüş teyidi veren aday gerçek TRADE olarak çalışabilir.
 ENABLE_5M_EARLY_TRADE = True
@@ -206,7 +207,7 @@ SYSTEM_NOTE = (
     "Dengeli canlı para MTF sürümü. "
     "Hacmi yüksek ilk 300 uygun USDT futures paritesi taranır. "
     "4H ana trend + 1H onay + 15M giriş mantığı korunur. "
-    "Radar-only mesajlar kapalıdır; güçlü 5M erken trade yolu aktiftir. "
+    "Güçlü fakat işlem şartını tamamlamayan en iyi tek aday gözlem olarak gösterilir. "
     "Zayıf trendli, düşük hacimli, geniş stoplu ve geç kalmış girişler azaltılır. "
     "Her çalıştırmada en fazla 2 güçlü işlem sinyali gönderilir. "
     "TP hedef yapısı korunmuştur; kâr garantisi yoktur."
