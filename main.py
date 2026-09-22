@@ -100,7 +100,7 @@ TRADE_LEDGER_FILE = "trade_ledger.json"
 # Bu sürüm bilgileri yalnız performans kayıtlarını ayrıştırmak içindir.
 # Sinyal üretimi, TP/SL ve filtre davranışını değiştirmez.
 BOT_BUILD_VERSION = "MAIN_MTF_ENTRY_QUALITY_SHADOW_V1_2026_09_22"
-STRATEGY_VERSION = "PREMIUM_MTF_TP_ODAKLI_V3_SHADOW_V1"
+STRATEGY_VERSION = "PREMIUM_MTF_TP_ODAKLI_V3_SHADOW_V2_MARKET_STRUCTURE"
 CONFIG_VERSION = "CONFIG_2026_09_22_OBSERVATION_V1"
 
 TR_TIMEZONE = timezone(timedelta(hours=3))
@@ -705,6 +705,19 @@ def signal_diagnostic_snapshot(signal):
         "retest_confirmed": signal.get("retest_confirmed"),
         "ichimoku_state": signal.get("ichimoku_state"),
         "supertrend_state": signal.get("supertrend_state"),
+        "market_structure": signal.get("market_structure"),
+        "market_structure_alignment": signal.get(
+            "market_structure_alignment"
+        ),
+        "market_structure_adx": safe_float(
+            signal.get("market_structure_adx")
+        ),
+        "ema_spread_percent": safe_float(
+            signal.get("ema_spread_percent")
+        ),
+        "range_width_percent": safe_float(
+            signal.get("range_width_percent")
+        ),
         "fib_entry_zone": signal.get("fib_entry_zone"),
         "fib_retracement": safe_float(
             signal.get("fib_retracement")
@@ -4030,6 +4043,10 @@ def build_short_trade_message(
             signal.get("supertrend_state")
             or "-"
         )
+        market_structure = str(
+            signal.get("market_structure")
+            or "-"
+        )
 
         shadow_line = (
             f"\n🧪 Giriş Kalitesi: "
@@ -4037,6 +4054,7 @@ def build_short_trade_message(
             f"({shadow_score:+d})"
             f"\n↳ Breakout {breakout} | "
             f"Ichi {ichi} | ST {supertrend}"
+            f"\n↳ Market Structure: {market_structure}"
         )
 
     current_line = ""
@@ -4172,6 +4190,7 @@ def build_watch_candidate_message(
         f"↳ Breakout: {signal.get('breakout_state')}\n"
         f"↳ Ichimoku: {signal.get('ichimoku_state')}\n"
         f"↳ Supertrend: {signal.get('supertrend_state')}\n"
+        f"↳ Piyasa Yapısı: {signal.get('market_structure')}\n"
         f"↳ Fibonacci: {signal.get('fib_entry_zone')}"
         f"{price_line}\n\n"
         f"📌 {note_text}\n"
@@ -6673,6 +6692,19 @@ def save_open_signal(signal):
         "retest_confirmed": signal.get("retest_confirmed"),
         "ichimoku_state": signal.get("ichimoku_state"),
         "supertrend_state": signal.get("supertrend_state"),
+        "market_structure": signal.get("market_structure"),
+        "market_structure_alignment": signal.get(
+            "market_structure_alignment"
+        ),
+        "market_structure_adx": signal.get(
+            "market_structure_adx"
+        ),
+        "ema_spread_percent": signal.get(
+            "ema_spread_percent"
+        ),
+        "range_width_percent": signal.get(
+            "range_width_percent"
+        ),
         "fib_entry_zone": signal.get("fib_entry_zone"),
         "fib_retracement": signal.get("fib_retracement"),
         "ema20_stretch_percent": signal.get(
