@@ -190581,6 +190581,11 @@
           "time": 1790040983,
           "event": "EXPIRED",
           "price": 0.2324
+        },
+        {
+          "time": 1790048400,
+          "event": "POST_EXPIRY_TARGET",
+          "price": 0.236775
         }
       ],
       "bot_version": "MAIN_MTF_PRIORITY_UNIVERSE_FIX_V7_2026_08_11",
@@ -190658,7 +190663,7 @@
       },
       "post_expiry_follow": {
         "version": "POST_EXPIRY_V1",
-        "status": "TRACKING",
+        "status": "RESOLVED",
         "restored": false,
         "expired_at": 1790040983,
         "expiry_price": 0.2324,
@@ -190670,26 +190675,29 @@
         "timeframe": "5m",
         "max_track_hours": 24,
         "checkpoints": [],
-        "last_checked_at": 1790048480,
-        "best_directional_r": 6.0818,
+        "last_checked_at": 1790048772,
+        "best_directional_r": 6.9675,
         "worst_directional_r": 2.5981,
-        "best_price": 0.2358,
+        "best_price": 0.2373,
         "worst_price": 0.2299,
-        "first_event": null,
-        "first_event_at": null,
-        "resolved_at": null,
-        "elapsed_minutes": null,
-        "diagnosis": null,
-        "telegram_notified": false,
-        "last_price": 0.2355,
-        "last_directional_r": 5.9047
+        "first_event": "TARGET",
+        "first_event_at": 1790048400,
+        "resolved_at": 1790048772,
+        "elapsed_minutes": 123,
+        "diagnosis": "Süre sınırı işlemi erken kapatmış olabilir; hedef süre dolduktan sonra görüldü.",
+        "telegram_notified": true,
+        "last_price": 0.2358,
+        "last_directional_r": 6.0818,
+        "first_event_price": 0.236775
       },
-      "post_expiry_status": "TRACKING",
+      "post_expiry_status": "TP3_AFTER_EXPIRY",
       "post_expiry_tp1": false,
       "post_expiry_sl": false,
-      "post_expiry_best_r": 6.0818,
+      "post_expiry_best_r": 6.9675,
       "post_expiry_worst_r": 2.5981,
-      "expiry_diagnosis": null
+      "expiry_diagnosis": "Süre sınırı işlemi erken kapatmış olabilir; hedef süre dolduktan sonra görüldü.",
+      "post_expiry_target": true,
+      "post_expiry_protection": false
     },
     "INJUSDT_LONG_MARKET_FIRST_V5_1789987102": {
       "trade_id": "INJUSDT_LONG_MARKET_FIRST_V5_1789987102",
@@ -191695,7 +191703,7 @@
         },
         "max_favorable_r": 2.8324,
         "max_adverse_r": 0.3424,
-        "last_checked_at": 1790048618,
+        "last_checked_at": 1790049522,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -191717,7 +191725,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.3496
+        "last_price": 0.3525
       },
       "post_stop_follow": {
         "returned_level": "TP1",
@@ -191959,9 +191967,9 @@
         "max_adverse_r": 2.8427,
         "best_price": 4.469,
         "worst_price": 4.302,
-        "last_checked_at": 1790048474,
+        "last_checked_at": 1790049365,
         "completed_at": 0,
-        "last_price": 4.341
+        "last_price": 4.344
       }
     },
     "FILUSDT_LONG_MARKET_FIRST_V5_1790032134": {
@@ -192632,7 +192640,7 @@
         },
         "max_favorable_r": 1.6834,
         "max_adverse_r": 1.9639,
-        "last_checked_at": 1790048618,
+        "last_checked_at": 1790049522,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -192654,7 +192662,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.02252
+        "last_price": 0.02253
       }
     },
     "TRUMPUSDT_LONG_MARKET_FIRST_V5_1790040493": {
@@ -192831,11 +192839,17 @@
             "candle_time": 1790045100,
             "close_price": 2.179,
             "directional_r_from_reference": -0.5504
+          },
+          "120": {
+            "target_at": 1790048768,
+            "candle_time": 1790048700,
+            "close_price": 2.156,
+            "directional_r_from_reference": -2.1327
           }
         },
         "max_favorable_r": 1.1007,
         "max_adverse_r": 3.5774,
-        "last_checked_at": 1790048618,
+        "last_checked_at": 1790049522,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -192857,7 +192871,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 2.154
+        "last_price": 2.156
       }
     },
     "VANAUSDT_LONG_MARKET_FIRST_V5_1790045598": {
@@ -193028,11 +193042,17 @@
             "candle_time": 1790047500,
             "close_price": 1.1152,
             "directional_r_from_reference": 0.1865
+          },
+          "60": {
+            "target_at": 1790049367,
+            "candle_time": 1790049300,
+            "close_price": 1.1201,
+            "directional_r_from_reference": 0.8894
           }
         },
-        "max_favorable_r": 1.7502,
+        "max_favorable_r": 1.8076,
         "max_adverse_r": 0.2295,
-        "last_checked_at": 1790048618,
+        "last_checked_at": 1790049522,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -193041,7 +193061,7 @@
           "confidence": "MEDIUM",
           "summary": "Stop sonrasi anlamli toparlanma var; giris/stop zamanlamasi incelenmeli.",
           "evidence": {
-            "max_favorable_r_after_close": 1.7502,
+            "max_favorable_r_after_close": 1.8076,
             "max_adverse_r_after_close": 0.2295,
             "risk_percent": 0.6216,
             "tp1_progress_at_send_percent": null,
@@ -193054,11 +193074,11 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 1.1259
+        "last_price": 1.1211
       }
     }
   },
-  "last_update": 1790048621,
+  "last_update": 1790049525,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
