@@ -1793,8 +1793,8 @@ def analyze_5m_radar(
         and zone_distance <= MAX_EARLY_ZONE_DISTANCE_PERCENT
     )
 
-    # Radar-only mesajlar config.py üzerinden kapalı kalır.
-    # Şartları geçemeyen erken aday Telegram'a gönderilmez.
+    # 5M erken yol yalnız gerçek TRADE üretir.
+    # Şartları geçemeyen 5M erken aday Telegram'a gönderilmez.
     if not can_be_trade:
         return None
 
