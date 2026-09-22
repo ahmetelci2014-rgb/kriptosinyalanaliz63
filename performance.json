@@ -39953,7 +39953,7 @@
       "tp3": 1,
       "sl": 4,
       "be": 2,
-      "expired": 0,
+      "expired": 1,
       "long": 8,
       "short": 0,
       "normal": 8,
@@ -40038,6 +40038,16 @@
           "sl": 0,
           "be": 0,
           "expired": 0
+        },
+        "0GUSDT": {
+          "opened": 0,
+          "radar": 0,
+          "tp1": 0,
+          "tp2": 0,
+          "tp3": 0,
+          "sl": 0,
+          "be": 0,
+          "expired": 1
         }
       },
       "direction_stops": {
@@ -40052,12 +40062,14 @@
       "closed_times": {
         "EGLDUSDT": 1790035298,
         "METISUSDT": 1790036769,
-        "MINAUSDT": 1790037677
+        "MINAUSDT": 1790037677,
+        "0GUSDT": 1790040983
       },
       "closed_results": {
         "EGLDUSDT": "TP3",
         "METISUSDT": "BE",
-        "MINAUSDT": "BE"
+        "MINAUSDT": "BE",
+        "0GUSDT": "EXPIRED"
       },
       "closed_history": [
         {
@@ -40149,14 +40161,24 @@
           "exit": 0.3444,
           "source": "MARKET_FIRST_V5",
           "score": 94
+        },
+        {
+          "time": "04:36:23",
+          "symbol": "0GUSDT",
+          "direction": "LONG",
+          "result": "EXPIRED",
+          "entry": 0.2255,
+          "exit": 0.2324,
+          "source": "MARKET_FIRST_V5",
+          "score": 92
         }
       ],
-      "sl_after_tp1": 1,
+      "sl_after_tp1": 2,
       "sl_after_tp2": 0,
       "sl_after_no_return": 0
     }
   },
-  "last_update": 1790040493,
+  "last_update": 1790040986,
   "last_open_summary": 1787843763,
   "last_status_message": 1787906216,
   "last_daily_report": "2026-08-27",
@@ -40178,7 +40200,8 @@
       "reported_checkpoints": [
         30,
         60,
-        120
+        120,
+        180
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
@@ -40222,7 +40245,9 @@
       "risk_percent": 0.556,
       "stopped_at": 1790038889,
       "stop_exit": 0.02253,
-      "reported_checkpoints": [],
+      "reported_checkpoints": [
+        30
+      ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
@@ -40243,10 +40268,10 @@
       "stopped_at": 1790039188,
       "stop_exit": 0.3444,
       "reported_checkpoints": [],
-      "after_sl_tp1": false,
+      "after_sl_tp1": true,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true
     }
   },
   "telegram_result_guard": {
