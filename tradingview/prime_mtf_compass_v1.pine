@@ -1,0 +1,308 @@
+//@version=6
+indicator("Prime MTF Compass v1 - Bot Uyumlu", shorttitle="Prime MTF Compass", overlay=true, max_labels_count=200, max_lines_count=100)
+
+// ============================================================================
+// AMAÇ
+// ============================================================================
+// Bu gösterge Premium MTF botunun grafik üstü karar-destek sürümüdür.
+// Tek bir açık grafiği analiz eder; bot gibi 300 coin taramaz.
+// Botun portfolio risk, market guard, duplicate/cooldown ve ledger kurallarını
+// bire bir uygulamaz. Bu nedenle "BOT-UYUMLU ADAY" = otomatik işlem emri değildir.
+
+// ============================================================================
+// AYARLAR
+// ============================================================================
+groupTF = "Zaman Dilimleri"
+tf4h = input.timeframe("240", "Ana Trend", group=groupTF)
+tf1h = input.timeframe("60", "Onay", group=groupTF)
+tf15 = input.timeframe("15", "Giriş", group=groupTF)
+tf5 = input.timeframe("5", "Mikro", group=groupTF)
+tf1 = input.timeframe("1", "Mikro RSI", group=groupTF)
+
+groupCore = "Ana Filtreler"
+minAdxTrend = input.float(15.0, "4H/1H Min ADX", minval=1, step=0.5, group=groupCore)
+minAdxEntry = input.float(18.0, "15M Min ADX", minval=1, step=0.5, group=groupCore)
+minVol15 = input.float(0.75, "15M Min Hacim Oranı", minval=0.1, step=0.05, group=groupCore)
+maxZoneDistance = input.float(0.25, "Maks. Giriş Bölgesi Uzaklığı %", minval=0.05, step=0.05, group=groupCore)
+
+groupShadow = "Shadow Kalite"
+stFactor = input.float(3.0, "Supertrend Faktör", minval=1.0, step=0.25, group=groupShadow)
+stAtrLen = input.int(14, "Supertrend ATR", minval=2, group=groupShadow)
+swingLookback = input.int(12, "Breakout Swing Bakış", minval=5, maxval=50, group=groupShadow)
+fibLookback = input.int(24, "Fibonacci Bakış", minval=10, maxval=100, group=groupShadow)
+
+groupVisual = "Görünüm"
+showEMA = input.bool(true, "EMA 20/50/200", group=groupVisual)
+showSupertrend = input.bool(true, "Supertrend", group=groupVisual)
+showIchimoku = input.bool(false, "Ichimoku Bulutu", group=groupVisual)
+showSignals = input.bool(true, "Aday Etiketleri", group=groupVisual)
+shadeRange = input.bool(true, "15M RANGE Arka Planı", group=groupVisual)
+
+// ============================================================================
+// YARDIMCILAR
+// ============================================================================
+f_pctDist(float p, float r) =>
+    r == 0.0 or na(r) ? 999.0 : math.abs(p - r) / r * 100.0
+
+f_trendText(int s) =>
+    s == 1 ? "YUKARI" : s == -1 ? "AŞAĞI" : "KARARSIZ"
+
+f_structureText(int s) =>
+    s == 1 ? "TREND UP" : s == -1 ? "TREND DOWN" : s == 0 ? "RANGE" : "GEÇİŞ"
+
+f_stateColor(int s) =>
+    s == 1 ? color.new(color.green, 15) : s == -1 ? color.new(color.red, 15) : color.new(color.gray, 35)
+
+f_packConfirmed() =>
+    float e20 = ta.ema(close, 20)
+    float e50 = ta.ema(close, 50)
+    float e200 = ta.ema(close, 200)
+    [diPlus, diMinus, adx] = ta.dmi(14, 14)
+    float rsi = ta.rsi(close, 14)
+    float volAvg = ta.sma(volume, 20)
+    float volRatio = volAvg == 0.0 ? 0.0 : volume / volAvg
+    [macdLine, macdSignal, macdHist] = ta.macd(close, 12, 26, 9)
+    [close[1], open[1], e20[1], e50[1], e200[1], e20[1] - e20[4], adx[1], rsi[1], volRatio[1], macdLine[1], macdSignal[1]]
+
+f_setup15Confirmed() =>
+    float e20 = ta.ema(close, 20)
+    float e50 = ta.ema(close, 50)
+    bool touchLCond = low <= e20 * 1.006 or low <= e50 * 1.006
+    bool touchSCond = high >= e20 * 0.994 or high >= e50 * 0.994
+    int barsL = ta.barssince(touchLCond)
+    int barsS = ta.barssince(touchSCond)
+    [macdLine, macdSignal, macdHist] = ta.macd(close, 12, 26, 9)
+    bool touchedLong = not na(barsL[1]) and barsL[1] <= 5
+    bool touchedShort = not na(barsS[1]) and barsS[1] <= 5
+    bool bullReclaim = close[1] > open[1] and close[1] >= e20[1] and close[1] > close[2]
+    bool bearReject = close[1] < open[1] and close[1] <= e20[1] and close[1] < close[2]
+    bool macdLongOk = macdLine[1] >= macdSignal[1] or macdHist[1] > macdHist[2]
+    bool macdShortOk = macdLine[1] <= macdSignal[1] or macdHist[1] < macdHist[2]
+    [touchedLong, touchedShort, bullReclaim, bearReject, macdLongOk, macdShortOk]
+
+f_extra15Confirmed() =>
+    [st, stDir] = ta.supertrend(stFactor, stAtrLen)
+    float tenkan = (ta.highest(high, 9) + ta.lowest(low, 9)) / 2.0
+    float kijun = (ta.highest(high, 26) + ta.lowest(low, 26)) / 2.0
+    float spanA = (tenkan + kijun) / 2.0
+    float spanB = (ta.highest(high, 52) + ta.lowest(low, 52)) / 2.0
+    float priorSwingH = ta.highest(high[2], swingLookback)
+    float priorSwingL = ta.lowest(low[2], swingLookback)
+    float recent3H = ta.highest(high[2], 3)
+    float recent3L = ta.lowest(low[2], 3)
+    float fibH = ta.highest(high[1], fibLookback)
+    float fibL = ta.lowest(low[1], fibLookback)
+    float atr = ta.atr(14)
+    [st[1], close[1] >= st[1] ? 1 : -1, spanA[27], spanB[27], priorSwingH, priorSwingL, recent3H, recent3L, high[1], low[1], fibH, fibL, atr[1]]
+
+f_trend4(float c, float e20, float e50, float e200, float slope, float adx) =>
+    c > e200 and e20 > e50 and slope > 0 and adx >= minAdxTrend ? 1 :
+     c < e200 and e20 < e50 and slope < 0 and adx >= minAdxTrend ? -1 : 0
+
+f_confirm1(float c, float e20, float e50, float e200, float adx, float rsi, float macd, float macdSig) =>
+    c > e200 and e20 > e50 and macd >= macdSig and rsi >= 46 and adx >= minAdxTrend ? 1 :
+     c < e200 and e20 < e50 and macd <= macdSig and rsi <= 54 and adx >= minAdxTrend ? -1 : 0
+
+f_fastTrend(float c, float e20, float e50, float slope) =>
+    c >= e20 and e20 >= e50 and slope > 0 ? 1 :
+     c <= e20 and e20 <= e50 and slope < 0 ? -1 : 0
+
+f_structure15(float c, float e20, float e50, float slope, float adx) =>
+    float spread = c == 0.0 ? 999.0 : math.abs(e20 - e50) / c * 100.0
+    adx < 18 and spread < 0.35 ? 0 :
+     e20 > e50 and slope > 0 and c >= e20 and adx >= 18 ? 1 :
+     e20 < e50 and slope < 0 and c <= e20 and adx >= 18 ? -1 :
+     adx < 16 ? 0 : 2
+
+// ============================================================================
+// MTF VERİLERİ — SON KAPANMIŞ MUM
+// ============================================================================
+[c4, o4, e20_4, e50_4, e200_4, slope4, adx4, rsi4, vol4, macd4, macdSig4] =
+    request.security(syminfo.tickerid, tf4h, f_packConfirmed(), lookahead=barmerge.lookahead_on)
+
+[c1h, o1h, e20_1h, e50_1h, e200_1h, slope1h, adx1h, rsi1h, vol1h, macd1h, macdSig1h] =
+    request.security(syminfo.tickerid, tf1h, f_packConfirmed(), lookahead=barmerge.lookahead_on)
+
+[c15, o15, e20_15, e50_15, e200_15, slope15, adx15, rsi15, vol15, macd15, macdSig15] =
+    request.security(syminfo.tickerid, tf15, f_packConfirmed(), lookahead=barmerge.lookahead_on)
+
+[c5, o5, e20_5, e50_5, e200_5, slope5, adx5, rsi5, vol5, macd5, macdSig5] =
+    request.security(syminfo.tickerid, tf5, f_packConfirmed(), lookahead=barmerge.lookahead_on)
+
+[touchedLong15, touchedShort15, bullReclaim15, bearReject15, macdLongOk15, macdShortOk15] =
+    request.security(syminfo.tickerid, tf15, f_setup15Confirmed(), lookahead=barmerge.lookahead_on)
+
+[st15, stDir15, cloudA15, cloudB15, swingH15, swingL15, recent3H15, recent3L15, high15, low15, fibH15, fibL15, atr15] =
+    request.security(syminfo.tickerid, tf15, f_extra15Confirmed(), lookahead=barmerge.lookahead_on)
+
+rsi1m = request.security(syminfo.tickerid, tf1, ta.rsi(close, 14)[1], lookahead=barmerge.lookahead_on)
+
+// ============================================================================
+// DURUM HESAPLARI
+// ============================================================================
+trend4 = f_trend4(c4, e20_4, e50_4, e200_4, slope4, adx4)
+confirm1 = f_confirm1(c1h, e20_1h, e50_1h, e200_1h, adx1h, rsi1h, macd1h, macdSig1h)
+trend15 = f_fastTrend(c15, e20_15, e50_15, slope15)
+trend5 = f_fastTrend(c5, e20_5, e50_5, slope5)
+structure15 = f_structure15(c15, e20_15, e50_15, slope15, adx15)
+
+coreLong = trend4 == 1 and confirm1 == 1
+coreShort = trend4 == -1 and confirm1 == -1
+
+setupLong = touchedLong15 and bullReclaim15 and macdLongOk15 and rsi15 >= 40 and rsi15 <= 70
+setupShort = touchedShort15 and bearReject15 and macdShortOk15 and rsi15 >= 30 and rsi15 <= 60
+
+zoneLong = math.min(math.min(f_pctDist(close, e20_15), f_pctDist(close, e50_15)), math.min(f_pctDist(close, o15), f_pctDist(close, recent3L15)))
+zoneShort = math.min(math.min(f_pctDist(close, e20_15), f_pctDist(close, e50_15)), math.min(f_pctDist(close, o15), f_pctDist(close, recent3H15)))
+zoneDist = coreLong ? zoneLong : coreShort ? zoneShort : math.min(zoneLong, zoneShort)
+zoneOk = zoneDist <= maxZoneDistance
+
+volumeOk = vol15 >= minVol15
+adxEntryOk = adx15 >= minAdxEntry
+
+stAlignedLong = stDir15 == 1
+stAlignedShort = stDir15 == -1
+
+cloudTop15 = math.max(cloudA15, cloudB15)
+cloudBottom15 = math.min(cloudA15, cloudB15)
+ichiLong = not na(cloudTop15) and c15 > cloudTop15
+ichiShort = not na(cloudBottom15) and c15 < cloudBottom15
+ichiInside = not na(cloudTop15) and c15 <= cloudTop15 and c15 >= cloudBottom15
+
+breakLongConfirmed = c15 > swingH15
+breakLongFake = high15 > swingH15 and c15 <= swingH15
+breakShortConfirmed = c15 < swingL15
+breakShortFake = low15 < swingL15 and c15 >= swingL15
+retestLong = breakLongConfirmed and low15 <= swingH15 + atr15 * 0.18 and c15 >= swingH15
+retestShort = breakShortConfirmed and high15 >= swingL15 - atr15 * 0.18 and c15 <= swingL15
+
+fibRange = fibH15 - fibL15
+fibRetraceLong = fibRange > 0 ? (fibH15 - c15) / fibRange : na
+fibRetraceShort = fibRange > 0 ? (c15 - fibL15) / fibRange : na
+fibRetrace = coreLong ? fibRetraceLong : coreShort ? fibRetraceShort : na
+fibIdeal = not na(fibRetrace) and fibRetrace >= 0.382 and fibRetrace <= 0.618
+fibChase = not na(fibRetrace) and fibRetrace < 0.20
+
+marketAligned = coreLong ? structure15 == 1 : coreShort ? structure15 == -1 : false
+marketCounter = coreLong ? structure15 == -1 : coreShort ? structure15 == 1 : false
+marketRange = structure15 == 0
+
+shadowScore = 0
+shadowScore += coreLong or coreShort ? 4 : 0
+shadowScore += marketAligned ? 3 : marketCounter ? -4 : marketRange ? -2 : 0
+shadowScore += coreLong and stAlignedLong or coreShort and stAlignedShort ? 2 : -2
+shadowScore += coreLong and ichiLong or coreShort and ichiShort ? 3 : ichiInside ? -1 : -3
+shadowScore += coreLong and breakLongConfirmed or coreShort and breakShortConfirmed ? 4 : coreLong and breakLongFake or coreShort and breakShortFake ? -6 : 0
+shadowScore += retestLong or retestShort ? 3 : 0
+shadowScore += fibIdeal ? 2 : fibChase ? -2 : 0
+
+shadowStatus = shadowScore >= 6 ? "GÜÇLÜ UYUM" : shadowScore >= 2 ? "UYUMLU" : shadowScore <= -4 ? "RİSKLİ" : "KARIŞIK"
+
+tvScore = 0.0
+tvScore += coreLong or coreShort ? 34 : 0
+tvScore += trend15 == (coreLong ? 1 : coreShort ? -1 : 0) ? 12 : 0
+tvScore += trend5 == (coreLong ? 1 : coreShort ? -1 : 0) ? 8 : 0
+tvScore += setupLong and coreLong or setupShort and coreShort ? 16 : 0
+tvScore += vol15 >= 1.30 ? 10 : volumeOk ? 6 : 0
+tvScore += adx15 >= 25 ? 8 : adxEntryOk ? 5 : 0
+tvScore += zoneDist <= 0.15 ? 7 : zoneOk ? 4 : 0
+tvScore += marketAligned ? 5 : marketRange ? 1 : 0
+tvScore += shadowScore >= 6 ? 5 : shadowScore >= 2 ? 3 : 0
+tvScore := math.min(100.0, math.max(0.0, tvScore))
+
+botLikeLong = coreLong and setupLong and volumeOk and adxEntryOk and zoneOk and tvScore >= 75
+botLikeShort = coreShort and setupShort and volumeOk and adxEntryOk and zoneOk and tvScore >= 75
+
+watchLong = coreLong and not botLikeLong and tvScore >= 58
+watchShort = coreShort and not botLikeShort and tvScore >= 58
+
+entryText = botLikeLong ? "BOT-UYUMLU LONG" : botLikeShort ? "BOT-UYUMLU SHORT" : watchLong ? "GÖZLEM LONG" : watchShort ? "GÖZLEM SHORT" : "BEKLE"
+entryColor = botLikeLong ? color.new(color.green, 5) : botLikeShort ? color.new(color.red, 5) : watchLong or watchShort ? color.new(color.orange, 5) : color.new(color.gray, 35)
+
+breakText = coreLong ? (breakLongConfirmed ? (retestLong ? "LONG BREAK + RETEST" : "LONG BREAK") : breakLongFake ? "LONG FAKE-BREAK" : "YOK") :
+ coreShort ? (breakShortConfirmed ? (retestShort ? "SHORT BREAK + RETEST" : "SHORT BREAK") : breakShortFake ? "SHORT FAKE-BREAK" : "YOK") : "NÖTR"
+
+fibText = na(fibRetrace) ? "N/A" : fibIdeal ? "0.382-0.618 İDEAL" : fibChase ? "KOVALAMA RİSKİ" : "NORMAL"
+
+// ============================================================================
+// GRAFİK
+// ============================================================================
+ema20Chart = ta.ema(close, 20)
+ema50Chart = ta.ema(close, 50)
+ema200Chart = ta.ema(close, 200)
+plot(showEMA ? ema20Chart : na, "EMA20", color=color.new(color.yellow, 0), linewidth=2)
+plot(showEMA ? ema50Chart : na, "EMA50", color=color.new(color.orange, 0), linewidth=1)
+plot(showEMA ? ema200Chart : na, "EMA200", color=color.new(color.blue, 20), linewidth=1)
+
+[stChart, stDirChart] = ta.supertrend(stFactor, stAtrLen)
+plot(showSupertrend ? stChart : na, "Supertrend", color=close >= stChart ? color.new(color.green, 0) : color.new(color.red, 0), linewidth=2)
+
+tenkanChart = (ta.highest(high, 9) + ta.lowest(low, 9)) / 2.0
+kijunChart = (ta.highest(high, 26) + ta.lowest(low, 26)) / 2.0
+spanAChart = (tenkanChart + kijunChart) / 2.0
+spanBChart = (ta.highest(high, 52) + ta.lowest(low, 52)) / 2.0
+pA = plot(showIchimoku ? spanAChart : na, "Ichimoku A", offset=26, color=color.new(color.green, 55))
+pB = plot(showIchimoku ? spanBChart : na, "Ichimoku B", offset=26, color=color.new(color.red, 55))
+fill(pA, pB, color=showIchimoku ? color.new(color.gray, 88) : na, title="Ichimoku Cloud")
+
+bgcolor(shadeRange and marketRange ? color.new(color.gray, 92) : na, title="15M RANGE")
+
+longEvent = botLikeLong and not botLikeLong[1]
+shortEvent = botLikeShort and not botLikeShort[1]
+watchLongEvent = watchLong and not watchLong[1]
+watchShortEvent = watchShort and not watchShort[1]
+
+plotshape(showSignals and longEvent, title="Bot Uyumlu LONG", style=shape.labelup, location=location.belowbar, color=color.new(color.green, 0), textcolor=color.white, text="MTF LONG", size=size.tiny)
+plotshape(showSignals and shortEvent, title="Bot Uyumlu SHORT", style=shape.labeldown, location=location.abovebar, color=color.new(color.red, 0), textcolor=color.white, text="MTF SHORT", size=size.tiny)
+plotshape(showSignals and watchLongEvent, title="Gözlem LONG", style=shape.circle, location=location.belowbar, color=color.new(color.orange, 0), size=size.tiny)
+plotshape(showSignals and watchShortEvent, title="Gözlem SHORT", style=shape.circle, location=location.abovebar, color=color.new(color.orange, 0), size=size.tiny)
+
+// ============================================================================
+// PANEL
+// ============================================================================
+var table panel = table.new(position.top_right, 2, 12, frame_color=color.new(color.white, 70), frame_width=1)
+
+if barstate.islast
+    table.cell(panel, 0, 0, "PRIME MTF", text_color=color.white, bgcolor=color.new(color.black, 0))
+    table.cell(panel, 1, 0, str.tostring(tvScore, "#") + "/100", text_color=color.white, bgcolor=entryColor)
+
+    table.cell(panel, 0, 1, "4H ANA TREND", text_color=color.white, bgcolor=color.new(color.black, 20))
+    table.cell(panel, 1, 1, f_trendText(trend4), text_color=color.white, bgcolor=f_stateColor(trend4))
+
+    table.cell(panel, 0, 2, "1H ONAY", text_color=color.white, bgcolor=color.new(color.black, 20))
+    table.cell(panel, 1, 2, f_trendText(confirm1), text_color=color.white, bgcolor=f_stateColor(confirm1))
+
+    table.cell(panel, 0, 3, "15M TREND", text_color=color.white, bgcolor=color.new(color.black, 20))
+    table.cell(panel, 1, 3, f_trendText(trend15), text_color=color.white, bgcolor=f_stateColor(trend15))
+
+    table.cell(panel, 0, 4, "5M MİKRO", text_color=color.white, bgcolor=color.new(color.black, 20))
+    table.cell(panel, 1, 4, f_trendText(trend5), text_color=color.white, bgcolor=f_stateColor(trend5))
+
+    table.cell(panel, 0, 5, "15M YAPI", text_color=color.white, bgcolor=color.new(color.black, 20))
+    table.cell(panel, 1, 5, f_structureText(structure15), text_color=color.white, bgcolor=structure15 == 0 ? color.new(color.orange, 10) : f_stateColor(structure15))
+
+    table.cell(panel, 0, 6, "1M RSI", text_color=color.white, bgcolor=color.new(color.black, 20))
+    table.cell(panel, 1, 6, str.tostring(rsi1m, "#.0"), text_color=color.white, bgcolor=color.new(color.gray, 35))
+
+    table.cell(panel, 0, 7, "GİRİŞ BÖLGESİ", text_color=color.white, bgcolor=color.new(color.black, 20))
+    table.cell(panel, 1, 7, "%" + str.tostring(zoneDist, "#.###"), text_color=color.white, bgcolor=zoneOk ? color.new(color.green, 20) : color.new(color.red, 20))
+
+    table.cell(panel, 0, 8, "BREAKOUT", text_color=color.white, bgcolor=color.new(color.black, 20))
+    table.cell(panel, 1, 8, breakText, text_color=color.white, bgcolor=breakLongFake or breakShortFake ? color.new(color.red, 15) : color.new(color.gray, 35))
+
+    table.cell(panel, 0, 9, "FIB", text_color=color.white, bgcolor=color.new(color.black, 20))
+    table.cell(panel, 1, 9, fibText, text_color=color.white, bgcolor=fibIdeal ? color.new(color.green, 20) : fibChase ? color.new(color.red, 20) : color.new(color.gray, 35))
+
+    table.cell(panel, 0, 10, "SHADOW", text_color=color.white, bgcolor=color.new(color.black, 20))
+    table.cell(panel, 1, 10, shadowStatus + " " + str.tostring(shadowScore), text_color=color.white, bgcolor=shadowScore >= 2 ? color.new(color.green, 20) : shadowScore <= -4 ? color.new(color.red, 20) : color.new(color.orange, 20))
+
+    table.cell(panel, 0, 11, "GİRİŞ ONAYI", text_color=color.white, bgcolor=color.new(color.black, 20))
+    table.cell(panel, 1, 11, entryText, text_color=color.white, bgcolor=entryColor)
+
+// ============================================================================
+// ALARMLAR
+// ============================================================================
+alertcondition(longEvent, "Prime MTF - BOT UYUMLU LONG", "Prime MTF BOT-UYUMLU LONG adayı: {{ticker}} | Fiyat {{close}}")
+alertcondition(shortEvent, "Prime MTF - BOT UYUMLU SHORT", "Prime MTF BOT-UYUMLU SHORT adayı: {{ticker}} | Fiyat {{close}}")
+alertcondition(watchLongEvent, "Prime MTF - GÖZLEM LONG", "Prime MTF GÖZLEM LONG: {{ticker}} | Fiyat {{close}}")
+alertcondition(watchShortEvent, "Prime MTF - GÖZLEM SHORT", "Prime MTF GÖZLEM SHORT: {{ticker}} | Fiyat {{close}}")
