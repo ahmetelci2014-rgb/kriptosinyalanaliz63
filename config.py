@@ -81,7 +81,7 @@ RISK_MODE_MAX_TRADE_SIGNALS = 1
 
 RISK_MODE_MAX_RADAR_ALERTS = 1
 # 5M erken giriş, yalnız TRADE kalitesindeyse risk modunda da
-# çalışma başına 1 sinyal sınırına tabidir. Radar-only mesajlar kapalıdır.
+# çalışma başına 1 sinyal sınırına tabidir. Gözlem mesajı da en fazla 1 adettir.
 RISK_MODE_ALLOW_RADAR_TRADE = True
 
 # =========================
