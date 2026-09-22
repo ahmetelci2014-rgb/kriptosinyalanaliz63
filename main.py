@@ -100,8 +100,8 @@ TRADE_LEDGER_FILE = "trade_ledger.json"
 # Bu sürüm bilgileri yalnız performans kayıtlarını ayrıştırmak içindir.
 # Sinyal üretimi, TP/SL ve filtre davranışını değiştirmez.
 BOT_BUILD_VERSION = "MAIN_MTF_ENTRY_QUALITY_SHADOW_V1_2026_09_22"
-STRATEGY_VERSION = "PREMIUM_MTF_TP_ODAKLI_V2"
-CONFIG_VERSION = "CONFIG_2026_07_27"
+STRATEGY_VERSION = "PREMIUM_MTF_TP_ODAKLI_V3_SHADOW_V1"
+CONFIG_VERSION = "CONFIG_2026_09_22_OBSERVATION_V1"
 
 TR_TIMEZONE = timezone(timedelta(hours=3))
 
