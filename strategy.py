@@ -89,7 +89,7 @@ EARLY_SHORT_MAX_CLOSE_POWER = 42.0
 
 # Yeni katman ilk aşamada yalnız SHADOW/teşhis amaçlıdır.
 # Mevcut MTF skorunu veya TRADE/RADAR kararını tek başına değiştirmez.
-ENTRY_QUALITY_SHADOW_VERSION = "ENTRY_QUALITY_SHADOW_V1_2026_09_22"
+ENTRY_QUALITY_SHADOW_VERSION = "ENTRY_QUALITY_SHADOW_V2_MARKET_STRUCTURE_2026_09_22"
 SHADOW_BREAKOUT_LOOKBACK = 12
 SHADOW_FIB_LOOKBACK = 24
 SHADOW_RETEST_ATR_TOLERANCE = 0.18
@@ -284,6 +284,11 @@ def build_entry_quality_shadow(
         "retest_confirmed": False,
         "ichimoku_state": "UNKNOWN",
         "supertrend_state": "UNKNOWN",
+        "market_structure": "UNKNOWN",
+        "market_structure_alignment": "UNKNOWN",
+        "market_structure_adx": None,
+        "ema_spread_percent": None,
+        "range_width_percent": None,
         "fib_entry_zone": "UNKNOWN",
         "fib_retracement": None,
         "ema20_stretch_percent": None,
@@ -310,6 +315,75 @@ def build_entry_quality_shadow(
         low = safe_float(last["low"])
         atr = safe_float(last.get("atr"))
         ema20 = safe_float(last.get("ema20"))
+        ema50 = safe_float(last.get("ema50"))
+        adx15 = safe_float(last.get("adx"))
+        ema20_slope = safe_float(last.get("ema20_slope"))
+
+        # 15M piyasa yapısı yalnız shadow/teşhis katmanıdır.
+        # Ana TRADE kararını veya mevcut MTF skorunu tek başına değiştirmez.
+        ema_spread_percent = (
+            abs(ema20 - ema50) / close * 100
+            if close > 0 and ema20 > 0 and ema50 > 0
+            else None
+        )
+
+        structure_window = df15.iloc[-14:-2]
+        range_width_percent = None
+
+        if not structure_window.empty and close > 0:
+            structure_high = safe_float(
+                structure_window["high"].max()
+            )
+            structure_low = safe_float(
+                structure_window["low"].min()
+            )
+            range_width_percent = (
+                (structure_high - structure_low)
+                / close
+                * 100
+            )
+
+        market_structure = "TRANSITION"
+
+        if (
+            adx15 < 18
+            and ema_spread_percent is not None
+            and ema_spread_percent < 0.35
+        ):
+            market_structure = "RANGE"
+        elif (
+            ema20 > ema50
+            and ema20_slope > 0
+            and close >= ema20
+            and adx15 >= 18
+        ):
+            market_structure = "TREND_UP"
+        elif (
+            ema20 < ema50
+            and ema20_slope < 0
+            and close <= ema20
+            and adx15 >= 18
+        ):
+            market_structure = "TREND_DOWN"
+        elif adx15 < 16:
+            market_structure = "RANGE"
+
+        if market_structure == "RANGE":
+            market_structure_alignment = "RANGE"
+        elif market_structure == "TREND_UP":
+            market_structure_alignment = (
+                "ALIGNED"
+                if direction == "LONG"
+                else "COUNTER"
+            )
+        elif market_structure == "TREND_DOWN":
+            market_structure_alignment = (
+                "ALIGNED"
+                if direction == "SHORT"
+                else "COUNTER"
+            )
+        else:
+            market_structure_alignment = "TRANSITION"
 
         swing_high = safe_float(prior["high"].max())
         swing_low = safe_float(prior["low"].min())
@@ -454,6 +528,22 @@ def build_entry_quality_shadow(
             score -= 2
             notes.append("Supertrend ters")
 
+        if market_structure_alignment == "ALIGNED":
+            score += 3
+            notes.append(
+                f"15M piyasa yapısı yönle uyumlu: {market_structure}"
+            )
+        elif market_structure_alignment == "COUNTER":
+            score -= 4
+            notes.append(
+                f"15M piyasa yapısı ters: {market_structure}"
+            )
+        elif market_structure_alignment == "RANGE":
+            score -= 2
+            notes.append("15M piyasa yapısı RANGE / yatay")
+        else:
+            notes.append("15M piyasa yapısı geçiş bölgesinde")
+
         if fib_entry_zone == "IDEAL_382_618":
             score += 2
             notes.append("Fibonacci 0.382-0.618 giriş bölgesi")
@@ -490,6 +580,19 @@ def build_entry_quality_shadow(
             "retest_confirmed": bool(retest_confirmed),
             "ichimoku_state": ichimoku_state,
             "supertrend_state": supertrend_state,
+            "market_structure": market_structure,
+            "market_structure_alignment": market_structure_alignment,
+            "market_structure_adx": round(adx15, 2),
+            "ema_spread_percent": (
+                round(ema_spread_percent, 4)
+                if ema_spread_percent is not None
+                else None
+            ),
+            "range_width_percent": (
+                round(range_width_percent, 4)
+                if range_width_percent is not None
+                else None
+            ),
             "fib_entry_zone": fib_entry_zone,
             "fib_retracement": (
                 round(fib_retracement, 4)
