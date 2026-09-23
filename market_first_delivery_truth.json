@@ -1,39 +1,45 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1790181842,
+  "generated_at": 1790182693,
   "status": "CAPITAL_RECOVERY_STRICT",
   "survival": {
     "mode": "RECOVERY_STRICT",
     "reason": "CRITICAL_ROLLING_STOP_RATE"
   },
   "funnel_truth": {
-    "internal_promoted": 424,
+    "internal_promoted": 434,
     "real_signal_sent": 5,
-    "promoted_unsent": 419,
+    "promoted_unsent": 429,
     "real_telegram_send_failures": 29,
-    "internal_final_admission_gap": 390,
+    "internal_final_admission_gap": 400,
     "promotion_is_send_attempt": false
   },
   "latest_gate_layers": {
     "profit_quality": {
-      "accepted": 1,
+      "accepted": 8,
       "run_counts": {
-        "VOLUME_BELOW_0_65": 1,
-        "OK": 1,
-        "ACCEPTED": 1
+        "SCORE_BELOW_88": 1,
+        "OK": 8,
+        "ACCEPTED": 8
       },
       "blocks": {
-        "VOLUME_BELOW_0_65": 1
+        "SCORE_BELOW_88": 1
       }
     },
     "final_execution": {
       "accepted": 0,
       "run_counts": {
-        "UPSTREAM_REJECTED": 34,
-        "TAKER_CVD_OPPOSITE": 1
+        "UPSTREAM_REJECTED": 4,
+        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 4,
+        "TAKER_CVD_OPPOSITE": 1,
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 2,
+        "BOOK_PRESSURE_OPPOSITE": 1
       },
       "blocks": {
-        "TAKER_CVD_OPPOSITE": 1
+        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 4,
+        "TAKER_CVD_OPPOSITE": 1,
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 2,
+        "BOOK_PRESSURE_OPPOSITE": 1
       }
     },
     "capital_survival": {
@@ -45,9 +51,9 @@
     }
   },
   "top_latest_blocker": {
-    "layer": "profit_quality",
-    "reason": "VOLUME_BELOW_0_65",
-    "count": 1
+    "layer": "final_execution",
+    "reason": "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL",
+    "count": 4
   },
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
