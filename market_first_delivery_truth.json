@@ -1,17 +1,17 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1790121520,
+  "generated_at": 1790122460,
   "status": "CAPITAL_RECOVERY_STRICT",
   "survival": {
     "mode": "RECOVERY_STRICT",
     "reason": "CRITICAL_ROLLING_STOP_RATE"
   },
   "funnel_truth": {
-    "internal_promoted": 436,
+    "internal_promoted": 439,
     "real_signal_sent": 14,
-    "promoted_unsent": 422,
-    "real_telegram_send_failures": 39,
-    "internal_final_admission_gap": 383,
+    "promoted_unsent": 425,
+    "real_telegram_send_failures": 40,
+    "internal_final_admission_gap": 385,
     "promotion_is_send_attempt": false
   },
   "latest_gate_layers": {
@@ -20,22 +20,24 @@
       "run_counts": {
         "OK": 4,
         "ACCEPTED": 4,
-        "EXPECTED_MOVE_BELOW_2P": 4
+        "VOLUME_BELOW_0_65": 1,
+        "EXPECTED_MOVE_BELOW_2P": 1
       },
       "blocks": {
-        "EXPECTED_MOVE_BELOW_2P": 4
+        "VOLUME_BELOW_0_65": 1,
+        "EXPECTED_MOVE_BELOW_2P": 1
       }
     },
     "final_execution": {
       "accepted": 0,
       "run_counts": {
-        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 2,
-        "UPSTREAM_REJECTED": 5,
-        "DIRECTION_CONFIRMATIONS_BELOW_3": 2
+        "UPSTREAM_REJECTED": 8,
+        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 3,
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 1
       },
       "blocks": {
-        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 2,
-        "DIRECTION_CONFIRMATIONS_BELOW_3": 2
+        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 3,
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 1
       }
     },
     "capital_survival": {
@@ -47,9 +49,9 @@
     }
   },
   "top_latest_blocker": {
-    "layer": "profit_quality",
-    "reason": "EXPECTED_MOVE_BELOW_2P",
-    "count": 4
+    "layer": "final_execution",
+    "reason": "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL",
+    "count": 3
   },
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
