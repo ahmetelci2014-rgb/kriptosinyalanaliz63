@@ -1,39 +1,41 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1790137679,
+  "generated_at": 1790138602,
   "status": "CAPITAL_RECOVERY_STRICT",
   "survival": {
     "mode": "RECOVERY_STRICT",
     "reason": "CRITICAL_ROLLING_STOP_RATE"
   },
   "funnel_truth": {
-    "internal_promoted": 426,
+    "internal_promoted": 429,
     "real_signal_sent": 10,
-    "promoted_unsent": 416,
+    "promoted_unsent": 419,
     "real_telegram_send_failures": 36,
-    "internal_final_admission_gap": 380,
+    "internal_final_admission_gap": 383,
     "promotion_is_send_attempt": false
   },
   "latest_gate_layers": {
     "profit_quality": {
-      "accepted": 1,
+      "accepted": 2,
       "run_counts": {
-        "OK": 1,
-        "ACCEPTED": 1,
-        "EXPECTED_MOVE_BELOW_2P": 1
+        "OK": 2,
+        "ACCEPTED": 2,
+        "EXPECTED_MOVE_BELOW_2P": 4
       },
       "blocks": {
-        "EXPECTED_MOVE_BELOW_2P": 1
+        "EXPECTED_MOVE_BELOW_2P": 4
       }
     },
     "final_execution": {
       "accepted": 0,
       "run_counts": {
-        "UPSTREAM_REJECTED": 13,
-        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 1
+        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 1,
+        "UPSTREAM_REJECTED": 7,
+        "CVD_IMPULSE_OPPOSITE": 1
       },
       "blocks": {
-        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 1
+        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 1,
+        "CVD_IMPULSE_OPPOSITE": 1
       }
     },
     "capital_survival": {
@@ -47,7 +49,7 @@
   "top_latest_blocker": {
     "layer": "profit_quality",
     "reason": "EXPECTED_MOVE_BELOW_2P",
-    "count": 1
+    "count": 4
   },
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
