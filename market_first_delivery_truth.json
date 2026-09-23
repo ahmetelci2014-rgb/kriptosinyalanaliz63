@@ -1,6 +1,6 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1790145788,
+  "generated_at": 1790146711,
   "status": "CAPITAL_RECOVERY_STRICT",
   "survival": {
     "mode": "RECOVERY_STRICT",
@@ -10,8 +10,8 @@
     "internal_promoted": 428,
     "real_signal_sent": 10,
     "promoted_unsent": 418,
-    "real_telegram_send_failures": 35,
-    "internal_final_admission_gap": 383,
+    "real_telegram_send_failures": 36,
+    "internal_final_admission_gap": 382,
     "promotion_is_send_attempt": false
   },
   "latest_gate_layers": {
@@ -24,14 +24,13 @@
       "blocks": {}
     },
     "final_execution": {
-      "accepted": 0,
+      "accepted": 1,
       "run_counts": {
-        "CVD_IMPULSE_OPPOSITE": 1,
-        "UPSTREAM_REJECTED": 11
+        "OK": 1,
+        "ACCEPTED": 1,
+        "UPSTREAM_REJECTED": 3
       },
-      "blocks": {
-        "CVD_IMPULSE_OPPOSITE": 1
-      }
+      "blocks": {}
     },
     "capital_survival": {
       "accepted": 0,
@@ -41,11 +40,7 @@
       "blocks": {}
     }
   },
-  "top_latest_blocker": {
-    "layer": "final_execution",
-    "reason": "CVD_IMPULSE_OPPOSITE",
-    "count": 1
-  },
+  "top_latest_blocker": null,
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
     "real_telegram_send_failures": "Ledger rows where the system actually attempted the final send path and recorded failure.",
