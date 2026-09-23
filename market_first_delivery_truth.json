@@ -1,46 +1,31 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1790182693,
+  "generated_at": 1790183633,
   "status": "CAPITAL_RECOVERY_STRICT",
   "survival": {
     "mode": "RECOVERY_STRICT",
     "reason": "CRITICAL_ROLLING_STOP_RATE"
   },
   "funnel_truth": {
-    "internal_promoted": 434,
+    "internal_promoted": 433,
     "real_signal_sent": 5,
-    "promoted_unsent": 429,
-    "real_telegram_send_failures": 29,
-    "internal_final_admission_gap": 400,
+    "promoted_unsent": 428,
+    "real_telegram_send_failures": 30,
+    "internal_final_admission_gap": 398,
     "promotion_is_send_attempt": false
   },
   "latest_gate_layers": {
     "profit_quality": {
-      "accepted": 8,
-      "run_counts": {
-        "SCORE_BELOW_88": 1,
-        "OK": 8,
-        "ACCEPTED": 8
-      },
-      "blocks": {
-        "SCORE_BELOW_88": 1
-      }
+      "accepted": 0,
+      "run_counts": {},
+      "blocks": {}
     },
     "final_execution": {
       "accepted": 0,
       "run_counts": {
-        "UPSTREAM_REJECTED": 4,
-        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 4,
-        "TAKER_CVD_OPPOSITE": 1,
-        "DIRECTION_CONFIRMATIONS_BELOW_3": 2,
-        "BOOK_PRESSURE_OPPOSITE": 1
+        "UPSTREAM_REJECTED": 2
       },
-      "blocks": {
-        "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL": 4,
-        "TAKER_CVD_OPPOSITE": 1,
-        "DIRECTION_CONFIRMATIONS_BELOW_3": 2,
-        "BOOK_PRESSURE_OPPOSITE": 1
-      }
+      "blocks": {}
     },
     "capital_survival": {
       "accepted": 0,
@@ -50,11 +35,7 @@
       "blocks": {}
     }
   },
-  "top_latest_blocker": {
-    "layer": "final_execution",
-    "reason": "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL",
-    "count": 4
-  },
+  "top_latest_blocker": null,
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
     "real_telegram_send_failures": "Ledger rows where the system actually attempted the final send path and recorded failure.",
