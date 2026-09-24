@@ -201460,39 +201460,41 @@
         "confidence": "ORTA",
         "factors": [
           "Stop oncesinde islem en az 0.35R lehe hareket etti.",
-          "Stop mesafesi cok kisa surede tamamen tuketildi."
+          "Stop mesafesi cok kisa surede tamamen tuketildi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 8,
         "best_favorable_r": 0.513,
         "worst_adverse_r": 1.7174,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "ONCE_LEHE_SONRA_TERS",
-        "preliminary_label": "Önce lehe, sonra ters",
+        "primary": "ONCE_LEHE_SONRA_TERS",
+        "label": "Önce lehe, sonra ters",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "YUKSEK",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "İşlem stop öncesinde anlamlı lehe hareket üretmişti."
         ],
         "metrics": {
           "duration_minutes": 8,
           "mfe_r": 0.513,
           "mae_r": 1.7174,
           "risk_percent": 0.628,
-          "return_minutes": null
+          "return_minutes": 240.0
         },
-        "updated_at": 1790268972
+        "updated_at": 1790283409
       },
       "result_diagnostics": {
         "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
         "shadow_only": true,
-        "status": "TRACKING",
+        "status": "COMPLETED",
         "final_result": "SL",
         "started_at": 1790268972,
         "measurement_start_at": 1790269020,
@@ -201528,14 +201530,20 @@
             "candle_time": 1790276100,
             "close_price": 7.133,
             "directional_r_from_reference": 1.0037
+          },
+          "240": {
+            "target_at": 1790283372,
+            "candle_time": 1790283300,
+            "close_price": 7.108,
+            "directional_r_from_reference": 0.4461
           }
         },
         "max_favorable_r": 2.1858,
         "max_adverse_r": 0.7583,
-        "last_checked_at": 1790282644,
-        "completed_at": 0,
+        "last_checked_at": 1790283562,
+        "completed_at": 1790283562,
         "diagnosis": {
-          "status": "PROVISIONAL",
+          "status": "FINAL",
           "code": "SL_SONRASI_TOPARLANMA",
           "likely_cause": "DAR_STOP_OLASILIGI",
           "confidence": "MEDIUM",
@@ -201554,7 +201562,13 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 7.1
+        "last_price": 7.108
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 240,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1790283409
       }
     },
     "ORDIUSDT_LONG_MARKET_FIRST_V5_1790269394": {
@@ -201742,7 +201756,7 @@
         },
         "max_favorable_r": 0.247,
         "max_adverse_r": 0.9655,
-        "last_checked_at": 1790282644,
+        "last_checked_at": 1790283562,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -201764,7 +201778,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 4.621
+        "last_price": 4.619
       }
     },
     "KAITOUSDT_LONG_MARKET_FIRST_V5_1790278733": {
@@ -201818,13 +201832,13 @@
       "rr_tp3": 7.732,
       "sent_price": 0.3516,
       "entry_distance_at_send_percent": 0.028433323855555585,
-      "best_favorable_percent": 0.5971,
+      "best_favorable_percent": 0.6255,
       "worst_adverse_percent": 0.3412,
-      "best_favorable_r": 0.9234,
+      "best_favorable_r": 0.9673,
       "worst_adverse_r": 0.5276,
-      "best_favorable_price": 0.3538,
+      "best_favorable_price": 0.3539,
       "worst_adverse_price": 0.3505,
-      "last_market_price": 0.3533,
+      "last_market_price": 0.3524,
       "tp1_hit_at": 0,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -201866,7 +201880,7 @@
         "15m": "LONG",
         "1h": "LONG"
       },
-      "last_tracking_at": 1790282460
+      "last_tracking_at": 1790283360
     },
     "0GUSDT_LONG_MARKET_FIRST_V5_1790280222": {
       "trade_id": "0GUSDT_LONG_MARKET_FIRST_V5_1790280222",
@@ -201919,13 +201933,13 @@
       "rr_tp3": 5.33,
       "sent_price": 0.2552,
       "entry_distance_at_send_percent": 0.039200313602504505,
-      "best_favorable_percent": 0.4312,
+      "best_favorable_percent": 0.588,
       "worst_adverse_percent": 0.5488,
-      "best_favorable_r": 0.4597,
+      "best_favorable_r": 0.6269,
       "worst_adverse_r": 0.5851,
-      "best_favorable_price": 0.2562,
+      "best_favorable_price": 0.2566,
       "worst_adverse_price": 0.2537,
-      "last_market_price": 0.2555,
+      "last_market_price": 0.2557,
       "tp1_hit_at": 0,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -201967,7 +201981,7 @@
         "15m": "LONG",
         "1h": "LONG"
       },
-      "last_tracking_at": 1790282460
+      "last_tracking_at": 1790283360
     },
     "TIAUSDT_LONG_MARKET_FIRST_V5_1790281400": {
       "trade_id": "TIAUSDT_LONG_MARKET_FIRST_V5_1790281400",
@@ -202020,13 +202034,13 @@
       "rr_tp3": 4.358,
       "sent_price": 0.4904,
       "entry_distance_at_send_percent": 0.18318746183594786,
-      "best_favorable_percent": 0.2239,
+      "best_favorable_percent": 0.4478,
       "worst_adverse_percent": 0.4478,
-      "best_favorable_r": 0.4654,
+      "best_favorable_r": 0.9308,
       "worst_adverse_r": 0.9308,
-      "best_favorable_price": 0.4924,
+      "best_favorable_price": 0.4935,
       "worst_adverse_price": 0.4891,
-      "last_market_price": 0.4911,
+      "last_market_price": 0.4905,
       "tp1_hit_at": 0,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -202068,10 +202082,10 @@
         "15m": "LONG",
         "1h": "LONG"
       },
-      "last_tracking_at": 1790282460
+      "last_tracking_at": 1790283360
     }
   },
-  "last_update": 1790282646,
+  "last_update": 1790283564,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -202083,7 +202097,7 @@
   "result_diagnostics_summary": {
     "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
     "tracked_total": 258,
-    "completed_total": 256,
+    "completed_total": 257,
     "diagnosis_counts": {
       "BE_SONRASI_TP3": 32,
       "BE_KORUMASI_DOGRU": 16,
@@ -202107,7 +202121,7 @@
     "sl_recovery_total": 144,
     "be_maybe_early_total": 38,
     "be_protection_correct_total": 16,
-    "updated_at": 1790274533
+    "updated_at": 1790283564
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
