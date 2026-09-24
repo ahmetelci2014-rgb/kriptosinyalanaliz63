@@ -200777,7 +200777,7 @@
         },
         "max_favorable_r": 1.9042,
         "max_adverse_r": 1.4678,
-        "last_checked_at": 1790269999,
+        "last_checked_at": 1790270930,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -200799,7 +200799,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.02935
+        "last_price": 0.02912
       },
       "post_result_shadow": {
         "version": "POST_RESULT_SHADOW_V1_2026_08_10",
@@ -200860,9 +200860,9 @@
         "max_adverse_r": 1.4678,
         "best_price": 0.02891,
         "worst_price": 0.02976,
-        "last_checked_at": 1790269871,
+        "last_checked_at": 1790270766,
         "completed_at": 0,
-        "last_price": 0.02938
+        "last_price": 0.02911
       }
     },
     "ASTERUSDT_SHORT_MARKET_FIRST_V5_1790251763": {
@@ -201048,7 +201048,7 @@
         },
         "max_favorable_r": 1.1346,
         "max_adverse_r": 3.2568,
-        "last_checked_at": 1790269999,
+        "last_checked_at": 1790270930,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -201070,7 +201070,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.7074
+        "last_price": 0.7097
       }
     },
     "ETHFIUSDT_SHORT_MARKET_FIRST_V5_1790254401": {
@@ -201185,40 +201185,42 @@
         "confidence": "ORTA",
         "factors": [
           "Islem yeterli lehe ivme olusturmadan stop oldu.",
-          "15M hacim kendi ortalamasinin altinda veya sinirdaydi."
+          "15M hacim kendi ortalamasinin altinda veya sinirdaydi.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 22,
         "best_favorable_r": 0.0502,
         "worst_adverse_r": 1.1205,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "MUHTEMEL_YANLIS_YON",
-        "preliminary_label": "Muhtemel yanlış yön",
+        "primary": "MUHTEMEL_YANLIS_YON",
+        "label": "Muhtemel yanlış yön",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı.",
-          "15M hacim oranı sınırın altındaydı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "15M hacim oranı sınırın altındaydı.",
+          "İşlem çok kısa sürede anlamlı lehe hareket üretmeden stop oldu."
         ],
         "metrics": {
           "duration_minutes": 22,
           "mfe_r": 0.0502,
           "mae_r": 1.1205,
           "risk_percent": 0.916,
-          "return_minutes": null
+          "return_minutes": 240.0
         },
-        "updated_at": 1790255765
+        "updated_at": 1790270173
       },
       "result_diagnostics": {
         "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
         "shadow_only": true,
-        "status": "TRACKING",
+        "status": "COMPLETED",
         "final_result": "SL",
         "started_at": 1790255765,
         "measurement_start_at": 1790255820,
@@ -201254,14 +201256,20 @@
             "candle_time": 1790262900,
             "close_price": 0.6661,
             "directional_r_from_reference": -1.0704
+          },
+          "240": {
+            "target_at": 1790270165,
+            "candle_time": 1790270100,
+            "close_price": 0.6767,
+            "directional_r_from_reference": -2.8431
           }
         },
         "max_favorable_r": 0.1505,
         "max_adverse_r": 3.7797,
-        "last_checked_at": 1790269999,
-        "completed_at": 0,
+        "last_checked_at": 1790270340,
+        "completed_at": 1790270340,
         "diagnosis": {
-          "status": "PROVISIONAL",
+          "status": "FINAL",
           "code": "SL_SONRASI_TERS_YON_DEVAMI",
           "likely_cause": "YON_VEYA_SETUP_GECERSIZLESMESI",
           "confidence": "HIGH",
@@ -201280,7 +201288,13 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.6748
+        "last_price": 0.6767
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 240,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1790270173
       }
     },
     "ENSUSDT_LONG_MARKET_FIRST_V5_1790268475": {
@@ -201445,11 +201459,17 @@
             "candle_time": 1790269800,
             "close_price": 7.108,
             "directional_r_from_reference": 0.4461
+          },
+          "30": {
+            "target_at": 1790270772,
+            "candle_time": 1790270700,
+            "close_price": 7.101,
+            "directional_r_from_reference": 0.2899
           }
         },
         "max_favorable_r": 1.6059,
-        "max_adverse_r": 0.0446,
-        "last_checked_at": 1790269999,
+        "max_adverse_r": 0.1115,
+        "last_checked_at": 1790270930,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -201459,7 +201479,7 @@
           "summary": "Stop sonrasi anlamli toparlanma var; giris/stop zamanlamasi incelenmeli.",
           "evidence": {
             "max_favorable_r_after_close": 1.6059,
-            "max_adverse_r_after_close": 0.0446,
+            "max_adverse_r_after_close": 0.1115,
             "risk_percent": 0.6276,
             "tp1_progress_at_send_percent": null,
             "entry_distance_at_send_percent": 0.2099664053751355,
@@ -201471,7 +201491,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 7.087
+        "last_price": 7.11
       }
     },
     "ORDIUSDT_LONG_MARKET_FIRST_V5_1790269394": {
@@ -201526,12 +201546,12 @@
       "sent_price": 4.697,
       "entry_distance_at_send_percent": 0.21335609131640254,
       "best_favorable_percent": 0.128,
-      "worst_adverse_percent": 0.6187,
+      "worst_adverse_percent": 0.9174,
       "best_favorable_r": 0.1347,
-      "worst_adverse_r": 0.6512,
+      "worst_adverse_r": 0.9655,
       "best_favorable_price": 4.693,
-      "worst_adverse_price": 4.658,
-      "last_market_price": 4.66,
+      "worst_adverse_price": 4.644,
+      "last_market_price": 4.657,
       "tp1_hit_at": 0,
       "entry_type": "MARKET_FIRST_ENTRY_PLAN",
       "entry_plan_trade": true,
@@ -201573,10 +201593,10 @@
         "15m": "LONG",
         "1h": "LONG"
       },
-      "last_tracking_at": 1790269860
+      "last_tracking_at": 1790270760
     }
   },
-  "last_update": 1790270002,
+  "last_update": 1790270932,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -201588,7 +201608,7 @@
   "result_diagnostics_summary": {
     "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
     "tracked_total": 257,
-    "completed_total": 253,
+    "completed_total": 254,
     "diagnosis_counts": {
       "BE_SONRASI_TP3": 32,
       "BE_KORUMASI_DOGRU": 16,
@@ -201612,7 +201632,7 @@
     "sl_recovery_total": 144,
     "be_maybe_early_total": 38,
     "be_protection_correct_total": 16,
-    "updated_at": 1790269400
+    "updated_at": 1790270343
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
