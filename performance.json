@@ -40875,8 +40875,8 @@
       "tp1": 2,
       "tp2": 1,
       "tp3": 1,
-      "sl": 5,
-      "be": 2,
+      "sl": 6,
+      "be": 3,
       "expired": 0,
       "long": 0,
       "short": 6,
@@ -40960,7 +40960,7 @@
           "tp2": 0,
           "tp3": 0,
           "sl": 0,
-          "be": 0,
+          "be": 1,
           "expired": 0
         },
         "LINKUSDT": {
@@ -40969,30 +40969,33 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         }
       },
       "direction_stops": {
-        "SHORT": 5
+        "SHORT": 6
       },
       "stop_times": {
         "ENSUSDT": 1790199080,
         "ETHFIUSDT": 1790208397,
         "APTUSDT": 1790213784,
         "TIAUSDT": 1790216469,
-        "BIOUSDT": 1790216470
+        "BIOUSDT": 1790216470,
+        "LINKUSDT": 1790226391
       },
       "closed_times": {
         "ETHFIUSDT": 1790199377,
         "STRKUSDT": 1790212023,
-        "TRUMPUSDT": 1790217379
+        "TRUMPUSDT": 1790217379,
+        "PENDLEUSDT": 1790226091
       },
       "closed_results": {
         "ETHFIUSDT": "BE",
         "STRKUSDT": "TP3",
-        "TRUMPUSDT": "BE"
+        "TRUMPUSDT": "BE",
+        "PENDLEUSDT": "BE"
       },
       "closed_history": [
         {
@@ -41104,6 +41107,26 @@
           "exit": 2.3600004,
           "source": "MARKET_FIRST_V5",
           "score": 92
+        },
+        {
+          "time": "08:01:31",
+          "symbol": "PENDLEUSDT",
+          "direction": "SHORT",
+          "result": "BE",
+          "entry": 2.4,
+          "exit": 2.4,
+          "source": "MARKET_FIRST_V5",
+          "score": 92
+        },
+        {
+          "time": "08:06:31",
+          "symbol": "LINKUSDT",
+          "direction": "SHORT",
+          "result": "SL",
+          "entry": 12.289,
+          "exit": 12.387,
+          "source": "MARKET_FIRST_V5",
+          "score": 94
         }
       ],
       "sl_after_tp1": 0,
@@ -41111,39 +41134,11 @@
       "sl_after_no_return": 4
     }
   },
-  "last_update": 1790224879,
+  "last_update": 1790226690,
   "last_open_summary": 1787843763,
   "last_status_message": 1787906216,
   "last_daily_report": "2026-08-27",
   "sl_after_follow": {
-    "ETHFIUSDT_SHORT_1790208397": {
-      "trade_id": "ETHFIUSDT_SHORT_MARKET_FIRST_V5_1790207007",
-      "symbol": "ETHFIUSDT",
-      "direction": "SHORT",
-      "source": "MARKET_FIRST_V5",
-      "entry": 0.6474,
-      "tp1": 0.6407000574,
-      "tp2": 0.6373500861,
-      "tp3": 0.6340001148,
-      "sl": 0.6503957143,
-      "score": 89,
-      "risk_percent": 0.463,
-      "stopped_at": 1790208397,
-      "stop_exit": 0.6509,
-      "reported_checkpoints": [
-        30,
-        60,
-        120,
-        180,
-        240
-      ],
-      "after_sl_tp1": false,
-      "after_sl_tp2": false,
-      "after_sl_tp3": false,
-      "resolved": true,
-      "no_return_counted": true,
-      "no_return_counted_day": "2026-09-24"
-    },
     "APTUSDT_SHORT_1790213784": {
       "trade_id": "APTUSDT_SHORT_MARKET_FIRST_V5_1790212176",
       "symbol": "APTUSDT",
@@ -41212,6 +41207,26 @@
         60,
         120
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "LINKUSDT_SHORT_1790226391": {
+      "trade_id": "LINKUSDT_SHORT_MARKET_FIRST_V5_1790223453",
+      "symbol": "LINKUSDT",
+      "direction": "SHORT",
+      "source": "MARKET_FIRST_V5",
+      "entry": 12.289,
+      "tp1": 12.1655016945,
+      "tp2": 12.10375254175,
+      "tp3": 12.042003389,
+      "sl": 12.3843857143,
+      "score": 94,
+      "risk_percent": 0.776,
+      "stopped_at": 1790226391,
+      "stop_exit": 12.387,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
