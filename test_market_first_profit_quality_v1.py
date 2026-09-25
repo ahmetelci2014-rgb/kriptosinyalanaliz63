@@ -64,7 +64,7 @@ def test_quality_gate_rejects_small_expected_move():
     decision = {
         "direction": "LONG",
         "score": 94,
-        "risk_percent": 0.6,
+        "risk_percent": 0.8,
         "volume_ratio_5m": 1.1,
         "profit_target_percent": 1.5,
         "profit_target_r": 3.0,
@@ -76,11 +76,83 @@ def test_quality_gate_rejects_small_expected_move():
     assert reason == "EXPECTED_MOVE_BELOW_2P"
 
 
+def test_quality_gate_rejects_historically_bad_middle_risk_band():
+    decision = {
+        "direction": "LONG",
+        "score": 90,
+        "risk_percent": 0.6,
+        "volume_ratio_5m": 0.7,
+        "extension_atr_5m": 0.8,
+        "profit_target_percent": 2.4,
+        "profit_target_r": 4.0,
+        "market_preferred_direction": "LONG",
+        "target_confidence": "ORTA",
+    }
+    ok, reason = pq._quality_reason(decision)
+    assert not ok
+    assert reason == "RISK_DEAD_ZONE_0_46_0_70"
+
+
+def test_quality_gate_rejects_risk_above_one_percent():
+    decision = {
+        "direction": "LONG",
+        "score": 90,
+        "risk_percent": 1.01,
+        "volume_ratio_5m": 0.7,
+        "extension_atr_5m": 0.8,
+        "profit_target_percent": 2.6,
+        "profit_target_r": 2.6,
+        "market_preferred_direction": "LONG",
+        "target_confidence": "ORTA",
+    }
+    ok, reason = pq._quality_reason(decision)
+    assert not ok
+    assert reason == "RISK_ABOVE_1_00"
+
+
+def test_quality_gate_accepts_quiet_volume_and_rejects_overheated_volume():
+    decision = {
+        "direction": "SHORT",
+        "score": 90,
+        "risk_percent": 0.8,
+        "volume_ratio_5m": 0.50,
+        "extension_atr_5m": 0.8,
+        "profit_target_percent": 2.4,
+        "profit_target_r": 3.0,
+        "market_preferred_direction": "SHORT",
+        "target_confidence": "ORTA",
+    }
+    ok, reason = pq._quality_reason(decision)
+    assert ok and reason == "OK"
+
+    decision["volume_ratio_5m"] = 2.01
+    ok, reason = pq._quality_reason(decision)
+    assert not ok
+    assert reason == "VOLUME_ABOVE_2_00_LATE"
+
+
+def test_quality_gate_rejects_late_extension_above_1_25():
+    decision = {
+        "direction": "LONG",
+        "score": 90,
+        "risk_percent": 0.8,
+        "volume_ratio_5m": 0.8,
+        "extension_atr_5m": 1.26,
+        "profit_target_percent": 2.4,
+        "profit_target_r": 3.0,
+        "market_preferred_direction": "LONG",
+        "target_confidence": "ORTA",
+    }
+    ok, reason = pq._quality_reason(decision)
+    assert not ok
+    assert reason == "EXTENSION_ATR_ABOVE_1_25"
+
+
 def test_quality_gate_accepts_strong_two_percent_plus_setup():
     decision = {
         "direction": "SHORT",
         "score": 92,
-        "risk_percent": 0.7,
+        "risk_percent": 0.8,
         "volume_ratio_5m": 0.9,
         "profit_target_percent": 2.4,
         "profit_target_r": 3.4,
