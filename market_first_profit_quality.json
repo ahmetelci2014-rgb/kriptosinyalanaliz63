@@ -1,12 +1,16 @@
 {
-  "version": "MARKET_FIRST_PROFIT_QUALITY_V1_2026_09_09",
+  "version": "MARKET_FIRST_PROFIT_QUALITY_V2_HISTORICAL_2026_09_25",
   "mode": "SINGLE_FINAL_TRADE_TELEGRAM_HIGHER_PROFIT_POTENTIAL",
   "thresholds": {
     "min_score": 88,
     "min_expected_move_percent": 2.0,
     "min_target_r": 2.5,
-    "max_risk_percent": 1.25,
-    "min_volume_ratio_5m": 0.65,
+    "max_risk_percent": 1.0,
+    "risk_dead_zone_low": 0.45,
+    "risk_dead_zone_high": 0.7,
+    "min_volume_ratio_5m": 0.5,
+    "max_volume_ratio_5m": 2.0,
+    "max_extension_atr_5m": 1.25,
     "max_target_move_percent": 5.0,
     "tp_fractions": [
       0.5,
@@ -14,7 +18,24 @@
       1.0
     ]
   },
-  "run_counts": {},
-  "accepted": [],
+  "run_counts": {
+    "RISK_DEAD_ZONE_0_46_0_70": 1,
+    "SCORE_BELOW_88": 1,
+    "OK": 1,
+    "ACCEPTED": 1
+  },
+  "accepted": [
+    {
+      "symbol": "USELESSUSDT",
+      "direction": "SHORT",
+      "score": 92,
+      "risk_percent": 0.4,
+      "tp1_percent": 1.03,
+      "tp2_percent": 1.545,
+      "tp3_percent": 2.06,
+      "target_r": 5.151,
+      "target_source": "1H destek"
+    }
+  ],
   "note": "Counts are signal-gate observations, not realized PnL."
 }
