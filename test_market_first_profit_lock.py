@@ -23,7 +23,7 @@ def _short_signal():
     }
 
 
-def test_long_requires_1_5r_and_strong_close():
+def test_long_requires_1_0r_and_strong_close():
     signal = _long_signal()
     assert lock.candle_can_arm(
         signal,
@@ -32,6 +32,14 @@ def test_long_requires_1_5r_and_strong_close():
     assert lock.candle_can_arm(
         signal,
         {"high": 101.6, "low": 100.2, "close": 100.2},
+    ) is False
+    assert lock.candle_can_arm(
+        signal,
+        {"high": 101.05, "low": 100.2, "close": 100.55},
+    ) is True
+    assert lock.candle_can_arm(
+        signal,
+        {"high": 100.95, "low": 100.2, "close": 100.55},
     ) is False
 
 
@@ -76,8 +84,8 @@ def test_same_candle_tp1_and_entry_is_not_guessed():
 
 
 def test_directional_r_uses_original_stop_distance():
-    assert lock.directional_r("LONG", 100.0, 99.0, 101.5) == 1.5
-    assert lock.directional_r("SHORT", 100.0, 101.0, 98.5) == 1.5
+    assert lock.directional_r("LONG", 100.0, 99.0, 101.0) == 1.0
+    assert lock.directional_r("SHORT", 100.0, 101.0, 99.0) == 1.0
 
 
 def test_new_closed_candles_compare_candle_end_to_wall_clock_check():
