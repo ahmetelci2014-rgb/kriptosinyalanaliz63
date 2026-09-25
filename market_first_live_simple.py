@@ -16,6 +16,7 @@ and reports remain available for diagnostics, so this rollback is reversible.
 from __future__ import annotations
 
 import market_first_background_live_bridge as background_live_bridge
+import market_first_2h_context_shadow as context_2h_shadow
 import market_first_balanced_core_guard as balanced_core_guard
 import market_first_big_move_capture as big_move_capture
 import market_first_daily_report_origin_patch as daily_report_origin_patch
@@ -49,6 +50,7 @@ def main() -> None:
     promotion_reason_patch.install()
     swing_tracking_fix.install()
     supertrend_shadow.install(runner)
+    context_2h_shadow.install(runner)
     complete_tracking.install_complete_tracking()
     pre_entry_shadow.install(runner)
     reversal_capture.install(runner)
@@ -89,6 +91,7 @@ def main() -> None:
     print("MARKET FIRST BACKGROUND LIVE BRIDGE:", background_live_bridge.summary())
     print("MARKET FIRST STRUCTURE FIBO CONTACT:", structure_fibo.summary())
     print("MARKET FIRST SUPERTREND SHADOW:", supertrend_shadow.summary())
+    print("MARKET FIRST V7 2H CONTEXT SHADOW:", context_2h_shadow.summary())
     print("MARKET FIRST PROMOTION REASONS:", promotion_reason_patch.summary())
     print("MARKET FIRST 2H SWING TRACKING FIX:", swing_tracking_fix.status())
     print("MARKET FIRST PRE-ENTRY SHADOW:", pre_entry_shadow.summary())
@@ -116,6 +119,7 @@ def main() -> None:
         print("MARKET FIRST BACKGROUND LIVE BRIDGE RUN:", background_live_bridge.finish())
         print("MARKET FIRST STRUCTURE FIBO RUN:", structure_fibo.finish())
         print("MARKET FIRST SUPERTREND SHADOW RUN:", supertrend_shadow.finish(runner.bot))
+        print("MARKET FIRST V7 2H CONTEXT SHADOW RUN:", context_2h_shadow.finish(runner.bot))
         print("MARKET FIRST PROFIT LOCK RUN:", profit_lock.summary())
 
     # Daily diagnostics remain persisted by the reporting/ledger layers, but
