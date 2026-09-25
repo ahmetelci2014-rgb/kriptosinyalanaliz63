@@ -86,6 +86,7 @@ jobs:
           test -f movement_start_v3_orderflow_shadow.py
           test -f post_result_shadow.py
           test -f result_diagnostics.py
+          test -f market_first_historical_audit.py
 
       - name: Premium cekirdegi derle
         run: |
@@ -135,7 +136,8 @@ jobs:
             movement_start_v2_shadow.py \
             movement_start_v3_orderflow_shadow.py \
             post_result_shadow.py \
-            result_diagnostics.py
+            result_diagnostics.py \
+            market_first_historical_audit.py
 
       - name: Market Outlook inline refresh regresyonunu calistir
         env:
@@ -155,6 +157,12 @@ jobs:
           CHAT_ID: ""
         run: python -m pytest -q test_premium_regime_transition.py
 
+      - name: Market First tarihsel tuning auditini calistir
+        env:
+          TOKEN: ""
+          CHAT_ID: ""
+        run: python market_first_historical_audit.py
+
       - name: Mevcut regresyon testlerini calistir
         env:
           TOKEN: ""
@@ -165,3 +173,20 @@ jobs:
             echo "Calistiriliyor: ${test_file}"
             python -m pytest -q "${test_file}"
           done
+
+
+  historical-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Repo indir
+        uses: actions/checkout@v4
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Market First tarihsel audit
+        run: python market_first_historical_audit.py
