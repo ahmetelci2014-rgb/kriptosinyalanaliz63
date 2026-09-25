@@ -27,7 +27,7 @@ import market_first_simple_mode as simple_mode
 import market_first_strategy as strategy
 import market_first_target_engine as target_engine
 
-VERSION = "MARKET_FIRST_PROFIT_QUALITY_V1_2026_09_09"
+VERSION = "MARKET_FIRST_PROFIT_QUALITY_V2_HISTORICAL_2026_09_25"
 MODE = "SINGLE_FINAL_TRADE_TELEGRAM_HIGHER_PROFIT_POTENTIAL"
 STATE_FILE = "market_first_profit_quality.json"
 
@@ -35,8 +35,12 @@ STATE_FILE = "market_first_profit_quality.json"
 MIN_SCORE = 88
 MIN_EXPECTED_MOVE_PERCENT = 2.00
 MIN_TARGET_R = 2.50
-MAX_RISK_PERCENT = 1.25
-MIN_VOLUME_RATIO_5M = 0.65
+MAX_RISK_PERCENT = 1.00
+RISK_DEAD_ZONE_LOW = 0.45
+RISK_DEAD_ZONE_HIGH = 0.70
+MIN_VOLUME_RATIO_5M = 0.50
+MAX_VOLUME_RATIO_5M = 2.00
+MAX_EXTENSION_ATR_5M = 1.25
 MAX_TARGET_MOVE_PERCENT = 5.00
 
 # Profit ladder is carved out of the selected structural target.
@@ -156,15 +160,23 @@ def _quality_reason(decision: Mapping[str, Any]) -> Tuple[bool, str]:
 
     risk_percent = _sf(decision.get("risk_percent"), 999.0)
     if risk_percent <= 0 or risk_percent > MAX_RISK_PERCENT:
-        return False, "RISK_ABOVE_1_25"
+        return False, "RISK_ABOVE_1_00"
+    if RISK_DEAD_ZONE_LOW < risk_percent <= RISK_DEAD_ZONE_HIGH:
+        return False, "RISK_DEAD_ZONE_0_46_0_70"
 
-    volume5 = max(
-        _sf(decision.get("volume_ratio_5m")),
+    direct_volume5 = _sf(decision.get("volume_ratio_5m"), -1.0)
+    volume5 = direct_volume5 if direct_volume5 >= 0 else max(
         _sf(decision.get("volume_ratio_1m")),
         _sf(decision.get("volume_ratio")),
     )
     if volume5 < MIN_VOLUME_RATIO_5M:
-        return False, "VOLUME_BELOW_0_65"
+        return False, "VOLUME_BELOW_0_50"
+    if volume5 > MAX_VOLUME_RATIO_5M:
+        return False, "VOLUME_ABOVE_2_00_LATE"
+
+    extension_atr = _sf(decision.get("extension_atr_5m"), 0.0)
+    if extension_atr > MAX_EXTENSION_ATR_5M:
+        return False, "EXTENSION_ATR_ABOVE_1_25"
 
     move_percent = _sf(decision.get("profit_target_percent"))
     target_r = _sf(decision.get("profit_target_r"))
@@ -256,7 +268,11 @@ def _save_summary() -> Dict[str, Any]:
             "min_expected_move_percent": MIN_EXPECTED_MOVE_PERCENT,
             "min_target_r": MIN_TARGET_R,
             "max_risk_percent": MAX_RISK_PERCENT,
+            "risk_dead_zone_low": RISK_DEAD_ZONE_LOW,
+            "risk_dead_zone_high": RISK_DEAD_ZONE_HIGH,
             "min_volume_ratio_5m": MIN_VOLUME_RATIO_5M,
+            "max_volume_ratio_5m": MAX_VOLUME_RATIO_5M,
+            "max_extension_atr_5m": MAX_EXTENSION_ATR_5M,
             "max_target_move_percent": MAX_TARGET_MOVE_PERCENT,
             "tp_fractions": [TP1_FRACTION, TP2_FRACTION, TP3_FRACTION],
         },
@@ -381,7 +397,10 @@ def summary() -> Dict[str, Any]:
         "min_expected_move_percent": MIN_EXPECTED_MOVE_PERCENT,
         "min_target_r": MIN_TARGET_R,
         "max_risk_percent": MAX_RISK_PERCENT,
+        "risk_dead_zone": [RISK_DEAD_ZONE_LOW, RISK_DEAD_ZONE_HIGH],
         "min_volume_ratio_5m": MIN_VOLUME_RATIO_5M,
+        "max_volume_ratio_5m": MAX_VOLUME_RATIO_5M,
+        "max_extension_atr_5m": MAX_EXTENSION_ATR_5M,
         "tp1_min_percent_at_threshold": round(MIN_EXPECTED_MOVE_PERCENT * TP1_FRACTION, 2),
         "tp2_min_percent_at_threshold": round(MIN_EXPECTED_MOVE_PERCENT * TP2_FRACTION, 2),
         "tp3_min_percent_at_threshold": round(MIN_EXPECTED_MOVE_PERCENT * TP3_FRACTION, 2),
