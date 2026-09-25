@@ -1,8 +1,9 @@
 {
-  "version": "MARKET_FIRST_FINAL_EXECUTION_GATE_V2_1_2026_09_09",
+  "version": "MARKET_FIRST_FINAL_EXECUTION_GATE_V2_2_2026_09_25",
   "mode": "FINAL_DECISION_AFTER_UPSTREAM_QUALITY_NO_STOP_WIDENING_NO_ORDERS",
   "thresholds": {
     "min_direction_confirmations": 3,
+    "fresh_micro_min_direction_confirmations": 2,
     "min_technical_expected_move_percent": 0.85,
     "min_flow_alignment_without_fresh_micro": 0.15,
     "max_opposite_cvd_impulse": -0.1,
@@ -10,9 +11,30 @@
     "min_derivatives_soft_score_without_fresh_micro": 0
   },
   "run_counts": {
+    "TAKER_CVD_OPPOSITE": 1,
     "DIRECTION_CONFIRMATIONS_BELOW_3": 1,
-    "UPSTREAM_REJECTED": 2
+    "UPSTREAM_REJECTED": 1,
+    "OK": 1,
+    "ACCEPTED": 1
   },
-  "accepted": [],
+  "accepted": [
+    {
+      "symbol": "INJUSDT",
+      "direction": "SHORT",
+      "score": 92,
+      "confirmations": 3,
+      "technical_expected_move_percent": 1.444,
+      "fresh_micro": false,
+      "early_fresh_micro_execution": false,
+      "structure_15m": "SHORT",
+      "structure_1h": "SHORT",
+      "taker_alignment": 0.6545,
+      "cvd_alignment": 0.6545,
+      "cvd_impulse_alignment": 0.3018,
+      "book_alignment": 0.0234,
+      "derivatives_soft_score": 1,
+      "tao_quality_bridge": false
+    }
+  ],
   "note": "Execution-gate observations only; not realised PnL. Upstream Profit Quality/TAO pipeline runs before this gate. Stops are not widened by this module."
 }
