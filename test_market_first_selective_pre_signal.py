@@ -13,7 +13,7 @@ def _base_decision():
         "entry_plan_zone_high": 10.02,
         "current_price": 10.0,
         "score": 94,
-        "risk_percent": 0.60,
+        "risk_percent": 0.80,
         "expected_move_percent": 2.40,
         "technical_target_r": 4.0,
         "profit_target_percent": 0.0,
@@ -39,7 +39,7 @@ def _base_decision():
             "selected_score": 96,
             "other_score": 10,
             "margin": 86,
-            "confirmations": 4,
+            "confirmations": 3,
             "confirmation_flags": {
                 "fresh_micro": True,
             },
