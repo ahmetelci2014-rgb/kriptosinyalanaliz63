@@ -173,3 +173,20 @@ jobs:
             echo "Calistiriliyor: ${test_file}"
             python -m pytest -q "${test_file}"
           done
+
+
+  historical-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Repo indir
+        uses: actions/checkout@v4
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Market First tarihsel audit
+        run: python market_first_historical_audit.py
