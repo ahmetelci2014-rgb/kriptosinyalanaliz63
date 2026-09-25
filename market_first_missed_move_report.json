@@ -1,43 +1,43 @@
 {
   "version": "MARKET_FIRST_OBSERVABILITY_V1_2026_09_08",
-  "generated_at": 1790378038,
+  "generated_at": 1790378916,
   "definition": "Clean resolved preparation that reached TP1 or better without a real Telegram entry signal.",
-  "total_missed_moves": 928,
-  "miss_rate_of_clean_resolved": 0.9116,
+  "total_missed_moves": 927,
+  "miss_rate_of_clean_resolved": 0.9142,
   "levels": {
     "TP3_MISSED": 699,
-    "TP2_MISSED": 136,
+    "TP2_MISSED": 135,
     "TP1_MISSED": 93
   },
   "stages": {
-    "BEFORE_ENTRY_CONDITION": 501,
+    "BEFORE_ENTRY_CONDITION": 500,
     "FINAL_DELIVERY_GATE": 422,
     "PROMOTION_GATE": 5
   },
   "reasons": {
-    "ENTRY_CONDITION_NOT_REACHED": 501,
+    "ENTRY_CONDITION_NOT_REACHED": 500,
     "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED": 408,
     "TELEGRAM_SEND_FAILED": 14,
     "LOW_SCORE": 5
   },
   "directions": {
-    "SHORT": 533,
+    "SHORT": 532,
     "LONG": 395
   },
   "outcomes": {
-    "TP3_REACHED": 615,
+    "TP3_REACHED": 616,
     "TP2_REACHED": 115,
-    "SL_FIRST_THEN_TP3_RECOVERY": 83,
+    "SL_FIRST_THEN_TP3_RECOVERY": 82,
     "TP1_REACHED": 71,
-    "SL_FIRST_THEN_TP2_RECOVERY": 21,
     "SL_FIRST_THEN_TP1_RECOVERY": 21,
+    "SL_FIRST_THEN_TP2_RECOVERY": 20,
     "AMBIGUOUS_THEN_TP3": 1,
     "AMBIGUOUS_WITH_TARGET": 1
   },
   "timing": {
-    "avg_minutes_prep_to_tp1": 26.26,
-    "avg_minutes_entry_condition_to_tp1": 49.4,
-    "tp1_within_30m": 761,
+    "avg_minutes_prep_to_tp1": 26.08,
+    "avg_minutes_entry_condition_to_tp1": 48.74,
+    "tp1_within_30m": 762,
     "tp1_within_60m": 815
   },
   "top_missed": [
@@ -1197,39 +1197,6 @@
       "resolved_at": 1790322987
     },
     {
-      "episode_id": "IMXUSDT:LONG:1790148990",
-      "symbol": "IMXUSDT",
-      "direction": "LONG",
-      "score": 84,
-      "miss_level": "TP3_MISSED",
-      "miss_stage": "BEFORE_ENTRY_CONDITION",
-      "reason": "ENTRY_CONDITION_NOT_REACHED",
-      "outcome": "SL_FIRST_THEN_TP3_RECOVERY",
-      "prep_price": 0.15625,
-      "last_price": 0.15788,
-      "best_favorable_percent": 1.0432,
-      "best_favorable_r": 3.606,
-      "worst_adverse_percent": 0.9856,
-      "entry_condition_met": false,
-      "entry_promoted": false,
-      "entry_signal_sent": false,
-      "tp1_before_entry_signal": true,
-      "minutes_prep_to_tp1": 44.72,
-      "minutes_entry_condition_to_tp1": null,
-      "market_regime": "BULL_STRONG",
-      "structure_5m": "SHORT",
-      "structure_15m": "LONG",
-      "structure_1h": "LONG",
-      "volume_ratio_5m": 0.989,
-      "volume_ratio_15m": 0.731,
-      "extension_atr_5m": 0.577,
-      "risk_percent": 0.4,
-      "room_r": 2.81,
-      "first_at": 1790148990,
-      "tp1_at": 1790151673,
-      "resolved_at": 1790151673
-    },
-    {
       "episode_id": "ADAUSDT:SHORT:1790201309",
       "symbol": "ADAUSDT",
       "direction": "SHORT",
@@ -1360,6 +1327,39 @@
       "first_at": 1790342784,
       "tp1_at": 1790348816,
       "resolved_at": 1790349682
+    },
+    {
+      "episode_id": "PENGUUSDT:LONG:1790153835",
+      "symbol": "PENGUUSDT",
+      "direction": "LONG",
+      "score": 88,
+      "miss_level": "TP3_MISSED",
+      "miss_stage": "FINAL_DELIVERY_GATE",
+      "reason": "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED",
+      "outcome": "TP3_REACHED",
+      "prep_price": 0.010756,
+      "last_price": 0.011025,
+      "best_favorable_percent": 3.1703,
+      "best_favorable_r": 3.3777,
+      "worst_adverse_percent": 0.0,
+      "entry_condition_met": true,
+      "entry_promoted": true,
+      "entry_signal_sent": false,
+      "tp1_before_entry_signal": true,
+      "minutes_prep_to_tp1": 4.67,
+      "minutes_entry_condition_to_tp1": null,
+      "market_regime": "CHOP",
+      "structure_5m": "LONG",
+      "structure_15m": "LONG",
+      "structure_1h": "LONG",
+      "volume_ratio_5m": 0.678,
+      "volume_ratio_15m": 1.01,
+      "extension_atr_5m": 0.01,
+      "risk_percent": 1.249,
+      "room_r": 1.75,
+      "first_at": 1790153835,
+      "tp1_at": 1790154115,
+      "resolved_at": 1790155605
     }
   ]
 }
