@@ -42,7 +42,7 @@ def test_vana_profile_is_rejected_for_too_small_near_target_before_far_five_perc
         "book_imbalance_alignment": -0.128758,
         "derivatives_soft_score": -1,
     })
-    decision["direction_engine"]["confirmations"] = 4
+    decision["direction_engine"]["confirmations"] = 3
     decision["direction_engine"]["long"] = {
         "taker_alignment": 0.200818,
         "cvd_alignment": 0.200818,
@@ -53,22 +53,23 @@ def test_vana_profile_is_rejected_for_too_small_near_target_before_far_five_perc
 
 
 
-def test_two_confirmations_can_pass_only_with_fresh_micro_and_htf_alignment():
+def test_two_confirmations_stay_rejected_even_with_fresh_micro():
     decision = base_decision("LONG")
     decision["direction_engine"]["confirmations"] = 2
     decision["move_3m_percent"] = 0.12
     decision["move_5m_percent"] = 0.18
-    decision["structure_15m"] = "LONG"
-    decision["structure_1h"] = "LONG"
-    ok, reason, evidence = gate._execution_reason(decision)
-    assert ok
-    assert reason == "OK"
-    assert evidence["early_fresh_micro_execution"] is True
-
-    decision["structure_1h"] = "SHORT"
     ok, reason, _ = gate._execution_reason(decision)
     assert not ok
     assert reason == "DIRECTION_CONFIRMATIONS_BELOW_3"
+
+
+def test_four_confirmations_are_rejected_as_late_overconfirmation():
+    decision = base_decision("LONG")
+    decision["direction_engine"]["confirmations"] = 4
+    ok, reason, evidence = gate._execution_reason(decision)
+    assert not ok
+    assert reason == "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE"
+    assert evidence["confirmations"] == 4
 
 
 def test_met_profile_is_rejected_for_insufficient_confirmations_and_opposing_flow():
