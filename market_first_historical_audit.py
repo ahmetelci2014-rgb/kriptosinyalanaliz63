@@ -231,6 +231,19 @@ def real_trade_audit(rows: list[dict[str, Any]], now_value: int) -> dict[str, An
     stop_mfe = sorted(
         (sf(row.get("best_favorable_r"), 0.0) or 0.0) for row in stops
     )
+    rounded_risk = Counter(
+        round(float(sf(row.get("risk_percent"))), 3)
+        for row in rows
+        if sf(row.get("risk_percent")) is not None
+    )
+    top_risk_values = {}
+    for risk_value, count in rounded_risk.most_common(12):
+        subset = [
+            row for row in rows
+            if sf(row.get("risk_percent")) is not None
+            and round(float(sf(row.get("risk_percent"))), 3) == risk_value
+        ]
+        top_risk_values[str(risk_value)] = {"count": count, **metrics(subset)}
     def window_subset(seconds: int) -> list[dict[str, Any]]:
         cutoff = now_value - seconds
         return [
@@ -299,6 +312,7 @@ def real_trade_audit(rows: list[dict[str, Any]], now_value: int) -> dict[str, An
         "by_direction": direction_groups,
         "by_score": score_groups,
         "by_risk_percent": risk_groups,
+        "top_exact_risk_values": top_risk_values,
         "by_expected_move": expected_groups,
         "by_confirmations": conf_groups,
         "by_fresh_micro": fresh_groups,
