@@ -17,7 +17,7 @@ from typing import Any, Mapping, Optional
 import market_first_entry_plan as entry_plan
 import market_first_runner as runner
 
-VERSION = "MARKET_FIRST_SIMPLE_TELEGRAM_V6_TWO_MESSAGE_ONLY_2026_09_22"
+VERSION = "MARKET_FIRST_SIMPLE_TELEGRAM_V6_ACTIONABLE_PROTECTION_2026_09_25"
 _INSTALLED = False
 
 # Qualified PREP -> selective Telegram early-entry alert.
@@ -68,6 +68,7 @@ ALLOWED_TELEGRAM_PREFIXES = (
     "🚨 KRİPTO İŞLEM",
     "✅ İŞLEM FIRSATI",
     "👀 ARKA PLAN ADAYI",
+    "🛡️ KÂR KORUMA AKTİF",
 )
 
 
@@ -282,6 +283,7 @@ def install_simple_mode() -> None:
     _INSTALLED = True
 
     original_send = runner._send
+    original_core_send = runner.bot.send_telegram
     original_early_formatter = runner._format_early_message
 
     def simple_send(text: str, delivery_key: Optional[str] = None) -> bool:
@@ -296,9 +298,17 @@ def install_simple_mode() -> None:
 
     def silent_core_tracking_send(message, delivery_key=None):
         # main.py TP/SL/BE/status tracking calls bot.send_telegram directly and
-        # therefore bypass runner._send. During Market First V6 we keep every
-        # ledger/performance update but silence those user-facing notifications.
+        # therefore bypass runner._send. Keep passive result/status messages
+        # silent, but never hide an instruction the manual trader must actually
+        # execute. Profit Lock is only valid if its "move SL to entry" message
+        # was truly delivered.
         first_line = str(message or "").splitlines()[0] if str(message or "").splitlines() else "(boş)"
+        if str(message or "").startswith("🛡️ KÂR KORUMA AKTİF"):
+            print("TELEGRAM V6 | actionable profit lock:", first_line)
+            try:
+                return bool(original_core_send(message, delivery_key=delivery_key))
+            except TypeError:
+                return bool(original_core_send(message, delivery_key))
         print("TELEGRAM V6 | TP/SL/BE/status sessiz:", first_line)
         return True
 
@@ -316,10 +326,11 @@ def install_simple_mode() -> None:
 def summary() -> dict:
     return {
         "version": VERSION,
-        "telegram_mode": "REAL_TRADE_PLUS_BACKGROUND_CANDIDATE_ONLY",
+        "telegram_mode": "REAL_TRADE_BACKGROUND_PLUS_ACTIONABLE_PROFIT_LOCK",
         "allowed_prefixes": list(ALLOWED_TELEGRAM_PREFIXES),
         "real_trades": "TELEGRAM",
         "background_candidates": "TELEGRAM",
+        "profit_lock_instruction": "TELEGRAM_ACTION_REQUIRED",
         "tp_sl_be": "INTERNAL_LEDGER_ONLY",
         "daily_report": "INTERNAL_ONLY",
         "swing_preparations": "INTERNAL_ONLY",

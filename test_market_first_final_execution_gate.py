@@ -52,6 +52,25 @@ def test_vana_profile_is_rejected_for_too_small_near_target_before_far_five_perc
     assert reason == "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL"
 
 
+
+def test_two_confirmations_can_pass_only_with_fresh_micro_and_htf_alignment():
+    decision = base_decision("LONG")
+    decision["direction_engine"]["confirmations"] = 2
+    decision["move_3m_percent"] = 0.12
+    decision["move_5m_percent"] = 0.18
+    decision["structure_15m"] = "LONG"
+    decision["structure_1h"] = "LONG"
+    ok, reason, evidence = gate._execution_reason(decision)
+    assert ok
+    assert reason == "OK"
+    assert evidence["early_fresh_micro_execution"] is True
+
+    decision["structure_1h"] = "SHORT"
+    ok, reason, _ = gate._execution_reason(decision)
+    assert not ok
+    assert reason == "DIRECTION_CONFIRMATIONS_BELOW_3"
+
+
 def test_met_profile_is_rejected_for_insufficient_confirmations_and_opposing_flow():
     decision = base_decision("LONG")
     decision.update({

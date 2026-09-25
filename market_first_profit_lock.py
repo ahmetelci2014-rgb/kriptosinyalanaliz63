@@ -6,8 +6,8 @@ return all the way to the original stop. This module protects that path without
 moving the initial stop wider and without placing exchange orders.
 
 When a still-open pre-TP1 trade:
-- reaches at least +1.50R, and
-- the trigger candle closes at least +0.75R in profit, and
+- reaches at least +1.00R, and
+- the trigger candle closes at least +0.50R in profit, and
 - that candle did not also hit TP1 or the original SL,
 we send one Telegram instruction to move the manual SL to entry. The protection
 is effective from the next candle, avoiding same-candle look-ahead. If a later
@@ -21,9 +21,9 @@ from typing import Any, Dict, Iterable, Mapping, Optional
 
 import main as bot
 
-VERSION = "MARKET_FIRST_PROFIT_LOCK_V1_2026_09_14"
-TRIGGER_R = 1.50
-MIN_TRIGGER_CLOSE_R = 0.75
+VERSION = "MARKET_FIRST_PROFIT_LOCK_V2_2026_09_25"
+TRIGGER_R = 1.00
+MIN_TRIGGER_CLOSE_R = 0.50
 _INSTALLED = False
 
 

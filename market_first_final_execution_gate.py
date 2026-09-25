@@ -19,11 +19,12 @@ from typing import Any, Dict, Mapping, Tuple
 
 import market_first_runner as runner
 
-VERSION = "MARKET_FIRST_FINAL_EXECUTION_GATE_V2_1_2026_09_09"
+VERSION = "MARKET_FIRST_FINAL_EXECUTION_GATE_V2_2_2026_09_25"
 STATE_FILE = "market_first_final_execution_gate.json"
 MODE = "FINAL_DECISION_AFTER_UPSTREAM_QUALITY_NO_STOP_WIDENING_NO_ORDERS"
 
 MIN_DIRECTION_CONFIRMATIONS = 3
+FRESH_MICRO_MIN_DIRECTION_CONFIRMATIONS = 2
 MIN_TECHNICAL_EXPECTED_MOVE_PERCENT = 0.85
 MIN_FLOW_ALIGNMENT_WITHOUT_FRESH_MICRO = 0.15
 MAX_OPPOSITE_CVD_IMPULSE = -0.10
@@ -90,8 +91,23 @@ def _execution_reason(decision: Mapping[str, Any]) -> Tuple[bool, str, Dict[str,
         return False, "DIRECTION_ENGINE_CONFLICT", {"selected_direction": selected}
 
     confirmations = _si(engine.get("confirmations"))
-    if confirmations < MIN_DIRECTION_CONFIRMATIONS:
-        return False, "DIRECTION_CONFIRMATIONS_BELOW_3", {"confirmations": confirmations}
+    fresh_micro = _has_fresh_micro(decision)
+    structure_15m = str(decision.get("structure_15m") or "").upper()
+    structure_1h = str(decision.get("structure_1h") or "").upper()
+    early_fresh_micro = (
+        confirmations >= FRESH_MICRO_MIN_DIRECTION_CONFIRMATIONS
+        and confirmations < MIN_DIRECTION_CONFIRMATIONS
+        and fresh_micro
+        and structure_15m == direction
+        and structure_1h == direction
+    )
+    if confirmations < MIN_DIRECTION_CONFIRMATIONS and not early_fresh_micro:
+        return False, "DIRECTION_CONFIRMATIONS_BELOW_3", {
+            "confirmations": confirmations,
+            "fresh_micro": fresh_micro,
+            "structure_15m": structure_15m,
+            "structure_1h": structure_1h,
+        }
 
     technical_expected = _sf(decision.get("expected_move_percent"))
     if technical_expected < MIN_TECHNICAL_EXPECTED_MOVE_PERCENT:
@@ -99,7 +115,6 @@ def _execution_reason(decision: Mapping[str, Any]) -> Tuple[bool, str, Dict[str,
             "technical_expected_move_percent": technical_expected,
         }
 
-    fresh_micro = _has_fresh_micro(decision)
     taker_available = bool(decision.get("taker_available"))
     cvd_available = bool(decision.get("cvd_available"))
     book_available = bool(decision.get("book_available"))
@@ -121,6 +136,9 @@ def _execution_reason(decision: Mapping[str, Any]) -> Tuple[bool, str, Dict[str,
         "confirmations": confirmations,
         "technical_expected_move_percent": round(technical_expected, 4),
         "fresh_micro": fresh_micro,
+        "early_fresh_micro_execution": early_fresh_micro,
+        "structure_15m": structure_15m,
+        "structure_1h": structure_1h,
         "taker_alignment": round(taker, 4),
         "cvd_alignment": round(cvd, 4),
         "cvd_impulse_alignment": round(cvd_impulse, 4),
@@ -153,6 +171,7 @@ def _save_summary() -> Dict[str, Any]:
         "mode": MODE,
         "thresholds": {
             "min_direction_confirmations": MIN_DIRECTION_CONFIRMATIONS,
+            "fresh_micro_min_direction_confirmations": FRESH_MICRO_MIN_DIRECTION_CONFIRMATIONS,
             "min_technical_expected_move_percent": MIN_TECHNICAL_EXPECTED_MOVE_PERCENT,
             "min_flow_alignment_without_fresh_micro": MIN_FLOW_ALIGNMENT_WITHOUT_FRESH_MICRO,
             "max_opposite_cvd_impulse": MAX_OPPOSITE_CVD_IMPULSE,
@@ -238,6 +257,7 @@ def summary() -> Dict[str, Any]:
         "mode": MODE,
         "upstream_quality_runs_first": True,
         "min_direction_confirmations": MIN_DIRECTION_CONFIRMATIONS,
+        "fresh_micro_min_direction_confirmations": FRESH_MICRO_MIN_DIRECTION_CONFIRMATIONS,
         "min_technical_expected_move_percent": MIN_TECHNICAL_EXPECTED_MOVE_PERCENT,
         "flow_required_when_no_fresh_micro": True,
         "stop_widening": False,

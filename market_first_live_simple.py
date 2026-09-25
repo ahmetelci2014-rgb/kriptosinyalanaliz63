@@ -18,7 +18,6 @@ from __future__ import annotations
 import market_first_background_live_bridge as background_live_bridge
 import market_first_balanced_core_guard as balanced_core_guard
 import market_first_big_move_capture as big_move_capture
-import market_first_daily_report as daily_report
 import market_first_daily_report_origin_patch as daily_report_origin_patch
 import market_first_entry_accelerator as entry_accelerator
 import market_first_entry_plan_context_patch as entry_plan_context_patch
@@ -119,9 +118,9 @@ def main() -> None:
         print("MARKET FIRST SUPERTREND SHADOW RUN:", supertrend_shadow.finish(runner.bot))
         print("MARKET FIRST PROFIT LOCK RUN:", profit_lock.summary())
 
-    sent = daily_report.maybe_send(runner.bot, runner._send)
-    if sent:
-        print("GÜNLÜK ÖZET TELEGRAM'A GÖNDERİLDİ.")
+    # Daily diagnostics remain persisted by the reporting/ledger layers, but
+    # V6 never sends a daily summary to Telegram.
+    print("MARKET FIRST DAILY TELEGRAM: DISABLED (internal diagnostics only)")
 
 
 if __name__ == "__main__":
