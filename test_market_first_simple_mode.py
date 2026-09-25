@@ -191,11 +191,12 @@ def test_trade_results_are_suppressed_in_two_message_mode():
     assert simple.should_suppress("🟡 BE AKTİF\nCoin: AAVEUSDT") is True
 
 
-def test_only_real_trade_and_background_candidate_are_visible():
+def test_only_actionable_user_messages_are_visible():
     assert simple.should_suppress("🚨 KALİTELİ KRİPTO İŞLEM\nAAVEUSDT") is False
     assert simple.should_suppress("🚨 KRİPTO İŞLEM\nAAVEUSDT") is False
     assert simple.should_suppress("✅ İŞLEM FIRSATI | AAVEUSDT") is False
     assert simple.should_suppress("👀 ARKA PLAN ADAYI | AAVEUSDT") is False
+    assert simple.should_suppress("🛡️ KÂR KORUMA AKTİF\nAAVEUSDT") is False
     assert simple.should_suppress("📋 GÜNLÜK İŞLEM ÖZETİ") is True
     assert simple.should_suppress("🧭 2H SWING HAZIRLIĞI | AAVEUSDT") is True
 
