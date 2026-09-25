@@ -231,9 +231,71 @@ def real_trade_audit(rows: list[dict[str, Any]], now_value: int) -> dict[str, An
     stop_mfe = sorted(
         (sf(row.get("best_favorable_r"), 0.0) or 0.0) for row in stops
     )
+    def window_subset(seconds: int) -> list[dict[str, Any]]:
+        cutoff = now_value - seconds
+        return [
+            row for row in rows
+            if si(row.get("closed_at") or row.get("updated_at")) >= cutoff
+        ]
+
+    recent_profiles = {}
+    for label, seconds in (("7d", 7 * 86400), ("14d", 14 * 86400)):
+        subset = window_subset(seconds)
+        recent_profiles[label] = {
+            "by_risk_percent": group_metrics(
+                subset,
+                lambda row: band(
+                    sf(row.get("risk_percent")),
+                    [(0.45, "<=0.45"), (0.70, "0.46-0.70"), (1.00, "0.71-1.00")],
+                    ">1.00",
+                ),
+            ),
+            "by_score": group_metrics(
+                subset,
+                lambda row: band(
+                    sf(row.get("score")),
+                    [(87, "<=87"), (91, "88-91"), (93, "92-93")],
+                    "94+",
+                ),
+            ),
+            "by_confirmations": group_metrics(
+                subset,
+                lambda row: trade_confirmations(row)
+                if trade_confirmations(row) is not None else "MISSING",
+            ),
+        }
+
+    diagnosis_codes = Counter()
+    diagnosis_causes = Counter()
+    profit_lock_after_close = Counter()
+    profit_lock_rows = []
+    for row in rows:
+        diag = nested(row, "result_diagnostics")
+        dx = nested(diag, "diagnosis")
+        code = str(dx.get("code") or "").strip()
+        cause = str(dx.get("likely_cause") or "").strip()
+        if code:
+            diagnosis_codes[code] += 1
+        if cause:
+            diagnosis_causes[cause] += 1
+        if canon(row.get("final_result") or row.get("result")) == "PROFIT_LOCK_BE":
+            profit_lock_rows.append(row)
+            reached = nested(diag, "reached_levels")
+            if "TP3" in reached:
+                profit_lock_after_close["TP3_AFTER_LOCK"] += 1
+            elif "TP2" in reached:
+                profit_lock_after_close["TP2_AFTER_LOCK"] += 1
+            elif "TP1" in reached:
+                profit_lock_after_close["TP1_AFTER_LOCK"] += 1
+            elif str(diag.get("status") or "").upper() == "COMPLETED":
+                profit_lock_after_close["NO_TARGET_AFTER_LOCK"] += 1
+            else:
+                profit_lock_after_close["TRACKING_OR_NO_DIAG"] += 1
+
     return {
         "total": metrics(rows),
         "windows": windows,
+        "recent_profiles": recent_profiles,
         "by_direction": direction_groups,
         "by_score": score_groups,
         "by_risk_percent": risk_groups,
@@ -245,6 +307,12 @@ def real_trade_audit(rows: list[dict[str, Any]], now_value: int) -> dict[str, An
             "stops": len(stops),
             "median_best_favorable_r_before_stop": round(statistics.median(stop_mfe), 4) if stop_mfe else None,
             "profit_lock_counterfactual": thresholds,
+        },
+        "result_diagnostics": {
+            "diagnosis_codes": dict(diagnosis_codes),
+            "likely_causes": dict(diagnosis_causes),
+            "profit_lock_be_sample": len(profit_lock_rows),
+            "profit_lock_after_close": dict(profit_lock_after_close),
         },
         "field_coverage": {
             "confirmations": sum(trade_confirmations(row) is not None for row in rows),
