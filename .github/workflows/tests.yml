@@ -87,6 +87,7 @@ jobs:
           test -f post_result_shadow.py
           test -f result_diagnostics.py
           test -f market_first_historical_audit.py
+          test -f market_first_2h_context_shadow.py
 
       - name: Premium cekirdegi derle
         run: |
@@ -137,7 +138,8 @@ jobs:
             movement_start_v3_orderflow_shadow.py \
             post_result_shadow.py \
             result_diagnostics.py \
-            market_first_historical_audit.py
+            market_first_historical_audit.py \
+            market_first_2h_context_shadow.py
 
       - name: Market Outlook inline refresh regresyonunu calistir
         env:
