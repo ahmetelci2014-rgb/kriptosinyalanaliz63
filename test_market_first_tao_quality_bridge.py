@@ -107,7 +107,7 @@ def test_bridge_rejects_strong_opposite_micro(monkeypatch):
     assert evidence["micro_state"] == "STRONG_OPPOSITE"
 
 
-def test_profit_patch_allows_only_tao_volume_exception(monkeypatch):
+def test_profit_patch_is_transparent_under_historical_volume_floor(monkeypatch):
     # Reset module install state for this isolated regression test.
     monkeypatch.setattr(profit_patch, "_INSTALLED", False)
     monkeypatch.setattr(profit_patch, "_ORIGINAL", None)
@@ -118,6 +118,7 @@ def test_profit_patch_allows_only_tao_volume_exception(monkeypatch):
         "risk_percent": 0.88,
         "volume_ratio_5m": 0.57,
         "volume_ratio_1m": 0.57,
+        "extension_atr_5m": 0.62,
         "profit_target_percent": 3.2,
         "profit_target_r": 3.64,
         "market_preferred_direction": None,
@@ -129,8 +130,8 @@ def test_profit_patch_allows_only_tao_volume_exception(monkeypatch):
     }
 
     baseline_ok, baseline_reason = profit_quality._quality_reason(decision)
-    assert not baseline_ok
-    assert baseline_reason == "VOLUME_BELOW_0_65"
+    assert baseline_ok
+    assert baseline_reason == "OK"
 
     original = profit_quality._quality_reason
     profit_patch.install()
@@ -139,11 +140,12 @@ def test_profit_patch_allows_only_tao_volume_exception(monkeypatch):
         assert ok
         assert reason == "OK"
 
-        non_tao = dict(decision)
-        non_tao.pop("tao_quality_bridge")
-        ok2, reason2 = profit_quality._quality_reason(non_tao)
+        below_floor = dict(decision)
+        below_floor["volume_ratio_5m"] = 0.49
+        below_floor["tao_current_volume_5m"] = 0.49
+        ok2, reason2 = profit_quality._quality_reason(below_floor)
         assert not ok2
-        assert reason2 == "VOLUME_BELOW_0_65"
+        assert reason2 == "VOLUME_BELOW_0_50"
     finally:
         monkeypatch.setattr(profit_quality, "_quality_reason", original)
 
