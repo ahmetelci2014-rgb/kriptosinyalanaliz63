@@ -212,7 +212,7 @@ def test_report_waits_until_2345_turkiye_time():
     assert sent == []
 
 
-def test_report_sends_only_once_per_day_and_persists_state():
+def test_report_never_sends_to_telegram_even_after_report_time():
     bot = FakeBot({})
     sent = []
 
@@ -220,13 +220,10 @@ def test_report_sends_only_once_per_day_and_persists_state():
         sent.append((text, delivery_key))
         return True
 
-    assert report.maybe_send(bot, sender, now=ts(23, 45)) is True
-    first_count = len(sent)
-    assert first_count >= 1
-    assert bot.files[report.STATE_FILE]["last_sent_date"] == "2026-09-06"
-    assert report.REPORT_FILE in bot.files
-    assert report.maybe_send(bot, sender, now=ts(23, 59)) is False
-    assert len(sent) == first_count
+    assert report.TELEGRAM_ENABLED is False
+    assert report.maybe_send(bot, sender, now=ts(23, 45)) is False
+    assert report.maybe_send(bot, sender, now=ts(23, 59), force=True) is False
+    assert sent == []
 
 
 def test_long_report_chunks_without_dropping_rows():
@@ -251,8 +248,8 @@ def test_long_report_chunks_without_dropping_rows():
     assert all(len(chunk) <= report.CHUNK_LIMIT + 80 for chunk in chunks)
 
 
-def test_daily_report_is_not_suppressed_by_simple_telegram_mode():
-    assert simple_mode.should_suppress("📋 GÜNLÜK İŞLEM ÖZETİ | 06.09.2026") is False
+def test_daily_report_is_suppressed_by_simple_telegram_mode():
+    assert simple_mode.should_suppress("📋 GÜNLÜK İŞLEM ÖZETİ | 06.09.2026") is True
 
 
 def test_live_workflow_stays_single_external_5m_job_and_persists_daily_files():
