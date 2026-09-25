@@ -22,6 +22,7 @@ REPORT_HOUR = 23
 REPORT_MINUTE = 45
 CHUNK_LIMIT = 3400
 TRT = timezone(timedelta(hours=3))
+TELEGRAM_ENABLED = False
 
 
 def _sf(value: Any, default: float = 0.0) -> float:
@@ -597,6 +598,10 @@ def _target_ready(now: int) -> bool:
 
 
 def maybe_send(bot: Any, send_func: Any, now: Optional[int] = None, force: bool = False) -> bool:
+    # Reporting remains available as JSON/internal diagnostics only.
+    # This hard guard prevents accidental Telegram re-enablement from another caller.
+    if not TELEGRAM_ENABLED:
+        return False
     now = int(now or datetime.now(tz=TRT).timestamp())
     local = datetime.fromtimestamp(now, TRT)
     target = local.date()
