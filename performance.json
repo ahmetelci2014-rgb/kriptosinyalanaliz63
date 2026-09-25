@@ -41264,7 +41264,7 @@
       "tp1": 2,
       "tp2": 2,
       "tp3": 1,
-      "sl": 3,
+      "sl": 4,
       "be": 4,
       "expired": 0,
       "long": 6,
@@ -41358,18 +41358,19 @@
           "tp1": 0,
           "tp2": 0,
           "tp3": 0,
-          "sl": 0,
+          "sl": 1,
           "be": 0,
           "expired": 0
         }
       },
       "direction_stops": {
-        "LONG": 3
+        "LONG": 4
       },
       "stop_times": {
         "KAITOUSDT": 1790287290,
         "ICPUSDT": 1790287891,
-        "BICOUSDT": 1790299881
+        "BICOUSDT": 1790299881,
+        "LTCUSDT": 1790302864
       },
       "closed_times": {
         "CRVUSDT": 1790286671,
@@ -41505,14 +41506,24 @@
           "exit": 0.05348,
           "source": "MARKET_FIRST_V5",
           "score": 92
+        },
+        {
+          "time": "05:21:04",
+          "symbol": "LTCUSDT",
+          "direction": "LONG",
+          "result": "SL",
+          "entry": 71.68,
+          "exit": 71.17,
+          "source": "MARKET_FIRST_V5",
+          "score": 94
         }
       ],
       "sl_after_tp1": 0,
       "sl_after_tp2": 0,
-      "sl_after_no_return": 2
+      "sl_after_no_return": 3
     }
   },
-  "last_update": 1790302130,
+  "last_update": 1790302864,
   "last_open_summary": 1787843763,
   "last_status_message": 1787906216,
   "last_daily_report": "2026-08-27",
@@ -41563,12 +41574,15 @@
         30,
         60,
         120,
-        180
+        180,
+        240
       ],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
-      "resolved": false
+      "resolved": true,
+      "no_return_counted": true,
+      "no_return_counted_day": "2026-09-25"
     },
     "BICOUSDT_LONG_1790299881": {
       "trade_id": "BICOUSDT_LONG_MARKET_FIRST_V5_1790297283",
@@ -41587,6 +41601,26 @@
       "reported_checkpoints": [
         30
       ],
+      "after_sl_tp1": false,
+      "after_sl_tp2": false,
+      "after_sl_tp3": false,
+      "resolved": false
+    },
+    "LTCUSDT_LONG_1790302864": {
+      "trade_id": "LTCUSDT_LONG_MARKET_FIRST_V5_1790302130",
+      "symbol": "LTCUSDT",
+      "direction": "LONG",
+      "source": "MARKET_FIRST_V5",
+      "entry": 71.68,
+      "tp1": 73.29000448,
+      "tp2": 74.09500672,
+      "tp3": 74.90000896,
+      "sl": 71.1774285714,
+      "score": 94,
+      "risk_percent": 0.528,
+      "stopped_at": 1790302864,
+      "stop_exit": 71.17,
+      "reported_checkpoints": [],
       "after_sl_tp1": false,
       "after_sl_tp2": false,
       "after_sl_tp3": false,
