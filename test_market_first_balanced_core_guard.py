@@ -41,6 +41,28 @@ def test_fast_entry_cannot_bypass_high_profit_low_sl_gate():
     assert evidence["high_profit_low_sl_certified"] is False
 
 
+def test_a_plus_cannot_bypass_a_plus_plus_convergence():
+    signal = {
+        "symbol": "TESTUSDT",
+        "direction": "LONG",
+        "entry": 10.0,
+        "sl": 9.93,
+        "risk_percent": 0.7,
+        "score": 94,
+        "profit_quality_version": "PQ",
+        "final_execution_gate_version": "FE",
+        "final_execution_gate": {"fresh_micro": True},
+        "high_profit_low_sl_version": "HP",
+        "high_profit_low_sl_grade": "A+",
+    }
+
+    ok, reason, evidence = guard.evaluate_signal(signal)
+
+    assert ok is False
+    assert reason == "A_PLUS_PLUS_CONVERGENCE_NOT_CERTIFIED"
+    assert evidence["a_plus_plus_convergence_certified"] is False
+
+
 def test_fast_entry_can_continue_after_all_certifications():
     signal = {
         "symbol": "TESTUSDT",
@@ -55,6 +77,8 @@ def test_fast_entry_can_continue_after_all_certifications():
         "final_execution_gate": {"fresh_micro": True},
         "high_profit_low_sl_version": "HP",
         "high_profit_low_sl_grade": "A+",
+        "a_plus_plus_convergence_version": "APP",
+        "a_plus_plus_convergence_grade": "A++",
     }
 
     ok, reason, _ = guard.evaluate_signal(signal)
@@ -83,7 +107,7 @@ def test_minimum_stop_without_fresh_micro_is_blocked_before_a_plus_check():
     assert evidence["risk_percent"] == 0.4
 
 
-def test_minimum_stop_with_fresh_micro_and_a_plus_can_pass():
+def test_minimum_stop_with_fresh_micro_a_plus_and_a_plus_plus_can_pass():
     signal = {
         "symbol": "TESTUSDT",
         "direction": "SHORT",
@@ -96,6 +120,8 @@ def test_minimum_stop_with_fresh_micro_and_a_plus_can_pass():
         "final_execution_gate": {"fresh_micro": True},
         "high_profit_low_sl_version": "HP",
         "high_profit_low_sl_grade": "A+",
+        "a_plus_plus_convergence_version": "APP",
+        "a_plus_plus_convergence_grade": "A++",
     }
 
     ok, reason, _ = guard.evaluate_signal(signal)
@@ -121,3 +147,24 @@ def test_non_fast_real_send_also_requires_a_plus():
 
     assert ok is False
     assert reason == "HIGH_PROFIT_LOW_SL_NOT_CERTIFIED"
+
+
+def test_non_fast_real_send_also_requires_a_plus_plus():
+    signal = {
+        "symbol": "TESTUSDT",
+        "direction": "SHORT",
+        "entry": 100.0,
+        "sl": 100.8,
+        "risk_percent": 0.8,
+        "score": 94,
+        "profit_quality_version": "PQ",
+        "final_execution_gate_version": "FE",
+        "final_execution_gate": {"fresh_micro": True},
+        "high_profit_low_sl_version": "HP",
+        "high_profit_low_sl_grade": "A+",
+    }
+
+    ok, reason, _ = guard.evaluate_signal(signal)
+
+    assert ok is False
+    assert reason == "A_PLUS_PLUS_CONVERGENCE_NOT_CERTIFIED"
