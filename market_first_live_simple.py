@@ -8,14 +8,16 @@ promoted opportunity. Live admission is intentionally simple again:
 2) Profit Quality checks trade quality and risk/reward,
 3) Final Execution checks the last micro/flow execution conditions,
 4) High Profit / Low SL admits only A+ profit-runner setups,
-5) the Balanced Core Guard enforces final send invariants,
-6) Profit Lock manages already-open trade protection/tracking.
+5) A++ Convergence requires 2H + Entry Plan + fresh micro agreement,
+6) the Balanced Core Guard enforces final send invariants,
+7) Profit Lock manages already-open trade protection/tracking.
 
 The removed layers are not deleted from the repository. Their historical state
 and reports remain available for diagnostics, so this rollback is reversible.
 """
 from __future__ import annotations
 
+import market_first_a_plus_plus_convergence as a_plus_plus_convergence
 import market_first_background_live_bridge as background_live_bridge
 import market_first_2h_context_shadow as context_2h_shadow
 import market_first_balanced_core_guard as balanced_core_guard
@@ -62,14 +64,15 @@ def main() -> None:
     big_move_capture.install()
 
     # --- V6 live admission core ---
-    # Keep the proven quality/execution gates and add one narrow A+ layer for
-    # higher structural profit room with lower direct-stop risk. Do NOT restore
-    # the historical Recovery/Survival/Selective/Candidate veto stack here.
+    # Keep the proven quality/execution gates, then require both A+ profit quality
+    # and A++ 2H + Entry Plan + fresh-micro convergence. Do NOT restore the
+    # historical Recovery/Survival/Selective/Candidate veto stack here.
     profit_quality.install()
     tao_profit_patch.install()
     tao_quality_bridge.install()
     final_execution_gate.install()
     high_profit_low_sl.install()
+    a_plus_plus_convergence.install()
     selective_pre_signal.install()
 
     # Preserve original plan context for reports and trade tracking.
@@ -79,15 +82,11 @@ def main() -> None:
     # Profit Quality owns final trade text; attach the FIB model label afterwards.
     structure_fibo.install_presentation()
 
-    # This is deliberately installed last. The historical fast-entry path calls
-    # runner._send_trade from inside the candidate scan, before outer wrappers
-    # have returned. The final guard prevents that call from bypassing Profit
-    # Quality / Final Execution while still letting the candidate continue
-    # through the ordinary pipeline. It also protects minimum-floor stops from
-    # being sent without a fresh micro trigger.
+    # Installed last: every real send must carry all upstream certifications,
+    # including A+ and A++, so alternate/fast paths cannot bypass the live gates.
     balanced_core_guard.install()
 
-    print("MARKET FIRST V6 MODE: BALANCED CORE LIVE + A+ HIGH PROFIT / LOW SL")
+    print("MARKET FIRST V6 MODE: BALANCED CORE LIVE + A+ HIGH PROFIT / LOW SL + A++ CONVERGENCE")
     print("MARKET FIRST DAILY REPORT ORIGIN/BE:", daily_report_origin_patch.summary())
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
     print("MARKET FIRST ENTRY PLAN CONTEXT:", entry_plan_context_patch.summary())
@@ -107,6 +106,7 @@ def main() -> None:
     print("MARKET FIRST TAO QUALITY BRIDGE:", tao_quality_bridge.summary())
     print("MARKET FIRST FINAL EXECUTION GATE:", final_execution_gate.summary())
     print("MARKET FIRST HIGH PROFIT / LOW SL:", high_profit_low_sl.summary())
+    print("MARKET FIRST A++ CONVERGENCE:", a_plus_plus_convergence.summary())
     print("MARKET FIRST SELECTIVE PRE-SIGNAL:", selective_pre_signal.summary())
     print("MARKET FIRST V6 CORE GUARD:", balanced_core_guard.summary())
     print("MARKET FIRST PROFIT LOCK:", profit_lock.summary())
@@ -119,6 +119,7 @@ def main() -> None:
         print("MARKET FIRST TAO QUALITY RUN:", tao_quality_bridge.summary())
         print("MARKET FIRST FINAL EXECUTION RUN:", final_execution_gate.finish())
         print("MARKET FIRST HIGH PROFIT / LOW SL RUN:", high_profit_low_sl.finish())
+        print("MARKET FIRST A++ CONVERGENCE RUN:", a_plus_plus_convergence.finish())
         print("MARKET FIRST SELECTIVE PRE-SIGNAL RUN:", selective_pre_signal.summary())
         print("MARKET FIRST V6 CORE GUARD RUN:", balanced_core_guard.summary())
         print("MARKET FIRST BACKGROUND LIVE BRIDGE RUN:", background_live_bridge.finish())
