@@ -7,8 +7,9 @@ promoted opportunity. Live admission is intentionally simple again:
 1) the existing analysis/entry engine finds the setup,
 2) Profit Quality checks trade quality and risk/reward,
 3) Final Execution checks the last micro/flow execution conditions,
-4) the Balanced Core Guard enforces final send invariants,
-5) Profit Lock manages already-open trade protection/tracking.
+4) High Profit / Low SL admits only A+ profit-runner setups,
+5) the Balanced Core Guard enforces final send invariants,
+6) Profit Lock manages already-open trade protection/tracking.
 
 The removed layers are not deleted from the repository. Their historical state
 and reports remain available for diagnostics, so this rollback is reversible.
@@ -23,6 +24,7 @@ import market_first_daily_report_origin_patch as daily_report_origin_patch
 import market_first_entry_accelerator as entry_accelerator
 import market_first_entry_plan_context_patch as entry_plan_context_patch
 import market_first_final_execution_gate as final_execution_gate
+import market_first_high_profit_low_sl as high_profit_low_sl
 import market_first_selective_pre_signal as selective_pre_signal
 import market_first_live_complete_tracking as complete_tracking
 import market_first_pre_entry_shadow as pre_entry_shadow
@@ -60,13 +62,14 @@ def main() -> None:
     big_move_capture.install()
 
     # --- V6 live admission core ---
-    # Keep one quality gate and one final execution gate. Do NOT install the old
-    # Recovery/Survival/Selective/Candidate veto stack here. Those modules remain
-    # in the repo for diagnostics and can be re-enabled if data later supports it.
+    # Keep the proven quality/execution gates and add one narrow A+ layer for
+    # higher structural profit room with lower direct-stop risk. Do NOT restore
+    # the historical Recovery/Survival/Selective/Candidate veto stack here.
     profit_quality.install()
     tao_profit_patch.install()
     tao_quality_bridge.install()
     final_execution_gate.install()
+    high_profit_low_sl.install()
     selective_pre_signal.install()
 
     # Preserve original plan context for reports and trade tracking.
@@ -84,7 +87,7 @@ def main() -> None:
     # being sent without a fresh micro trigger.
     balanced_core_guard.install()
 
-    print("MARKET FIRST V6 MODE: BALANCED CORE LIVE")
+    print("MARKET FIRST V6 MODE: BALANCED CORE LIVE + A+ HIGH PROFIT / LOW SL")
     print("MARKET FIRST DAILY REPORT ORIGIN/BE:", daily_report_origin_patch.summary())
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
     print("MARKET FIRST ENTRY PLAN CONTEXT:", entry_plan_context_patch.summary())
@@ -103,6 +106,7 @@ def main() -> None:
     print("MARKET FIRST TAO PROFIT PATCH:", tao_profit_patch.status())
     print("MARKET FIRST TAO QUALITY BRIDGE:", tao_quality_bridge.summary())
     print("MARKET FIRST FINAL EXECUTION GATE:", final_execution_gate.summary())
+    print("MARKET FIRST HIGH PROFIT / LOW SL:", high_profit_low_sl.summary())
     print("MARKET FIRST SELECTIVE PRE-SIGNAL:", selective_pre_signal.summary())
     print("MARKET FIRST V6 CORE GUARD:", balanced_core_guard.summary())
     print("MARKET FIRST PROFIT LOCK:", profit_lock.summary())
@@ -114,6 +118,7 @@ def main() -> None:
         print("MARKET FIRST PROFIT QUALITY RUN:", profit_quality.finish())
         print("MARKET FIRST TAO QUALITY RUN:", tao_quality_bridge.summary())
         print("MARKET FIRST FINAL EXECUTION RUN:", final_execution_gate.finish())
+        print("MARKET FIRST HIGH PROFIT / LOW SL RUN:", high_profit_low_sl.finish())
         print("MARKET FIRST SELECTIVE PRE-SIGNAL RUN:", selective_pre_signal.summary())
         print("MARKET FIRST V6 CORE GUARD RUN:", balanced_core_guard.summary())
         print("MARKET FIRST BACKGROUND LIVE BRIDGE RUN:", background_live_bridge.finish())
