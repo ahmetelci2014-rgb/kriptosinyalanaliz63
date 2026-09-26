@@ -4,19 +4,16 @@ This module protects the real Telegram trade lane from wrapper-order bypasses:
 
 1) The immediate fast-entry path can call ``runner._send_trade`` from inside the
    inner Market First live wrapper before outer Profit Quality / Final Execution
-   / High Profit-Low SL wrappers return. A fast trade must therefore prove the
-   upstream quality and execution certifications before a real send is allowed.
-2) Every real send must carry the High Profit / Low SL A+ certification. This is
-   the final invariant that prevents an alternate/fast path from skipping the new
-   A+ live admission layer.
-3) Trades sitting on the strategy's minimum stop floor are especially sensitive
-   to wick/noise. When the actual stop is <= 0.45%, require a fresh micro trigger
-   from the Final Execution gate instead of accepting flow-only confirmation.
+   / High Profit-Low SL / A++ Convergence wrappers return.
+2) Every real send must carry the High Profit / Low SL A+ certification.
+3) Every real send must also carry the A++ 2H + Entry Plan + fresh-micro
+   convergence certification.
+4) Trades sitting on the strategy's minimum stop floor are especially sensitive
+   to wick/noise. When the actual stop is <= 0.45%, require a fresh micro trigger.
 
 The guard does not widen stops, create signals, place exchange orders or suppress
-analysis/ledger tracking. A rejected immediate fast-entry signal is returned to
-its normal outer pipeline, where it can still become a valid final trade after
-all live admission layers certify it.
+analysis/ledger tracking. Rejected fast-path candidates can continue through the
+ordinary outer pipeline and become valid only after all certifications exist.
 """
 from __future__ import annotations
 
@@ -26,7 +23,7 @@ from typing import Any, Dict, Mapping, Tuple
 
 import market_first_runner as runner
 
-VERSION = "MARKET_FIRST_V6_BALANCED_CORE_GUARD_V2_2026_09_26"
+VERSION = "MARKET_FIRST_V6_BALANCED_CORE_GUARD_V3_2026_09_26"
 MIN_STOP_FLOOR_MAX_PERCENT = 0.45
 
 _INSTALLED = False
@@ -72,6 +69,8 @@ def evaluate_signal(signal: Mapping[str, Any] | None) -> Tuple[bool, str, Dict[s
     execution_certified = bool(signal.get("final_execution_gate_version"))
     high_profit_certified = bool(signal.get("high_profit_low_sl_version"))
     high_profit_grade = str(signal.get("high_profit_low_sl_grade") or "").upper()
+    convergence_certified = bool(signal.get("a_plus_plus_convergence_version"))
+    convergence_grade = str(signal.get("a_plus_plus_convergence_grade") or "").upper()
     risk_percent = _risk_percent(signal)
     fresh_micro = _fresh_micro(signal)
 
@@ -81,28 +80,28 @@ def evaluate_signal(signal: Mapping[str, Any] | None) -> Tuple[bool, str, Dict[s
         "final_execution_certified": execution_certified,
         "high_profit_low_sl_certified": high_profit_certified,
         "high_profit_low_sl_grade": high_profit_grade,
+        "a_plus_plus_convergence_certified": convergence_certified,
+        "a_plus_plus_convergence_grade": convergence_grade,
         "risk_percent": round(risk_percent, 4),
         "fresh_micro": fresh_micro,
     }
 
-    # Critical bypass fix: the first-observation fast path is allowed to create a
-    # candidate immediately, but it may not become a Telegram trade until the
-    # ordinary outer quality + execution wrappers have certified the signal.
     if fast and not profit_certified:
         return False, "FAST_BEFORE_PROFIT_QUALITY", evidence
     if fast and not execution_certified:
         return False, "FAST_BEFORE_FINAL_EXECUTION", evidence
 
-    # Minimum-floor stops need an actual fresh trigger. Flow agreement alone is
-    # not enough because tiny wick/noise moves can consume the whole stop before
-    # the setup develops (the GIGGLE-style failure observed in live trading).
+    # Tiny stops remain especially vulnerable to ordinary wick/noise.
     if 0 < risk_percent <= MIN_STOP_FLOOR_MAX_PERCENT and not fresh_micro:
         return False, "MIN_STOP_WITHOUT_FRESH_MICRO", evidence
 
-    # Every real live send must be an A+ High Profit / Low SL signal. This check
-    # also closes any non-fast/alternate path that might bypass the wrapper.
     if not high_profit_certified or high_profit_grade != "A+":
         return False, "HIGH_PROFIT_LOW_SL_NOT_CERTIFIED", evidence
+
+    # Final invariant: alternate/fast paths may never skip the A++ convergence
+    # layer that combines the 2H context, Entry Plan and fresh execution timing.
+    if not convergence_certified or convergence_grade != "A++":
+        return False, "A_PLUS_PLUS_CONVERGENCE_NOT_CERTIFIED", evidence
 
     return True, "OK", evidence
 
@@ -142,6 +141,7 @@ def summary() -> Dict[str, Any]:
         "fast_entry_requires_profit_quality": True,
         "fast_entry_requires_final_execution": True,
         "all_real_trades_require_high_profit_low_sl_a_plus": True,
+        "all_real_trades_require_a_plus_plus_convergence": True,
         "min_stop_floor_max_percent": MIN_STOP_FLOOR_MAX_PERCENT,
         "min_stop_requires_fresh_micro": True,
         "stop_widening": False,
