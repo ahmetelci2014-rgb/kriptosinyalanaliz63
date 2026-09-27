@@ -1,28 +1,23 @@
 """Cross-exchange mover radar for Market First.
 
-Purpose:
-- observe Binance USDT perpetual movers without changing the OKX execution venue,
-- push Binance movers to the front of the existing OKX deep-scan queue only when
-  the same symbol is currently tradable as an OKX USDT perpetual,
-- record Binance-only movers so large external moves are no longer invisible,
-- never create a trade, bypass Market First quality gates, place orders, widen
-  stops, or send Telegram by itself.
+Observes Binance USD-M perpetual movers and uses them only as a discovery layer.
+If the same symbol is tradable on OKX, it is moved to the front of the existing
+Market First deep-scan queue. Binance-only movers are recorded so large external
+moves are no longer invisible.
 
-The module is deliberately fail-open. If Binance public data is unavailable, the
-existing OKX-only runner proceeds exactly as before.
+This module never creates trades, bypasses A+/A++ gates, widens stops, places
+orders, or sends Telegram. Network failures are fail-open: the original OKX
+selection continues unchanged.
 """
 from __future__ import annotations
 
 import json
 import math
-import os
-import tempfile
 import time
 import urllib.request
 from typing import Any, Dict, Iterable, List, Mapping, Optional
 
 VERSION = "MARKET_FIRST_CROSS_EXCHANGE_MOVER_RADAR_V1_2026_09_27"
-STATE_FILE = "market_first_cross_exchange_mover_state.json"
 BINANCE_FUTURES_24H_URL = "https://fapi.binance.com/fapi/v1/ticker/24hr"
 
 MIN_QUOTE_VOLUME_USDT = 1_000_000.0
@@ -31,6 +26,9 @@ MIN_24H_MOVE_PERCENT = 8.00
 MAX_MOVER_RECORDS = 40
 MAX_OKX_PRIORITY = 12
 HTTP_TIMEOUT_SECONDS = 8.0
+
+_INSTALLED = False
+_LAST_RESULT: Dict[str, Any] = {}
 
 
 def _sf(value: Any, default: float = 0.0) -> float:
@@ -47,45 +45,8 @@ def _pct(start: float, end: float) -> float:
     return (end / start - 1.0) * 100.0
 
 
-def _load_state() -> Dict[str, Any]:
-    try:
-        with open(STATE_FILE, "r", encoding="utf-8") as handle:
-            payload = json.load(handle)
-        return payload if isinstance(payload, dict) else {}
-    except Exception:
-        return {}
-
-
-def _save_state(payload: Mapping[str, Any]) -> None:
-    folder = os.path.dirname(os.path.abspath(STATE_FILE)) or "."
-    os.makedirs(folder, exist_ok=True)
-    temp_path = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            dir=folder,
-            prefix=".cross_exchange_mover.",
-            suffix=".tmp",
-            delete=False,
-        ) as handle:
-            temp_path = handle.name
-            json.dump(dict(payload), handle, ensure_ascii=False, indent=2)
-            handle.write("\n")
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temp_path, STATE_FILE)
-        temp_path = None
-    finally:
-        if temp_path and os.path.exists(temp_path):
-            try:
-                os.remove(temp_path)
-            except Exception:
-                pass
-
-
 def fetch_binance_futures_24h(*, opener=None, timeout: float = HTTP_TIMEOUT_SECONDS) -> List[Dict[str, Any]]:
-    """Fetch Binance USD-M 24h ticker data using a public endpoint only."""
+    """Fetch Binance USD-M 24h tickers from the public API."""
     open_fn = opener or urllib.request.urlopen
     request = urllib.request.Request(
         BINANCE_FUTURES_24H_URL,
@@ -112,13 +73,11 @@ def normalize_snapshot(rows: Iterable[Mapping[str, Any]]) -> Dict[str, Dict[str,
         price = _sf(item.get("lastPrice"))
         if price <= 0:
             continue
-        quote_volume = _sf(item.get("quoteVolume"))
-        change_24h = _sf(item.get("priceChangePercent"))
         snapshot[symbol] = {
             "symbol": symbol,
             "price": price,
-            "quote_volume": quote_volume,
-            "change_24h_percent": change_24h,
+            "quote_volume": _sf(item.get("quoteVolume")),
+            "change_24h_percent": _sf(item.get("priceChangePercent")),
         }
     return snapshot
 
@@ -146,17 +105,16 @@ def analyze_snapshot(
         if abs(sample_move) < MIN_SAMPLE_MOVE_PERCENT and abs(change_24h) < MIN_24H_MOVE_PERCENT:
             continue
 
-        direction = "LONG" if (sample_move if abs(sample_move) >= MIN_SAMPLE_MOVE_PERCENT else change_24h) > 0 else "SHORT"
-        on_okx = symbol in okx_set
+        reference_move = sample_move if abs(sample_move) >= MIN_SAMPLE_MOVE_PERCENT else change_24h
         movers.append(
             {
                 "symbol": symbol,
-                "direction": direction,
+                "direction": "LONG" if reference_move > 0 else "SHORT",
                 "price": round(price, 12),
                 "sample_move_percent": round(sample_move, 4),
                 "change_24h_percent": round(change_24h, 4),
                 "quote_volume": round(quote_volume, 2),
-                "okx_tradable": on_okx,
+                "okx_tradable": symbol in okx_set,
                 "detected_at": now,
             }
         )
@@ -189,11 +147,18 @@ def analyze_snapshot(
     }
 
 
-def scan(okx_symbols: Iterable[str], *, now: Optional[int] = None, opener=None) -> Dict[str, Any]:
-    """Run one Binance mover scan. Never raises into the live trading runner."""
+def scan(
+    okx_symbols: Iterable[str],
+    *,
+    previous_state: Optional[Mapping[str, Any]] = None,
+    now: Optional[int] = None,
+    opener=None,
+) -> Dict[str, Any]:
+    """Run one discovery scan. Returns a state payload and never raises."""
     now = int(now or time.time())
-    state = _load_state()
-    previous_prices = state.get("previous_prices") if isinstance(state.get("previous_prices"), dict) else {}
+    previous_state = previous_state if isinstance(previous_state, Mapping) else {}
+    previous_prices = previous_state.get("previous_prices")
+    previous_prices = previous_prices if isinstance(previous_prices, Mapping) else {}
 
     try:
         raw = fetch_binance_futures_24h(opener=opener)
@@ -212,10 +177,9 @@ def scan(okx_symbols: Iterable[str], *, now: Optional[int] = None, opener=None) 
             for symbol, item in snapshot.items()
             if _sf(item.get("price")) > 0
         }
-        _save_state(result)
         return result
     except Exception as exc:
-        payload = {
+        return {
             "version": VERSION,
             "generated_at": now,
             "fetch_ok": False,
@@ -224,25 +188,76 @@ def scan(okx_symbols: Iterable[str], *, now: Optional[int] = None, opener=None) 
             "okx_priority_symbols": [],
             "external_only_movers": [],
             "previous_prices": dict(previous_prices),
-            "note": "Fail-open: existing OKX Market First runner continues unchanged.",
+            "note": "Fail-open: existing OKX Market First selection continues unchanged.",
         }
-        _save_state(payload)
-        return payload
 
 
-def summary(payload: Mapping[str, Any]) -> Dict[str, Any]:
+def install(runner: Any) -> None:
+    """Prepend Binance movers to the existing OKX deep-scan selection."""
+    global _INSTALLED
+    if _INSTALLED:
+        return
+    _INSTALLED = True
+
+    original_select = runner._select_deep_scan
+
+    def select_with_cross_exchange(rows, sample_moves, state):
+        global _LAST_RESULT
+        base = original_select(rows, sample_moves, state)
+        okx_symbols = [str(row.get("symbol") or "") for row in rows if row.get("symbol")]
+        previous_state = state.get("cross_exchange_mover") if isinstance(state, dict) else {}
+        result = scan(okx_symbols, previous_state=previous_state, now=runner.bot.now_ts())
+        _LAST_RESULT = result
+        if isinstance(state, dict):
+            state["cross_exchange_mover"] = result
+
+        priority = [
+            str(symbol)
+            for symbol in result.get("okx_priority_symbols", [])
+            if str(symbol) and str(symbol) not in getattr(runner, "MAJOR_WEIGHTS", {})
+        ]
+        merged: List[str] = []
+        seen = set()
+        for symbol in priority + list(base):
+            if symbol and symbol not in seen:
+                seen.add(symbol)
+                merged.append(symbol)
+            if len(merged) >= int(getattr(runner, "MAX_DEEP_SCAN", 40)):
+                break
+
+        for row in result.get("external_only_movers", [])[:8]:
+            print(
+                "CROSS-EXCHANGE DIŞ PİYASA HAREKET:",
+                row.get("symbol"), row.get("direction"),
+                "sample=", row.get("sample_move_percent"),
+                "24h=", row.get("change_24h_percent"),
+                "| OKX yok",
+            )
+        if priority:
+            print("CROSS-EXCHANGE OKX ÖNCELİK:", priority)
+        if not result.get("fetch_ok"):
+            print("CROSS-EXCHANGE FAIL-OPEN:", result.get("error"))
+        return merged
+
+    runner._select_deep_scan = select_with_cross_exchange
+
+
+def summary(payload: Optional[Mapping[str, Any]] = None) -> Dict[str, Any]:
+    payload = payload if isinstance(payload, Mapping) else _LAST_RESULT
     movers = payload.get("movers") if isinstance(payload.get("movers"), list) else []
     okx_priority = payload.get("okx_priority_symbols") if isinstance(payload.get("okx_priority_symbols"), list) else []
     external_only = payload.get("external_only_movers") if isinstance(payload.get("external_only_movers"), list) else []
     return {
         "version": VERSION,
-        "fetch_ok": bool(payload.get("fetch_ok")),
+        "fetch_ok": bool(payload.get("fetch_ok")) if payload else None,
         "movers": len(movers),
         "okx_priority": len(okx_priority),
         "external_only": len(external_only),
         "priority_symbols": okx_priority[:MAX_OKX_PRIORITY],
-        "error": payload.get("error"),
+        "error": payload.get("error") if payload else None,
         "trade_promotion": False,
+        "changes_quality_gates": False,
         "exchange_orders": False,
         "telegram": False,
+        "state_storage": "market_first_state.json/cross_exchange_mover",
     }
