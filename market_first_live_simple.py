@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import market_first_a_plus_plus_convergence as a_plus_plus_convergence
 import market_first_background_live_bridge as background_live_bridge
+import market_first_cross_exchange_mover_radar as cross_exchange_mover
 import market_first_2h_context_shadow as context_2h_shadow
 import market_first_balanced_core_guard as balanced_core_guard
 import market_first_big_move_capture as big_move_capture
@@ -50,6 +51,9 @@ def main() -> None:
     daily_report_origin_patch.install()
     entry_accelerator.install()
     background_live_bridge.install()
+    # Discovery only: Binance movers can enter the OKX deep-scan queue when the
+    # same perpetual exists on OKX. This never bypasses any live quality gate.
+    cross_exchange_mover.install(runner)
     structure_fibo.install()
     promotion_reason_patch.install()
     swing_tracking_fix.install()
@@ -87,6 +91,7 @@ def main() -> None:
     balanced_core_guard.install()
 
     print("MARKET FIRST V6 MODE: BALANCED CORE LIVE + A+ HIGH PROFIT / LOW SL + A++ CONVERGENCE")
+    print("MARKET FIRST CROSS-EXCHANGE MOVER:", cross_exchange_mover.summary())
     print("MARKET FIRST DAILY REPORT ORIGIN/BE:", daily_report_origin_patch.summary())
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
     print("MARKET FIRST ENTRY PLAN CONTEXT:", entry_plan_context_patch.summary())
@@ -114,6 +119,7 @@ def main() -> None:
     try:
         runner.run()
     finally:
+        print("MARKET FIRST CROSS-EXCHANGE MOVER RUN:", cross_exchange_mover.summary())
         print("MARKET FIRST BIG MOVE CAPTURE:", big_move_capture.finish())
         print("MARKET FIRST PROFIT QUALITY RUN:", profit_quality.finish())
         print("MARKET FIRST TAO QUALITY RUN:", tao_quality_bridge.summary())
