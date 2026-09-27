@@ -252,15 +252,17 @@ def test_daily_report_is_suppressed_by_simple_telegram_mode():
     assert simple_mode.should_suppress("📋 GÜNLÜK İŞLEM ÖZETİ | 06.09.2026") is True
 
 
-def test_live_workflow_stays_single_external_5m_job_and_persists_daily_files():
+def test_live_workflow_uses_single_external_day_trading_job_and_persists_day_files():
     text = Path(".github/workflows/main.yml").read_text(encoding="utf-8")
-    # cron-job.org is the single 5-minute scheduler; GitHub keeps only the
-    # workflow_dispatch endpoint so native schedule cannot collide with it.
+    # cron-job.org stays the single external dispatcher; the main workflow is now
+    # deliberately Day Trading Core only and no longer runs Market First live.
     assert "workflow_dispatch:" in text
     assert "schedule:" not in text
     assert "cron:" not in text
-    assert text.count("python market_first_live_simple.py") == 1
+    assert text.count("python day_trading_core.py") == 1
+    assert "python market_first_live_simple.py" not in text
     assert "sleep 300" not in text
-    assert "python post_result_shadow.py || true" in text
-    assert "market_first_daily_report_state.json" in text
-    assert "market_first_daily_report.json" in text
+    assert "day_trading_state.json" in text
+    assert "day_trading_ledger.json" in text
+    assert "day_trading_summary.json" in text
+    assert "day_trading_diagnostics.json" in text

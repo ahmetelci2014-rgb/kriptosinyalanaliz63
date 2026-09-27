@@ -48,10 +48,16 @@ def test_run_persists_file(tmp_path):
     assert payload["run"]["number"] == "7"
 
 
-def test_live_workflow_records_and_persists_scheduler_health():
+def test_live_workflow_uses_day_trading_internal_five_minute_cadence():
     text = Path(".github/workflows/main.yml").read_text(encoding="utf-8")
-    assert "python market_first_scheduler_health.py" in text
-    assert "market_first_scheduler_health.json" in text
-    # Keep the external scheduler as the single trigger source; this monitor is observational only.
+    # Market First scheduler-health remains available for historical diagnostics,
+    # but it is intentionally outside the new Day Trading live execution path.
+    assert "python market_first_scheduler_health.py" not in text
+    assert "market_first_scheduler_health.json" not in text
+    assert "python day_trading_core.py" in text
+    assert "cycles=3" in text
+    assert "target_interval=300" in text
+    # cron-job.org remains the single external trigger source.
+    assert "workflow_dispatch:" in text
     assert "schedule:" not in text
     assert "cron:" not in text

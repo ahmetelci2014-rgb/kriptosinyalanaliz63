@@ -1,0 +1,27 @@
+name: Day Trading Core V1 - CI
+
+on:
+  pull_request:
+    paths:
+      - 'day_trading_core.py'
+      - 'test_day_trading_core.py'
+      - '.github/workflows/main.yml'
+      - '.github/workflows/day-trading-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: python -m pip install --prefer-binary -r requirements.txt
+      - run: python -m py_compile day_trading_core.py
+      - run: python -m unittest -v test_day_trading_core.py
