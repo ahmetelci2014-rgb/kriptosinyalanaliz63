@@ -15,7 +15,7 @@ concurrency:
 jobs:
   day-trading:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
 
     steps:
       - name: Repo indir
@@ -46,10 +46,15 @@ jobs:
       - name: Day Trading Core smoke check
         run: |
           set -e
-          python -m py_compile day_trading_core.py day_trading_candidate_tracker.py
+          python -m py_compile \
+            day_trading_core.py \
+            day_trading_all_coins_runner.py \
+            day_trading_candidate_tracker.py \
+            day_trading_candidate_all_coins_runner.py \
+            day_trading_4h_shadow.py
           python -m unittest -v test_day_trading_core.py test_day_trading_candidate_tracker.py
 
-      - name: Day Trading - 5 dakikalik uc stateful tarama
+      - name: Day Trading - tum coinlerde 5 dakikalik uc stateful tarama
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
@@ -62,8 +67,8 @@ jobs:
           for pass in $(seq 1 "$cycles")
           do
             cycle_started=$(date +%s)
-            echo "===== DAY TRADING CORE LIVE SCAN $pass/$cycles ====="
-            python day_trading_core.py
+            echo "===== DAY TRADING ALL COINS LIVE SCAN $pass/$cycles ====="
+            python day_trading_all_coins_runner.py
 
             if [ "$pass" -lt "$cycles" ]; then
               cycle_finished=$(date +%s)
@@ -73,13 +78,16 @@ jobs:
                 echo "Sonraki 5dk taramasina ${sleep_for}s kaldi."
                 sleep "$sleep_for"
               else
-                echo "Tarama 5dk penceresini asti; sonraki tarama hemen basliyor."
+                echo "Tum-coin taramasi 5dk penceresini asti; sonraki tarama hemen basliyor."
               fi
             fi
           done
 
-      - name: Day Trading arka plan adaylarini kaydet ve takip et
-        run: python day_trading_candidate_tracker.py
+      - name: Day Trading tum coin arka plan adaylarini kaydet ve takip et
+        run: python day_trading_candidate_all_coins_runner.py
+
+      - name: 4H uyumunu sadece arka planda olc
+        run: python day_trading_4h_shadow.py
 
       - name: Day Trading state ve ledger kaydet
         if: ${{ always() && github.ref_name == 'main' }}
@@ -95,7 +103,8 @@ jobs:
             day_trading_diagnostics.json \
             day_trading_candidate_ledger.json \
             day_trading_candidate_summary.json \
-            day_trading_candidate_diagnostics.json
+            day_trading_candidate_diagnostics.json \
+            day_trading_4h_shadow_summary.json
           do
             if [ -f "$file" ]; then
               git add "$file"
