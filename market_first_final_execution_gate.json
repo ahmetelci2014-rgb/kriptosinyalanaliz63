@@ -1,18 +1,25 @@
 {
-  "version": "MARKET_FIRST_FINAL_EXECUTION_GATE_V2_3_HISTORICAL_2026_09_25",
-  "mode": "FINAL_DECISION_AFTER_UPSTREAM_QUALITY_NO_STOP_WIDENING_NO_ORDERS",
+  "version": "MARKET_FIRST_FINAL_EXECUTION_GATE_V2_4_SNAPSHOT_FIX_2026_09_27",
+  "mode": "POST_PROFIT_SIGNAL_SNAPSHOT_WITH_NARROW_4CONF_EXCEPTION",
   "thresholds": {
     "min_direction_confirmations": 3,
-    "max_direction_confirmations": 3,
+    "default_max_direction_confirmations": 3,
     "min_technical_expected_move_percent": 0.85,
     "min_flow_alignment_without_fresh_micro": 0.15,
     "max_opposite_cvd_impulse": -0.1,
     "max_opposite_book_alignment": -0.1,
+    "four_confirmation_exception_enabled": true,
+    "four_confirmation_min_score": 92,
+    "four_confirmation_min_target_percent": 2.5,
+    "four_confirmation_min_target_r": 3.5,
+    "four_confirmation_max_extension_atr_5m": 0.9,
+    "four_confirmation_max_extension_atr_2h": 1.25,
     "min_derivatives_soft_score_without_fresh_micro": 0
   },
   "run_counts": {
-    "UPSTREAM_REJECTED": 2
+    "UPSTREAM_REJECTED": 2,
+    "TAKER_CVD_OPPOSITE": 1
   },
   "accepted": [],
-  "note": "Execution-gate observations only; not realised PnL. Upstream Profit Quality/TAO pipeline runs before this gate. Stops are not widened by this module."
+  "note": "Execution-gate observations only; not realised PnL. Final Execution uses the post-Profit-Quality signal snapshot. Four confirmations remain blocked except for the narrow strong fresh/2H-aligned exception."
 }
