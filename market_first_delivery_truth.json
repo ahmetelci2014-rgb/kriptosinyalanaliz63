@@ -1,6 +1,6 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1790520213,
+  "generated_at": 1790521106,
   "status": "CAPITAL_RECOVERY_STRICT",
   "survival": {
     "mode": "RECOVERY_STRICT",
@@ -16,22 +16,22 @@
   },
   "latest_gate_layers": {
     "profit_quality": {
-      "accepted": 0,
+      "accepted": 1,
       "run_counts": {
-        "RISK_DEAD_ZONE_0_46_0_70": 1,
-        "VOLUME_ABOVE_2_00_LATE": 1
+        "OK": 1,
+        "ACCEPTED": 1
       },
-      "blocks": {
-        "RISK_DEAD_ZONE_0_46_0_70": 1,
-        "VOLUME_ABOVE_2_00_LATE": 1
-      }
+      "blocks": {}
     },
     "final_execution": {
       "accepted": 0,
       "run_counts": {
-        "UPSTREAM_REJECTED": 2
+        "UPSTREAM_REJECTED": 1,
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 1
       },
-      "blocks": {}
+      "blocks": {
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 1
+      }
     },
     "capital_survival": {
       "accepted": 0,
@@ -42,8 +42,8 @@
     }
   },
   "top_latest_blocker": {
-    "layer": "profit_quality",
-    "reason": "VOLUME_ABOVE_2_00_LATE",
+    "layer": "final_execution",
+    "reason": "DIRECTION_CONFIRMATIONS_BELOW_3",
     "count": 1
   },
   "interpretation": {
