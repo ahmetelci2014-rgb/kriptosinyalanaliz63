@@ -7,10 +7,18 @@ def base_decision(direction="LONG"):
     return {
         "symbol": "TESTUSDT",
         "direction": direction,
+        "score": 90,
         "expected_move_percent": 1.20,
         "move_3m_percent": 0.0,
         "move_5m_percent": 0.0,
         "breakout_20m": False,
+        "extension_atr_5m": 0.6,
+        "context_2h_extension_atr": 0.8,
+        "context_2h_direction": direction,
+        "context_2h_alignment": "ALIGNED",
+        "structure_15m": direction,
+        "structure_1h": direction,
+        "risk_percent": 0.8,
         "taker_available": True,
         "cvd_available": True,
         "book_available": True,
@@ -32,17 +40,17 @@ def base_decision(direction="LONG"):
     }
 
 
-def test_vana_profile_is_rejected_for_too_small_near_target_before_far_five_percent_target():
+def test_vana_profile_is_rejected_for_too_small_near_target_before_far_target():
     decision = base_decision("LONG")
     decision.update({
         "symbol": "VANAUSDT",
         "expected_move_percent": 0.665,
+        "profit_target_percent": 0.0,
         "taker_imbalance_alignment": 0.200818,
         "cvd_impulse_alignment": -0.104477,
         "book_imbalance_alignment": -0.128758,
         "derivatives_soft_score": -1,
     })
-    decision["direction_engine"]["confirmations"] = 3
     decision["direction_engine"]["long"] = {
         "taker_alignment": 0.200818,
         "cvd_alignment": 0.200818,
@@ -50,7 +58,6 @@ def test_vana_profile_is_rejected_for_too_small_near_target_before_far_five_perc
     ok, reason, _ = gate._execution_reason(decision)
     assert not ok
     assert reason == "NEAR_TECHNICAL_EXPECTATION_TOO_SMALL"
-
 
 
 def test_two_confirmations_stay_rejected_even_with_fresh_micro():
@@ -63,13 +70,47 @@ def test_two_confirmations_stay_rejected_even_with_fresh_micro():
     assert reason == "DIRECTION_CONFIRMATIONS_BELOW_3"
 
 
-def test_four_confirmations_are_rejected_as_late_overconfirmation():
+def test_four_confirmations_are_rejected_without_strong_exception():
     decision = base_decision("LONG")
     decision["direction_engine"]["confirmations"] = 4
     ok, reason, evidence = gate._execution_reason(decision)
     assert not ok
     assert reason == "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE"
     assert evidence["confirmations"] == 4
+
+
+def test_four_confirmations_can_pass_only_strong_fresh_aligned_profile():
+    decision = base_decision("LONG")
+    decision.update({
+        "score": 94,
+        "profit_target_percent": 3.2,
+        "profit_target_r": 4.0,
+        "expected_move_percent": 3.2,
+        "extension_atr_5m": 0.6,
+        "context_2h_extension_atr": 0.9,
+    })
+    decision["direction_engine"]["confirmations"] = 4
+    decision["direction_engine"]["confirmation_flags"]["fresh_micro"] = True
+    ok, reason, evidence = gate._execution_reason(decision)
+    assert ok
+    assert reason == "OK"
+    assert evidence["four_confirmation_exception"] is True
+
+
+def test_four_confirmation_exception_stays_blocked_when_2h_extended():
+    decision = base_decision("LONG")
+    decision.update({
+        "score": 96,
+        "profit_target_percent": 4.0,
+        "profit_target_r": 5.0,
+        "expected_move_percent": 4.0,
+        "context_2h_extension_atr": 1.40,
+    })
+    decision["direction_engine"]["confirmations"] = 4
+    decision["direction_engine"]["confirmation_flags"]["fresh_micro"] = True
+    ok, reason, _ = gate._execution_reason(decision)
+    assert not ok
+    assert reason == "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE"
 
 
 def test_met_profile_is_rejected_for_insufficient_confirmations_and_opposing_flow():
@@ -124,7 +165,7 @@ def test_no_fresh_micro_requires_real_taker_and_cvd_support():
     assert reason == "NO_FRESH_MICRO_TAKER_WEAK"
 
 
-def test_fresh_micro_can_replace_strong_flow_but_not_strong_opposite_pressure():
+def test_fresh_micro_can_replace_weak_flow_but_not_strong_opposite_pressure():
     decision = base_decision("LONG")
     decision["move_3m_percent"] = 0.12
     decision["move_5m_percent"] = 0.18
@@ -157,15 +198,45 @@ def test_short_side_is_symmetric():
     assert reason == "OK"
 
 
+def test_post_profit_signal_snapshot_overrides_stale_decision_target():
+    decision = base_decision("LONG")
+    decision["expected_move_percent"] = 0.40
+    signal = {
+        "symbol": "TESTUSDT",
+        "direction": "LONG",
+        "score": 94,
+        "profit_quality_version": "PQ",
+        "expected_move_percent": 3.20,
+        "profit_target_percent": 3.20,
+        "profit_target_r": 4.0,
+        "rr_tp3": 4.0,
+    }
+    snapshot = gate._execution_snapshot(decision, signal)
+    assert snapshot["expected_move_percent"] == 3.20
+    assert snapshot["direction_engine"]["confirmations"] == 3
+    ok, reason, evidence = gate._execution_reason(snapshot)
+    assert ok
+    assert reason == "OK"
+    assert evidence["technical_expected_move_percent"] == 3.2
+
+
 def test_install_runs_upstream_pipeline_before_execution_gate(monkeypatch):
     decision = base_decision("LONG")
     engine = decision.pop("direction_engine")
+    decision["expected_move_percent"] = 0.40
 
     def upstream(value):
-        # Mirrors Entry Plan: the Direction Engine is attached inside the
-        # upstream decision-to-signal call, not before it.
         value["direction_engine"] = engine
-        return {"symbol": value["symbol"], "direction": value["direction"], "score": 94}
+        return {
+            "symbol": value["symbol"],
+            "direction": value["direction"],
+            "score": 94,
+            "profit_quality_version": "PQ",
+            "expected_move_percent": 3.2,
+            "profit_target_percent": 3.2,
+            "profit_target_r": 4.0,
+            "rr_tp3": 4.0,
+        }
 
     previous_installed = gate._INSTALLED
     gate._INSTALLED = False
@@ -178,6 +249,7 @@ def test_install_runs_upstream_pipeline_before_execution_gate(monkeypatch):
         assert signal is not None
         assert signal["final_execution_gate_version"] == gate.VERSION
         assert signal["final_execution_gate"]["confirmations"] == 3
+        assert signal["final_execution_gate"]["technical_expected_move_percent"] == 3.2
         assert gate._RUN_COUNTS["OK"] == 1
         assert gate._RUN_COUNTS["ACCEPTED"] == 1
     finally:
