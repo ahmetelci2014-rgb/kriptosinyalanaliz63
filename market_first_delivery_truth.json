@@ -1,45 +1,47 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1790496839,
+  "generated_at": 1790497732,
   "status": "CAPITAL_RECOVERY_STRICT",
   "survival": {
     "mode": "RECOVERY_STRICT",
     "reason": "CRITICAL_ROLLING_STOP_RATE"
   },
   "funnel_truth": {
-    "internal_promoted": 466,
+    "internal_promoted": 459,
     "real_signal_sent": 2,
-    "promoted_unsent": 464,
+    "promoted_unsent": 457,
     "real_telegram_send_failures": 15,
-    "internal_final_admission_gap": 449,
+    "internal_final_admission_gap": 442,
     "promotion_is_send_attempt": false
   },
   "latest_gate_layers": {
     "profit_quality": {
-      "accepted": 3,
+      "accepted": 5,
       "run_counts": {
-        "OK": 3,
-        "ACCEPTED": 3,
-        "RISK_DEAD_ZONE_0_46_0_70": 3,
-        "SCORE_BELOW_88": 1,
-        "VOLUME_ABOVE_2_00_LATE": 3
+        "EXPECTED_MOVE_BELOW_2P": 3,
+        "OK": 5,
+        "ACCEPTED": 5,
+        "RISK_DEAD_ZONE_0_46_0_70": 4,
+        "VOLUME_ABOVE_2_00_LATE": 2
       },
       "blocks": {
-        "RISK_DEAD_ZONE_0_46_0_70": 3,
-        "SCORE_BELOW_88": 1,
-        "VOLUME_ABOVE_2_00_LATE": 3
+        "EXPECTED_MOVE_BELOW_2P": 3,
+        "RISK_DEAD_ZONE_0_46_0_70": 4,
+        "VOLUME_ABOVE_2_00_LATE": 2
       }
     },
     "final_execution": {
-      "accepted": 0,
+      "accepted": 1,
       "run_counts": {
-        "DIRECTION_CONFIRMATIONS_BELOW_3": 2,
-        "UPSTREAM_REJECTED": 11,
-        "TAKER_CVD_OPPOSITE": 1
+        "UPSTREAM_REJECTED": 10,
+        "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": 3,
+        "CVD_IMPULSE_OPPOSITE": 1,
+        "OK": 1,
+        "ACCEPTED": 1
       },
       "blocks": {
-        "DIRECTION_CONFIRMATIONS_BELOW_3": 2,
-        "TAKER_CVD_OPPOSITE": 1
+        "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": 3,
+        "CVD_IMPULSE_OPPOSITE": 1
       }
     },
     "capital_survival": {
@@ -52,8 +54,8 @@
   },
   "top_latest_blocker": {
     "layer": "profit_quality",
-    "reason": "VOLUME_ABOVE_2_00_LATE",
-    "count": 3
+    "reason": "RISK_DEAD_ZONE_0_46_0_70",
+    "count": 4
   },
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
