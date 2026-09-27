@@ -135,14 +135,14 @@ def test_active_swing_symbols_are_kept_in_deep_scan_without_growing_cap():
     assert len(result) == 3
 
 
-def test_live_workflow_is_single_external_5m_cycle_and_day_trading_mode():
+def test_live_workflow_uses_all_coins_day_trading_and_no_legacy_live_path():
     text = Path(".github/workflows/main.yml").read_text(encoding="utf-8")
     assert "workflow_dispatch:" in text
     assert "schedule:" not in text
     assert "cron:" not in text
-    assert "for cycle in 1 2" not in text
-    assert "sleep 300" not in text
-    assert text.count("python day_trading_core.py") == 1
+    assert "python day_trading_all_coins_runner.py" in text
+    assert "python day_trading_candidate_all_coins_runner.py" in text
+    assert "python day_trading_4h_shadow.py" in text
     assert "python market_first_live_simple.py" not in text
     assert "market_first_swing_2h_ledger.json" not in text
     assert "day_trading_ledger.json" in text
