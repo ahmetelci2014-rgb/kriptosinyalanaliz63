@@ -1,20 +1,7 @@
-name: Market First Historical ML Seed
+name: Legacy Market First Historical ML Seed - Manual Only
 
 on:
   workflow_dispatch:
-  schedule:
-    # GitHub cron uses UTC. 02:23 UTC = 05:23 Europe/Istanbul.
-    - cron: "23 2 * * *"
-  push:
-    branches:
-      - main
-    paths:
-      - "market_first_historical_ml_seed.py"
-      - "market_first_historical_replay_v2.py"
-      - "market_first_historical_replay_v3.py"
-      - "market_first_historical_store_bridge.py"
-      - "market_first_ml_training_pool.py"
-      - ".github/workflows/market-first-historical-ml-seed.yml"
 
 permissions:
   contents: write
