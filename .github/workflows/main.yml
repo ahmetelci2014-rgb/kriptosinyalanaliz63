@@ -1,22 +1,19 @@
-name: Market First V6 - Balanced Core Live
+name: Day Trading Core V1 - Live
 
 on:
-  # cron-job.org remains the single external dispatcher. Observed dispatches are
-  # roughly 15 minutes apart, so each dispatch performs three stateful scans
-  # at an effective 5-minute cadence inside one workflow run.
+  # cron-job.org remains the external dispatcher. Each dispatch runs three
+  # stateful scans so the trading engine sees an effective ~5 minute cadence.
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: market-first-v6-live
-  # A run deliberately spans ~10+ minutes. Never cancel it mid-state when the
-  # next external dispatch arrives; queue the next run instead.
+  group: day-trading-core-v1-live
   cancel-in-progress: false
 
 jobs:
-  market-first:
+  day-trading:
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -32,7 +29,7 @@ jobs:
           set -e
           git fetch origin main
           git reset --hard origin/main
-          echo "Market First run SHA: $(git rev-parse HEAD)"
+          echo "Day Trading run SHA: $(git rev-parse HEAD)"
 
       - name: Python kur
         uses: actions/setup-python@v5
@@ -46,34 +43,17 @@ jobs:
           PIP_DISABLE_PIP_VERSION_CHECK: "1"
         run: python -m pip install --prefer-binary -r requirements.txt
 
-      - name: V6 core guard smoke check
+      - name: Day Trading Core smoke check
         run: |
           set -e
-          python -m py_compile market_first_balanced_core_guard.py market_first_high_profit_low_sl.py market_first_a_plus_plus_convergence.py market_first_background_live_bridge.py market_first_selective_pre_signal.py market_first_supertrend_shadow.py market_first_simple_mode.py market_first_live_simple.py
-          python -c "import market_first_balanced_core_guard as g; s={'symbol':'EGLDUSDT','direction':'LONG','entry':3.943,'sl':3.9166,'risk_percent':0.669,'score':83,'fast_entry':True}; ok,reason,_=g.evaluate_signal(s); assert (not ok and reason=='FAST_BEFORE_PROFIT_QUALITY'), (ok,reason)"
-          python -c "import market_first_balanced_core_guard as g; s={'symbol':'GIGGLEUSDT','direction':'LONG','entry':34.53,'sl':34.39188,'risk_percent':0.4,'score':94,'profit_quality_version':'PQ','final_execution_gate_version':'FE','final_execution_gate':{'fresh_micro':False}}; ok,reason,_=g.evaluate_signal(s); assert (not ok and reason=='MIN_STOP_WITHOUT_FRESH_MICRO'), (ok,reason)"
-          python -c "import market_first_high_profit_low_sl as g; d={'symbol':'TESTUSDT','direction':'LONG','score':94,'risk_percent':0.8,'profit_target_percent':3.0,'profit_target_r':3.75,'profit_structure_2h':'LONG','extension_atr_5m':0.6}; s={'symbol':'TESTUSDT','direction':'LONG','entry':100.0,'sl':99.2,'risk_percent':0.8,'score':94,'profit_target_percent':3.0,'rr_tp3':3.75,'profit_quality_version':'PQ','final_execution_gate_version':'FE','final_execution_gate':{'fresh_micro':True}}; ok,reason,_=g.evaluate_signal(d,s); assert (ok and reason=='A_PLUS'), (ok,reason)"
-          python -c "import market_first_a_plus_plus_convergence as g; d={'symbol':'TESTUSDT','direction':'LONG','stage':'READY','entry_plan_trade':True,'entry_plan_version':'EP','room_r':4.0,'structure_15m':'LONG','structure_1h':'LONG','context_2h_direction':'LONG','context_2h_alignment':'ALIGNED','context_2h_1h_alignment':'ALIGNED','context_2h_extension_atr':0.8,'move_3m_percent':0.2,'move_5m_percent':0.3}; s={'symbol':'TESTUSDT','direction':'LONG','high_profit_low_sl_version':'HP','high_profit_low_sl_grade':'A+','final_execution_gate':{'fresh_micro':True}}; ok,reason,_=g.evaluate_signal(d,s); assert (ok and reason=='A_PLUS_PLUS'), (ok,reason)"
-          python -c "import market_first_simple_mode as s; assert not s.should_suppress('🚨 KALİTELİ KRİPTO İŞLEM\nTESTUSDT'); assert not s.should_suppress('👀 ARKA PLAN ADAYI | TESTUSDT'); assert s.should_suppress('✅ TP1 GELDİ\nTESTUSDT'); assert s.should_suppress('📋 GÜNLÜK İŞLEM ÖZETİ'); assert s.should_suppress('🧭 2H SWING HAZIRLIĞI | TESTUSDT')"
-          python -c "import market_first_supertrend_shadow as s; x=s.summary(); assert x['changes_trade_admission'] is False; assert x['telegram'] is False; assert x['atr_period']==10; assert x['multiplier']==3.0"
+          python -m py_compile day_trading_core.py
+          python -m unittest -v test_day_trading_core.py
 
-      - name: Kullanici arayuzunde acilamayan futures sinyallerini temizle
-        env:
-          OKX_API_KEY: ${{ secrets.OKX_API_KEY }}
-          OKX_SECRET_KEY: ${{ secrets.OKX_SECRET_KEY }}
-          OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
-        run: python untradable_futures_cleanup.py
-
-      - name: Market First - 5 dakikalik uc stateful tarama
+      - name: Day Trading - 5 dakikalik uc stateful tarama
         env:
           TOKEN: ${{ secrets.TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_REF_NAME: ${{ github.ref_name }}
-          OKX_API_KEY: ${{ secrets.OKX_API_KEY }}
-          OKX_SECRET_KEY: ${{ secrets.OKX_SECRET_KEY }}
-          OKX_PASSPHRASE: ${{ secrets.OKX_PASSPHRASE }}
         run: |
           set -e
           cycles=3
@@ -82,17 +62,8 @@ jobs:
           for pass in $(seq 1 "$cycles")
           do
             cycle_started=$(date +%s)
-            echo "===== MARKET FIRST V6 LIVE SCAN $pass/$cycles ====="
-
-            # Health is recorded per actual scan, not merely per external
-            # workflow dispatch. This exposes the cadence that trading logic sees.
-            python market_first_scheduler_health.py
-
-            # Onceki kapanmis TP1/TP2->BE ve TP3 islemlerinin sessiz golge
-            # takibini her taramadan once guncelle. Sinyal/emir/Telegram uretmez.
-            python post_result_shadow.py || true
-            python market_first_live_simple.py
-            python result_diagnostics.py || true
+            echo "===== DAY TRADING CORE LIVE SCAN $pass/$cycles ====="
+            python day_trading_core.py
 
             if [ "$pass" -lt "$cycles" ]; then
               cycle_finished=$(date +%s)
@@ -107,13 +78,7 @@ jobs:
             fi
           done
 
-          # Heavy reports run once after the final scan so live entry cadence
-          # stays fast while all learning/diagnostic data remains available.
-          python market_first_observability_report.py
-          python market_first_entry_condition_diagnosis.py
-          python market_first_delivery_truth.py
-
-      - name: Durum ve Market First verisini kaydet
+      - name: Day Trading state ve ledger kaydet
         if: ${{ always() && github.ref_name == 'main' }}
         run: |
           set -e
@@ -121,48 +86,10 @@ jobs:
           git config user.email "github-actions@github.com"
 
           for file in \
-            open_signals.json \
-            performance.json \
-            last_signals.json \
-            trade_ledger.json \
-            market_first_state.json \
-            market_first_diagnostics.json \
-            market_first_ml_samples.json \
-            market_first_guard_shadow.json \
-            market_first_early_ledger.json \
-            market_first_entry_plan_state.json \
-            market_first_entry_plan_ledger.json \
-            market_first_opportunity_summary.json \
-            market_first_entry_conversion_report.json \
-            market_first_missed_move_report.json \
-            market_first_observability_history.json \
-            market_first_entry_condition_diagnosis.json \
-            market_first_delivery_truth.json \
-            market_first_pre_entry_shadow.json \
-            market_first_big_move_capture.json \
-            market_first_profit_quality.json \
-            market_first_high_profit_low_sl.json \
-            market_first_a_plus_plus_convergence.json \
-            market_first_shadow_edge.json \
-            market_first_final_execution_gate.json \
-            market_first_profit_survival_gate.json \
-            market_first_profit_survival_v2.json \
-            market_first_recovery_evidence_lane.json \
-            market_first_selective_live_lane.json \
-            market_first_background_live_bridge.json \
-            market_first_background_edge_history.json \
-            market_first_structure_fibo_contact.json \
-            market_first_supertrend_shadow.json \
-            market_first_candidate_visibility.json \
-            premium_big_move_state.json \
-            market_first_scheduler_health.json \
-            market_first_direction_ledger.json \
-            market_first_direction_summary.json \
-            market_first_swing_2h_state.json \
-            market_first_swing_2h_ledger.json \
-            market_first_swing_2h_summary.json \
-            market_first_daily_report_state.json \
-            market_first_daily_report.json
+            day_trading_state.json \
+            day_trading_ledger.json \
+            day_trading_summary.json \
+            day_trading_diagnostics.json
           do
             if [ -f "$file" ]; then
               git add "$file"
@@ -170,11 +97,11 @@ jobs:
           done
 
           if git diff --cached --quiet; then
-            echo "Kaydedilecek degisiklik yok."
+            echo "Kaydedilecek day-trading degisikligi yok."
             exit 0
           fi
 
-          git commit -m "Update Market First V6 state"
+          git commit -m "Update Day Trading Core state"
 
           for attempt in 1 2 3
           do
