@@ -46,8 +46,8 @@ jobs:
       - name: Day Trading Core smoke check
         run: |
           set -e
-          python -m py_compile day_trading_core.py
-          python -m unittest -v test_day_trading_core.py
+          python -m py_compile day_trading_core.py day_trading_candidate_tracker.py
+          python -m unittest -v test_day_trading_core.py test_day_trading_candidate_tracker.py
 
       - name: Day Trading - 5 dakikalik uc stateful tarama
         env:
@@ -78,6 +78,9 @@ jobs:
             fi
           done
 
+      - name: Day Trading arka plan adaylarini kaydet ve takip et
+        run: python day_trading_candidate_tracker.py
+
       - name: Day Trading state ve ledger kaydet
         if: ${{ always() && github.ref_name == 'main' }}
         run: |
@@ -89,7 +92,10 @@ jobs:
             day_trading_state.json \
             day_trading_ledger.json \
             day_trading_summary.json \
-            day_trading_diagnostics.json
+            day_trading_diagnostics.json \
+            day_trading_candidate_ledger.json \
+            day_trading_candidate_summary.json \
+            day_trading_candidate_diagnostics.json
           do
             if [ -f "$file" ]; then
               git add "$file"
