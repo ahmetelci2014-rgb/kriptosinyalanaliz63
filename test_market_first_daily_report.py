@@ -254,12 +254,13 @@ def test_daily_report_is_suppressed_by_simple_telegram_mode():
 
 def test_live_workflow_uses_single_external_day_trading_job_and_persists_day_files():
     text = Path(".github/workflows/main.yml").read_text(encoding="utf-8")
-    # cron-job.org stays the single external dispatcher; the main workflow is now
-    # deliberately Day Trading Core only and no longer runs Market First live.
+    # cron-job.org stays the single external dispatcher; live decisions are Day Trading only.
     assert "workflow_dispatch:" in text
     assert "schedule:" not in text
     assert "cron:" not in text
-    assert text.count("python day_trading_core.py") == 1
+    assert text.count("python day_trading_all_coins_runner.py") == 1
+    assert "python day_trading_candidate_all_coins_runner.py" in text
+    assert "python day_trading_4h_shadow.py" in text
     assert "python market_first_live_simple.py" not in text
     assert "sleep 300" not in text
     assert "day_trading_state.json" in text
