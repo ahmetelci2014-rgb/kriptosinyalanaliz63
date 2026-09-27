@@ -54,9 +54,10 @@ def test_live_workflow_uses_day_trading_internal_five_minute_cadence():
     # but it is intentionally outside the new Day Trading live execution path.
     assert "python market_first_scheduler_health.py" not in text
     assert "market_first_scheduler_health.json" not in text
-    assert "python day_trading_core.py" in text
+    assert "python day_trading_all_coins_runner.py" in text
     assert "cycles=3" in text
     assert "target_interval=300" in text
+    assert 'sleep "$sleep_for"' in text
     # cron-job.org remains the single external trigger source.
     assert "workflow_dispatch:" in text
     assert "schedule:" not in text
