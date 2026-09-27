@@ -1,6 +1,6 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1790530098,
+  "generated_at": 1790531035,
   "status": "CAPITAL_RECOVERY_STRICT",
   "survival": {
     "mode": "RECOVERY_STRICT",
@@ -16,14 +16,29 @@
   },
   "latest_gate_layers": {
     "profit_quality": {
-      "accepted": 0,
-      "run_counts": {},
-      "blocks": {}
+      "accepted": 2,
+      "run_counts": {
+        "SCORE_BELOW_88": 1,
+        "RISK_DEAD_ZONE_0_46_0_70": 1,
+        "OK": 2,
+        "ACCEPTED": 2
+      },
+      "blocks": {
+        "SCORE_BELOW_88": 1,
+        "RISK_DEAD_ZONE_0_46_0_70": 1
+      }
     },
     "final_execution": {
       "accepted": 0,
-      "run_counts": {},
-      "blocks": {}
+      "run_counts": {
+        "UPSTREAM_REJECTED": 6,
+        "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": 1,
+        "TAKER_CVD_OPPOSITE": 1
+      },
+      "blocks": {
+        "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": 1,
+        "TAKER_CVD_OPPOSITE": 1
+      }
     },
     "capital_survival": {
       "accepted": 0,
@@ -33,7 +48,11 @@
       "blocks": {}
     }
   },
-  "top_latest_blocker": null,
+  "top_latest_blocker": {
+    "layer": "profit_quality",
+    "reason": "SCORE_BELOW_88",
+    "count": 1
+  },
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
     "real_telegram_send_failures": "Ledger rows where the system actually attempted the final send path and recorded failure.",
