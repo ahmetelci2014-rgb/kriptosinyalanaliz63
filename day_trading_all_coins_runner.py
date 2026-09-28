@@ -6,30 +6,32 @@ the complete universe, ranks all fully-qualified setups, then sends at most the
 existing per-run signal limit. Low-liquidity contracts are still observed but
 cannot become live Telegram trades.
 
-A guarded quality-volume override prevents the 5M volume gate from becoming a
-single-point bottleneck. A 5M candle below the normal 1.10x volume threshold is
-accepted only when price action is materially stronger: clean EMA momentum,
-real breakout, solid body and limited extension. This does not relax 2H, 15M,
-risk, cooldown, liquidity, exposure or daily circuit-breaker rules.
+The core 1.10x 5M volume check remains the preferred path, but it is no longer
+a misleading single-point bottleneck. When core rejects only on 5M_VOLUME, this
+runner evaluates the rest of the price-action trigger instead of stopping at
+volume. Sub-1.10x volume can pass only above a hard 0.80x floor and only when
+body, extension, EMA/RSI momentum and the real two-bar breakout all pass. The
+review reason is written to diagnostics so we can see whether low-volume rows
+were actually good price action or would have failed for another reason too.
 """
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any, Dict, Mapping
+from typing import Any, Dict, Mapping, Tuple
 
 import pandas as pd
 
 import day_trading_core as core
 
-VERSION = "DAY_TRADING_ALL_COINS_V1_2026_09_28_QVOL"
+VERSION = "DAY_TRADING_ALL_COINS_V2_2026_09_29_TRIGGER_REVIEW"
 MIN_LIVE_24H_QUOTE_VOLUME = 200_000.0
 
-# Guarded alternative to the normal core.MIN_5M_VOLUME_RATIO (1.10x).
-# This is intentionally not a blanket threshold reduction.
-QUALITY_OVERRIDE_MIN_VOLUME_RATIO = 0.90
-QUALITY_OVERRIDE_MIN_BODY_ATR = 0.30
-QUALITY_OVERRIDE_MAX_BODY_ATR = 0.90
-QUALITY_OVERRIDE_MAX_EXTENSION_ATR = 0.60
+# Normal core threshold is still 1.10x. Below that, price action must be clean.
+# 0.80x is a hard floor; this is not a blanket removal of volume confirmation.
+QUALITY_OVERRIDE_MIN_VOLUME_RATIO = 0.80
+QUALITY_OVERRIDE_MIN_BODY_ATR = 0.22
+QUALITY_OVERRIDE_MAX_BODY_ATR = core.MAX_5M_BODY_ATR
+QUALITY_OVERRIDE_MAX_EXTENSION_ATR = core.MAX_5M_EXTENSION_ATR
 
 
 def _enable_full_universe() -> None:
@@ -38,47 +40,67 @@ def _enable_full_universe() -> None:
     core.MIN_24H_QUOTE_VOLUME = 0.0
 
 
-def _quality_volume_override(
+def _quality_volume_override_check(
     df5: pd.DataFrame,
     direction: str,
     metrics: Mapping[str, Any],
-) -> bool:
-    """Allow sub-1.10x volume only when the completed 5M bar is high quality.
+) -> Tuple[bool, str]:
+    """Review a core 5M_VOLUME rejection against the remaining trigger rules.
 
-    The normal trigger remains preferred. This override is evaluated only when
-    core._trigger_5m rejects specifically for 5M_VOLUME.
+    Returns (allowed, review_reason). The normal >=1.10x path never needs this
+    helper. For 0.80x-1.10x, the candle must still satisfy body, extension,
+    direction-specific momentum and the same two-bar breakout used by core.
     """
     volume_ratio = core._sf(metrics.get("volume_ratio_5m"))
     body_atr = core._sf(metrics.get("body_atr_5m"))
     extension = core._sf(metrics.get("extension_atr_5m"), 99.0)
     rsi = core._sf(metrics.get("rsi_5m"), 50.0)
 
-    if not (QUALITY_OVERRIDE_MIN_VOLUME_RATIO <= volume_ratio < core.MIN_5M_VOLUME_RATIO):
-        return False
-    if not (QUALITY_OVERRIDE_MIN_BODY_ATR <= body_atr <= QUALITY_OVERRIDE_MAX_BODY_ATR):
-        return False
+    if volume_ratio < QUALITY_OVERRIDE_MIN_VOLUME_RATIO:
+        return False, "BELOW_0_80_FLOOR"
+    if volume_ratio >= core.MIN_5M_VOLUME_RATIO:
+        return False, "NOT_LOW_VOLUME"
+    if body_atr < QUALITY_OVERRIDE_MIN_BODY_ATR:
+        return False, "WEAK_BODY"
+    if body_atr > QUALITY_OVERRIDE_MAX_BODY_ATR:
+        return False, "SPIKE_BODY"
     if extension > QUALITY_OVERRIDE_MAX_EXTENSION_ATR:
-        return False
+        return False, "LATE_EXTENSION"
 
     try:
         c = core._completed(df5)
         previous = df5.iloc[-4:-2]
         if previous.empty:
-            return False
+            return False, "NO_HISTORY"
+
         close = core._sf(c["close"])
         open_ = core._sf(c["open"])
         ema9 = core._sf(c["ema9"])
         ema20 = core._sf(c["ema20"])
 
         if direction == "LONG":
-            momentum = close > open_ and close > ema9 > ema20 and 54.0 <= rsi <= 68.0
+            momentum = close > open_ and close > ema9 > ema20 and 51.0 <= rsi <= 72.0
             breakout = close > core._sf(previous["high"].max())
         else:
-            momentum = close < open_ and close < ema9 < ema20 and 32.0 <= rsi <= 46.0
+            momentum = close < open_ and close < ema9 < ema20 and 28.0 <= rsi <= 49.0
             breakout = close < core._sf(previous["low"].min())
-        return bool(momentum and breakout)
+
+        if not momentum:
+            return False, "MOMENTUM"
+        if not breakout:
+            return False, "NO_BREAK"
+        return True, "PASS"
     except Exception:
-        return False
+        return False, "EVAL_ERROR"
+
+
+def _quality_volume_override(
+    df5: pd.DataFrame,
+    direction: str,
+    metrics: Mapping[str, Any],
+) -> bool:
+    allowed, _ = _quality_volume_override_check(df5, direction, metrics)
+    return allowed
 
 
 def _rank_key(item: Dict[str, Any]) -> tuple:
@@ -129,11 +151,18 @@ def run() -> None:
 
             df5 = core._fetch_df(exchange, ccxt_symbol, "5m")
             ok5, reason5, metrics5 = core._trigger_5m(df5, direction)
-            if not ok5 and reason5 == "5M_VOLUME" and _quality_volume_override(df5, direction, metrics5):
-                ok5 = True
-                reason5 = "OK"
-                metrics5 = {**metrics5, "trigger_mode": "QUALITY_VOLUME_OVERRIDE"}
-                diagnostics["5M_VOLUME_OVERRIDE_PASS"] += 1
+            if not ok5 and reason5 == "5M_VOLUME":
+                override_ok, review_reason = _quality_volume_override_check(df5, direction, metrics5)
+                diagnostics[f"5M_VOLUME_REVIEW:{review_reason}"] += 1
+                if override_ok:
+                    ok5 = True
+                    reason5 = "OK"
+                    metrics5 = {
+                        **metrics5,
+                        "trigger_mode": "LOW_VOLUME_PRICE_ACTION_PASS",
+                        "volume_review_reason": review_reason,
+                    }
+                    diagnostics["5M_VOLUME_OVERRIDE_PASS"] += 1
             if not ok5:
                 diagnostics[reason5] += 1
                 continue
@@ -211,7 +240,7 @@ def run() -> None:
             "new_signals": new_signals,
             "min_live_quote_volume": MIN_LIVE_24H_QUOTE_VOLUME,
             "normal_5m_volume_ratio": core.MIN_5M_VOLUME_RATIO,
-            "quality_override_min_volume_ratio": QUALITY_OVERRIDE_MIN_VOLUME_RATIO,
+            "low_volume_hard_floor": QUALITY_OVERRIDE_MIN_VOLUME_RATIO,
             "rejections": dict(diagnostics.most_common()),
             "open_trades": len(state.get("open_trades") or {}),
             "today": dict(core._day_row(state)),
