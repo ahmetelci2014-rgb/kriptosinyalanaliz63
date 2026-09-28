@@ -5,22 +5,80 @@ universe to every active linear OKX USDT perpetual with a valid ticker, scans
 the complete universe, ranks all fully-qualified setups, then sends at most the
 existing per-run signal limit. Low-liquidity contracts are still observed but
 cannot become live Telegram trades.
+
+A guarded quality-volume override prevents the 5M volume gate from becoming a
+single-point bottleneck. A 5M candle below the normal 1.10x volume threshold is
+accepted only when price action is materially stronger: clean EMA momentum,
+real breakout, solid body and limited extension. This does not relax 2H, 15M,
+risk, cooldown, liquidity, exposure or daily circuit-breaker rules.
 """
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any, Dict
+from typing import Any, Dict, Mapping
+
+import pandas as pd
 
 import day_trading_core as core
 
-VERSION = "DAY_TRADING_ALL_COINS_V1_2026_09_27"
+VERSION = "DAY_TRADING_ALL_COINS_V1_2026_09_28_QVOL"
 MIN_LIVE_24H_QUOTE_VOLUME = 200_000.0
+
+# Guarded alternative to the normal core.MIN_5M_VOLUME_RATIO (1.10x).
+# This is intentionally not a blanket threshold reduction.
+QUALITY_OVERRIDE_MIN_VOLUME_RATIO = 0.90
+QUALITY_OVERRIDE_MIN_BODY_ATR = 0.30
+QUALITY_OVERRIDE_MAX_BODY_ATR = 0.90
+QUALITY_OVERRIDE_MAX_EXTENSION_ATR = 0.60
 
 
 def _enable_full_universe() -> None:
     # _load_universe reads these globals at runtime.
     core.MAX_SCAN_COINS = 100_000
     core.MIN_24H_QUOTE_VOLUME = 0.0
+
+
+def _quality_volume_override(
+    df5: pd.DataFrame,
+    direction: str,
+    metrics: Mapping[str, Any],
+) -> bool:
+    """Allow sub-1.10x volume only when the completed 5M bar is high quality.
+
+    The normal trigger remains preferred. This override is evaluated only when
+    core._trigger_5m rejects specifically for 5M_VOLUME.
+    """
+    volume_ratio = core._sf(metrics.get("volume_ratio_5m"))
+    body_atr = core._sf(metrics.get("body_atr_5m"))
+    extension = core._sf(metrics.get("extension_atr_5m"), 99.0)
+    rsi = core._sf(metrics.get("rsi_5m"), 50.0)
+
+    if not (QUALITY_OVERRIDE_MIN_VOLUME_RATIO <= volume_ratio < core.MIN_5M_VOLUME_RATIO):
+        return False
+    if not (QUALITY_OVERRIDE_MIN_BODY_ATR <= body_atr <= QUALITY_OVERRIDE_MAX_BODY_ATR):
+        return False
+    if extension > QUALITY_OVERRIDE_MAX_EXTENSION_ATR:
+        return False
+
+    try:
+        c = core._completed(df5)
+        previous = df5.iloc[-4:-2]
+        if previous.empty:
+            return False
+        close = core._sf(c["close"])
+        open_ = core._sf(c["open"])
+        ema9 = core._sf(c["ema9"])
+        ema20 = core._sf(c["ema20"])
+
+        if direction == "LONG":
+            momentum = close > open_ and close > ema9 > ema20 and 54.0 <= rsi <= 68.0
+            breakout = close > core._sf(previous["high"].max())
+        else:
+            momentum = close < open_ and close < ema9 < ema20 and 32.0 <= rsi <= 46.0
+            breakout = close < core._sf(previous["low"].min())
+        return bool(momentum and breakout)
+    except Exception:
+        return False
 
 
 def _rank_key(item: Dict[str, Any]) -> tuple:
@@ -71,6 +129,11 @@ def run() -> None:
 
             df5 = core._fetch_df(exchange, ccxt_symbol, "5m")
             ok5, reason5, metrics5 = core._trigger_5m(df5, direction)
+            if not ok5 and reason5 == "5M_VOLUME" and _quality_volume_override(df5, direction, metrics5):
+                ok5 = True
+                reason5 = "OK"
+                metrics5 = {**metrics5, "trigger_mode": "QUALITY_VOLUME_OVERRIDE"}
+                diagnostics["5M_VOLUME_OVERRIDE_PASS"] += 1
             if not ok5:
                 diagnostics[reason5] += 1
                 continue
@@ -147,6 +210,8 @@ def run() -> None:
             "fully_qualified": len(qualified),
             "new_signals": new_signals,
             "min_live_quote_volume": MIN_LIVE_24H_QUOTE_VOLUME,
+            "normal_5m_volume_ratio": core.MIN_5M_VOLUME_RATIO,
+            "quality_override_min_volume_ratio": QUALITY_OVERRIDE_MIN_VOLUME_RATIO,
             "rejections": dict(diagnostics.most_common()),
             "open_trades": len(state.get("open_trades") or {}),
             "today": dict(core._day_row(state)),
