@@ -121,32 +121,44 @@ class DayTradingCoreTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertEqual(reason, "MAX_SAME_DIRECTION")
 
-    def test_quality_volume_override_accepts_strong_breakout(self):
-        metrics = {
-            "volume_ratio_5m": 0.95,
-            "body_atr_5m": 0.40,
-            "extension_atr_5m": 0.40,
-            "rsi_5m": 60.0,
-        }
-        self.assertTrue(all_coins._quality_volume_override(quality_override_frame(), "LONG", metrics))
-
-    def test_quality_volume_override_keeps_weak_volume_blocked(self):
+    def test_quality_volume_override_accepts_clean_085_breakout(self):
         metrics = {
             "volume_ratio_5m": 0.85,
             "body_atr_5m": 0.40,
             "extension_atr_5m": 0.40,
             "rsi_5m": 60.0,
         }
-        self.assertFalse(all_coins._quality_volume_override(quality_override_frame(), "LONG", metrics))
+        allowed, reason = all_coins._quality_volume_override_check(
+            quality_override_frame(), "LONG", metrics
+        )
+        self.assertTrue(allowed)
+        self.assertEqual(reason, "PASS")
+
+    def test_quality_volume_override_keeps_below_floor_blocked(self):
+        metrics = {
+            "volume_ratio_5m": 0.75,
+            "body_atr_5m": 0.40,
+            "extension_atr_5m": 0.40,
+            "rsi_5m": 60.0,
+        }
+        allowed, reason = all_coins._quality_volume_override_check(
+            quality_override_frame(), "LONG", metrics
+        )
+        self.assertFalse(allowed)
+        self.assertEqual(reason, "BELOW_0_80_FLOOR")
 
     def test_quality_volume_override_keeps_spike_blocked(self):
         metrics = {
             "volume_ratio_5m": 0.95,
-            "body_atr_5m": 1.00,
+            "body_atr_5m": 1.20,
             "extension_atr_5m": 0.40,
             "rsi_5m": 60.0,
         }
-        self.assertFalse(all_coins._quality_volume_override(quality_override_frame(), "LONG", metrics))
+        allowed, reason = all_coins._quality_volume_override_check(
+            quality_override_frame(), "LONG", metrics
+        )
+        self.assertFalse(allowed)
+        self.assertEqual(reason, "SPIKE_BODY")
 
 
 if __name__ == "__main__":
