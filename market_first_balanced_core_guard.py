@@ -4,16 +4,18 @@ This module protects the real Telegram trade lane from wrapper-order bypasses:
 
 1) The immediate fast-entry path can call ``runner._send_trade`` from inside the
    inner Market First live wrapper before outer Profit Quality / Final Execution
-   / High Profit-Low SL / A++ Convergence wrappers return.
+   / High Profit-Low SL wrappers return.
 2) Every real send must carry the High Profit / Low SL A+ certification.
-3) Every real send must also carry the A++ 2H + Entry Plan + fresh-micro
-   convergence certification.
+3) A++ / 2H convergence remains available as observation evidence, but is no
+   longer a mandatory live-send certification. This restores a more balanced
+   Market First path without removing the proven A+ quality/execution gates.
 4) Trades sitting on the strategy's minimum stop floor are especially sensitive
    to wick/noise. When the actual stop is <= 0.45%, require a fresh micro trigger.
 
 The guard does not widen stops, create signals, place exchange orders or suppress
 analysis/ledger tracking. Rejected fast-path candidates can continue through the
-ordinary outer pipeline and become valid only after all certifications exist.
+ordinary outer pipeline and become valid only after the required certifications
+exist.
 """
 from __future__ import annotations
 
@@ -23,7 +25,7 @@ from typing import Any, Dict, Mapping, Tuple
 
 import market_first_runner as runner
 
-VERSION = "MARKET_FIRST_V6_BALANCED_CORE_GUARD_V3_2026_09_26"
+VERSION = "MARKET_FIRST_V6_BALANCED_CORE_GUARD_V4_A_PLUS_2026_09_29"
 MIN_STOP_FLOOR_MAX_PERCENT = 0.45
 
 _INSTALLED = False
@@ -82,6 +84,7 @@ def evaluate_signal(signal: Mapping[str, Any] | None) -> Tuple[bool, str, Dict[s
         "high_profit_low_sl_grade": high_profit_grade,
         "a_plus_plus_convergence_certified": convergence_certified,
         "a_plus_plus_convergence_grade": convergence_grade,
+        "a_plus_plus_live_required": False,
         "risk_percent": round(risk_percent, 4),
         "fresh_micro": fresh_micro,
     }
@@ -95,14 +98,12 @@ def evaluate_signal(signal: Mapping[str, Any] | None) -> Tuple[bool, str, Dict[s
     if 0 < risk_percent <= MIN_STOP_FLOOR_MAX_PERCENT and not fresh_micro:
         return False, "MIN_STOP_WITHOUT_FRESH_MICRO", evidence
 
+    # Keep the proven A+ quality gate as the final live-quality invariant.
     if not high_profit_certified or high_profit_grade != "A+":
         return False, "HIGH_PROFIT_LOW_SL_NOT_CERTIFIED", evidence
 
-    # Final invariant: alternate/fast paths may never skip the A++ convergence
-    # layer that combines the 2H context, Entry Plan and fresh execution timing.
-    if not convergence_certified or convergence_grade != "A++":
-        return False, "A_PLUS_PLUS_CONVERGENCE_NOT_CERTIFIED", evidence
-
+    # A++ is deliberately observation-only in this balanced version. Its fields
+    # stay in evidence so we can compare A+ trades with and without A++ alignment.
     return True, "OK", evidence
 
 
@@ -141,7 +142,8 @@ def summary() -> Dict[str, Any]:
         "fast_entry_requires_profit_quality": True,
         "fast_entry_requires_final_execution": True,
         "all_real_trades_require_high_profit_low_sl_a_plus": True,
-        "all_real_trades_require_a_plus_plus_convergence": True,
+        "all_real_trades_require_a_plus_plus_convergence": False,
+        "a_plus_plus_mode": "OBSERVATION_ONLY",
         "min_stop_floor_max_percent": MIN_STOP_FLOOR_MAX_PERCENT,
         "min_stop_requires_fresh_micro": True,
         "stop_widening": False,
