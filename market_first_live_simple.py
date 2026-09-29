@@ -18,6 +18,7 @@ can compare outcomes without suppressing A+ trades.
 from __future__ import annotations
 
 import market_first_background_live_bridge as background_live_bridge
+import market_first_candidate_shadow as candidate_shadow
 import market_first_cross_exchange_mover_radar as cross_exchange_mover
 import market_first_2h_context_shadow as context_2h_shadow
 import market_first_balanced_core_guard as balanced_core_guard
@@ -60,6 +61,7 @@ def main() -> None:
     context_2h_shadow.install(runner)
     complete_tracking.install_complete_tracking()
     pre_entry_shadow.install(runner)
+    candidate_shadow.install(runner)
     reversal_capture.install(runner)
     target_overlay.install_target_overlay()
     simple_mode.install_simple_mode()
@@ -76,6 +78,9 @@ def main() -> None:
     final_execution_gate.install()
     high_profit_low_sl.install()
     selective_pre_signal.install()
+    # Attach after the existing Telegram visibility lane so a shadow record is
+    # created only when the ARKA PLAN ADAYI message was actually sent.
+    candidate_shadow.attach_visibility(runner, selective_pre_signal)
 
     # Preserve original plan context for reports and trade tracking.
     entry_plan_context_patch.install()
@@ -94,6 +99,7 @@ def main() -> None:
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
     print("MARKET FIRST ENTRY PLAN CONTEXT:", entry_plan_context_patch.summary())
     print("MARKET FIRST BACKGROUND LIVE BRIDGE:", background_live_bridge.summary())
+    print("MARKET FIRST CANDIDATE SHADOW:", candidate_shadow.summary())
     print("MARKET FIRST STRUCTURE FIBO CONTACT:", structure_fibo.summary())
     print("MARKET FIRST SUPERTREND SHADOW:", supertrend_shadow.summary())
     print("MARKET FIRST 2H CONTEXT SHADOW:", context_2h_shadow.summary())
@@ -125,6 +131,7 @@ def main() -> None:
         print("MARKET FIRST HIGH PROFIT / LOW SL RUN:", high_profit_low_sl.finish())
         print("MARKET FIRST A++ CONVERGENCE RUN: LIVE GATE OFF")
         print("MARKET FIRST SELECTIVE PRE-SIGNAL RUN:", selective_pre_signal.summary())
+        print("MARKET FIRST CANDIDATE SHADOW RUN:", candidate_shadow.summary())
         print("MARKET FIRST V6 CORE GUARD RUN:", balanced_core_guard.summary())
         print("MARKET FIRST BACKGROUND LIVE BRIDGE RUN:", background_live_bridge.finish())
         print("MARKET FIRST STRUCTURE FIBO RUN:", structure_fibo.finish())
