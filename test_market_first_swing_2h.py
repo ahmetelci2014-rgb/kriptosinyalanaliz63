@@ -135,14 +135,17 @@ def test_active_swing_symbols_are_kept_in_deep_scan_without_growing_cap():
     assert len(result) == 3
 
 
-def test_live_workflow_uses_all_coins_day_trading_and_no_legacy_live_path():
+def test_live_workflow_uses_market_first_and_keeps_swing_shadow_internal():
     text = Path(".github/workflows/main.yml").read_text(encoding="utf-8")
     assert "workflow_dispatch:" in text
     assert "schedule:" not in text
     assert "cron:" not in text
-    assert "python day_trading_all_coins_runner.py" in text
-    assert "python day_trading_candidate_all_coins_runner.py" in text
-    assert "python day_trading_4h_shadow.py" in text
-    assert "python market_first_live_simple.py" not in text
-    assert "market_first_swing_2h_ledger.json" not in text
-    assert "day_trading_ledger.json" in text
+    assert "python market_first_live_simple.py" in text
+    assert "python day_trading_all_coins_runner.py" not in text
+    assert "python day_trading_candidate_all_coins_runner.py" not in text
+    assert "python day_trading_4h_shadow.py" not in text
+    # 2H swing remains an internal Market First observation/tracking lane.
+    assert "market_first_swing_2h_state.json" in text
+    assert "market_first_swing_2h_ledger.json" in text
+    assert "market_first_swing_2h_summary.json" in text
+    assert "trade_ledger.json" in text
