@@ -252,18 +252,18 @@ def test_daily_report_is_suppressed_by_simple_telegram_mode():
     assert simple_mode.should_suppress("📋 GÜNLÜK İŞLEM ÖZETİ | 06.09.2026") is True
 
 
-def test_live_workflow_uses_single_external_day_trading_job_and_persists_day_files():
+def test_live_workflow_uses_single_external_market_first_job_and_persists_market_files():
     text = Path(".github/workflows/main.yml").read_text(encoding="utf-8")
-    # cron-job.org stays the single external dispatcher; live decisions are Day Trading only.
+    # cron-job.org stays the single external dispatcher; live decisions are Market First V6.
     assert "workflow_dispatch:" in text
     assert "schedule:" not in text
     assert "cron:" not in text
-    assert text.count("python day_trading_all_coins_runner.py") == 1
-    assert "python day_trading_candidate_all_coins_runner.py" in text
-    assert "python day_trading_4h_shadow.py" in text
-    assert "python market_first_live_simple.py" not in text
+    assert text.count("python market_first_live_simple.py") == 1
+    assert "python day_trading_all_coins_runner.py" not in text
+    assert "python day_trading_candidate_all_coins_runner.py" not in text
+    assert "python day_trading_4h_shadow.py" not in text
     assert "sleep 300" not in text
-    assert "day_trading_state.json" in text
-    assert "day_trading_ledger.json" in text
-    assert "day_trading_summary.json" in text
-    assert "day_trading_diagnostics.json" in text
+    assert "market_first_state.json" in text
+    assert "market_first_diagnostics.json" in text
+    assert "market_first_entry_plan_ledger.json" in text
+    assert "trade_ledger.json" in text
