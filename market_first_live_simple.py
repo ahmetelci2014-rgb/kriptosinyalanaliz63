@@ -1,23 +1,22 @@
 """Balanced live entry point for Market First V6.
 
-V6 keeps the full analysis/tracking engine, but removes the stack of late-stage
-survival/recovery/selective vetoes that was suppressing almost every internally
-promoted opportunity. Live admission is intentionally simple again:
+V6 keeps the full analysis/tracking engine while avoiding the stack of late-stage
+vetoes that previously suppressed almost every internally promoted opportunity.
+Live admission is intentionally balanced:
 
 1) the existing analysis/entry engine finds the setup,
 2) Profit Quality checks trade quality and risk/reward,
 3) Final Execution checks the last micro/flow execution conditions,
 4) High Profit / Low SL admits only A+ profit-runner setups,
-5) A++ Convergence requires 2H + Entry Plan + fresh micro agreement,
-6) the Balanced Core Guard enforces final send invariants,
-7) Profit Lock manages already-open trade protection/tracking.
+5) the Balanced Core Guard enforces those final send invariants,
+6) Profit Lock manages already-open trade protection/tracking.
 
-The removed layers are not deleted from the repository. Their historical state
-and reports remain available for diagnostics, so this rollback is reversible.
+A++ / 2H convergence is no longer a mandatory live veto. The existing 2H context,
+entry-plan, supertrend and other shadow layers continue collecting evidence so we
+can compare outcomes without suppressing A+ trades.
 """
 from __future__ import annotations
 
-import market_first_a_plus_plus_convergence as a_plus_plus_convergence
 import market_first_background_live_bridge as background_live_bridge
 import market_first_cross_exchange_mover_radar as cross_exchange_mover
 import market_first_2h_context_shadow as context_2h_shadow
@@ -67,16 +66,15 @@ def main() -> None:
     target_display.install_target_display()
     big_move_capture.install()
 
-    # --- V6 live admission core ---
-    # Keep the proven quality/execution gates, then require both A+ profit quality
-    # and A++ 2H + Entry Plan + fresh-micro convergence. Do NOT restore the
-    # historical Recovery/Survival/Selective/Candidate veto stack here.
+    # --- V6 balanced live admission core ---
+    # Keep Profit Quality + Final Execution + A+ High Profit / Low SL.
+    # A++ convergence is deliberately NOT installed as a live veto. 2H and
+    # entry-plan evidence continue in the existing shadow/ledger layers.
     profit_quality.install()
     tao_profit_patch.install()
     tao_quality_bridge.install()
     final_execution_gate.install()
     high_profit_low_sl.install()
-    a_plus_plus_convergence.install()
     selective_pre_signal.install()
 
     # Preserve original plan context for reports and trade tracking.
@@ -86,11 +84,11 @@ def main() -> None:
     # Profit Quality owns final trade text; attach the FIB model label afterwards.
     structure_fibo.install_presentation()
 
-    # Installed last: every real send must carry all upstream certifications,
-    # including A+ and A++, so alternate/fast paths cannot bypass the live gates.
+    # Installed last: every real send must carry Profit Quality, Final Execution
+    # and A+ certification. A++ is observation-only in this balanced version.
     balanced_core_guard.install()
 
-    print("MARKET FIRST V6 MODE: BALANCED CORE LIVE + A+ HIGH PROFIT / LOW SL + A++ CONVERGENCE")
+    print("MARKET FIRST V6 MODE: BALANCED CORE LIVE + A+ HIGH PROFIT / LOW SL | A++ LIVE GATE OFF")
     print("MARKET FIRST CROSS-EXCHANGE MOVER:", cross_exchange_mover.summary())
     print("MARKET FIRST DAILY REPORT ORIGIN/BE:", daily_report_origin_patch.summary())
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
@@ -98,7 +96,7 @@ def main() -> None:
     print("MARKET FIRST BACKGROUND LIVE BRIDGE:", background_live_bridge.summary())
     print("MARKET FIRST STRUCTURE FIBO CONTACT:", structure_fibo.summary())
     print("MARKET FIRST SUPERTREND SHADOW:", supertrend_shadow.summary())
-    print("MARKET FIRST V7 2H CONTEXT SHADOW:", context_2h_shadow.summary())
+    print("MARKET FIRST 2H CONTEXT SHADOW:", context_2h_shadow.summary())
     print("MARKET FIRST PROMOTION REASONS:", promotion_reason_patch.summary())
     print("MARKET FIRST 2H SWING TRACKING FIX:", swing_tracking_fix.status())
     print("MARKET FIRST PRE-ENTRY SHADOW:", pre_entry_shadow.summary())
@@ -111,7 +109,7 @@ def main() -> None:
     print("MARKET FIRST TAO QUALITY BRIDGE:", tao_quality_bridge.summary())
     print("MARKET FIRST FINAL EXECUTION GATE:", final_execution_gate.summary())
     print("MARKET FIRST HIGH PROFIT / LOW SL:", high_profit_low_sl.summary())
-    print("MARKET FIRST A++ CONVERGENCE:", a_plus_plus_convergence.summary())
+    print("MARKET FIRST A++ CONVERGENCE: LIVE GATE OFF | 2H/ENTRY PLAN EVIDENCE REMAINS SHADOW")
     print("MARKET FIRST SELECTIVE PRE-SIGNAL:", selective_pre_signal.summary())
     print("MARKET FIRST V6 CORE GUARD:", balanced_core_guard.summary())
     print("MARKET FIRST PROFIT LOCK:", profit_lock.summary())
@@ -125,13 +123,13 @@ def main() -> None:
         print("MARKET FIRST TAO QUALITY RUN:", tao_quality_bridge.summary())
         print("MARKET FIRST FINAL EXECUTION RUN:", final_execution_gate.finish())
         print("MARKET FIRST HIGH PROFIT / LOW SL RUN:", high_profit_low_sl.finish())
-        print("MARKET FIRST A++ CONVERGENCE RUN:", a_plus_plus_convergence.finish())
+        print("MARKET FIRST A++ CONVERGENCE RUN: LIVE GATE OFF")
         print("MARKET FIRST SELECTIVE PRE-SIGNAL RUN:", selective_pre_signal.summary())
         print("MARKET FIRST V6 CORE GUARD RUN:", balanced_core_guard.summary())
         print("MARKET FIRST BACKGROUND LIVE BRIDGE RUN:", background_live_bridge.finish())
         print("MARKET FIRST STRUCTURE FIBO RUN:", structure_fibo.finish())
         print("MARKET FIRST SUPERTREND SHADOW RUN:", supertrend_shadow.finish(runner.bot))
-        print("MARKET FIRST V7 2H CONTEXT SHADOW RUN:", context_2h_shadow.finish(runner.bot))
+        print("MARKET FIRST 2H CONTEXT SHADOW RUN:", context_2h_shadow.finish(runner.bot))
         print("MARKET FIRST PROFIT LOCK RUN:", profit_lock.summary())
 
     # Daily diagnostics remain persisted by the reporting/ledger layers, but
