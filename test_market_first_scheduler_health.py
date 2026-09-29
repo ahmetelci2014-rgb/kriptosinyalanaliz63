@@ -48,13 +48,14 @@ def test_run_persists_file(tmp_path):
     assert payload["run"]["number"] == "7"
 
 
-def test_live_workflow_uses_day_trading_internal_five_minute_cadence():
+def test_live_workflow_uses_market_first_internal_five_minute_cadence():
     text = Path(".github/workflows/main.yml").read_text(encoding="utf-8")
-    # Market First scheduler-health remains available for historical diagnostics,
-    # but it is intentionally outside the new Day Trading live execution path.
-    assert "python market_first_scheduler_health.py" not in text
-    assert "market_first_scheduler_health.json" not in text
-    assert "python day_trading_all_coins_runner.py" in text
+    # Market First V6 is the restored live path. Scheduler health is recorded on
+    # every actual scan so the effective five-minute cadence stays observable.
+    assert "python market_first_scheduler_health.py" in text
+    assert "market_first_scheduler_health.json" in text
+    assert "python market_first_live_simple.py" in text
+    assert "python day_trading_all_coins_runner.py" not in text
     assert "cycles=3" in text
     assert "target_interval=300" in text
     assert 'sleep "$sleep_for"' in text

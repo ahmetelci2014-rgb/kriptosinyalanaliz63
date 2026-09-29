@@ -41,7 +41,7 @@ def test_fast_entry_cannot_bypass_high_profit_low_sl_gate():
     assert evidence["high_profit_low_sl_certified"] is False
 
 
-def test_a_plus_cannot_bypass_a_plus_plus_convergence():
+def test_a_plus_can_pass_without_a_plus_plus_when_other_guards_are_met():
     signal = {
         "symbol": "TESTUSDT",
         "direction": "LONG",
@@ -58,9 +58,10 @@ def test_a_plus_cannot_bypass_a_plus_plus_convergence():
 
     ok, reason, evidence = guard.evaluate_signal(signal)
 
-    assert ok is False
-    assert reason == "A_PLUS_PLUS_CONVERGENCE_NOT_CERTIFIED"
+    assert ok is True
+    assert reason == "OK"
     assert evidence["a_plus_plus_convergence_certified"] is False
+    assert evidence["a_plus_plus_live_required"] is False
 
 
 def test_fast_entry_can_continue_after_all_certifications():
@@ -149,7 +150,7 @@ def test_non_fast_real_send_also_requires_a_plus():
     assert reason == "HIGH_PROFIT_LOW_SL_NOT_CERTIFIED"
 
 
-def test_non_fast_real_send_also_requires_a_plus_plus():
+def test_non_fast_a_plus_send_does_not_require_a_plus_plus():
     signal = {
         "symbol": "TESTUSDT",
         "direction": "SHORT",
@@ -164,7 +165,8 @@ def test_non_fast_real_send_also_requires_a_plus_plus():
         "high_profit_low_sl_grade": "A+",
     }
 
-    ok, reason, _ = guard.evaluate_signal(signal)
+    ok, reason, evidence = guard.evaluate_signal(signal)
 
-    assert ok is False
-    assert reason == "A_PLUS_PLUS_CONVERGENCE_NOT_CERTIFIED"
+    assert ok is True
+    assert reason == "OK"
+    assert evidence["a_plus_plus_live_required"] is False
