@@ -439,24 +439,24 @@
       "expected_move_percent": 1.476,
       "technical_target_r": 2.0,
       "opened_at": 1790738793,
-      "last_checked_at": 1790744187,
-      "last_bar_ts": 1790744100,
-      "last_price": 0.04244,
+      "last_checked_at": 1790745106,
+      "last_bar_ts": 1790745000,
+      "last_price": 0.04271,
       "status": "OPEN",
       "first_result": "TP1_FIRST",
       "final_result": null,
-      "max_target_hit": 1,
+      "max_target_hit": 2,
       "tp1_hit_at": 1790742000,
-      "tp2_hit_at": 0,
+      "tp2_hit_at": 1790744460,
       "tp3_hit_at": 0,
       "sl_hit_at": 0,
       "closed_at": 0,
       "exit_price": null,
-      "best_favorable_percent": 0.8275,
+      "best_favorable_percent": 1.0872,
       "worst_adverse_percent": 0.5886,
-      "best_favorable_r": 1.2001,
+      "best_favorable_r": 1.5766,
       "worst_adverse_r": 0.8536,
-      "hold_minutes": 89.9
+      "hold_minutes": 105.22
     },
     "METISUSDT:SHORT:1790740098": {
       "trade_id": "METISUSDT:SHORT:1790740098",
@@ -593,38 +593,84 @@
       "best_favorable_r": 0.0,
       "worst_adverse_r": 1.0178,
       "hold_minutes": 5.25
+    },
+    "KAITOUSDT:SHORT:1790744819": {
+      "trade_id": "KAITOUSDT:SHORT:1790744819",
+      "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
+      "source": "SELECTIVE_PRE_SIGNAL_TELEGRAM",
+      "symbol": "KAITOUSDT",
+      "direction": "SHORT",
+      "market_label": "AŞAĞI",
+      "market_regime": "BEAR",
+      "score": 94,
+      "rejection_reason": "BACKGROUND_MULTI_BLOCK:RISK_DEAD_ZONE_0_46_0_70+CVD_IMPULSE_OPPOSITE",
+      "blockers": [
+        "RISK_DEAD_ZONE_0_46_0_70",
+        "CVD_IMPULSE_OPPOSITE"
+      ],
+      "zone_low": 0.3353427203,
+      "zone_high": 0.3360140771,
+      "entry": 0.3356783987,
+      "sl": 0.3378292857,
+      "tp1": 0.3339280357,
+      "tp2": 0.3328133929,
+      "tp3": 0.3311414286,
+      "technical_target": 0.3302,
+      "risk_abs": 0.002150887,
+      "risk_percent": 0.6408,
+      "expected_move_percent": 1.609,
+      "technical_target_r": 2.422,
+      "opened_at": 1790744819,
+      "last_checked_at": 1790745107,
+      "last_bar_ts": 1790745000,
+      "last_price": 0.3342,
+      "status": "OPEN",
+      "first_result": null,
+      "final_result": null,
+      "max_target_hit": 0,
+      "tp1_hit_at": 0,
+      "tp2_hit_at": 0,
+      "tp3_hit_at": 0,
+      "sl_hit_at": 0,
+      "closed_at": 0,
+      "exit_price": null,
+      "best_favorable_percent": 0.5,
+      "worst_adverse_percent": 0.0,
+      "best_favorable_r": 0.7803,
+      "worst_adverse_r": 0.0,
+      "hold_minutes": 4.8
     }
   },
   "summary": {
     "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
     "mode": "TELEGRAM_BACKGROUND_CANDIDATE_SHADOW_ONLY_NO_LIVE_EFFECT",
-    "total": 13,
-    "open": 1,
+    "total": 14,
+    "open": 2,
     "closed": 12,
     "decided_tp1_vs_sl": 13,
     "tp1_first": 9,
     "sl_first": 4,
     "tp1_first_rate": 0.6923,
     "tp1_reached": 9,
-    "tp2_reached": 6,
+    "tp2_reached": 7,
     "tp3_reached": 5,
     "final_results": {
       "SL_FIRST": 4,
       "TP3": 5,
       "SL_AFTER_TP1": 2,
-      "OPEN": 1,
+      "OPEN": 2,
       "SL_AFTER_TP2": 1
     },
     "by_blocker": {
       "RISK_DEAD_ZONE_0_46_0_70": {
-        "samples": 6,
+        "samples": 7,
         "decided": 6,
         "tp1_first": 4,
         "sl_first": 2,
         "tp1_first_rate": 0.6667,
         "tp3_reached": 2,
-        "avg_mfe_percent": 0.6999,
-        "avg_mae_percent": 0.4838
+        "avg_mfe_percent": 0.6713,
+        "avg_mae_percent": 0.4147
       },
       "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": {
         "samples": 7,
@@ -633,7 +679,7 @@
         "sl_first": 3,
         "tp1_first_rate": 0.5714,
         "tp3_reached": 2,
-        "avg_mfe_percent": 0.6925,
+        "avg_mfe_percent": 0.7296,
         "avg_mae_percent": 0.508
       },
       "EXPECTED_MOVE_BELOW_2P": {
@@ -667,17 +713,17 @@
         "avg_mae_percent": 0.2751
       },
       "CVD_IMPULSE_OPPOSITE": {
-        "samples": 2,
+        "samples": 3,
         "decided": 2,
         "tp1_first": 2,
         "sl_first": 0,
         "tp1_first_rate": 1.0,
         "tp3_reached": 2,
-        "avg_mfe_percent": 0.8206,
-        "avg_mae_percent": 0.2654
+        "avg_mfe_percent": 0.7137,
+        "avg_mae_percent": 0.1769
       }
     },
     "note": "Telegram arka plan adaylari icin golge olcum; gercek islem veya gercek PnL degildir."
   },
-  "updated_at": 1790744308
+  "updated_at": 1790745227
 }
