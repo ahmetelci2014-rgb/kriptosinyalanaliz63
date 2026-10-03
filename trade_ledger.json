@@ -204404,16 +204404,26 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "PROFIT_LOCK_BE",
+      "r_result": 0.0,
+      "exit_price": 0.6953,
+      "closed_at": 1791020768,
+      "closed_day": "2026-10-03",
       "events": [
         {
           "time": 1791005935,
           "event": "OPENED",
+          "price": 0.6953
+        },
+        {
+          "time": 1791020768,
+          "event": "BE",
+          "price": 0.6953
+        },
+        {
+          "time": 1791020768,
+          "event": "PROFIT_LOCK_BE",
           "price": 0.6953
         }
       ],
@@ -204486,10 +204496,25 @@
         "15m": "SHORT",
         "1h": "SHORT"
       },
-      "last_tracking_at": 1791020460
+      "last_tracking_at": 1791020460,
+      "duration_minutes": 247,
+      "diagnosis": {
+        "version": "MARKET_FIRST_PROFIT_LOCK_V2_2026_09_25",
+        "primary": "KAR_KORUMA_BE",
+        "confidence": "YUKSEK",
+        "provisional": false,
+        "factors": [
+          "TP1 öncesi en az 1.00R lehe hareket görüldü.",
+          "Manuel koruma talimatı sonrası kalan işlem girişten kapandı."
+        ]
+      },
+      "profit_lock_version": "MARKET_FIRST_PROFIT_LOCK_V2_2026_09_25",
+      "profit_lock_trigger_r": 1.0,
+      "profit_lock_armed_at": 1791010500,
+      "profit_lock_effective_at": 1791010560
     }
   },
-  "last_update": 1791020475,
+  "last_update": 1791020768,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
