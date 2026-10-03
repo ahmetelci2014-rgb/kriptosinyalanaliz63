@@ -1,6 +1,6 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1791038619,
+  "generated_at": 1791039506,
   "status": "CAPITAL_RECOVERY_STRICT",
   "survival": {
     "mode": "RECOVERY_STRICT",
@@ -16,22 +16,21 @@
   },
   "latest_gate_layers": {
     "profit_quality": {
-      "accepted": 0,
+      "accepted": 2,
       "run_counts": {
-        "SCORE_BELOW_88": 1,
-        "RISK_DEAD_ZONE_0_46_0_70": 1
+        "OK": 2,
+        "ACCEPTED": 2
       },
-      "blocks": {
-        "SCORE_BELOW_88": 1,
-        "RISK_DEAD_ZONE_0_46_0_70": 1
-      }
+      "blocks": {}
     },
     "final_execution": {
       "accepted": 0,
       "run_counts": {
-        "UPSTREAM_REJECTED": 4
+        "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": 2
       },
-      "blocks": {}
+      "blocks": {
+        "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": 2
+      }
     },
     "capital_survival": {
       "accepted": 0,
@@ -42,9 +41,9 @@
     }
   },
   "top_latest_blocker": {
-    "layer": "profit_quality",
-    "reason": "SCORE_BELOW_88",
-    "count": 1
+    "layer": "final_execution",
+    "reason": "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE",
+    "count": 2
   },
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
