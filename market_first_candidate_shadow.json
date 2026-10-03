@@ -4169,24 +4169,24 @@
       "expected_move_percent": 2.467,
       "technical_target_r": 2.0,
       "opened_at": 1791006751,
-      "last_checked_at": 1791037596,
-      "last_bar_ts": 1791037500,
+      "last_checked_at": 1791037620,
+      "last_bar_ts": 1791037620,
       "last_price": 37.24,
-      "status": "OPEN",
+      "status": "CLOSED",
       "first_result": "TP1_FIRST",
-      "final_result": null,
+      "final_result": "SL_AFTER_TP1",
       "max_target_hit": 1,
       "tp1_hit_at": 1791014280,
       "tp2_hit_at": 0,
       "tp3_hit_at": 0,
-      "sl_hit_at": 0,
-      "closed_at": 0,
-      "exit_price": null,
+      "sl_hit_at": 1791037620,
+      "closed_at": 1791037620,
+      "exit_price": 37.2644599375,
       "best_favorable_percent": 1.3902,
-      "worst_adverse_percent": 0.388,
+      "worst_adverse_percent": 0.5766,
       "best_favorable_r": 3.4756,
-      "worst_adverse_r": 0.97,
-      "hold_minutes": 514.08
+      "worst_adverse_r": 1.4415,
+      "hold_minutes": 514.48
     },
     "AUCTIONUSDT:LONG:1791007375": {
       "trade_id": "AUCTIONUSDT:LONG:1791007375",
@@ -4598,38 +4598,84 @@
       "best_favorable_r": 0.5935,
       "worst_adverse_r": 1.6055,
       "hold_minutes": 14.48
+    },
+    "ZECUSDT:SHORT:1791038301": {
+      "trade_id": "ZECUSDT:SHORT:1791038301",
+      "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
+      "source": "SELECTIVE_PRE_SIGNAL_TELEGRAM",
+      "symbol": "ZECUSDT",
+      "direction": "SHORT",
+      "market_label": "KARIŞIK",
+      "market_regime": "CHOP",
+      "score": 92,
+      "rejection_reason": "BACKGROUND_MULTI_BLOCK:RISK_DEAD_ZONE_0_46_0_70+CVD_IMPULSE_OPPOSITE",
+      "blockers": [
+        "RISK_DEAD_ZONE_0_46_0_70",
+        "CVD_IMPULSE_OPPOSITE"
+      ],
+      "zone_low": 1299.4964239929,
+      "zone_high": 1302.0980184353,
+      "entry": 1300.7972212141,
+      "sl": 1308.4203571429,
+      "tp1": 1295.0798692675,
+      "tp2": 1291.2683013032,
+      "tp3": 1285.5509493566,
+      "technical_target": 1270.54,
+      "risk_abs": 7.6231359288,
+      "risk_percent": 0.586,
+      "expected_move_percent": 1.985,
+      "technical_target_r": 2.118,
+      "opened_at": 1791038301,
+      "last_checked_at": 1791038495,
+      "last_bar_ts": 1791038400,
+      "last_price": 1294.88,
+      "status": "OPEN",
+      "first_result": "TP1_FIRST",
+      "final_result": null,
+      "max_target_hit": 1,
+      "tp1_hit_at": 1791038340,
+      "tp2_hit_at": 0,
+      "tp3_hit_at": 0,
+      "sl_hit_at": 0,
+      "closed_at": 0,
+      "exit_price": null,
+      "best_favorable_percent": 0.4926,
+      "worst_adverse_percent": 0.0,
+      "best_favorable_r": 0.8405,
+      "worst_adverse_r": 0.0,
+      "hold_minutes": 3.23
     }
   },
   "summary": {
     "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
     "mode": "TELEGRAM_BACKGROUND_CANDIDATE_SHADOW_ONLY_NO_LIVE_EFFECT",
-    "total": 101,
+    "total": 102,
     "open": 1,
-    "closed": 100,
-    "decided_tp1_vs_sl": 101,
-    "tp1_first": 68,
+    "closed": 101,
+    "decided_tp1_vs_sl": 102,
+    "tp1_first": 69,
     "sl_first": 33,
-    "tp1_first_rate": 0.6733,
-    "tp1_reached": 68,
+    "tp1_first_rate": 0.6765,
+    "tp1_reached": 69,
     "tp2_reached": 52,
     "tp3_reached": 34,
     "final_results": {
       "SL_FIRST": 33,
       "TP3": 34,
-      "SL_AFTER_TP1": 15,
+      "SL_AFTER_TP1": 16,
       "SL_AFTER_TP2": 18,
       "OPEN": 1
     },
     "by_blocker": {
       "RISK_DEAD_ZONE_0_46_0_70": {
-        "samples": 51,
-        "decided": 51,
-        "tp1_first": 29,
+        "samples": 52,
+        "decided": 52,
+        "tp1_first": 30,
         "sl_first": 22,
-        "tp1_first_rate": 0.5686,
+        "tp1_first_rate": 0.5769,
         "tp3_reached": 12,
-        "avg_mfe_percent": 0.6473,
-        "avg_mae_percent": 0.5908
+        "avg_mfe_percent": 0.6443,
+        "avg_mae_percent": 0.5831
       },
       "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": {
         "samples": 43,
@@ -4639,7 +4685,7 @@
         "tp1_first_rate": 0.6977,
         "tp3_reached": 16,
         "avg_mfe_percent": 0.8039,
-        "avg_mae_percent": 0.4703
+        "avg_mae_percent": 0.4746
       },
       "EXPECTED_MOVE_BELOW_2P": {
         "samples": 16,
@@ -4672,14 +4718,14 @@
         "avg_mae_percent": 0.5342
       },
       "CVD_IMPULSE_OPPOSITE": {
-        "samples": 24,
-        "decided": 24,
-        "tp1_first": 16,
+        "samples": 25,
+        "decided": 25,
+        "tp1_first": 17,
         "sl_first": 8,
-        "tp1_first_rate": 0.6667,
+        "tp1_first_rate": 0.68,
         "tp3_reached": 7,
-        "avg_mfe_percent": 0.6557,
-        "avg_mae_percent": 0.5911
+        "avg_mfe_percent": 0.6492,
+        "avg_mae_percent": 0.5674
       },
       "NO_FRESH_MICRO_DERIVATIVES_WEAK": {
         "samples": 1,
@@ -4694,5 +4740,5 @@
     },
     "note": "Telegram arka plan adaylari icin golge olcum; gercek islem veya gercek PnL degildir."
   },
-  "updated_at": 1791037697
+  "updated_at": 1791038618
 }
