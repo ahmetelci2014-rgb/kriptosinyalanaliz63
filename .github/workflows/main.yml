@@ -1,9 +1,13 @@
 name: Market First V6 - Balanced Core Live
 
 on:
-  # cron-job.org remains the single external dispatcher. Observed dispatches are
-  # roughly 15 minutes apart, so each dispatch performs three stateful scans
-  # at an effective 5-minute cadence inside one workflow run.
+  # GitHub's own scheduler is the primary dispatcher so the bot keeps running
+  # even if an external cron service stops. Each 15-minute workflow run performs
+  # three stateful scans at an effective 5-minute cadence.
+  # Minutes are offset from the top of the hour to reduce GitHub scheduler load.
+  schedule:
+    - cron: "7,22,37,52 * * * *"
+  # Keep manual/external dispatch available for recovery and diagnostics.
   workflow_dispatch:
 
 permissions:
