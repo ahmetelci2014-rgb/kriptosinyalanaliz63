@@ -1,10 +1,10 @@
-"""Observe Market First trigger cadence without changing scheduling or trading.
+"""Observe Market First scan cadence without changing scheduling or trading.
 
-The live workflow is externally dispatched. This module records the interval
-between successful workflow starts so scheduler drift (for example an intended
-5-minute trigger actually arriving every 15 minutes) becomes visible in repo
-state. It never sends Telegram messages, changes strategy thresholds or opens
-exchange orders.
+The live workflow now runs as a self-dispatch chain with a separate stale-chain
+watchdog. This module records the interval between actual Market First scans so
+cadence drift becomes visible in repo state regardless of which dispatcher
+started the workflow. It never sends Telegram messages, changes strategy
+thresholds or opens exchange orders.
 """
 from __future__ import annotations
 
@@ -111,7 +111,7 @@ def build_payload(
         },
         "note": (
             "Observational only. A delayed cadence does not change live strategy; "
-            "it flags that the external trigger is arriving slower than the intended 5-minute cadence."
+            "it flags that the scanner cadence is slower than the intended 5-minute cadence."
         ),
     }
 
