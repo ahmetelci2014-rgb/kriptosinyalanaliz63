@@ -59,3 +59,28 @@ def test_upstream_rejected_is_not_double_counted_as_new_blocker():
     assert report["latest_gate_layers"]["final_execution"]["blocks"] == {}
     assert report["latest_gate_layers"]["capital_survival"]["blocks"] == {}
     assert report["top_latest_blocker"] is None
+
+
+def test_historical_telegram_failure_does_not_look_like_current_outage():
+    report = build_report(
+        {"funnel": {"entry_promoted": 10, "entry_signal_sent": 0}},
+        {
+            "entry_plan_clean": {"entry_promoted": 10, "entry_signal_sent": 0},
+            "entry_plan": {"entry_send_failed": 1},
+        },
+        {"run_counts": {}},
+        {"run_counts": {}},
+        {"run_counts": {}},
+        {"health": {"mode": "RECOVERY_STRICT", "reason": "OLD"}},
+        generated_at=789,
+        previous_report={
+            "funnel_truth": {
+                "real_telegram_send_failures": 1,
+            }
+        },
+    )
+
+    truth = report["funnel_truth"]
+    assert truth["real_telegram_send_failures"] == 1
+    assert truth["new_real_telegram_send_failures"] == 0
+    assert report["status"] == "FINAL_ADMISSION_GAP"
