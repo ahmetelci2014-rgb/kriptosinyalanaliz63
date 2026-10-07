@@ -1,10 +1,10 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1791392708,
-  "status": "CAPITAL_RECOVERY_STRICT",
+  "generated_at": 1791393533,
+  "status": "TELEGRAM_DELIVERY_FAILURE_PRESENT",
   "survival": {
-    "mode": "RECOVERY_STRICT",
-    "reason": "CRITICAL_ROLLING_STOP_RATE"
+    "mode": "NOT_IN_LIVE_PATH",
+    "reason": "V6_BALANCED_CORE_CURRENT_LIVE_TOPOLOGY"
   },
   "funnel_truth": {
     "internal_promoted": 479,
@@ -18,36 +18,36 @@
     "profit_quality": {
       "accepted": 0,
       "run_counts": {
-        "VOLUME_ABOVE_2_00_LATE": 1
+        "RISK_DEAD_ZONE_0_46_0_70": 2,
+        "RISK_ABOVE_1_00": 1
       },
       "blocks": {
-        "VOLUME_ABOVE_2_00_LATE": 1
+        "RISK_DEAD_ZONE_0_46_0_70": 2,
+        "RISK_ABOVE_1_00": 1
       }
     },
     "final_execution": {
       "accepted": 0,
       "run_counts": {
-        "UPSTREAM_REJECTED": 5
+        "UPSTREAM_REJECTED": 7
       },
       "blocks": {}
     },
     "capital_survival": {
       "accepted": 0,
-      "run_counts": {
-        "UPSTREAM_REJECTED": 3
-      },
+      "run_counts": {},
       "blocks": {}
     }
   },
   "top_latest_blocker": {
     "layer": "profit_quality",
-    "reason": "VOLUME_ABOVE_2_00_LATE",
-    "count": 1
+    "reason": "RISK_DEAD_ZONE_0_46_0_70",
+    "count": 2
   },
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
     "real_telegram_send_failures": "Ledger rows where the system actually attempted the final send path and recorded failure.",
-    "capital_rule": "RECOVERY_STRICT/HALT remains authoritative; this diagnostic never relaxes it."
+    "capital_rule": "Legacy RECOVERY_STRICT/HALT is historical only in current V6 Balanced Core."
   },
   "strategy_mutation": false,
   "exchange_orders": false,
