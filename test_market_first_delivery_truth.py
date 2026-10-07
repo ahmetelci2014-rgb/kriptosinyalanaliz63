@@ -32,11 +32,15 @@ def test_promoted_unsent_is_not_counted_as_telegram_failure():
     assert truth["real_telegram_send_failures"] == 3
     assert truth["internal_final_admission_gap"] == 93
     assert truth["promotion_is_send_attempt"] is False
-    assert report["status"] == "CAPITAL_RECOVERY_STRICT"
+    # Current V6 Balanced Core does not install the legacy survival gate.
+    # A real send failure therefore remains the authoritative delivery status.
+    assert report["survival"]["mode"] == "NOT_IN_LIVE_PATH"
+    assert report["status"] == "TELEGRAM_DELIVERY_FAILURE_PRESENT"
+    assert report["latest_gate_layers"]["capital_survival"]["blocks"] == {}
     assert report["top_latest_blocker"] == {
-        "layer": "capital_survival",
-        "reason": "RECOVERY_SCORE",
-        "count": 4,
+        "layer": "final_execution",
+        "reason": "TAKER_CVD_OPPOSITE",
+        "count": 3,
     }
 
 
