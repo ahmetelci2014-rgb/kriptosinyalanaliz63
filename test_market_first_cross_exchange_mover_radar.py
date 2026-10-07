@@ -128,3 +128,28 @@ def test_install_prepends_cross_exchange_priority_without_bypassing_max_scan(mon
         assert "cross_exchange_mover" in state
     finally:
         radar._INSTALLED = previous_installed
+
+
+def test_binance_451_backoff_skips_repeated_network_calls():
+    called = False
+
+    def opener(*args, **kwargs):
+        nonlocal called
+        called = True
+        raise AssertionError("network should not be called during 451 backoff")
+
+    result = radar.scan(
+        {"BTCUSDT", "ETHUSDT"},
+        previous_state={
+            "previous_prices": {"BTCUSDT": 100.0},
+            "blocked_until": 200,
+        },
+        now=100,
+        opener=opener,
+    )
+
+    assert called is False
+    assert result["fetch_ok"] is False
+    assert result["error"] == "BINANCE_HTTP_451_BACKOFF"
+    assert result["blocked_until"] == 200
+    assert result["previous_prices"] == {"BTCUSDT": 100.0}
