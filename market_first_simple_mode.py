@@ -68,6 +68,7 @@ ALLOWED_TELEGRAM_PREFIXES = (
     "🚨 KRİPTO İŞLEM",
     "✅ İŞLEM FIRSATI",
     "👀 ARKA PLAN ADAYI",
+    "🎯 FIRSAT YAKALANDI – 🟠 ERKEN GİRİŞ UYGUN",
     "🛡️ KÂR KORUMA AKTİF",
 )
 
