@@ -134,6 +134,7 @@ def build_report(
     survival_v2: Mapping[str, Any] | None,
     *,
     generated_at: Optional[int] = None,
+    previous_report: Mapping[str, Any] | None = None,
 ) -> Dict[str, Any]:
     conversion = conversion if isinstance(conversion, Mapping) else {}
     opportunity = opportunity if isinstance(opportunity, Mapping) else {}
@@ -141,6 +142,7 @@ def build_report(
     final_execution = final_execution if isinstance(final_execution, Mapping) else {}
     survival = survival if isinstance(survival, Mapping) else {}
     survival_v2 = survival_v2 if isinstance(survival_v2, Mapping) else {}
+    previous_report = previous_report if isinstance(previous_report, Mapping) else {}
 
     funnel = conversion.get("funnel") if isinstance(conversion.get("funnel"), Mapping) else {}
     clean = opportunity.get("entry_plan_clean") if isinstance(opportunity.get("entry_plan_clean"), Mapping) else {}
@@ -155,6 +157,9 @@ def build_report(
     # candidate with no send result is merely an internal admission gap.
     send_failed = _si(clean.get("entry_send_failed"), _si(broad.get("entry_send_failed")))
     send_failed = min(send_failed, promoted_unsent)
+    previous_funnel = previous_report.get("funnel_truth") if isinstance(previous_report.get("funnel_truth"), Mapping) else {}
+    previous_send_failed = _si(previous_funnel.get("real_telegram_send_failures"))
+    new_send_failed = max(0, send_failed - previous_send_failed)
     internal_final_admission_gap = max(0, promoted_unsent - send_failed)
 
     pq_counts = _run_counts(profit_quality)
@@ -192,7 +197,7 @@ def build_report(
         status = "CAPITAL_HALT"
     elif survival_mode == "RECOVERY_STRICT":
         status = "CAPITAL_RECOVERY_STRICT"
-    elif send_failed > 0:
+    elif new_send_failed > 0:
         status = "TELEGRAM_DELIVERY_FAILURE_PRESENT"
     elif internal_final_admission_gap > 0:
         status = "FINAL_ADMISSION_GAP"
@@ -212,6 +217,7 @@ def build_report(
             "real_signal_sent": sent,
             "promoted_unsent": promoted_unsent,
             "real_telegram_send_failures": send_failed,
+            "new_real_telegram_send_failures": new_send_failed,
             "internal_final_admission_gap": internal_final_admission_gap,
             "promotion_is_send_attempt": False,
         },
@@ -223,7 +229,7 @@ def build_report(
                 "It must not be interpreted as a Telegram transport failure."
             ),
             "real_telegram_send_failures": (
-                "Ledger rows where the system actually attempted the final send path and recorded failure."
+                "Cumulative ledger rows where the final Telegram send path recorded failure; current status only changes when this count increases."
             ),
             "capital_rule": (
                 "Legacy RECOVERY_STRICT/HALT is historical only in current V6 Balanced Core."
@@ -236,6 +242,7 @@ def build_report(
 
 
 def run() -> Dict[str, Any]:
+    previous_report = _load(OUTPUT_FILE, {})
     report = build_report(
         _load(CONVERSION_FILE, {}),
         _load(OPPORTUNITY_FILE, {}),
@@ -243,6 +250,7 @@ def run() -> Dict[str, Any]:
         _load(FINAL_EXECUTION_FILE, {}),
         _load(SURVIVAL_FILE, {}),
         _load(SURVIVAL_V2_FILE, {}),
+        previous_report=previous_report,
     )
     _atomic_save(OUTPUT_FILE, report)
     print("MARKET FIRST DELIVERY TRUTH:", report)
