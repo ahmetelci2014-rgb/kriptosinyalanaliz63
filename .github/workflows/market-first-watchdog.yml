@@ -1,0 +1,62 @@
+name: Market First V6 Watchdog
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Repo indir
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Zincir sagligini kontrol et
+        id: health
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, os, time
+          from pathlib import Path
+
+          path = Path("market_first_scheduler_health.json")
+          stale = True
+          age = None
+          if path.exists():
+              try:
+                  data = json.loads(path.read_text(encoding="utf-8"))
+                  last = int(data.get("last_run_at") or 0)
+                  if last > 0:
+                      age = max(0, int(time.time()) - last)
+                      stale = age > 20 * 60
+              except Exception as exc:
+                  print("Health okunamadi:", type(exc).__name__, exc)
+
+          print(f"Market First health age_seconds={age} stale={stale}")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+              handle.write(f"stale={'true' if stale else 'false'}\n")
+          PY
+
+      - name: Zincir durmussa Market First'i yeniden baslat
+        if: ${{ steps.health.outputs.stale == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          echo "Market First zinciri 20 dakikadan uzun suredir sessiz; yeniden baslatiliyor."
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/main.yml/dispatches" \
+            -f ref=main
+
+      - name: Zincir saglikliysa dokunma
+        if: ${{ steps.health.outputs.stale != 'true' }}
+        run: echo "Market First zinciri saglikli; yeni kosu tetiklenmedi."
