@@ -1,17 +1,16 @@
 name: Market First V6 - Balanced Core Live
 
 on:
-  # GitHub's own scheduler is the primary dispatcher so the bot keeps running
-  # even if an external cron service stops. Each 15-minute workflow run performs
-  # three stateful scans at an effective 5-minute cadence.
-  # Minutes are offset from the top of the hour to reduce GitHub scheduler load.
+  # Successful runs self-dispatch the next run, keeping the scanner continuous.
+  # GitHub schedule is only a watchdog in case the self-chain is interrupted.
   schedule:
-    - cron: "7,22,37,52 * * * *"
+    - cron: "17 * * * *"
   # Keep manual/external dispatch available for recovery and diagnostics.
   workflow_dispatch:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: market-first-v6-live
@@ -193,3 +192,15 @@ jobs:
           done
 
           exit 1
+
+      - name: Sonraki Market First kosusunu tetikle
+        if: ${{ success() && github.ref_name == 'main' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          echo "Bir sonraki Market First V6 kosusu tetikleniyor."
+          gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/main.yml/dispatches" \
+            -f ref=main
