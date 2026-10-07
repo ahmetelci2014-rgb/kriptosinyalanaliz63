@@ -4,6 +4,12 @@ on:
   # The live scanner runs as a single self-dispatch chain.
   # A separate watchdog workflow restarts it only if scheduler health is stale.
   workflow_dispatch:
+    inputs:
+      force:
+        description: "Manuel acil baslatma; eski dis cron tetiklerini varsayilan olarak reddeder."
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -17,6 +23,10 @@ concurrency:
 
 jobs:
   market-first:
+    # Self-chain/watchdog dispatches are performed by github-actions[bot].
+    # Human/PAT dispatches (including an old external cron) require force=true,
+    # preventing a recovered legacy dispatcher from creating a duplicate chain.
+    if: ${{ github.actor == 'github-actions[bot]' || inputs.force == true }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
