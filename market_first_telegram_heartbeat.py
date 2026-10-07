@@ -16,6 +16,7 @@ STATE_FILE = Path("market_first_telegram_heartbeat_state.json")
 HEALTH_FILE = Path("market_first_scheduler_health.json")
 DIAG_FILE = Path("market_first_diagnostics.json")
 DELIVERY_FILE = Path("market_first_delivery_truth.json")
+TELEGRAM_DELIVERY_FILE = Path("telegram_delivery_market_first_v5.json")
 COOLDOWN_SECONDS = 2 * 60 * 60
 
 
@@ -66,7 +67,13 @@ def main() -> None:
     state = _load(STATE_FILE)
     last_sent = int(state.get("last_sent_at") or 0)
     if now - last_sent < COOLDOWN_SECONDS:
-        print("TELEGRAM HEARTBEAT: cooldown aktif.")
+        print("TELEGRAM HEARTBEAT: kendi cooldown aktif.")
+        return
+
+    delivery_state = _load(TELEGRAM_DELIVERY_FILE)
+    last_user_message = int(delivery_state.get("last_update") or 0)
+    if last_user_message and now - last_user_message < COOLDOWN_SECONDS:
+        print("TELEGRAM HEARTBEAT: yakin zamanda kullanici mesaji var; heartbeat gereksiz.")
         return
 
     health = _load(HEALTH_FILE)
