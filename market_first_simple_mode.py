@@ -1,13 +1,15 @@
 """Simple Telegram presentation for the single Market First live system.
 
 All preparation, early-alert, swing and direction ledgers keep running internally.
-Telegram is deliberately limited to only two user-facing concepts:
+Telegram is deliberately limited to a small set of actionable user-facing concepts:
 - real trade entry,
-- strong background candidate (explicitly labelled as NOT a trade).
+- strong background candidate (explicitly labelled as NOT a trade),
+- qualified early-entry heads-up,
+- actionable profit-lock instruction.
 
-TP/SL/BE, daily reports, early lifecycle updates, ordinary preparations, swing
-preparations and every other operational message stay internal. All ledgers and
-performance tracking continue normally.
+TP/SL/BE, daily reports, ordinary preparations, swing preparations and every
+other operational message stay internal. All ledgers and performance tracking
+continue normally.
 """
 from __future__ import annotations
 
@@ -59,10 +61,9 @@ SUPPRESSED_MARKERS = (
     "İşlem teyidi değildir",
 )
 
-# User-facing V6 Telegram is intentionally reduced to two concepts:
-# 1) a real trade entry,
-# 2) a strong background candidate that is explicitly NOT a trade.
-# Different real-trade formatters use one of the prefixes below.
+# User-facing V6 Telegram is intentionally restricted to actionable/clear concepts:
+# real trade, explicit background candidate, qualified early-entry heads-up,
+# and profit-lock instruction. Different formatters use the prefixes below.
 ALLOWED_TELEGRAM_PREFIXES = (
     "🚨 KALİTELİ KRİPTO İŞLEM",
     "🚨 KRİPTO İŞLEM",
@@ -327,7 +328,7 @@ def install_simple_mode() -> None:
 def summary() -> dict:
     return {
         "version": VERSION,
-        "telegram_mode": "REAL_TRADE_BACKGROUND_PLUS_ACTIONABLE_PROFIT_LOCK",
+        "telegram_mode": "REAL_TRADE_BACKGROUND_QUALIFIED_EARLY_PLUS_ACTIONABLE_PROFIT_LOCK",
         "allowed_prefixes": list(ALLOWED_TELEGRAM_PREFIXES),
         "real_trades": "TELEGRAM",
         "background_candidates": "TELEGRAM",
