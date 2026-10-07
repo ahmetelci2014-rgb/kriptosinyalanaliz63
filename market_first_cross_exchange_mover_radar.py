@@ -26,6 +26,7 @@ MIN_24H_MOVE_PERCENT = 8.00
 MAX_MOVER_RECORDS = 40
 MAX_OKX_PRIORITY = 12
 HTTP_TIMEOUT_SECONDS = 8.0
+HTTP_451_BACKOFF_SECONDS = 6 * 60 * 60
 
 _INSTALLED = False
 _LAST_RESULT: Dict[str, Any] = {}
@@ -160,6 +161,21 @@ def scan(
     previous_prices = previous_state.get("previous_prices")
     previous_prices = previous_prices if isinstance(previous_prices, Mapping) else {}
 
+    blocked_until = int(_sf(previous_state.get("blocked_until")))
+    if blocked_until > now:
+        return {
+            "version": VERSION,
+            "generated_at": now,
+            "fetch_ok": False,
+            "error": "BINANCE_HTTP_451_BACKOFF",
+            "movers": [],
+            "okx_priority_symbols": [],
+            "external_only_movers": [],
+            "previous_prices": dict(previous_prices),
+            "blocked_until": blocked_until,
+            "note": "Fail-open: Binance 451 backoff active; existing OKX Market First selection continues unchanged.",
+        }
+
     try:
         raw = fetch_binance_futures_24h(opener=opener)
         snapshot = normalize_snapshot(raw)
@@ -172,6 +188,7 @@ def scan(
         result["fetch_ok"] = True
         result["binance_symbols"] = len(snapshot)
         result["error"] = None
+        result["blocked_until"] = 0
         result["previous_prices"] = {
             symbol: _sf(item.get("price"))
             for symbol, item in snapshot.items()
@@ -179,16 +196,23 @@ def scan(
         }
         return result
     except Exception as exc:
+        error = f"{type(exc).__name__}: {exc}"
+        is_http_451 = "451" in error
         return {
             "version": VERSION,
             "generated_at": now,
             "fetch_ok": False,
-            "error": f"{type(exc).__name__}: {exc}",
+            "error": error,
             "movers": [],
             "okx_priority_symbols": [],
             "external_only_movers": [],
             "previous_prices": dict(previous_prices),
-            "note": "Fail-open: existing OKX Market First selection continues unchanged.",
+            "blocked_until": now + HTTP_451_BACKOFF_SECONDS if is_http_451 else 0,
+            "note": (
+                "Fail-open: Binance HTTP 451; 6h backoff active and existing OKX selection continues unchanged."
+                if is_http_451
+                else "Fail-open: existing OKX Market First selection continues unchanged."
+            ),
         }
 
 
