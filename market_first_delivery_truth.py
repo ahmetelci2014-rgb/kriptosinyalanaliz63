@@ -159,7 +159,8 @@ def build_report(
 
     pq_counts = _run_counts(profit_quality)
     final_counts = _run_counts(final_execution)
-    survival_counts = _run_counts(survival)
+    # V6 Balanced Core does not install the legacy Profit Survival gate in the live path.
+    survival_counts = {}
 
     layers: Dict[str, Dict[str, Any]] = {
         "profit_quality": {
@@ -182,8 +183,10 @@ def build_report(
     health = survival_v2.get("health") if isinstance(survival_v2.get("health"), Mapping) else {}
     if not health:
         health = survival.get("health") if isinstance(survival.get("health"), Mapping) else {}
-    survival_mode = str(health.get("mode") or "UNKNOWN").upper()
-    survival_reason = str(health.get("reason") or "")
+    legacy_survival_mode = str(health.get("mode") or "UNKNOWN").upper()
+    legacy_survival_reason = str(health.get("reason") or "")
+    survival_mode = "NOT_IN_LIVE_PATH"
+    survival_reason = "V6_BALANCED_CORE_CURRENT_LIVE_TOPOLOGY"
 
     if survival_mode == "HALT":
         status = "CAPITAL_HALT"
@@ -223,7 +226,7 @@ def build_report(
                 "Ledger rows where the system actually attempted the final send path and recorded failure."
             ),
             "capital_rule": (
-                "RECOVERY_STRICT/HALT remains authoritative; this diagnostic never relaxes it."
+                "Legacy RECOVERY_STRICT/HALT is historical only in current V6 Balanced Core."
             ),
         },
         "strategy_mutation": False,
