@@ -6809,24 +6809,24 @@
       "expected_move_percent": 2.1,
       "technical_target_r": 2.322,
       "opened_at": 1791433811,
-      "last_checked_at": 1791436134,
-      "last_bar_ts": 1791436020,
-      "last_price": 0.13249,
-      "status": "OPEN",
+      "last_checked_at": 1791436860,
+      "last_bar_ts": 1791436860,
+      "last_price": 0.13292,
+      "status": "CLOSED",
       "first_result": "TP1_FIRST",
-      "final_result": null,
+      "final_result": "SL_AFTER_TP2",
       "max_target_hit": 2,
       "tp1_hit_at": 1791433860,
       "tp2_hit_at": 1791434280,
       "tp3_hit_at": 0,
-      "sl_hit_at": 0,
-      "closed_at": 0,
-      "exit_price": null,
+      "sl_hit_at": 1791436860,
+      "closed_at": 1791436860,
+      "exit_price": 0.1335871429,
       "best_favorable_percent": 0.9417,
-      "worst_adverse_percent": 0.0,
+      "worst_adverse_percent": 0.8647,
       "best_favorable_r": 1.7234,
-      "worst_adverse_r": 0.0,
-      "hold_minutes": 38.72
+      "worst_adverse_r": 1.5825,
+      "hold_minutes": 50.82
     },
     "YGGUSDT:SHORT:1791434004": {
       "trade_id": "YGGUSDT:SHORT:1791434004",
@@ -6918,14 +6918,59 @@
       "best_favorable_r": 2.0727,
       "worst_adverse_r": 0.0,
       "hold_minutes": 1.6
+    },
+    "VIRTUALUSDT:SHORT:1791436390": {
+      "trade_id": "VIRTUALUSDT:SHORT:1791436390",
+      "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
+      "source": "SELECTIVE_PRE_SIGNAL_TELEGRAM",
+      "symbol": "VIRTUALUSDT",
+      "direction": "SHORT",
+      "market_label": "AŞAĞI",
+      "market_regime": "BEAR",
+      "score": 94,
+      "rejection_reason": "BACKGROUND_QUALITY:RISK_DEAD_ZONE_0_46_0_70",
+      "blockers": [
+        "RISK_DEAD_ZONE_0_46_0_70"
+      ],
+      "zone_low": 0.7586482801,
+      "zone_high": 0.7601670954,
+      "entry": 0.75940768775,
+      "sl": 0.7639942857,
+      "tp1": 0.7549042857,
+      "tp2": 0.7523071429,
+      "tp3": 0.7484114286,
+      "technical_target": 0.7466,
+      "risk_abs": 0.00458659795,
+      "risk_percent": 0.604,
+      "expected_move_percent": 1.608,
+      "technical_target_r": 2.349,
+      "opened_at": 1791436390,
+      "last_checked_at": 1791436944,
+      "last_bar_ts": 1791436860,
+      "last_price": 0.7618,
+      "status": "OPEN",
+      "first_result": null,
+      "final_result": null,
+      "max_target_hit": 0,
+      "tp1_hit_at": 0,
+      "tp2_hit_at": 0,
+      "tp3_hit_at": 0,
+      "sl_hit_at": 0,
+      "closed_at": 0,
+      "exit_price": null,
+      "best_favorable_percent": 0.0142,
+      "worst_adverse_percent": 0.315,
+      "best_favorable_r": 0.0235,
+      "worst_adverse_r": 0.5216,
+      "hold_minutes": 9.23
     }
   },
   "summary": {
     "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
     "mode": "TELEGRAM_BACKGROUND_CANDIDATE_SHADOW_ONLY_NO_LIVE_EFFECT",
-    "total": 152,
+    "total": 153,
     "open": 1,
-    "closed": 151,
+    "closed": 152,
     "decided_tp1_vs_sl": 152,
     "tp1_first": 105,
     "sl_first": 47,
@@ -6937,19 +6982,19 @@
       "SL_FIRST": 47,
       "TP3": 55,
       "SL_AFTER_TP1": 27,
-      "SL_AFTER_TP2": 22,
+      "SL_AFTER_TP2": 23,
       "OPEN": 1
     },
     "by_blocker": {
       "RISK_DEAD_ZONE_0_46_0_70": {
-        "samples": 71,
+        "samples": 72,
         "decided": 71,
         "tp1_first": 43,
         "sl_first": 28,
         "tp1_first_rate": 0.6056,
         "tp3_reached": 17,
-        "avg_mfe_percent": 0.6417,
-        "avg_mae_percent": 0.6609
+        "avg_mfe_percent": 0.633,
+        "avg_mae_percent": 0.6681
       },
       "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": {
         "samples": 62,
@@ -6999,7 +7044,7 @@
         "tp1_first_rate": 0.7073,
         "tp3_reached": 11,
         "avg_mfe_percent": 0.6229,
-        "avg_mae_percent": 0.6701
+        "avg_mae_percent": 0.6912
       },
       "NO_FRESH_MICRO_DERIVATIVES_WEAK": {
         "samples": 1,
@@ -7014,5 +7059,5 @@
     },
     "note": "Telegram arka plan adaylari icin golge olcum; gercek islem veya gercek PnL degildir."
   },
-  "updated_at": 1791436262
+  "updated_at": 1791437045
 }
