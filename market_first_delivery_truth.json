@@ -1,40 +1,46 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1791434673,
+  "generated_at": 1791435467,
   "status": "FINAL_ADMISSION_GAP",
   "survival": {
     "mode": "NOT_IN_LIVE_PATH",
     "reason": "V6_BALANCED_CORE_CURRENT_LIVE_TOPOLOGY"
   },
   "funnel_truth": {
-    "internal_promoted": 525,
+    "internal_promoted": 528,
     "real_signal_sent": 0,
-    "promoted_unsent": 525,
+    "promoted_unsent": 528,
     "real_telegram_send_failures": 1,
     "new_real_telegram_send_failures": 0,
-    "internal_final_admission_gap": 524,
+    "internal_final_admission_gap": 527,
     "promotion_is_send_attempt": false
   },
   "latest_gate_layers": {
     "profit_quality": {
-      "accepted": 1,
+      "accepted": 2,
       "run_counts": {
-        "OK": 1,
-        "ACCEPTED": 1,
-        "VOLUME_ABOVE_2_00_LATE": 1
+        "EXPECTED_MOVE_BELOW_2P": 3,
+        "RISK_DEAD_ZONE_0_46_0_70": 6,
+        "OK": 2,
+        "ACCEPTED": 2,
+        "RISK_ABOVE_1_00": 1
       },
       "blocks": {
-        "VOLUME_ABOVE_2_00_LATE": 1
+        "EXPECTED_MOVE_BELOW_2P": 3,
+        "RISK_DEAD_ZONE_0_46_0_70": 6,
+        "RISK_ABOVE_1_00": 1
       }
     },
     "final_execution": {
       "accepted": 0,
       "run_counts": {
+        "UPSTREAM_REJECTED": 10,
         "DIRECTION_CONFIRMATIONS_BELOW_3": 1,
-        "UPSTREAM_REJECTED": 1
+        "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": 1
       },
       "blocks": {
-        "DIRECTION_CONFIRMATIONS_BELOW_3": 1
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 1,
+        "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": 1
       }
     },
     "capital_survival": {
@@ -45,8 +51,8 @@
   },
   "top_latest_blocker": {
     "layer": "profit_quality",
-    "reason": "VOLUME_ABOVE_2_00_LATE",
-    "count": 1
+    "reason": "RISK_DEAD_ZONE_0_46_0_70",
+    "count": 6
   },
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
