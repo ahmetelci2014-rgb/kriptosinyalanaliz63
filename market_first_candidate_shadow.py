@@ -18,6 +18,7 @@ import market_first_strategy as strategy
 
 VERSION = "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29"
 MODE = "TELEGRAM_BACKGROUND_CANDIDATE_SHADOW_ONLY_NO_LIVE_EFFECT"
+TRACKING_POLICY = "POST_ALERT_CLOSED_1M_V2"
 LEDGER_FILE = "market_first_candidate_shadow.json"
 
 MAX_OPEN_SHADOW = 48
@@ -200,6 +201,7 @@ def build_trade(
     return {
         "trade_id": trade_id,
         "version": VERSION,
+        "tracking_policy": TRACKING_POLICY,
         "source": "SELECTIVE_PRE_SIGNAL_TELEGRAM",
         "symbol": symbol,
         "direction": direction,
@@ -299,12 +301,17 @@ def _recent_closed_bars(df1m: Any, trade: Mapping[str, Any], now: int) -> list[D
     closed = df1m.iloc[:-1]
     time_col = next((key for key in ("timestamp", "time", "datetime", "date") if key in columns), None)
     last_bar_ts = _si(trade.get("last_bar_ts"))
+    opened_at = _si(trade.get("opened_at"))
+    # A 1m candle that began before the Telegram alert contains unknowable
+    # pre-alert highs/lows. Only count candles opened in a later full minute.
+    first_after_alert = (opened_at // 60 + 1) * 60 if opened_at > 0 else 0
+    min_bar_ts = max(last_bar_ts + 60 if last_bar_ts > 0 else 0, first_after_alert)
     rows: list[Dict[str, float]] = []
 
     if time_col:
         for _, row in closed.iterrows():
             bar_ts = _timestamp_seconds(row.get(time_col))
-            if bar_ts <= last_bar_ts:
+            if bar_ts < min_bar_ts:
                 continue
             high = _sf(row.get("high"))
             low = _sf(row.get("low"))
@@ -314,10 +321,16 @@ def _recent_closed_bars(df1m: Any, trade: Mapping[str, Any], now: int) -> list[D
             rows.append({"ts": float(bar_ts), "high": high, "low": low, "close": close})
         return rows[-90:]
 
-    elapsed = max(60, int(now) - _si(trade.get("last_checked_at"), int(now)))
-    count = max(1, min(89, int(math.ceil(elapsed / 60.0))))
+    # Timestamp-free frames are a fallback only. Never invent a post-alert
+    # bar by re-labeling a candle from before the alert as a future candle.
+    latest_closed_start = (int(now) // 60) * 60 - 60
+    if latest_closed_start < min_bar_ts:
+        return []
+    count = min(89, len(closed), (latest_closed_start - min_bar_ts) // 60 + 1)
+    if count <= 0:
+        return []
     frame = closed.tail(count)
-    synthetic = max(last_bar_ts, int(now) - count * 60)
+    synthetic = latest_closed_start - count * 60
     for _, row in frame.iterrows():
         high = _sf(row.get("high"))
         low = _sf(row.get("low"))
@@ -487,6 +500,13 @@ def build_summary(ledger: Mapping[str, Any]) -> Dict[str, Any]:
     sl_first = [row for row in rows if row.get("first_result") == "SL_FIRST"]
     decided = len(tp_first) + len(sl_first)
 
+    # Historical records were created under an older tracker policy. Keep
+    # them visible but do not mix them into the validated post-fix cohort.
+    post_fix = [row for row in rows if row.get("tracking_policy") == TRACKING_POLICY]
+    post_fix_tp = sum(1 for row in post_fix if row.get("first_result") == "TP1_FIRST")
+    post_fix_sl = sum(1 for row in post_fix if row.get("first_result") == "SL_FIRST")
+    post_fix_decided = post_fix_tp + post_fix_sl
+
     blocker_stats: dict[str, Dict[str, Any]] = {}
     grouped: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
     for row in rows:
@@ -528,7 +548,21 @@ def build_summary(ledger: Mapping[str, Any]) -> Dict[str, Any]:
         "tp3_reached": sum(1 for row in rows if _si(row.get("max_target_hit")) >= 3),
         "final_results": dict(final_results),
         "by_blocker": blocker_stats,
-        "note": "Telegram arka plan adaylari icin golge olcum; gercek islem veya gercek PnL degildir.",
+        "post_fix_cohort": {
+            "tracking_policy": TRACKING_POLICY,
+            "total": len(post_fix),
+            "decided": post_fix_decided,
+            "tp1_first": post_fix_tp,
+            "sl_first": post_fix_sl,
+            "tp1_first_rate": round(post_fix_tp / post_fix_decided, 4) if post_fix_decided else None,
+            "tp3_reached": sum(1 for row in post_fix if _si(row.get("max_target_hit")) >= 3),
+        },
+        "legacy_unverified_count": len(rows) - len(post_fix),
+        "note": (
+            "Only post_fix_cohort is eligible for new accuracy comparisons. "
+            "Historical candidate observations may have timing limitations. "
+            "These are shadow outcomes, not executable trades or realised PnL."
+        ),
     }
 
 
