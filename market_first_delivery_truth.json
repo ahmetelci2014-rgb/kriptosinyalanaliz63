@@ -1,6 +1,6 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1791577669,
+  "generated_at": 1791578469,
   "status": "FINAL_ADMISSION_GAP",
   "survival": {
     "mode": "NOT_IN_LIVE_PATH",
@@ -17,20 +17,30 @@
   },
   "latest_gate_layers": {
     "profit_quality": {
-      "accepted": 2,
+      "accepted": 3,
       "run_counts": {
-        "OK": 2,
-        "ACCEPTED": 2
+        "OK": 3,
+        "ACCEPTED": 3,
+        "RISK_DEAD_ZONE_0_46_0_70": 3,
+        "RISK_ABOVE_1_00": 1
       },
-      "blocks": {}
+      "blocks": {
+        "RISK_DEAD_ZONE_0_46_0_70": 3,
+        "RISK_ABOVE_1_00": 1
+      }
     },
     "final_execution": {
       "accepted": 0,
       "run_counts": {
-        "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": 2
+        "TAKER_CVD_OPPOSITE": 1,
+        "UPSTREAM_REJECTED": 4,
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 1,
+        "CVD_IMPULSE_OPPOSITE": 1
       },
       "blocks": {
-        "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": 2
+        "TAKER_CVD_OPPOSITE": 1,
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 1,
+        "CVD_IMPULSE_OPPOSITE": 1
       }
     },
     "capital_survival": {
@@ -40,9 +50,9 @@
     }
   },
   "top_latest_blocker": {
-    "layer": "final_execution",
-    "reason": "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE",
-    "count": 2
+    "layer": "profit_quality",
+    "reason": "RISK_DEAD_ZONE_0_46_0_70",
+    "count": 3
   },
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
