@@ -1,42 +1,50 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1791505844,
+  "generated_at": 1791506741,
   "status": "FINAL_ADMISSION_GAP",
   "survival": {
     "mode": "NOT_IN_LIVE_PATH",
     "reason": "V6_BALANCED_CORE_CURRENT_LIVE_TOPOLOGY"
   },
   "funnel_truth": {
-    "internal_promoted": 521,
+    "internal_promoted": 519,
     "real_signal_sent": 0,
-    "promoted_unsent": 521,
+    "promoted_unsent": 519,
     "real_telegram_send_failures": 1,
     "new_real_telegram_send_failures": 0,
-    "internal_final_admission_gap": 520,
+    "internal_final_admission_gap": 518,
     "promotion_is_send_attempt": false
   },
   "latest_gate_layers": {
     "profit_quality": {
-      "accepted": 1,
+      "accepted": 10,
       "run_counts": {
-        "RISK_DEAD_ZONE_0_46_0_70": 3,
-        "VOLUME_ABOVE_2_00_LATE": 2,
-        "OK": 1,
-        "ACCEPTED": 1
+        "RISK_DEAD_ZONE_0_46_0_70": 9,
+        "OK": 10,
+        "ACCEPTED": 10,
+        "RISK_ABOVE_1_00": 1,
+        "VOLUME_ABOVE_2_00_LATE": 1
       },
       "blocks": {
-        "RISK_DEAD_ZONE_0_46_0_70": 3,
-        "VOLUME_ABOVE_2_00_LATE": 2
+        "RISK_DEAD_ZONE_0_46_0_70": 9,
+        "RISK_ABOVE_1_00": 1,
+        "VOLUME_ABOVE_2_00_LATE": 1
       }
     },
     "final_execution": {
-      "accepted": 0,
+      "accepted": 2,
       "run_counts": {
-        "UPSTREAM_REJECTED": 5,
-        "CVD_IMPULSE_OPPOSITE": 1
+        "UPSTREAM_REJECTED": 14,
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 5,
+        "TAKER_CVD_OPPOSITE": 1,
+        "CVD_IMPULSE_OPPOSITE": 2,
+        "OK": 2,
+        "ACCEPTED": 2
       },
       "blocks": {
-        "CVD_IMPULSE_OPPOSITE": 1
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 5,
+        "TAKER_CVD_OPPOSITE": 1,
+        "CVD_IMPULSE_OPPOSITE": 2
       }
     },
     "capital_survival": {
@@ -48,7 +56,7 @@
   "top_latest_blocker": {
     "layer": "profit_quality",
     "reason": "RISK_DEAD_ZONE_0_46_0_70",
-    "count": 3
+    "count": 9
   },
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
