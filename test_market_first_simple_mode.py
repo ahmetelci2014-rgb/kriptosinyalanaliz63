@@ -118,7 +118,8 @@ def test_strong_preparation_becomes_early_entry_alert_with_target_plan():
     assert "Potansiyel aralık:" in text
     assert "1H direnç" in text
     assert "Teknik hedef tahmindir" in text
-    assert simple.should_suppress(text) is True
+    # V6 deliberately shows qualified early-entry warnings; they are not final trades.
+    assert simple.should_suppress(text) is False
 
 
 def test_early_entry_rejects_opposite_5m_or_market_direction():
@@ -149,7 +150,8 @@ def test_link_like_raw_early_move_becomes_orange_alert_with_target():
     assert "3dk +0.28%" in text
     assert "5dk +0.43%" in text
     assert "Hacim: 1.25x" in text
-    assert simple.should_suppress(text) is True
+    # Consistent with live V6 smoke checks and the explicit allowed Telegram prefix.
+    assert simple.should_suppress(text) is False
 
 
 def test_weak_or_conflicted_raw_early_move_stays_silent():
