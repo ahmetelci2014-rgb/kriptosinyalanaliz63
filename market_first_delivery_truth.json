@@ -1,50 +1,50 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1791552003,
+  "generated_at": 1791552822,
   "status": "FINAL_ADMISSION_GAP",
   "survival": {
     "mode": "NOT_IN_LIVE_PATH",
     "reason": "V6_BALANCED_CORE_CURRENT_LIVE_TOPOLOGY"
   },
   "funnel_truth": {
-    "internal_promoted": 508,
+    "internal_promoted": 511,
     "real_signal_sent": 0,
-    "promoted_unsent": 508,
+    "promoted_unsent": 511,
     "real_telegram_send_failures": 0,
     "new_real_telegram_send_failures": 0,
-    "internal_final_admission_gap": 508,
+    "internal_final_admission_gap": 511,
     "promotion_is_send_attempt": false
   },
   "latest_gate_layers": {
     "profit_quality": {
-      "accepted": 6,
+      "accepted": 8,
       "run_counts": {
-        "OK": 6,
-        "ACCEPTED": 6,
-        "RISK_DEAD_ZONE_0_46_0_70": 3,
-        "VOLUME_ABOVE_2_00_LATE": 1,
-        "RISK_ABOVE_1_00": 1,
-        "SCORE_BELOW_88": 1
+        "OK": 8,
+        "ACCEPTED": 8,
+        "SCORE_BELOW_88": 2,
+        "RISK_DEAD_ZONE_0_46_0_70": 3
       },
       "blocks": {
-        "RISK_DEAD_ZONE_0_46_0_70": 3,
-        "VOLUME_ABOVE_2_00_LATE": 1,
-        "RISK_ABOVE_1_00": 1,
-        "SCORE_BELOW_88": 1
+        "SCORE_BELOW_88": 2,
+        "RISK_DEAD_ZONE_0_46_0_70": 3
       }
     },
     "final_execution": {
-      "accepted": 0,
+      "accepted": 3,
       "run_counts": {
-        "TAKER_CVD_OPPOSITE": 4,
-        "UPSTREAM_REJECTED": 7,
-        "CVD_IMPULSE_OPPOSITE": 1,
-        "DIRECTION_CONFIRMATIONS_BELOW_3": 1
+        "UPSTREAM_REJECTED": 12,
+        "OK": 3,
+        "ACCEPTED": 3,
+        "TAKER_CVD_OPPOSITE": 1,
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 2,
+        "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": 1,
+        "BOOK_PRESSURE_OPPOSITE": 1
       },
       "blocks": {
-        "TAKER_CVD_OPPOSITE": 4,
-        "CVD_IMPULSE_OPPOSITE": 1,
-        "DIRECTION_CONFIRMATIONS_BELOW_3": 1
+        "TAKER_CVD_OPPOSITE": 1,
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 2,
+        "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": 1,
+        "BOOK_PRESSURE_OPPOSITE": 1
       }
     },
     "capital_survival": {
@@ -54,9 +54,9 @@
     }
   },
   "top_latest_blocker": {
-    "layer": "final_execution",
-    "reason": "TAKER_CVD_OPPOSITE",
-    "count": 4
+    "layer": "profit_quality",
+    "reason": "RISK_DEAD_ZONE_0_46_0_70",
+    "count": 3
   },
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
