@@ -1,6 +1,6 @@
 {
   "version": "MARKET_FIRST_ENTRY_CONDITION_DIAGNOSIS_V1_2026_09_08",
-  "generated_at": 1791524121,
+  "generated_at": 1791524903,
   "source_ledger_version": "MARKET_FIRST_OPPORTUNITY_LEDGER_V1_2026_09_05",
   "definition": "Clean resolved preparations that reached TP1+ without a Telegram trade and never recorded ENTRY condition. Latest-plan flags are diagnostic snapshots, not guaranteed co-temporal blocker proofs.",
   "reference_thresholds_observational_only": {
@@ -13,16 +13,16 @@
   },
   "summary": {
     "before_entry_condition_missed": 473,
-    "tp3_missed": 378,
+    "tp3_missed": 377,
     "tp1_within_30m": 396,
     "tp1_within_60m": 421,
-    "shadow_pre_entry_profile_count": 137,
-    "shadow_pre_entry_profile_share": 0.2896
+    "shadow_pre_entry_profile_count": 138,
+    "shadow_pre_entry_profile_share": 0.2918
   },
   "primary_obstacles": {
-    "ZONE_NEVER_TOUCHED": 231,
+    "ZONE_NEVER_TOUCHED": 230,
     "STRUCTURE_5M_NEUTRAL_LATEST": 80,
-    "LIKELY_TIMING_WINDOW_MISSED": 67,
+    "LIKELY_TIMING_WINDOW_MISSED": 68,
     "STRUCTURE_5M_OPPOSITE_LATEST": 60,
     "VOLUME_5M_BELOW_0_50_LATEST": 22,
     "SCORE_BELOW_76_LATEST": 11,
@@ -30,7 +30,7 @@
   },
   "diagnostic_flags": {
     "TP1_WITHIN_30M": 396,
-    "ZONE_NEVER_TOUCHED": 231,
+    "ZONE_NEVER_TOUCHED": 230,
     "VOLUME_5M_BELOW_0_50_LATEST": 120,
     "STRUCTURE_5M_NEUTRAL_LATEST": 100,
     "STRUCTURE_5M_OPPOSITE_LATEST": 72,
@@ -47,18 +47,18 @@
       "avg_best_favorable_r": 2.9015
     },
     "ZONE_NEVER_TOUCHED": {
-      "count": 231,
-      "share": 0.4884,
-      "tp3_count": 215,
-      "tp1_within_30m": 223,
-      "avg_best_favorable_r": 1.1358
+      "count": 230,
+      "share": 0.4863,
+      "tp3_count": 214,
+      "tp1_within_30m": 222,
+      "avg_best_favorable_r": 1.1397
     },
     "LIKELY_TIMING_WINDOW_MISSED": {
-      "count": 67,
-      "share": 0.1416,
+      "count": 68,
+      "share": 0.1438,
       "tp3_count": 55,
-      "tp1_within_30m": 55,
-      "avg_best_favorable_r": 1.8056
+      "tp1_within_30m": 56,
+      "avg_best_favorable_r": 1.8629
     },
     "STRUCTURE_5M_OPPOSITE_LATEST": {
       "count": 60,
@@ -1474,6 +1474,34 @@
       "outcome": "TP3_REACHED"
     },
     {
+      "episode_id": "AEVOUSDT:LONG:1791502583",
+      "symbol": "AEVOUSDT",
+      "direction": "LONG",
+      "score": 88,
+      "primary_obstacle": "LIKELY_TIMING_WINDOW_MISSED",
+      "diagnostic_flags": [
+        "TP1_WITHIN_30M"
+      ],
+      "shadow_pre_entry_profile": true,
+      "zone_touched": true,
+      "structure_5m": "LONG",
+      "structure_15m": "LONG",
+      "structure_1h": "LONG",
+      "volume_ratio_5m": 0.688,
+      "volume_ratio_15m": 0.951,
+      "extension_atr_5m": 0.636,
+      "risk_percent": 0.84,
+      "room_r": 22.19,
+      "market_regime": "BEAR",
+      "best_favorable_r": 5.7024,
+      "best_favorable_percent": 0.2207,
+      "worst_adverse_percent": 4.2663,
+      "tp1_minutes": 1.82,
+      "tp2_reached": true,
+      "tp3_reached": false,
+      "outcome": "TP2_REACHED"
+    },
+    {
       "episode_id": "IMXUSDT:SHORT:1791065959",
       "symbol": "IMXUSDT",
       "direction": "SHORT",
@@ -2350,34 +2378,6 @@
       "best_favorable_percent": 2.2857,
       "worst_adverse_percent": 0.479,
       "tp1_minutes": 3.95,
-      "tp2_reached": true,
-      "tp3_reached": true,
-      "outcome": "TP3_REACHED"
-    },
-    {
-      "episode_id": "JUPUSDT:LONG:1791439755",
-      "symbol": "JUPUSDT",
-      "direction": "LONG",
-      "score": 86,
-      "primary_obstacle": "LIKELY_TIMING_WINDOW_MISSED",
-      "diagnostic_flags": [
-        "TP1_WITHIN_30M"
-      ],
-      "shadow_pre_entry_profile": true,
-      "zone_touched": true,
-      "structure_5m": "LONG",
-      "structure_15m": "LONG",
-      "structure_1h": "LONG",
-      "volume_ratio_5m": 0.987,
-      "volume_ratio_15m": 0.719,
-      "extension_atr_5m": 0.395,
-      "risk_percent": 0.878,
-      "room_r": 1.91,
-      "market_regime": "BEAR",
-      "best_favorable_r": 2.4104,
-      "best_favorable_percent": 2.3237,
-      "worst_adverse_percent": 0.4274,
-      "tp1_minutes": 4.97,
       "tp2_reached": true,
       "tp3_reached": true,
       "outcome": "TP3_REACHED"
