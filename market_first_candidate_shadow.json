@@ -9285,13 +9285,59 @@
       "best_favorable_r": 1.1514,
       "worst_adverse_r": 1.2962,
       "hold_minutes": 72.02
+    },
+    "DOTUSDT:LONG:1791610701": {
+      "trade_id": "DOTUSDT:LONG:1791610701",
+      "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
+      "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
+      "source": "SELECTIVE_PRE_SIGNAL_TELEGRAM",
+      "symbol": "DOTUSDT",
+      "direction": "LONG",
+      "market_label": "KARIŞIK",
+      "market_regime": "CHOP",
+      "score": 94,
+      "rejection_reason": "BACKGROUND_QUALITY:VOLUME_ABOVE_2_00_LATE",
+      "blockers": [
+        "VOLUME_ABOVE_2_00_LATE"
+      ],
+      "zone_low": 1.267540031,
+      "zone_high": 1.2700776487,
+      "entry": 1.26880883985,
+      "sl": 1.2594778571,
+      "tp1": 1.2757916071,
+      "tp2": 1.2804526786,
+      "tp3": 1.2874442857,
+      "technical_target": 1.2968,
+      "risk_abs": 0.00933098275,
+      "risk_percent": 0.7354,
+      "expected_move_percent": 2.207,
+      "technical_target_r": 3.004,
+      "opened_at": 1791610701,
+      "last_checked_at": 1791610953,
+      "last_bar_ts": 1791610860,
+      "last_price": 1.2678,
+      "status": "OPEN",
+      "first_result": null,
+      "final_result": null,
+      "max_target_hit": 0,
+      "tp1_hit_at": 0,
+      "tp2_hit_at": 0,
+      "tp3_hit_at": 0,
+      "sl_hit_at": 0,
+      "closed_at": 0,
+      "exit_price": null,
+      "best_favorable_percent": 0.0,
+      "worst_adverse_percent": 0.1268,
+      "best_favorable_r": 0.0,
+      "worst_adverse_r": 0.1724,
+      "hold_minutes": 4.2
     }
   },
   "summary": {
     "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
     "mode": "TELEGRAM_BACKGROUND_CANDIDATE_SHADOW_ONLY_NO_LIVE_EFFECT",
-    "total": 204,
-    "open": 0,
+    "total": 205,
+    "open": 1,
     "closed": 204,
     "decided_tp1_vs_sl": 204,
     "tp1_first": 137,
@@ -9304,7 +9350,8 @@
       "SL_FIRST": 67,
       "TP3": 72,
       "SL_AFTER_TP1": 31,
-      "SL_AFTER_TP2": 34
+      "SL_AFTER_TP2": 34,
+      "OPEN": 1
     },
     "by_blocker": {
       "RISK_DEAD_ZONE_0_46_0_70": {
@@ -9348,14 +9395,14 @@
         "avg_mae_percent": 0.4934
       },
       "VOLUME_ABOVE_2_00_LATE": {
-        "samples": 28,
+        "samples": 29,
         "decided": 28,
         "tp1_first": 19,
         "sl_first": 9,
         "tp1_first_rate": 0.6786,
         "tp3_reached": 11,
-        "avg_mfe_percent": 0.6667,
-        "avg_mae_percent": 0.8754
+        "avg_mfe_percent": 0.6437,
+        "avg_mae_percent": 0.8495
       },
       "CVD_IMPULSE_OPPOSITE": {
         "samples": 51,
@@ -9380,7 +9427,7 @@
     },
     "post_fix_cohort": {
       "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
-      "total": 1,
+      "total": 2,
       "decided": 1,
       "tp1_first": 1,
       "sl_first": 0,
@@ -9390,5 +9437,5 @@
     "legacy_unverified_count": 203,
     "note": "Only post_fix_cohort is eligible for new accuracy comparisons. Historical candidate observations may have timing limitations. These are shadow outcomes, not executable trades or realised PnL."
   },
-  "updated_at": 1791610268
+  "updated_at": 1791611062
 }
