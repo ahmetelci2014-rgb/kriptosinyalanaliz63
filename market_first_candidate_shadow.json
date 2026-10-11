@@ -9544,9 +9544,9 @@
       "expected_move_percent": 1.336,
       "technical_target_r": 2.877,
       "opened_at": 1791652311,
-      "last_checked_at": 1791683947,
-      "last_bar_ts": 1791683880,
-      "last_price": 0.7138,
+      "last_checked_at": 1791684747,
+      "last_bar_ts": 1791684660,
+      "last_price": 0.7117,
       "status": "OPEN",
       "first_result": "TP1_FIRST",
       "final_result": null,
@@ -9561,7 +9561,7 @@
       "worst_adverse_percent": 0.3012,
       "best_favorable_r": 1.8217,
       "worst_adverse_r": 0.7274,
-      "hold_minutes": 527.27
+      "hold_minutes": 540.6
     },
     "GRAMUSDT:LONG:1791653079": {
       "trade_id": "GRAMUSDT:LONG:1791653079",
@@ -9978,13 +9978,60 @@
       "best_favorable_r": 0.5467,
       "worst_adverse_r": 1.0274,
       "hold_minutes": 139.3
+    },
+    "ZROUSDT:SHORT:1791684498": {
+      "trade_id": "ZROUSDT:SHORT:1791684498",
+      "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
+      "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
+      "source": "SELECTIVE_PRE_SIGNAL_TELEGRAM",
+      "symbol": "ZROUSDT",
+      "direction": "SHORT",
+      "market_label": "KARIŞIK",
+      "market_regime": "CHOP",
+      "score": 94,
+      "rejection_reason": "BACKGROUND_MULTI_BLOCK:RISK_DEAD_ZONE_0_46_0_70+DIRECTION_CONFIRMATIONS_ABOVE_3_LATE",
+      "blockers": [
+        "RISK_DEAD_ZONE_0_46_0_70",
+        "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE"
+      ],
+      "zone_low": 1.9951512208,
+      "zone_high": 1.9991455175,
+      "entry": 1.99714836915,
+      "sl": 2.0127171429,
+      "tp1": 1.9888871429,
+      "tp2": 1.9820785714,
+      "tp3": 1.9718657143,
+      "technical_target": 1.9718657143,
+      "risk_abs": 0.01556877375,
+      "risk_percent": 0.7796,
+      "expected_move_percent": 1.362,
+      "technical_target_r": 2.0,
+      "opened_at": 1791684498,
+      "last_checked_at": 1791684747,
+      "last_bar_ts": 1791684660,
+      "last_price": 2.0084,
+      "status": "OPEN",
+      "first_result": null,
+      "final_result": null,
+      "max_target_hit": 0,
+      "tp1_hit_at": 0,
+      "tp2_hit_at": 0,
+      "tp3_hit_at": 0,
+      "sl_hit_at": 0,
+      "closed_at": 0,
+      "exit_price": null,
+      "best_favorable_percent": 0.2478,
+      "worst_adverse_percent": 0.5634,
+      "best_favorable_r": 0.3178,
+      "worst_adverse_r": 0.7227,
+      "hold_minutes": 4.15
     }
   },
   "summary": {
     "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
     "mode": "TELEGRAM_BACKGROUND_CANDIDATE_SHADOW_ONLY_NO_LIVE_EFFECT",
-    "total": 219,
-    "open": 1,
+    "total": 220,
+    "open": 2,
     "closed": 218,
     "decided_tp1_vs_sl": 219,
     "tp1_first": 144,
@@ -9998,28 +10045,28 @@
       "TP3": 76,
       "SL_AFTER_TP1": 31,
       "SL_AFTER_TP2": 36,
-      "OPEN": 1
+      "OPEN": 2
     },
     "by_blocker": {
       "RISK_DEAD_ZONE_0_46_0_70": {
-        "samples": 114,
+        "samples": 115,
         "decided": 114,
         "tp1_first": 71,
         "sl_first": 43,
         "tp1_first_rate": 0.6228,
         "tp3_reached": 31,
-        "avg_mfe_percent": 0.7017,
-        "avg_mae_percent": 0.6206
+        "avg_mfe_percent": 0.6978,
+        "avg_mae_percent": 0.6201
       },
       "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": {
-        "samples": 85,
+        "samples": 86,
         "decided": 85,
         "tp1_first": 59,
         "sl_first": 26,
         "tp1_first_rate": 0.6941,
         "tp3_reached": 35,
-        "avg_mfe_percent": 0.9447,
-        "avg_mae_percent": 0.626
+        "avg_mfe_percent": 0.9366,
+        "avg_mae_percent": 0.6253
       },
       "EXPECTED_MOVE_BELOW_2P": {
         "samples": 24,
@@ -10074,7 +10121,7 @@
     },
     "post_fix_cohort": {
       "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
-      "total": 16,
+      "total": 17,
       "decided": 16,
       "tp1_first": 8,
       "sl_first": 8,
@@ -10084,5 +10131,5 @@
     "legacy_unverified_count": 203,
     "note": "Only post_fix_cohort is eligible for new accuracy comparisons. Historical candidate observations may have timing limitations. These are shadow outcomes, not executable trades or realised PnL."
   },
-  "updated_at": 1791684076
+  "updated_at": 1791684851
 }
