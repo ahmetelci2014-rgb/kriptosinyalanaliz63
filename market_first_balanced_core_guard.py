@@ -66,6 +66,15 @@ def evaluate_signal(signal: Mapping[str, Any] | None) -> Tuple[bool, str, Dict[s
     if not isinstance(signal, Mapping):
         return False, "INVALID_SIGNAL", {}
 
+    # V7 uses a separate, geometry-validated TREND/RETEST strategy instead
+    # of V6's uncalibrated 90+ A+ / 2.5% target admission stack.
+    # There is no blanket bypass: its independent verifier rejects forged,
+    # stale, invalidly sided or excessive-stop signals.
+    if signal.get("entry_type") == "MARKET_FIRST_V7":
+        from market_first_v7_lane import validate_live_signal
+        ok, reason, evidence = validate_live_signal(signal)
+        return ok, "V7_" + reason, evidence
+
     fast = bool(signal.get("fast_entry"))
     profit_certified = bool(signal.get("profit_quality_version"))
     execution_certified = bool(signal.get("final_execution_gate_version"))
@@ -144,6 +153,7 @@ def summary() -> Dict[str, Any]:
         "all_real_trades_require_high_profit_low_sl_a_plus": True,
         "all_real_trades_require_a_plus_plus_convergence": False,
         "a_plus_plus_mode": "OBSERVATION_ONLY",
+        "v7_live_manual_path": "INDEPENDENT_GEOMETRY_CHECK_AND_STANDARD_PORTFOLIO_GUARD",
         "min_stop_floor_max_percent": MIN_STOP_FLOOR_MAX_PERCENT,
         "min_stop_requires_fresh_micro": True,
         "stop_widening": False,
