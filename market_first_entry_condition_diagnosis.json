@@ -1,6 +1,6 @@
 {
   "version": "MARKET_FIRST_ENTRY_CONDITION_DIAGNOSIS_V1_2026_09_08",
-  "generated_at": 1791713209,
+  "generated_at": 1791713997,
   "source_ledger_version": "MARKET_FIRST_OPPORTUNITY_LEDGER_V1_2026_09_05",
   "definition": "Clean resolved preparations that reached TP1+ without a Telegram trade and never recorded ENTRY condition. Latest-plan flags are diagnostic snapshots, not guaranteed co-temporal blocker proofs.",
   "reference_thresholds_observational_only": {
@@ -13,7 +13,7 @@
   },
   "summary": {
     "before_entry_condition_missed": 464,
-    "tp3_missed": 404,
+    "tp3_missed": 403,
     "tp1_within_30m": 393,
     "tp1_within_60m": 417,
     "shadow_pre_entry_profile_count": 133,
@@ -34,7 +34,7 @@
     "VOLUME_5M_BELOW_0_50_LATEST": 127,
     "STRUCTURE_5M_NEUTRAL_LATEST": 95,
     "STRUCTURE_5M_OPPOSITE_LATEST": 69,
-    "EXTENSION_ABOVE_1_25_LATEST": 48,
+    "EXTENSION_ABOVE_1_25_LATEST": 49,
     "TP1_WITHIN_60M": 24,
     "SCORE_BELOW_76_LATEST": 14
   },
@@ -70,9 +70,9 @@
     "STRUCTURE_5M_OPPOSITE_LATEST": {
       "count": 58,
       "share": 0.125,
-      "tp3_count": 30,
+      "tp3_count": 29,
       "tp1_within_30m": 37,
-      "avg_best_favorable_r": 3.2485
+      "avg_best_favorable_r": 3.2326
     },
     "EXTENSION_ABOVE_1_25_LATEST": {
       "count": 3,
@@ -700,35 +700,6 @@
       "outcome": "SL_FIRST_THEN_TP3_RECOVERY"
     },
     {
-      "episode_id": "LPTUSDT:LONG:1791460508",
-      "symbol": "LPTUSDT",
-      "direction": "LONG",
-      "score": 82,
-      "primary_obstacle": "STRUCTURE_5M_OPPOSITE_LATEST",
-      "diagnostic_flags": [
-        "STRUCTURE_5M_OPPOSITE_LATEST",
-        "TP1_WITHIN_30M"
-      ],
-      "shadow_pre_entry_profile": false,
-      "zone_touched": true,
-      "structure_5m": "SHORT",
-      "structure_15m": "LONG",
-      "structure_1h": "LONG",
-      "volume_ratio_5m": 1.361,
-      "volume_ratio_15m": 2.595,
-      "extension_atr_5m": 0.905,
-      "risk_percent": 0.634,
-      "room_r": 2.98,
-      "market_regime": "BEAR",
-      "best_favorable_r": 3.4232,
-      "best_favorable_percent": 2.1703,
-      "worst_adverse_percent": 1.2799,
-      "tp1_minutes": 26.33,
-      "tp2_reached": true,
-      "tp3_reached": true,
-      "outcome": "SL_FIRST_THEN_TP3_RECOVERY"
-    },
-    {
       "episode_id": "CTUSDT:LONG:1791693254",
       "symbol": "CTUSDT",
       "direction": "LONG",
@@ -1246,6 +1217,32 @@
       "tp2_reached": true,
       "tp3_reached": true,
       "outcome": "TP3_REACHED"
+    },
+    {
+      "episode_id": "ARBUSDT:LONG:1791649550",
+      "symbol": "ARBUSDT",
+      "direction": "LONG",
+      "score": 92,
+      "primary_obstacle": "LIKELY_TIMING_WINDOW_MISSED",
+      "diagnostic_flags": [],
+      "shadow_pre_entry_profile": true,
+      "zone_touched": true,
+      "structure_5m": "LONG",
+      "structure_15m": "LONG",
+      "structure_1h": "LONG",
+      "volume_ratio_5m": 1.181,
+      "volume_ratio_15m": 1.117,
+      "extension_atr_5m": 1.225,
+      "risk_percent": 0.4,
+      "room_r": 1.5,
+      "market_regime": "BULL",
+      "best_favorable_r": 2.5422,
+      "best_favorable_percent": 1.0169,
+      "worst_adverse_percent": 0.5219,
+      "tp1_minutes": 159.15,
+      "tp2_reached": true,
+      "tp3_reached": true,
+      "outcome": "SL_FIRST_THEN_TP3_RECOVERY"
     }
   ],
   "top_shadow_pre_entry_profiles": [
