@@ -44,6 +44,7 @@ import market_first_tao_quality_bridge as tao_quality_bridge
 import market_first_tao_quality_profit_patch as tao_profit_patch
 import market_first_target_display as target_display
 import market_first_target_overlay as target_overlay
+import market_first_v7_lane as v7_lane
 
 
 def main() -> None:
@@ -92,8 +93,12 @@ def main() -> None:
     # Installed last: every real send must carry Profit Quality, Final Execution
     # and A+ certification. A++ is observation-only in this balanced version.
     balanced_core_guard.install()
+    # V7 is the new primary manual-signal strategy; existing V6 trackers and
+    # result/stop/cooldown protections stay active. Install last to observe the
+    # already-fetched 1H/15M/5M candles independently of V6 1m momentum vetoes.
+    v7_lane.install(runner)
 
-    print("MARKET FIRST V6 MODE: BALANCED CORE LIVE + A+ HIGH PROFIT / LOW SL | A++ LIVE GATE OFF")
+    print("MARKET FIRST V7 PRIMARY: TREND / RETEST MANUAL SIGNALS; V6 SAFETY/TRACKING STILL ACTIVE")
     print("MARKET FIRST CROSS-EXCHANGE MOVER:", cross_exchange_mover.summary())
     print("MARKET FIRST DAILY REPORT ORIGIN/BE:", daily_report_origin_patch.summary())
     print("MARKET FIRST ENTRY ACCELERATOR:", entry_accelerator.summary())
@@ -122,6 +127,7 @@ def main() -> None:
 
     try:
         runner.run()
+        v7_lane.finish()
     finally:
         print("MARKET FIRST CROSS-EXCHANGE MOVER RUN:", cross_exchange_mover.summary())
         print("MARKET FIRST BIG MOVE CAPTURE:", big_move_capture.finish())
