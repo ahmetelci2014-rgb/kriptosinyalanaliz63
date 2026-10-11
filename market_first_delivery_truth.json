@@ -1,18 +1,18 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1791692009,
+  "generated_at": 1791692796,
   "status": "FINAL_ADMISSION_GAP",
   "survival": {
     "mode": "NOT_IN_LIVE_PATH",
     "reason": "V6_BALANCED_CORE_CURRENT_LIVE_TOPOLOGY"
   },
   "funnel_truth": {
-    "internal_promoted": 496,
+    "internal_promoted": 491,
     "real_signal_sent": 0,
-    "promoted_unsent": 496,
+    "promoted_unsent": 491,
     "real_telegram_send_failures": 0,
     "new_real_telegram_send_failures": 0,
-    "internal_final_admission_gap": 496,
+    "internal_final_admission_gap": 491,
     "promotion_is_send_attempt": false
   },
   "latest_gate_layers": {
@@ -25,13 +25,13 @@
       "blocks": {}
     },
     "final_execution": {
-      "accepted": 1,
+      "accepted": 0,
       "run_counts": {
-        "UPSTREAM_REJECTED": 1,
-        "OK": 1,
-        "ACCEPTED": 1
+        "CVD_IMPULSE_OPPOSITE": 1
       },
-      "blocks": {}
+      "blocks": {
+        "CVD_IMPULSE_OPPOSITE": 1
+      }
     },
     "capital_survival": {
       "accepted": 0,
@@ -39,7 +39,11 @@
       "blocks": {}
     }
   },
-  "top_latest_blocker": null,
+  "top_latest_blocker": {
+    "layer": "final_execution",
+    "reason": "CVD_IMPULSE_OPPOSITE",
+    "count": 1
+  },
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
     "real_telegram_send_failures": "Cumulative ledger rows where the final Telegram send path recorded failure; current status only changes when this count increases.",
