@@ -1,30 +1,32 @@
 {
   "version": "MARKET_FIRST_OBSERVABILITY_V1_2026_09_08",
-  "generated_at": 1791843093,
+  "generated_at": 1791843855,
   "definition": "Clean resolved preparation that reached TP1 or better without a real Telegram entry signal.",
-  "total_missed_moves": 849,
-  "miss_rate_of_clean_resolved": 0.8918,
+  "total_missed_moves": 853,
+  "miss_rate_of_clean_resolved": 0.8923,
   "levels": {
-    "TP3_MISSED": 658,
-    "TP2_MISSED": 96,
+    "TP3_MISSED": 661,
+    "TP2_MISSED": 97,
     "TP1_MISSED": 95
   },
   "stages": {
-    "BEFORE_ENTRY_CONDITION": 460,
-    "FINAL_DELIVERY_GATE": 389
+    "BEFORE_ENTRY_CONDITION": 463,
+    "FINAL_DELIVERY_GATE": 389,
+    "PROMOTION_GATE": 1
   },
   "reasons": {
-    "ENTRY_CONDITION_NOT_REACHED": 460,
-    "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED": 389
+    "ENTRY_CONDITION_NOT_REACHED": 463,
+    "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED": 389,
+    "LOW_SCORE": 1
   },
   "directions": {
-    "SHORT": 430,
-    "LONG": 419
+    "SHORT": 437,
+    "LONG": 416
   },
   "outcomes": {
-    "TP3_REACHED": 553,
-    "SL_FIRST_THEN_TP3_RECOVERY": 101,
-    "TP2_REACHED": 77,
+    "TP3_REACHED": 557,
+    "SL_FIRST_THEN_TP3_RECOVERY": 100,
+    "TP2_REACHED": 78,
     "TP1_REACHED": 77,
     "SL_FIRST_THEN_TP2_RECOVERY": 17,
     "SL_FIRST_THEN_TP1_RECOVERY": 17,
@@ -32,10 +34,10 @@
     "AMBIGUOUS_WITH_TARGET": 3
   },
   "timing": {
-    "avg_minutes_prep_to_tp1": 33.54,
-    "avg_minutes_entry_condition_to_tp1": 62.02,
-    "tp1_within_30m": 636,
-    "tp1_within_60m": 706
+    "avg_minutes_prep_to_tp1": 33.31,
+    "avg_minutes_entry_condition_to_tp1": 61.93,
+    "tp1_within_30m": 641,
+    "tp1_within_60m": 710
   },
   "top_missed": [
     {
@@ -831,6 +833,39 @@
       "resolved_at": 1791785429
     },
     {
+      "episode_id": "CFXUSDT:SHORT:1791842664",
+      "symbol": "CFXUSDT",
+      "direction": "SHORT",
+      "score": 89,
+      "miss_level": "TP3_MISSED",
+      "miss_stage": "BEFORE_ENTRY_CONDITION",
+      "reason": "ENTRY_CONDITION_NOT_REACHED",
+      "outcome": "TP3_REACHED",
+      "prep_price": 0.05961,
+      "last_price": 0.0588,
+      "best_favorable_percent": 1.5098,
+      "best_favorable_r": 5.0562,
+      "worst_adverse_percent": 0.0,
+      "entry_condition_met": false,
+      "entry_promoted": false,
+      "entry_signal_sent": false,
+      "tp1_before_entry_signal": true,
+      "minutes_prep_to_tp1": 8.3,
+      "minutes_entry_condition_to_tp1": null,
+      "market_regime": "BEAR_STRONG",
+      "structure_5m": "SHORT",
+      "structure_15m": "SHORT",
+      "structure_1h": "SHORT",
+      "volume_ratio_5m": 0.494,
+      "volume_ratio_15m": 2.795,
+      "extension_atr_5m": 0.685,
+      "risk_percent": 0.4,
+      "room_r": 4.25,
+      "first_at": 1791842664,
+      "tp1_at": 1791843162,
+      "resolved_at": 1791843463
+    },
+    {
       "episode_id": "SPXUSDT:SHORT:1791827624",
       "symbol": "SPXUSDT",
       "direction": "SHORT",
@@ -1324,39 +1359,6 @@
       "first_at": 1791780208,
       "tp1_at": 1791781950,
       "resolved_at": 1791782758
-    },
-    {
-      "episode_id": "NMRUSDT:SHORT:1791814201",
-      "symbol": "NMRUSDT",
-      "direction": "SHORT",
-      "score": 92,
-      "miss_level": "TP3_MISSED",
-      "miss_stage": "FINAL_DELIVERY_GATE",
-      "reason": "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED",
-      "outcome": "SL_FIRST_THEN_TP3_RECOVERY",
-      "prep_price": 13.172,
-      "last_price": 13.046,
-      "best_favorable_percent": 1.7461,
-      "best_favorable_r": 3.8665,
-      "worst_adverse_percent": 0.539,
-      "entry_condition_met": true,
-      "entry_promoted": true,
-      "entry_signal_sent": false,
-      "tp1_before_entry_signal": true,
-      "minutes_prep_to_tp1": 31.63,
-      "minutes_entry_condition_to_tp1": null,
-      "market_regime": "BEAR",
-      "structure_5m": "SHORT",
-      "structure_15m": "SHORT",
-      "structure_1h": "SHORT",
-      "volume_ratio_5m": 1.238,
-      "volume_ratio_15m": 0.845,
-      "extension_atr_5m": 0.44,
-      "risk_percent": 0.798,
-      "room_r": 1.54,
-      "first_at": 1791814201,
-      "tp1_at": 1791816099,
-      "resolved_at": 1791819284
     }
   ]
 }
