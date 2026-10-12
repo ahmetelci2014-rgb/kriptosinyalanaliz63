@@ -11266,24 +11266,24 @@
       "expected_move_percent": 1.439,
       "technical_target_r": 2.088,
       "opened_at": 1791791751,
-      "last_checked_at": 1791794824,
-      "last_bar_ts": 1791794760,
-      "last_price": 0.4497,
-      "status": "OPEN",
+      "last_checked_at": 1791795120,
+      "last_bar_ts": 1791795120,
+      "last_price": 0.4496,
+      "status": "CLOSED",
       "first_result": "TP1_FIRST",
-      "final_result": null,
+      "final_result": "SL_AFTER_TP1",
       "max_target_hit": 1,
       "tp1_hit_at": 1791793260,
       "tp2_hit_at": 0,
       "tp3_hit_at": 0,
-      "sl_hit_at": 0,
-      "closed_at": 0,
-      "exit_price": null,
+      "sl_hit_at": 1791795120,
+      "closed_at": 1791795120,
+      "exit_price": 0.4485871429,
       "best_favorable_percent": 0.6145,
-      "worst_adverse_percent": 0.5374,
+      "worst_adverse_percent": 0.7589,
       "best_favorable_r": 0.9772,
-      "worst_adverse_r": 0.8546,
-      "hold_minutes": 51.22
+      "worst_adverse_r": 1.2068,
+      "hold_minutes": 56.15
     },
     "CFXUSDT:SHORT:1791794534": {
       "trade_id": "CFXUSDT:SHORT:1791794534",
@@ -11313,9 +11313,9 @@
       "expected_move_percent": 1.577,
       "technical_target_r": 2.844,
       "opened_at": 1791794534,
-      "last_checked_at": 1791794829,
-      "last_bar_ts": 1791794760,
-      "last_price": 0.06327,
+      "last_checked_at": 1791795575,
+      "last_bar_ts": 1791795480,
+      "last_price": 0.06323,
       "status": "OPEN",
       "first_result": null,
       "final_result": null,
@@ -11326,19 +11326,66 @@
       "sl_hit_at": 0,
       "closed_at": 0,
       "exit_price": null,
-      "best_favorable_percent": 0.3069,
-      "worst_adverse_percent": 0.0,
-      "best_favorable_r": 0.5779,
-      "worst_adverse_r": 0.0,
-      "hold_minutes": 4.92
+      "best_favorable_percent": 0.3857,
+      "worst_adverse_percent": 0.103,
+      "best_favorable_r": 0.7263,
+      "worst_adverse_r": 0.1939,
+      "hold_minutes": 17.35
+    },
+    "ALGOUSDT:LONG:1791795300": {
+      "trade_id": "ALGOUSDT:LONG:1791795300",
+      "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
+      "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
+      "source": "SELECTIVE_PRE_SIGNAL_TELEGRAM",
+      "symbol": "ALGOUSDT",
+      "direction": "LONG",
+      "market_label": "YUKARI",
+      "market_regime": "BULL",
+      "score": 94,
+      "rejection_reason": "BACKGROUND_MULTI_BLOCK:RISK_DEAD_ZONE_0_46_0_70+CVD_IMPULSE_OPPOSITE",
+      "blockers": [
+        "RISK_DEAD_ZONE_0_46_0_70",
+        "CVD_IMPULSE_OPPOSITE"
+      ],
+      "zone_low": 0.1316284166,
+      "zone_high": 0.1319415853,
+      "entry": 0.13178500095,
+      "sl": 0.1307730714,
+      "tp1": 0.1323776964,
+      "tp2": 0.1328361607,
+      "tp3": 0.1335238571,
+      "technical_target": 0.1336,
+      "risk_abs": 0.00101192955,
+      "risk_percent": 0.7679,
+      "expected_move_percent": 1.45,
+      "technical_target_r": 2.083,
+      "opened_at": 1791795300,
+      "last_checked_at": 1791795576,
+      "last_bar_ts": 1791795480,
+      "last_price": 0.1313,
+      "status": "OPEN",
+      "first_result": null,
+      "final_result": null,
+      "max_target_hit": 0,
+      "tp1_hit_at": 0,
+      "tp2_hit_at": 0,
+      "tp3_hit_at": 0,
+      "sl_hit_at": 0,
+      "closed_at": 0,
+      "exit_price": null,
+      "best_favorable_percent": 0.0,
+      "worst_adverse_percent": 0.7323,
+      "best_favorable_r": 0.0,
+      "worst_adverse_r": 0.9536,
+      "hold_minutes": 4.6
     }
   },
   "summary": {
     "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
     "mode": "TELEGRAM_BACKGROUND_CANDIDATE_SHADOW_ONLY_NO_LIVE_EFFECT",
-    "total": 248,
+    "total": 249,
     "open": 2,
-    "closed": 246,
+    "closed": 247,
     "decided_tp1_vs_sl": 247,
     "tp1_first": 160,
     "sl_first": 87,
@@ -11349,20 +11396,20 @@
     "final_results": {
       "SL_FIRST": 87,
       "TP3": 82,
-      "SL_AFTER_TP1": 37,
+      "SL_AFTER_TP1": 38,
       "SL_AFTER_TP2": 40,
       "OPEN": 2
     },
     "by_blocker": {
       "RISK_DEAD_ZONE_0_46_0_70": {
-        "samples": 131,
+        "samples": 132,
         "decided": 130,
         "tp1_first": 81,
         "sl_first": 49,
         "tp1_first_rate": 0.6231,
         "tp3_reached": 34,
-        "avg_mfe_percent": 0.7148,
-        "avg_mae_percent": 0.6134
+        "avg_mfe_percent": 0.71,
+        "avg_mae_percent": 0.6167
       },
       "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": {
         "samples": 95,
@@ -11371,8 +11418,8 @@
         "sl_first": 29,
         "tp1_first_rate": 0.6915,
         "tp3_reached": 37,
-        "avg_mfe_percent": 0.9223,
-        "avg_mae_percent": 0.6109
+        "avg_mfe_percent": 0.9231,
+        "avg_mae_percent": 0.6144
       },
       "EXPECTED_MOVE_BELOW_2P": {
         "samples": 30,
@@ -11405,14 +11452,14 @@
         "avg_mae_percent": 0.8216
       },
       "CVD_IMPULSE_OPPOSITE": {
-        "samples": 63,
+        "samples": 64,
         "decided": 63,
         "tp1_first": 42,
         "sl_first": 21,
         "tp1_first_rate": 0.6667,
         "tp3_reached": 19,
-        "avg_mfe_percent": 0.7107,
-        "avg_mae_percent": 0.618
+        "avg_mfe_percent": 0.6996,
+        "avg_mae_percent": 0.6198
       },
       "NO_FRESH_MICRO_DERIVATIVES_WEAK": {
         "samples": 5,
@@ -11427,7 +11474,7 @@
     },
     "post_fix_cohort": {
       "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
-      "total": 45,
+      "total": 46,
       "decided": 44,
       "tp1_first": 24,
       "sl_first": 20,
@@ -11437,5 +11484,5 @@
     "legacy_unverified_count": 203,
     "note": "Only post_fix_cohort is eligible for new accuracy comparisons. Historical candidate observations may have timing limitations. These are shadow outcomes, not executable trades or realised PnL."
   },
-  "updated_at": 1791794905
+  "updated_at": 1791795680
 }
