@@ -11378,13 +11378,60 @@
       "best_favorable_r": 0.1828,
       "worst_adverse_r": 1.0426,
       "hold_minutes": 22.0
+    },
+    "CFXUSDT:SHORT:1791806641": {
+      "trade_id": "CFXUSDT:SHORT:1791806641",
+      "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
+      "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
+      "source": "SELECTIVE_PRE_SIGNAL_TELEGRAM",
+      "symbol": "CFXUSDT",
+      "direction": "SHORT",
+      "market_label": "KARIŞIK",
+      "market_regime": "CHOP",
+      "score": 94,
+      "rejection_reason": "BACKGROUND_MULTI_BLOCK:RISK_DEAD_ZONE_0_46_0_70+DIRECTION_CONFIRMATIONS_ABOVE_3_LATE",
+      "blockers": [
+        "RISK_DEAD_ZONE_0_46_0_70",
+        "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE"
+      ],
+      "zone_low": 0.0623765087,
+      "zone_high": 0.062506153,
+      "entry": 0.06244133085,
+      "sl": 0.062836,
+      "tp1": 0.062108,
+      "tp2": 0.0619,
+      "tp3": 0.061588,
+      "technical_target": 0.06158,
+      "risk_abs": 0.00039466915,
+      "risk_percent": 0.6321,
+      "expected_move_percent": 1.346,
+      "technical_target_r": 2.019,
+      "opened_at": 1791806641,
+      "last_checked_at": 1791806641,
+      "last_bar_ts": 1791806640,
+      "last_price": 0.06242,
+      "status": "OPEN",
+      "first_result": null,
+      "final_result": null,
+      "max_target_hit": 0,
+      "tp1_hit_at": 0,
+      "tp2_hit_at": 0,
+      "tp3_hit_at": 0,
+      "sl_hit_at": 0,
+      "closed_at": 0,
+      "exit_price": null,
+      "best_favorable_percent": 0.0,
+      "worst_adverse_percent": 0.0,
+      "best_favorable_r": 0.0,
+      "worst_adverse_r": 0.0,
+      "hold_minutes": 0.0
     }
   },
   "summary": {
     "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
     "mode": "TELEGRAM_BACKGROUND_CANDIDATE_SHADOW_ONLY_NO_LIVE_EFFECT",
-    "total": 249,
-    "open": 0,
+    "total": 250,
+    "open": 1,
     "closed": 249,
     "decided_tp1_vs_sl": 249,
     "tp1_first": 160,
@@ -11397,28 +11444,29 @@
       "SL_FIRST": 89,
       "TP3": 82,
       "SL_AFTER_TP1": 38,
-      "SL_AFTER_TP2": 40
+      "SL_AFTER_TP2": 40,
+      "OPEN": 1
     },
     "by_blocker": {
       "RISK_DEAD_ZONE_0_46_0_70": {
-        "samples": 132,
+        "samples": 133,
         "decided": 132,
         "tp1_first": 81,
         "sl_first": 51,
         "tp1_first_rate": 0.6136,
         "tp3_reached": 34,
-        "avg_mfe_percent": 0.7111,
-        "avg_mae_percent": 0.6207
+        "avg_mfe_percent": 0.7057,
+        "avg_mae_percent": 0.616
       },
       "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": {
-        "samples": 95,
+        "samples": 96,
         "decided": 95,
         "tp1_first": 65,
         "sl_first": 30,
         "tp1_first_rate": 0.6842,
         "tp3_reached": 37,
-        "avg_mfe_percent": 0.9231,
-        "avg_mae_percent": 0.6192
+        "avg_mfe_percent": 0.9135,
+        "avg_mae_percent": 0.6127
       },
       "EXPECTED_MOVE_BELOW_2P": {
         "samples": 30,
@@ -11473,7 +11521,7 @@
     },
     "post_fix_cohort": {
       "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
-      "total": 46,
+      "total": 47,
       "decided": 46,
       "tp1_first": 24,
       "sl_first": 22,
@@ -11483,5 +11531,5 @@
     "legacy_unverified_count": 203,
     "note": "Only post_fix_cohort is eligible for new accuracy comparisons. Historical candidate observations may have timing limitations. These are shadow outcomes, not executable trades or realised PnL."
   },
-  "updated_at": 1791805952
+  "updated_at": 1791806727
 }
