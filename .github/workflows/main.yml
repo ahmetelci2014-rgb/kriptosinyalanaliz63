@@ -125,6 +125,10 @@ jobs:
           python market_first_entry_condition_diagnosis.py
           python market_first_delivery_truth.py
 
+          # Sadece biten arka plan adaylarini izler; sinyal/emir/Telegram uretmez.
+          # Hata veya gecikme canli taramanin devamini engellemez.
+          timeout 90s python market_first_candidate_recovery_shadow.py || true
+
       - name: Telegram sessizlik kontrolu
         env:
           TOKEN: ${{ secrets.TOKEN }}
@@ -159,6 +163,7 @@ jobs:
             market_first_delivery_truth.json \
             market_first_pre_entry_shadow.json \
             market_first_candidate_shadow.json \
+            market_first_candidate_recovery_shadow.json \
             market_first_big_move_capture.json \
             market_first_profit_quality.json \
             market_first_high_profit_low_sl.json \
