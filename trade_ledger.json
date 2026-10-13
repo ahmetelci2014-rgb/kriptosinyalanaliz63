@@ -205723,13 +205723,21 @@
             "directional_return_percent": 0.4834,
             "max_favorable_percent": 0.4834,
             "max_adverse_percent": 0.9215
+          },
+          "30": {
+            "target_at": 1791853571,
+            "candle_time": 1791853500,
+            "close_price": 155.07,
+            "directional_return_percent": -0.8564,
+            "max_favorable_percent": 1.2508,
+            "max_adverse_percent": 0.9215
           }
         },
         "max_favorable_percent": 1.2508,
-        "max_adverse_percent": 0.9215,
+        "max_adverse_percent": 1.0971,
         "best_price": 151.83,
-        "worst_price": 155.17,
-        "last_checked_at": 1791853402,
+        "worst_price": 155.44,
+        "last_checked_at": 1791854179,
         "completed_at": 0,
         "shadow_only": true
       },
@@ -205752,19 +205760,28 @@
             "max_favorable_percent": 0.4834,
             "max_adverse_percent": 0.9215,
             "directional_r_from_reference": 0.5961
+          },
+          "30": {
+            "target_at": 1791853571,
+            "candle_time": 1791853500,
+            "close_price": 155.07,
+            "directional_return_percent": -0.8564,
+            "max_favorable_percent": 1.2508,
+            "max_adverse_percent": 0.9215,
+            "directional_r_from_reference": -1.0562
           }
         },
         "watched_levels": {},
         "reached_levels": {},
         "max_favorable_percent": 1.2508,
-        "max_adverse_percent": 0.9215,
+        "max_adverse_percent": 1.0971,
         "max_favorable_r": 1.5426,
-        "max_adverse_r": 1.1364,
+        "max_adverse_r": 1.353,
         "best_price": 151.83,
-        "worst_price": 155.17,
-        "last_checked_at": 1791853396,
+        "worst_price": 155.44,
+        "last_checked_at": 1791854175,
         "completed_at": 0,
-        "last_price": 154.8
+        "last_price": 155.21
       }
     },
     "ASTERUSDT_SHORT_MARKET_FIRST_V7_1791850519": {
@@ -205784,12 +205801,12 @@
       "tp1_hit": true,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "TP1_SONRASI_BE",
+      "r_result": 0.5,
+      "exit_price": 0.682,
+      "closed_at": 1791853581,
+      "closed_day": "2026-10-13",
       "events": [
         {
           "time": 1791850519,
@@ -205800,6 +205817,11 @@
           "time": 1791852801,
           "event": "TP1",
           "price": 0.674404571429
+        },
+        {
+          "time": 1791853581,
+          "event": "BE",
+          "price": 0.682
         }
       ],
       "bot_version": "MAIN_MTF_ENTRY_QUALITY_SHADOW_V1_2026_09_22",
@@ -205829,13 +205851,95 @@
       "worst_adverse_r": 0.3028,
       "best_favorable_price": 0.6715,
       "worst_adverse_price": 0.6843,
-      "last_market_price": 0.6813,
+      "last_market_price": 0.6817,
       "tp1_hit_at": 1791852720,
       "entry_type": "MARKET_FIRST_V7",
-      "last_tracking_at": 1791853380
+      "last_tracking_at": 1791853380,
+      "duration_minutes": 51,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "YON DOGRU, DEVAM GUCU ZAYIFLADI",
+        "confidence": "YUKSEK",
+        "factors": [
+          "Islem hedef gordukten sonra kalan kisim giristen kapandi."
+        ],
+        "duration_minutes": 51,
+        "best_favorable_r": 1.3824,
+        "worst_adverse_r": 0.3028,
+        "provisional": false,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "result_diagnostics": {
+        "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
+        "shadow_only": true,
+        "status": "TRACKING",
+        "final_result": "TP1_SONRASI_BE",
+        "started_at": 1791853581,
+        "measurement_start_at": 1791853620,
+        "reference_price": 0.682,
+        "reference_label": "BE_EXIT",
+        "watched_levels": {
+          "TP2": 0.668708,
+          "TP3": 0.663011428571
+        },
+        "reached_levels": {},
+        "checkpoints": {},
+        "max_favorable_r": 0.3423,
+        "max_adverse_r": 0.7899,
+        "last_checked_at": 1791854386,
+        "completed_at": 0,
+        "diagnosis": {
+          "status": "PROVISIONAL",
+          "code": "BE_KORUMASI_DOGRU",
+          "likely_cause": "SERMAYE_KORUMASI_ISABETLI",
+          "confidence": "HIGH",
+          "summary": "BE sonrasinda fiyat belirgin terslesti; koruma fayda saglamis gorunuyor.",
+          "evidence": {
+            "max_favorable_r_after_close": 0.3423,
+            "max_adverse_r_after_close": 0.7899,
+            "risk_percent": 1.1137,
+            "tp1_progress_at_send_percent": null,
+            "entry_distance_at_send_percent": 0.11730205278591083,
+            "reached_tp1_after_close": false,
+            "reached_tp2_after_close": false,
+            "reached_tp3_after_close": false,
+            "tp1_minutes_after_close": null,
+            "tp2_minutes_after_close": null,
+            "tp3_minutes_after_close": null
+          }
+        },
+        "last_price": 0.6874
+      },
+      "post_result_shadow": {
+        "version": "POST_RESULT_SHADOW_V1_2026_08_10",
+        "shadow_only": true,
+        "status": "TRACKING",
+        "final_result": "TP1_SONRASI_BE",
+        "started_at": 1791853581,
+        "measurement_start_at": 1791853620,
+        "reference_label": "BE_ENTRY",
+        "reference_price": 0.682,
+        "timeframe": "1m",
+        "checkpoints": {},
+        "watched_levels": {
+          "TP1": 0.674404571429,
+          "TP2": 0.668708,
+          "TP3": 0.663011428571
+        },
+        "reached_levels": {},
+        "max_favorable_percent": 0.3812,
+        "max_adverse_percent": 0.1906,
+        "max_favorable_r": 0.3423,
+        "max_adverse_r": 0.1712,
+        "best_price": 0.6794,
+        "worst_price": 0.6833,
+        "last_checked_at": 1791854175,
+        "completed_at": 0,
+        "last_price": 0.6831
+      }
     }
   },
-  "last_update": 1791853402,
+  "last_update": 1791854388,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -205846,11 +205950,11 @@
   },
   "result_diagnostics_summary": {
     "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
-    "tracked_total": 271,
+    "tracked_total": 272,
     "completed_total": 271,
     "diagnosis_counts": {
       "BE_SONRASI_TP3": 33,
-      "BE_KORUMASI_DOGRU": 16,
+      "BE_KORUMASI_DOGRU": 17,
       "BE_NOTR_KARISIK": 41,
       "SL_SONRASI_TERS_YON_DEVAMI": 10,
       "SL_SONRASI_TOPARLANMA": 120,
@@ -205860,7 +205964,7 @@
     },
     "likely_cause_counts": {
       "BE_KORUMASI_ERKEN_OLABILIR": 39,
-      "SERMAYE_KORUMASI_ISABETLI": 16,
+      "SERMAYE_KORUMASI_ISABETLI": 17,
       "BE_AYARI_ICIN_DAHA_COK_VERI": 41,
       "YON_VEYA_SETUP_GECERSIZLESMESI": 10,
       "ERKEN_GIRIS_OLASILIGI": 31,
@@ -205870,8 +205974,8 @@
     },
     "sl_recovery_total": 152,
     "be_maybe_early_total": 39,
-    "be_protection_correct_total": 16,
-    "updated_at": 1791779718
+    "be_protection_correct_total": 17,
+    "updated_at": 1791854388
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
