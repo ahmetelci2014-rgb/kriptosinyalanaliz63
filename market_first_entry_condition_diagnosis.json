@@ -1,6 +1,6 @@
 {
   "version": "MARKET_FIRST_ENTRY_CONDITION_DIAGNOSIS_V1_2026_09_08",
-  "generated_at": 1791967299,
+  "generated_at": 1791968078,
   "source_ledger_version": "MARKET_FIRST_OPPORTUNITY_LEDGER_V1_2026_09_05",
   "definition": "Clean resolved preparations that reached TP1+ without a Telegram trade and never recorded ENTRY condition. Latest-plan flags are diagnostic snapshots, not guaranteed co-temporal blocker proofs.",
   "reference_thresholds_observational_only": {
@@ -12,46 +12,46 @@
     "max_extension_atr": 1.25
   },
   "summary": {
-    "before_entry_condition_missed": 584,
-    "tp3_missed": 535,
-    "tp1_within_30m": 524,
-    "tp1_within_60m": 549,
-    "shadow_pre_entry_profile_count": 169,
-    "shadow_pre_entry_profile_share": 0.2894
+    "before_entry_condition_missed": 585,
+    "tp3_missed": 537,
+    "tp1_within_30m": 525,
+    "tp1_within_60m": 550,
+    "shadow_pre_entry_profile_count": 170,
+    "shadow_pre_entry_profile_share": 0.2906
   },
   "primary_obstacles": {
-    "ZONE_NEVER_TOUCHED": 318,
-    "STRUCTURE_5M_NEUTRAL_LATEST": 86,
+    "ZONE_NEVER_TOUCHED": 319,
+    "STRUCTURE_5M_NEUTRAL_LATEST": 87,
     "LIKELY_TIMING_WINDOW_MISSED": 85,
-    "STRUCTURE_5M_OPPOSITE_LATEST": 58,
+    "STRUCTURE_5M_OPPOSITE_LATEST": 57,
     "VOLUME_5M_BELOW_0_50_LATEST": 28,
     "SCORE_BELOW_76_LATEST": 8,
     "EXTENSION_ABOVE_1_25_LATEST": 1
   },
   "diagnostic_flags": {
-    "TP1_WITHIN_30M": 524,
-    "ZONE_NEVER_TOUCHED": 318,
-    "STRUCTURE_5M_NEUTRAL_LATEST": 109,
-    "VOLUME_5M_BELOW_0_50_LATEST": 95,
-    "STRUCTURE_5M_OPPOSITE_LATEST": 69,
+    "TP1_WITHIN_30M": 525,
+    "ZONE_NEVER_TOUCHED": 319,
+    "STRUCTURE_5M_NEUTRAL_LATEST": 110,
+    "VOLUME_5M_BELOW_0_50_LATEST": 96,
+    "STRUCTURE_5M_OPPOSITE_LATEST": 68,
     "EXTENSION_ABOVE_1_25_LATEST": 33,
     "TP1_WITHIN_60M": 25,
     "SCORE_BELOW_76_LATEST": 13
   },
   "obstacle_stats": {
     "ZONE_NEVER_TOUCHED": {
-      "count": 318,
-      "share": 0.5445,
-      "tp3_count": 318,
-      "tp1_within_30m": 317,
-      "avg_best_favorable_r": 0.9609
+      "count": 319,
+      "share": 0.5453,
+      "tp3_count": 319,
+      "tp1_within_30m": 318,
+      "avg_best_favorable_r": 0.9597
     },
     "STRUCTURE_5M_NEUTRAL_LATEST": {
-      "count": 86,
-      "share": 0.1473,
-      "tp3_count": 74,
-      "tp1_within_30m": 67,
-      "avg_best_favorable_r": 2.3471
+      "count": 87,
+      "share": 0.1487,
+      "tp3_count": 75,
+      "tp1_within_30m": 68,
+      "avg_best_favorable_r": 2.3702
     },
     "VOLUME_5M_BELOW_0_50_LATEST": {
       "count": 28,
@@ -62,17 +62,17 @@
     },
     "LIKELY_TIMING_WINDOW_MISSED": {
       "count": 85,
-      "share": 0.1455,
+      "share": 0.1453,
       "tp3_count": 79,
       "tp1_within_30m": 69,
       "avg_best_favorable_r": 1.8254
     },
     "STRUCTURE_5M_OPPOSITE_LATEST": {
-      "count": 58,
-      "share": 0.0993,
+      "count": 57,
+      "share": 0.0974,
       "tp3_count": 32,
-      "tp1_within_30m": 41,
-      "avg_best_favorable_r": 3.2135
+      "tp1_within_30m": 40,
+      "avg_best_favorable_r": 3.2567
     },
     "SCORE_BELOW_76_LATEST": {
       "count": 8,
@@ -402,6 +402,35 @@
       "best_favorable_percent": 1.1306,
       "worst_adverse_percent": 1.1696,
       "tp1_minutes": 91.45,
+      "tp2_reached": true,
+      "tp3_reached": true,
+      "outcome": "SL_FIRST_THEN_TP3_RECOVERY"
+    },
+    {
+      "episode_id": "METISUSDT:SHORT:1791965081",
+      "symbol": "METISUSDT",
+      "direction": "SHORT",
+      "score": 84,
+      "primary_obstacle": "STRUCTURE_5M_NEUTRAL_LATEST",
+      "diagnostic_flags": [
+        "STRUCTURE_5M_NEUTRAL_LATEST",
+        "TP1_WITHIN_30M"
+      ],
+      "shadow_pre_entry_profile": true,
+      "zone_touched": true,
+      "structure_5m": "NEUTRAL",
+      "structure_15m": "SHORT",
+      "structure_1h": "SHORT",
+      "volume_ratio_5m": 0.803,
+      "volume_ratio_15m": 1.009,
+      "extension_atr_5m": 0.681,
+      "risk_percent": 0.877,
+      "room_r": 1.51,
+      "market_regime": "CHOP",
+      "best_favorable_r": 4.3547,
+      "best_favorable_percent": 1.8025,
+      "worst_adverse_percent": 0.7264,
+      "tp1_minutes": 22.43,
       "tp2_reached": true,
       "tp3_reached": true,
       "outcome": "SL_FIRST_THEN_TP3_RECOVERY"
@@ -1206,34 +1235,6 @@
       "tp2_reached": true,
       "tp3_reached": true,
       "outcome": "TP3_REACHED"
-    },
-    {
-      "episode_id": "RIVERUSDT:LONG:1791860793",
-      "symbol": "RIVERUSDT",
-      "direction": "LONG",
-      "score": 90,
-      "primary_obstacle": "LIKELY_TIMING_WINDOW_MISSED",
-      "diagnostic_flags": [
-        "TP1_WITHIN_60M"
-      ],
-      "shadow_pre_entry_profile": true,
-      "zone_touched": true,
-      "structure_5m": "LONG",
-      "structure_15m": "LONG",
-      "structure_1h": "LONG",
-      "volume_ratio_5m": 0.758,
-      "volume_ratio_15m": 0.998,
-      "extension_atr_5m": 0.774,
-      "risk_percent": 0.599,
-      "room_r": 7.94,
-      "market_regime": "CHOP",
-      "best_favorable_r": 2.8426,
-      "best_favorable_percent": 2.4014,
-      "worst_adverse_percent": 1.458,
-      "tp1_minutes": 36.9,
-      "tp2_reached": true,
-      "tp3_reached": true,
-      "outcome": "SL_FIRST_THEN_TP3_RECOVERY"
     }
   ],
   "top_shadow_pre_entry_profiles": [
@@ -1545,6 +1546,35 @@
       "best_favorable_percent": 1.1306,
       "worst_adverse_percent": 1.1696,
       "tp1_minutes": 91.45,
+      "tp2_reached": true,
+      "tp3_reached": true,
+      "outcome": "SL_FIRST_THEN_TP3_RECOVERY"
+    },
+    {
+      "episode_id": "METISUSDT:SHORT:1791965081",
+      "symbol": "METISUSDT",
+      "direction": "SHORT",
+      "score": 84,
+      "primary_obstacle": "STRUCTURE_5M_NEUTRAL_LATEST",
+      "diagnostic_flags": [
+        "STRUCTURE_5M_NEUTRAL_LATEST",
+        "TP1_WITHIN_30M"
+      ],
+      "shadow_pre_entry_profile": true,
+      "zone_touched": true,
+      "structure_5m": "NEUTRAL",
+      "structure_15m": "SHORT",
+      "structure_1h": "SHORT",
+      "volume_ratio_5m": 0.803,
+      "volume_ratio_15m": 1.009,
+      "extension_atr_5m": 0.681,
+      "risk_percent": 0.877,
+      "room_r": 1.51,
+      "market_regime": "CHOP",
+      "best_favorable_r": 4.3547,
+      "best_favorable_percent": 1.8025,
+      "worst_adverse_percent": 0.7264,
+      "tp1_minutes": 22.43,
       "tp2_reached": true,
       "tp3_reached": true,
       "outcome": "SL_FIRST_THEN_TP3_RECOVERY"
@@ -2339,35 +2369,6 @@
       "tp2_reached": true,
       "tp3_reached": false,
       "outcome": "TP2_REACHED"
-    },
-    {
-      "episode_id": "BLURUSDT:SHORT:1791898103",
-      "symbol": "BLURUSDT",
-      "direction": "SHORT",
-      "score": 84,
-      "primary_obstacle": "STRUCTURE_5M_NEUTRAL_LATEST",
-      "diagnostic_flags": [
-        "STRUCTURE_5M_NEUTRAL_LATEST",
-        "TP1_WITHIN_30M"
-      ],
-      "shadow_pre_entry_profile": true,
-      "zone_touched": true,
-      "structure_5m": "NEUTRAL",
-      "structure_15m": "SHORT",
-      "structure_1h": "SHORT",
-      "volume_ratio_5m": 1.394,
-      "volume_ratio_15m": 0.867,
-      "extension_atr_5m": 0.093,
-      "risk_percent": 1.192,
-      "room_r": 1.56,
-      "market_regime": "CHOP",
-      "best_favorable_r": 2.6761,
-      "best_favorable_percent": 3.2203,
-      "worst_adverse_percent": 0.2542,
-      "tp1_minutes": 14.93,
-      "tp2_reached": true,
-      "tp3_reached": true,
-      "outcome": "TP3_REACHED"
     }
   ],
   "next_step_hint": "Do not loosen live thresholds from this report alone. Compare several post-accelerator snapshots; if one obstacle/profile remains dominant, test that change in shadow before live promotion."
