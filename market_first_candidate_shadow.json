@@ -14126,26 +14126,74 @@
       "best_favorable_r": 2.1478,
       "worst_adverse_r": 0.0,
       "hold_minutes": 27.67
+    },
+    "SSVUSDT:SHORT:1791972476": {
+      "trade_id": "SSVUSDT:SHORT:1791972476",
+      "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
+      "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
+      "source": "SELECTIVE_PRE_SIGNAL_TELEGRAM",
+      "symbol": "SSVUSDT",
+      "direction": "SHORT",
+      "market_label": "AŞAĞI",
+      "market_regime": "BEAR_STRONG",
+      "score": 94,
+      "rejection_reason": "BACKGROUND_MULTI_BLOCK:VOLUME_ABOVE_2_00_LATE+DIRECTION_CONFIRMATIONS_ABOVE_3_LATE",
+      "blockers": [
+        "VOLUME_ABOVE_2_00_LATE",
+        "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE"
+      ],
+      "zone_low": 2.6832912513,
+      "zone_high": 2.6886632058,
+      "entry": 2.68597722855,
+      "sl": 2.6967211374,
+      "tp1": 2.6779192968,
+      "tp2": 2.6725473424,
+      "tp3": 2.6644894107,
+      "technical_target": 2.622,
+      "risk_abs": 0.01074390885,
+      "risk_percent": 0.4,
+      "expected_move_percent": 2.055,
+      "technical_target_r": 2.789,
+      "opened_at": 1791972476,
+      "last_checked_at": 1791972715,
+      "last_bar_ts": 1791972600,
+      "last_price": 2.679,
+      "status": "OPEN",
+      "first_result": "TP1_FIRST",
+      "final_result": null,
+      "max_target_hit": 1,
+      "tp1_hit_at": 1791972480,
+      "tp2_hit_at": 0,
+      "tp3_hit_at": 0,
+      "sl_hit_at": 0,
+      "closed_at": 0,
+      "exit_price": null,
+      "best_favorable_percent": 0.4087,
+      "worst_adverse_percent": 0.0,
+      "best_favorable_r": 1.0217,
+      "worst_adverse_r": 0.0,
+      "hold_minutes": 3.98
     }
   },
   "summary": {
     "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
     "mode": "TELEGRAM_BACKGROUND_CANDIDATE_SHADOW_ONLY_NO_LIVE_EFFECT",
-    "total": 308,
-    "open": 0,
+    "total": 309,
+    "open": 1,
     "closed": 308,
-    "decided_tp1_vs_sl": 308,
-    "tp1_first": 195,
+    "decided_tp1_vs_sl": 309,
+    "tp1_first": 196,
     "sl_first": 113,
-    "tp1_first_rate": 0.6331,
-    "tp1_reached": 195,
+    "tp1_first_rate": 0.6343,
+    "tp1_reached": 196,
     "tp2_reached": 148,
     "tp3_reached": 104,
     "final_results": {
       "SL_FIRST": 113,
       "TP3": 104,
       "SL_AFTER_TP1": 47,
-      "SL_AFTER_TP2": 44
+      "SL_AFTER_TP2": 44,
+      "OPEN": 1
     },
     "by_blocker": {
       "RISK_DEAD_ZONE_0_46_0_70": {
@@ -14159,14 +14207,14 @@
         "avg_mae_percent": 0.5833
       },
       "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": {
-        "samples": 127,
-        "decided": 127,
-        "tp1_first": 84,
+        "samples": 128,
+        "decided": 128,
+        "tp1_first": 85,
         "sl_first": 43,
-        "tp1_first_rate": 0.6614,
+        "tp1_first_rate": 0.6641,
         "tp3_reached": 49,
-        "avg_mfe_percent": 0.8746,
-        "avg_mae_percent": 0.5773
+        "avg_mfe_percent": 0.8709,
+        "avg_mae_percent": 0.5728
       },
       "EXPECTED_MOVE_BELOW_2P": {
         "samples": 33,
@@ -14189,14 +14237,14 @@
         "avg_mae_percent": 0.505
       },
       "VOLUME_ABOVE_2_00_LATE": {
-        "samples": 39,
-        "decided": 39,
-        "tp1_first": 27,
+        "samples": 40,
+        "decided": 40,
+        "tp1_first": 28,
         "sl_first": 12,
-        "tp1_first_rate": 0.6923,
+        "tp1_first_rate": 0.7,
         "tp3_reached": 15,
-        "avg_mfe_percent": 0.6975,
-        "avg_mae_percent": 0.7494
+        "avg_mfe_percent": 0.6903,
+        "avg_mae_percent": 0.7307
       },
       "CVD_IMPULSE_OPPOSITE": {
         "samples": 76,
@@ -14221,15 +14269,15 @@
     },
     "post_fix_cohort": {
       "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
-      "total": 105,
-      "decided": 105,
-      "tp1_first": 59,
+      "total": 106,
+      "decided": 106,
+      "tp1_first": 60,
       "sl_first": 46,
-      "tp1_first_rate": 0.5619,
+      "tp1_first_rate": 0.566,
       "tp3_reached": 32
     },
     "legacy_unverified_count": 203,
     "note": "Only post_fix_cohort is eligible for new accuracy comparisons. Historical candidate observations may have timing limitations. These are shadow outcomes, not executable trades or realised PnL."
   },
-  "updated_at": 1791972028
+  "updated_at": 1791972823
 }
