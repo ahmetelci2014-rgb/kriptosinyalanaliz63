@@ -15480,13 +15480,60 @@
       "best_favorable_r": 1.4051,
       "worst_adverse_r": 1.089,
       "hold_minutes": 19.02
+    },
+    "MINAUSDT:SHORT:1792050755": {
+      "trade_id": "MINAUSDT:SHORT:1792050755",
+      "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
+      "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
+      "source": "SELECTIVE_PRE_SIGNAL_TELEGRAM",
+      "symbol": "MINAUSDT",
+      "direction": "SHORT",
+      "market_label": "AŞAĞI",
+      "market_regime": "BEAR_STRONG",
+      "score": 94,
+      "rejection_reason": "BACKGROUND_MULTI_BLOCK:RISK_DEAD_ZONE_0_46_0_70+DIRECTION_CONFIRMATIONS_ABOVE_3_LATE",
+      "blockers": [
+        "RISK_DEAD_ZONE_0_46_0_70",
+        "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE"
+      ],
+      "zone_low": 0.0722369172,
+      "zone_high": 0.0723815356,
+      "entry": 0.0723092264,
+      "sl": 0.0727095,
+      "tp1": 0.071887875,
+      "tp2": 0.071653125,
+      "tp3": 0.071301,
+      "technical_target": 0.071301,
+      "risk_abs": 0.0004002736,
+      "risk_percent": 0.5536,
+      "expected_move_percent": 1.3,
+      "technical_target_r": 2.0,
+      "opened_at": 1792050755,
+      "last_checked_at": 1792050755,
+      "last_bar_ts": 1792050720,
+      "last_price": 0.07224,
+      "status": "OPEN",
+      "first_result": null,
+      "final_result": null,
+      "max_target_hit": 0,
+      "tp1_hit_at": 0,
+      "tp2_hit_at": 0,
+      "tp3_hit_at": 0,
+      "sl_hit_at": 0,
+      "closed_at": 0,
+      "exit_price": null,
+      "best_favorable_percent": 0.0,
+      "worst_adverse_percent": 0.0,
+      "best_favorable_r": 0.0,
+      "worst_adverse_r": 0.0,
+      "hold_minutes": 0.0
     }
   },
   "summary": {
     "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
     "mode": "TELEGRAM_BACKGROUND_CANDIDATE_SHADOW_ONLY_NO_LIVE_EFFECT",
-    "total": 337,
-    "open": 0,
+    "total": 338,
+    "open": 1,
     "closed": 337,
     "decided_tp1_vs_sl": 337,
     "tp1_first": 216,
@@ -15499,28 +15546,29 @@
       "SL_FIRST": 121,
       "TP3": 117,
       "SL_AFTER_TP1": 50,
-      "SL_AFTER_TP2": 49
+      "SL_AFTER_TP2": 49,
+      "OPEN": 1
     },
     "by_blocker": {
       "RISK_DEAD_ZONE_0_46_0_70": {
-        "samples": 189,
+        "samples": 190,
         "decided": 189,
         "tp1_first": 119,
         "sl_first": 70,
         "tp1_first_rate": 0.6296,
         "tp3_reached": 61,
-        "avg_mfe_percent": 0.7478,
-        "avg_mae_percent": 0.5608
+        "avg_mfe_percent": 0.7439,
+        "avg_mae_percent": 0.5579
       },
       "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": {
-        "samples": 142,
+        "samples": 143,
         "decided": 142,
         "tp1_first": 94,
         "sl_first": 48,
         "tp1_first_rate": 0.662,
         "tp3_reached": 54,
-        "avg_mfe_percent": 0.8566,
-        "avg_mae_percent": 0.5693
+        "avg_mfe_percent": 0.8506,
+        "avg_mae_percent": 0.5653
       },
       "EXPECTED_MOVE_BELOW_2P": {
         "samples": 35,
@@ -15575,7 +15623,7 @@
     },
     "post_fix_cohort": {
       "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
-      "total": 134,
+      "total": 135,
       "decided": 134,
       "tp1_first": 80,
       "sl_first": 54,
@@ -15585,5 +15633,5 @@
     "legacy_unverified_count": 203,
     "note": "Only post_fix_cohort is eligible for new accuracy comparisons. Historical candidate observations may have timing limitations. These are shadow outcomes, not executable trades or realised PnL."
   },
-  "updated_at": 1792049963
+  "updated_at": 1792050786
 }
