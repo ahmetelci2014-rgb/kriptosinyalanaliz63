@@ -1,6 +1,6 @@
 {
   "version": "MARKET_FIRST_ENTRY_CONDITION_DIAGNOSIS_V1_2026_09_08",
-  "generated_at": 1792136480,
+  "generated_at": 1792137325,
   "source_ledger_version": "MARKET_FIRST_OPPORTUNITY_LEDGER_V1_2026_09_05",
   "definition": "Clean resolved preparations that reached TP1+ without a Telegram trade and never recorded ENTRY condition. Latest-plan flags are diagnostic snapshots, not guaranteed co-temporal blocker proofs.",
   "reference_thresholds_observational_only": {
@@ -14,7 +14,7 @@
   "summary": {
     "before_entry_condition_missed": 557,
     "tp3_missed": 502,
-    "tp1_within_30m": 483,
+    "tp1_within_30m": 484,
     "tp1_within_60m": 513,
     "shadow_pre_entry_profile_count": 190,
     "shadow_pre_entry_profile_share": 0.3411
@@ -29,16 +29,23 @@
     "EXTENSION_ABOVE_1_25_LATEST": 1
   },
   "diagnostic_flags": {
-    "TP1_WITHIN_30M": 483,
+    "TP1_WITHIN_30M": 484,
     "ZONE_NEVER_TOUCHED": 255,
     "STRUCTURE_5M_NEUTRAL_LATEST": 124,
     "VOLUME_5M_BELOW_0_50_LATEST": 102,
     "STRUCTURE_5M_OPPOSITE_LATEST": 83,
     "EXTENSION_ABOVE_1_25_LATEST": 45,
-    "TP1_WITHIN_60M": 30,
+    "TP1_WITHIN_60M": 29,
     "SCORE_BELOW_76_LATEST": 14
   },
   "obstacle_stats": {
+    "LIKELY_TIMING_WINDOW_MISSED": {
+      "count": 91,
+      "share": 0.1634,
+      "tp3_count": 88,
+      "tp1_within_30m": 75,
+      "avg_best_favorable_r": 1.7657
+    },
     "ZONE_NEVER_TOUCHED": {
       "count": 255,
       "share": 0.4578,
@@ -59,13 +66,6 @@
       "tp3_count": 84,
       "tp1_within_30m": 77,
       "avg_best_favorable_r": 2.8073
-    },
-    "LIKELY_TIMING_WINDOW_MISSED": {
-      "count": 91,
-      "share": 0.1634,
-      "tp3_count": 88,
-      "tp1_within_30m": 74,
-      "avg_best_favorable_r": 1.8039
     },
     "STRUCTURE_5M_OPPOSITE_LATEST": {
       "count": 67,
@@ -343,34 +343,6 @@
       "best_favorable_percent": 1.2382,
       "worst_adverse_percent": 0.7674,
       "tp1_minutes": 72.42,
-      "tp2_reached": true,
-      "tp3_reached": true,
-      "outcome": "SL_FIRST_THEN_TP3_RECOVERY"
-    },
-    {
-      "episode_id": "BASEDUSDT:SHORT:1791921192",
-      "symbol": "BASEDUSDT",
-      "direction": "SHORT",
-      "score": 90,
-      "primary_obstacle": "LIKELY_TIMING_WINDOW_MISSED",
-      "diagnostic_flags": [
-        "TP1_WITHIN_60M"
-      ],
-      "shadow_pre_entry_profile": true,
-      "zone_touched": true,
-      "structure_5m": "SHORT",
-      "structure_15m": "SHORT",
-      "structure_1h": "SHORT",
-      "volume_ratio_5m": 0.736,
-      "volume_ratio_15m": 1.112,
-      "extension_atr_5m": 0.252,
-      "risk_percent": 0.633,
-      "room_r": 2.09,
-      "market_regime": "CHOP",
-      "best_favorable_r": 5.0642,
-      "best_favorable_percent": 5.5803,
-      "worst_adverse_percent": 1.4962,
-      "tp1_minutes": 33.73,
       "tp2_reached": true,
       "tp3_reached": true,
       "outcome": "SL_FIRST_THEN_TP3_RECOVERY"
@@ -1229,6 +1201,35 @@
       "tp2_reached": true,
       "tp3_reached": true,
       "outcome": "TP3_REACHED"
+    },
+    {
+      "episode_id": "SUSHIUSDT:SHORT:1791985237",
+      "symbol": "SUSHIUSDT",
+      "direction": "SHORT",
+      "score": 86,
+      "primary_obstacle": "STRUCTURE_5M_NEUTRAL_LATEST",
+      "diagnostic_flags": [
+        "STRUCTURE_5M_NEUTRAL_LATEST",
+        "TP1_WITHIN_30M"
+      ],
+      "shadow_pre_entry_profile": true,
+      "zone_touched": true,
+      "structure_5m": "NEUTRAL",
+      "structure_15m": "SHORT",
+      "structure_1h": "SHORT",
+      "volume_ratio_5m": 6.808,
+      "volume_ratio_15m": 1.972,
+      "extension_atr_5m": 0.805,
+      "risk_percent": 0.4,
+      "room_r": 4.01,
+      "market_regime": "BEAR_STRONG",
+      "best_favorable_r": 2.8846,
+      "best_favorable_percent": 1.1538,
+      "worst_adverse_percent": 0.2564,
+      "tp1_minutes": 13.5,
+      "tp2_reached": true,
+      "tp3_reached": true,
+      "outcome": "TP3_REACHED"
     }
   ],
   "top_shadow_pre_entry_profiles": [
@@ -1600,34 +1601,6 @@
       "tp2_reached": true,
       "tp3_reached": false,
       "outcome": "TP2_REACHED"
-    },
-    {
-      "episode_id": "BASEDUSDT:SHORT:1791921192",
-      "symbol": "BASEDUSDT",
-      "direction": "SHORT",
-      "score": 90,
-      "primary_obstacle": "LIKELY_TIMING_WINDOW_MISSED",
-      "diagnostic_flags": [
-        "TP1_WITHIN_60M"
-      ],
-      "shadow_pre_entry_profile": true,
-      "zone_touched": true,
-      "structure_5m": "SHORT",
-      "structure_15m": "SHORT",
-      "structure_1h": "SHORT",
-      "volume_ratio_5m": 0.736,
-      "volume_ratio_15m": 1.112,
-      "extension_atr_5m": 0.252,
-      "risk_percent": 0.633,
-      "room_r": 2.09,
-      "market_regime": "CHOP",
-      "best_favorable_r": 5.0642,
-      "best_favorable_percent": 5.5803,
-      "worst_adverse_percent": 1.4962,
-      "tp1_minutes": 33.73,
-      "tp2_reached": true,
-      "tp3_reached": true,
-      "outcome": "SL_FIRST_THEN_TP3_RECOVERY"
     },
     {
       "episode_id": "RIVERUSDT:LONG:1791970597",
@@ -2361,6 +2334,35 @@
       "best_favorable_percent": 1.4202,
       "worst_adverse_percent": 0.2029,
       "tp1_minutes": 3.9,
+      "tp2_reached": true,
+      "tp3_reached": true,
+      "outcome": "TP3_REACHED"
+    },
+    {
+      "episode_id": "SUSHIUSDT:SHORT:1791985237",
+      "symbol": "SUSHIUSDT",
+      "direction": "SHORT",
+      "score": 86,
+      "primary_obstacle": "STRUCTURE_5M_NEUTRAL_LATEST",
+      "diagnostic_flags": [
+        "STRUCTURE_5M_NEUTRAL_LATEST",
+        "TP1_WITHIN_30M"
+      ],
+      "shadow_pre_entry_profile": true,
+      "zone_touched": true,
+      "structure_5m": "NEUTRAL",
+      "structure_15m": "SHORT",
+      "structure_1h": "SHORT",
+      "volume_ratio_5m": 6.808,
+      "volume_ratio_15m": 1.972,
+      "extension_atr_5m": 0.805,
+      "risk_percent": 0.4,
+      "room_r": 4.01,
+      "market_regime": "BEAR_STRONG",
+      "best_favorable_r": 2.8846,
+      "best_favorable_percent": 1.1538,
+      "worst_adverse_percent": 0.2564,
+      "tp1_minutes": 13.5,
       "tp2_reached": true,
       "tp3_reached": true,
       "outcome": "TP3_REACHED"
