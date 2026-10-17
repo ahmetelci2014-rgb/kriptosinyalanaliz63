@@ -207387,19 +207387,26 @@
           "TP3": 0.182927142857
         },
         "reached_levels": {},
-        "checkpoints": {},
-        "max_favorable_r": 0.144,
+        "checkpoints": {
+          "15": {
+            "target_at": 1792196530,
+            "candle_time": 1792196460,
+            "close_price": 0.1866,
+            "directional_r_from_reference": 0.7919
+          }
+        },
+        "max_favorable_r": 1.7997,
         "max_adverse_r": 0.7199,
-        "last_checked_at": 1792196035,
+        "last_checked_at": 1792196856,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
-          "code": "SL_KARISIK_SONUC",
-          "likely_cause": "KESIN_NEDEN_YOK",
-          "confidence": "LOW",
-          "summary": "Stop sonrasi fiyat yolu tek bir nedene isaret etmiyor.",
+          "code": "SL_SONRASI_TOPARLANMA",
+          "likely_cause": "GIRIS_STOP_ZAMANLAMASI",
+          "confidence": "MEDIUM",
+          "summary": "Stop sonrasi anlamli toparlanma var; giris/stop zamanlamasi incelenmeli.",
           "evidence": {
-            "max_favorable_r_after_close": 0.144,
+            "max_favorable_r_after_close": 1.7997,
             "max_adverse_r_after_close": 0.7199,
             "risk_percent": 0.7452,
             "tp1_progress_at_send_percent": null,
@@ -207412,11 +207419,73 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.1883
+        "last_price": 0.1861
       }
+    },
+    "NMRUSDT_SHORT_MARKET_FIRST_V7_1792196258": {
+      "trade_id": "NMRUSDT_SHORT_MARKET_FIRST_V7_1792196258",
+      "symbol": "NMRUSDT",
+      "direction": "SHORT",
+      "source": "MARKET_FIRST_V7",
+      "entry": 11.588,
+      "tp1": 11.51246,
+      "tp2": 11.455805,
+      "tp3": 11.39915,
+      "sl": 11.66354,
+      "score": 94,
+      "risk_percent": 0.6519,
+      "opened_at": 1792196258,
+      "opened_day": "2026-10-17",
+      "tp1_hit": false,
+      "tp2_hit": false,
+      "tp3_hit": false,
+      "status": "OPEN",
+      "final_result": null,
+      "r_result": null,
+      "exit_price": null,
+      "closed_at": null,
+      "closed_day": null,
+      "events": [
+        {
+          "time": 1792196258,
+          "event": "OPENED",
+          "price": 11.588
+        }
+      ],
+      "bot_version": "MAIN_MTF_ENTRY_QUALITY_SHADOW_V1_2026_09_22",
+      "strategy_version": "PREMIUM_MTF_TP_ODAKLI_V3_SHADOW_V2_MARKET_STRUCTURE",
+      "config_version": "CONFIG_2026_09_22_OBSERVATION_V1",
+      "git_sha": "3136cc5c2878fb0502c2242e6406d5a485683bee",
+      "git_sha_short": "3136cc5c2878",
+      "github_run_id": "38985415679",
+      "github_run_number": "10866",
+      "github_workflow": "Market First V6 - Balanced Core Live",
+      "github_ref_name": "main",
+      "version_backfilled": false,
+      "quality": "V7 TREND/RETEST (FORWARD TEST)",
+      "quality_note": "1H+15M uyumu ve kapalı 5M retest/teyit",
+      "volume_ratio": 3.187,
+      "ideal_entry": 11.588,
+      "zone_name": "PULLBACK",
+      "zone_distance_percent": 0.0,
+      "rr_tp1": 1.0,
+      "rr_tp2": 1.75,
+      "rr_tp3": 2.5,
+      "sent_price": 11.595,
+      "entry_distance_at_send_percent": 0.060407317915097083,
+      "best_favorable_percent": 0.3279,
+      "worst_adverse_percent": 0.0863,
+      "best_favorable_r": 0.503,
+      "worst_adverse_r": 0.1324,
+      "best_favorable_price": 11.55,
+      "worst_adverse_price": 11.598,
+      "last_market_price": 11.556,
+      "tp1_hit_at": 0,
+      "entry_type": "MARKET_FIRST_V7",
+      "last_tracking_at": 1792196700
     }
   },
-  "last_update": 1792196037,
+  "last_update": 1792196858,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -207434,10 +207503,10 @@
       "BE_KORUMASI_DOGRU": 17,
       "BE_NOTR_KARISIK": 42,
       "SL_SONRASI_TERS_YON_DEVAMI": 11,
-      "SL_SONRASI_TOPARLANMA": 122,
+      "SL_SONRASI_TOPARLANMA": 123,
       "BE_SONRASI_YENIDEN_HEDEF": 6,
       "SL_SONRASI_GUCLU_TOPARLANMA": 32,
-      "SL_KARISIK_SONUC": 14
+      "SL_KARISIK_SONUC": 13
     },
     "likely_cause_counts": {
       "BE_KORUMASI_ERKEN_OLABILIR": 39,
@@ -207445,14 +207514,14 @@
       "BE_AYARI_ICIN_DAHA_COK_VERI": 42,
       "YON_VEYA_SETUP_GECERSIZLESMESI": 11,
       "ERKEN_GIRIS_OLASILIGI": 31,
-      "GIRIS_STOP_ZAMANLAMASI": 38,
-      "KESIN_NEDEN_YOK": 14,
+      "GIRIS_STOP_ZAMANLAMASI": 39,
+      "KESIN_NEDEN_YOK": 13,
       "DAR_STOP_OLASILIGI": 85
     },
-    "sl_recovery_total": 154,
+    "sl_recovery_total": 155,
     "be_maybe_early_total": 39,
     "be_protection_correct_total": 17,
-    "updated_at": 1792195748
+    "updated_at": 1792196561
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
