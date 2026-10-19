@@ -1,46 +1,79 @@
 {
   "version": "MARKET_FIRST_OBSERVABILITY_V1_2026_09_08",
-  "generated_at": 1792404866,
+  "generated_at": 1792405643,
   "definition": "Clean resolved preparation that reached TP1 or better without a real Telegram entry signal.",
   "total_missed_moves": 960,
-  "miss_rate_of_clean_resolved": 0.924,
+  "miss_rate_of_clean_resolved": 0.9231,
   "levels": {
-    "TP3_MISSED": 734,
+    "TP3_MISSED": 735,
     "TP2_MISSED": 137,
-    "TP1_MISSED": 89
+    "TP1_MISSED": 88
   },
   "stages": {
-    "BEFORE_ENTRY_CONDITION": 484,
-    "FINAL_DELIVERY_GATE": 471,
+    "BEFORE_ENTRY_CONDITION": 487,
+    "FINAL_DELIVERY_GATE": 468,
     "PROMOTION_GATE": 5
   },
   "reasons": {
-    "ENTRY_CONDITION_NOT_REACHED": 484,
-    "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED": 471,
+    "ENTRY_CONDITION_NOT_REACHED": 487,
+    "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED": 468,
     "LOW_SCORE": 3,
     "NO_ACCELERATION": 2
   },
   "directions": {
-    "SHORT": 755,
-    "LONG": 205
+    "SHORT": 758,
+    "LONG": 202
   },
   "outcomes": {
-    "TP3_REACHED": 644,
+    "TP3_REACHED": 645,
     "TP2_REACHED": 124,
     "SL_FIRST_THEN_TP3_RECOVERY": 88,
-    "TP1_REACHED": 74,
+    "TP1_REACHED": 73,
     "SL_FIRST_THEN_TP1_RECOVERY": 14,
     "SL_FIRST_THEN_TP2_RECOVERY": 13,
     "AMBIGUOUS_THEN_TP3": 2,
     "AMBIGUOUS_WITH_TARGET": 1
   },
   "timing": {
-    "avg_minutes_prep_to_tp1": 28.84,
-    "avg_minutes_entry_condition_to_tp1": 55.8,
-    "tp1_within_30m": 761,
-    "tp1_within_60m": 847
+    "avg_minutes_prep_to_tp1": 28.71,
+    "avg_minutes_entry_condition_to_tp1": 56.04,
+    "tp1_within_30m": 763,
+    "tp1_within_60m": 848
   },
   "top_missed": [
+    {
+      "episode_id": "APRUSDT:SHORT:1792395955",
+      "symbol": "APRUSDT",
+      "direction": "SHORT",
+      "score": 67,
+      "miss_level": "TP3_MISSED",
+      "miss_stage": "BEFORE_ENTRY_CONDITION",
+      "reason": "ENTRY_CONDITION_NOT_REACHED",
+      "outcome": "SL_FIRST_THEN_TP3_RECOVERY",
+      "prep_price": 0.02726,
+      "last_price": 0.02616,
+      "best_favorable_percent": 4.2553,
+      "best_favorable_r": 15.1893,
+      "worst_adverse_percent": 14.7469,
+      "entry_condition_met": false,
+      "entry_promoted": false,
+      "entry_signal_sent": false,
+      "tp1_before_entry_signal": true,
+      "minutes_prep_to_tp1": 26.55,
+      "minutes_entry_condition_to_tp1": null,
+      "market_regime": "BULL",
+      "structure_5m": "LONG",
+      "structure_15m": "SHORT",
+      "structure_1h": "SHORT",
+      "volume_ratio_5m": 0.443,
+      "volume_ratio_15m": 0.491,
+      "extension_atr_5m": 0.98,
+      "risk_percent": 1.394,
+      "room_r": 7.06,
+      "first_at": 1792395955,
+      "tp1_at": 1792397548,
+      "resolved_at": 1792405544
+    },
     {
       "episode_id": "AEONUSDT:SHORT:1792356841",
       "symbol": "AEONUSDT",
@@ -1327,39 +1360,6 @@
       "first_at": 1792276095,
       "tp1_at": 1792279344,
       "resolved_at": 1792280996
-    },
-    {
-      "episode_id": "MAGICUSDT:SHORT:1792256360",
-      "symbol": "MAGICUSDT",
-      "direction": "SHORT",
-      "score": 86,
-      "miss_level": "TP3_MISSED",
-      "miss_stage": "BEFORE_ENTRY_CONDITION",
-      "reason": "ENTRY_CONDITION_NOT_REACHED",
-      "outcome": "TP3_REACHED",
-      "prep_price": 0.10738,
-      "last_price": 0.10636,
-      "best_favorable_percent": 2.3561,
-      "best_favorable_r": 3.4281,
-      "worst_adverse_percent": 3.9858,
-      "entry_condition_met": false,
-      "entry_promoted": false,
-      "entry_signal_sent": false,
-      "tp1_before_entry_signal": true,
-      "minutes_prep_to_tp1": 4.55,
-      "minutes_entry_condition_to_tp1": null,
-      "market_regime": "BEAR",
-      "structure_5m": "SHORT",
-      "structure_15m": "SHORT",
-      "structure_1h": "SHORT",
-      "volume_ratio_5m": 0.325,
-      "volume_ratio_15m": 0.197,
-      "extension_atr_5m": 0.403,
-      "risk_percent": 0.4,
-      "room_r": 6.15,
-      "first_at": 1792256360,
-      "tp1_at": 1792256633,
-      "resolved_at": 1792272623
     }
   ]
 }
