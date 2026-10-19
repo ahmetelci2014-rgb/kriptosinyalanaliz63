@@ -208090,12 +208090,12 @@
       "tp1_hit": true,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "TP1_SONRASI_BE",
+      "r_result": 0.5,
+      "exit_price": 5.03,
+      "closed_at": 1792397499,
+      "closed_day": "2026-10-19",
       "events": [
         {
           "time": 1792372110,
@@ -208106,6 +208106,11 @@
           "time": 1792394976,
           "event": "TP1",
           "price": 5.094531428571
+        },
+        {
+          "time": 1792397499,
+          "event": "BE",
+          "price": 5.03
         }
       ],
       "bot_version": "MAIN_MTF_ENTRY_QUALITY_SHADOW_V1_2026_09_22",
@@ -208135,10 +208140,65 @@
       "worst_adverse_r": 0.6508,
       "best_favorable_price": 5.135,
       "worst_adverse_price": 4.988,
-      "last_market_price": 5.063,
+      "last_market_price": 5.031,
       "tp1_hit_at": 1792394760,
       "entry_type": "MARKET_FIRST_V7",
-      "last_tracking_at": 1792396620
+      "last_tracking_at": 1792397220,
+      "duration_minutes": 423,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "YON DOGRU, DEVAM GUCU ZAYIFLADI",
+        "confidence": "YUKSEK",
+        "factors": [
+          "Islem hedef gordukten sonra kalan kisim giristen kapandi."
+        ],
+        "duration_minutes": 423,
+        "best_favorable_r": 1.6271,
+        "worst_adverse_r": 0.6508,
+        "provisional": false,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "result_diagnostics": {
+        "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
+        "shadow_only": true,
+        "status": "TRACKING",
+        "final_result": "TP1_SONRASI_BE",
+        "started_at": 1792397499,
+        "measurement_start_at": 1792397520,
+        "reference_price": 5.03,
+        "reference_label": "BE_EXIT",
+        "watched_levels": {
+          "TP2": 5.14293,
+          "TP3": 5.191328571429
+        },
+        "reached_levels": {},
+        "checkpoints": {},
+        "max_favorable_r": 0.2169,
+        "max_adverse_r": 0.0,
+        "last_checked_at": 1792397628,
+        "completed_at": 0,
+        "diagnosis": {
+          "status": "PROVISIONAL",
+          "code": "BE_NOTR_KARISIK",
+          "likely_cause": "BE_AYARI_ICIN_DAHA_COK_VERI",
+          "confidence": "LOW",
+          "summary": "BE icin net erken/koruyucu sonuc yok; daha fazla ornek gerekli.",
+          "evidence": {
+            "max_favorable_r_after_close": 0.2169,
+            "max_adverse_r_after_close": 0.0,
+            "risk_percent": 1.2829,
+            "tp1_progress_at_send_percent": null,
+            "entry_distance_at_send_percent": 0.1590457256461234,
+            "reached_tp1_after_close": false,
+            "reached_tp2_after_close": false,
+            "reached_tp3_after_close": false,
+            "tp1_minutes_after_close": null,
+            "tp2_minutes_after_close": null,
+            "tp3_minutes_after_close": null
+          }
+        },
+        "last_price": 5.044
+      }
     },
     "SUIUSDT_LONG_MARKET_FIRST_V7_1792372443": {
       "trade_id": "SUIUSDT_LONG_MARKET_FIRST_V7_1792372443",
@@ -208389,7 +208449,7 @@
       }
     }
   },
-  "last_update": 1792396657,
+  "last_update": 1792397630,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -208400,12 +208460,12 @@
   },
   "result_diagnostics_summary": {
     "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
-    "tracked_total": 281,
+    "tracked_total": 282,
     "completed_total": 281,
     "diagnosis_counts": {
       "BE_SONRASI_TP3": 33,
       "BE_KORUMASI_DOGRU": 18,
-      "BE_NOTR_KARISIK": 42,
+      "BE_NOTR_KARISIK": 43,
       "SL_SONRASI_TERS_YON_DEVAMI": 11,
       "SL_SONRASI_TOPARLANMA": 124,
       "BE_SONRASI_YENIDEN_HEDEF": 7,
@@ -208415,7 +208475,7 @@
     "likely_cause_counts": {
       "BE_KORUMASI_ERKEN_OLABILIR": 40,
       "SERMAYE_KORUMASI_ISABETLI": 18,
-      "BE_AYARI_ICIN_DAHA_COK_VERI": 42,
+      "BE_AYARI_ICIN_DAHA_COK_VERI": 43,
       "YON_VEYA_SETUP_GECERSIZLESMESI": 11,
       "ERKEN_GIRIS_OLASILIGI": 31,
       "GIRIS_STOP_ZAMANLAMASI": 39,
@@ -208425,7 +208485,7 @@
     "sl_recovery_total": 157,
     "be_maybe_early_total": 40,
     "be_protection_correct_total": 18,
-    "updated_at": 1792395992
+    "updated_at": 1792397630
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
