@@ -1,37 +1,39 @@
 {
   "version": "MARKET_FIRST_OBSERVABILITY_V1_2026_09_08",
-  "generated_at": 1792571590,
+  "generated_at": 1792572418,
   "source_ledger_version": "MARKET_FIRST_OPPORTUNITY_LEDGER_V1_2026_09_05",
-  "market_regime": "BULL",
+  "market_regime": "BULL_STRONG",
   "deep_scan_count": 128,
   "funnel": {
     "clean_preparations": 984,
     "resolved": 948,
     "zone_touched": 796,
     "entry_condition_met": 497,
-    "entry_promoted": 496,
+    "entry_promoted": 495,
     "entry_signal_sent": 0,
     "tp1_before_entry_signal": 885
   },
   "conversion_rates": {
     "prep_to_zone": 0.8089,
     "zone_to_entry_condition": 0.6244,
-    "entry_condition_to_promotion": 0.998,
+    "entry_condition_to_promotion": 0.996,
     "promotion_to_real_signal": 0.0,
     "entry_condition_to_real_signal": 0.0,
     "prep_to_real_signal": 0.0,
     "tp1_before_signal_share": 0.8994
   },
   "promotion_block_reasons": {
+    "LOW_SCORE": 1,
     "NO_ACCELERATION": 1
   },
   "promoted_but_unsent_reasons": {
-    "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED": 496
+    "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED": 495
   },
   "runner_rejection_counts_latest_run": {
-    "LOW_SCORE": 60,
-    "NO_ACCELERATION": 56,
-    "STALE_EXTENSION": 1
+    "LOW_SCORE": 58,
+    "NO_ACCELERATION": 42,
+    "STALE_EXTENSION": 10,
+    "MARKET_OPPOSED": 7
   },
   "opportunity_summary_clean_snapshot": {
     "total": 984,
@@ -40,13 +42,13 @@
     "telegram_prep_sent": 0,
     "zone_touched": 796,
     "entry_condition_met": 497,
-    "entry_promoted": 496,
+    "entry_promoted": 495,
     "entry_guard_blocked": 1,
     "entry_stale_micro_blocked": 1,
     "entry_signal_sent": 0,
     "tp1_reached": 885,
-    "tp2_reached": 779,
-    "tp3_reached": 616,
+    "tp2_reached": 777,
+    "tp3_reached": 614,
     "sl_first": 222,
     "tp1_first": 745,
     "tp1_before_entry_signal": 885,
@@ -54,9 +56,9 @@
     "note": "Clean stats exclude preparation alerts that existed before this ledger started tracking. ENTRY condition, live promotion, guard block and actual Telegram send are counted separately."
   },
   "diagnosis": {
-    "largest_promotion_blocker": "NO_ACCELERATION",
+    "largest_promotion_blocker": "LOW_SCORE",
     "largest_promotion_blocker_count": 1,
     "condition_to_signal_gap": 497,
-    "promotion_to_signal_gap": 496
+    "promotion_to_signal_gap": 495
   }
 }
