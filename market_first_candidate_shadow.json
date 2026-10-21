@@ -23194,9 +23194,9 @@
       "expected_move_percent": 2.098,
       "technical_target_r": 2.755,
       "opened_at": 1792529175,
-      "last_checked_at": 1792577937,
-      "last_bar_ts": 1792577820,
-      "last_price": 0.2617,
+      "last_checked_at": 1792578761,
+      "last_bar_ts": 1792578660,
+      "last_price": 0.2628,
       "status": "OPEN",
       "first_result": "TP1_FIRST",
       "final_result": null,
@@ -23211,7 +23211,7 @@
       "worst_adverse_percent": 0.2977,
       "best_favorable_r": 2.1422,
       "worst_adverse_r": 0.4157,
-      "hold_minutes": 812.7
+      "hold_minutes": 826.43
     },
     "OKBUSDT:LONG:1792529511": {
       "trade_id": "OKBUSDT:LONG:1792529511",
@@ -24517,13 +24517,60 @@
       "best_favorable_r": 0.4819,
       "worst_adverse_r": 1.1808,
       "hold_minutes": 8.27
+    },
+    "BICOUSDT:LONG:1792578788": {
+      "trade_id": "BICOUSDT:LONG:1792578788",
+      "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
+      "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
+      "source": "SELECTIVE_PRE_SIGNAL_TELEGRAM",
+      "symbol": "BICOUSDT",
+      "direction": "LONG",
+      "market_label": "YUKARI",
+      "market_regime": "BULL_STRONG",
+      "score": 94,
+      "rejection_reason": "BACKGROUND_MULTI_BLOCK:EXPECTED_MOVE_BELOW_2P+DIRECTION_CONFIRMATIONS_ABOVE_3_LATE",
+      "blockers": [
+        "EXPECTED_MOVE_BELOW_2P",
+        "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE"
+      ],
+      "zone_low": 0.0168873081,
+      "zone_high": 0.0169211165,
+      "entry": 0.0169042123,
+      "sl": 0.0168358571,
+      "tp1": 0.0169554787,
+      "tp2": 0.0169896562,
+      "tp3": 0.0170409226,
+      "technical_target": 0.01717,
+      "risk_abs": 6.83552e-05,
+      "risk_percent": 0.4044,
+      "expected_move_percent": 1.418,
+      "technical_target_r": 2.549,
+      "opened_at": 1792578788,
+      "last_checked_at": 1792578788,
+      "last_bar_ts": 1792578780,
+      "last_price": 0.01693,
+      "status": "OPEN",
+      "first_result": null,
+      "final_result": null,
+      "max_target_hit": 0,
+      "tp1_hit_at": 0,
+      "tp2_hit_at": 0,
+      "tp3_hit_at": 0,
+      "sl_hit_at": 0,
+      "closed_at": 0,
+      "exit_price": null,
+      "best_favorable_percent": 0.0,
+      "worst_adverse_percent": 0.0,
+      "best_favorable_r": 0.0,
+      "worst_adverse_r": 0.0,
+      "hold_minutes": 0.0
     }
   },
   "summary": {
     "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
     "mode": "TELEGRAM_BACKGROUND_CANDIDATE_SHADOW_ONLY_NO_LIVE_EFFECT",
-    "total": 531,
-    "open": 1,
+    "total": 532,
+    "open": 2,
     "closed": 530,
     "decided_tp1_vs_sl": 531,
     "tp1_first": 358,
@@ -24537,7 +24584,7 @@
       "TP3": 200,
       "SL_AFTER_TP1": 79,
       "SL_AFTER_TP2": 78,
-      "OPEN": 1
+      "OPEN": 2
     },
     "by_blocker": {
       "RISK_DEAD_ZONE_0_46_0_70": {
@@ -24551,24 +24598,24 @@
         "avg_mae_percent": 0.5341
       },
       "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": {
-        "samples": 227,
+        "samples": 228,
         "decided": 227,
         "tp1_first": 158,
         "sl_first": 69,
         "tp1_first_rate": 0.696,
         "tp3_reached": 90,
-        "avg_mfe_percent": 0.8369,
-        "avg_mae_percent": 0.5156
+        "avg_mfe_percent": 0.8332,
+        "avg_mae_percent": 0.5134
       },
       "EXPECTED_MOVE_BELOW_2P": {
-        "samples": 66,
+        "samples": 67,
         "decided": 66,
         "tp1_first": 39,
         "sl_first": 27,
         "tp1_first_rate": 0.5909,
         "tp3_reached": 20,
-        "avg_mfe_percent": 0.7511,
-        "avg_mae_percent": 0.4501
+        "avg_mfe_percent": 0.7399,
+        "avg_mae_percent": 0.4434
       },
       "BOOK_PRESSURE_OPPOSITE": {
         "samples": 32,
@@ -24623,7 +24670,7 @@
     },
     "post_fix_cohort": {
       "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
-      "total": 328,
+      "total": 329,
       "decided": 328,
       "tp1_first": 222,
       "sl_first": 106,
@@ -24633,5 +24680,5 @@
     "legacy_unverified_count": 203,
     "note": "Only post_fix_cohort is eligible for new accuracy comparisons. Historical candidate observations may have timing limitations. These are shadow outcomes, not executable trades or realised PnL."
   },
-  "updated_at": 1792578067
+  "updated_at": 1792578896
 }
