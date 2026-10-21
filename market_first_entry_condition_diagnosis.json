@@ -1,6 +1,6 @@
 {
   "version": "MARKET_FIRST_ENTRY_CONDITION_DIAGNOSIS_V1_2026_09_08",
-  "generated_at": 1792617168,
+  "generated_at": 1792617955,
   "source_ledger_version": "MARKET_FIRST_OPPORTUNITY_LEDGER_V1_2026_09_05",
   "definition": "Clean resolved preparations that reached TP1+ without a Telegram trade and never recorded ENTRY condition. Latest-plan flags are diagnostic snapshots, not guaranteed co-temporal blocker proofs.",
   "reference_thresholds_observational_only": {
@@ -20,19 +20,19 @@
     "shadow_pre_entry_profile_share": 0.3228
   },
   "primary_obstacles": {
-    "ZONE_NEVER_TOUCHED": 153,
+    "ZONE_NEVER_TOUCHED": 152,
     "LIKELY_TIMING_WINDOW_MISSED": 77,
     "STRUCTURE_5M_OPPOSITE_LATEST": 77,
     "STRUCTURE_5M_NEUTRAL_LATEST": 64,
-    "VOLUME_5M_BELOW_0_50_LATEST": 26,
+    "VOLUME_5M_BELOW_0_50_LATEST": 27,
     "SCORE_BELOW_76_LATEST": 10,
     "EXTENSION_ABOVE_1_25_LATEST": 5
   },
   "diagnostic_flags": {
     "TP1_WITHIN_30M": 343,
-    "ZONE_NEVER_TOUCHED": 153,
+    "ZONE_NEVER_TOUCHED": 152,
     "STRUCTURE_5M_OPPOSITE_LATEST": 90,
-    "VOLUME_5M_BELOW_0_50_LATEST": 86,
+    "VOLUME_5M_BELOW_0_50_LATEST": 87,
     "STRUCTURE_5M_NEUTRAL_LATEST": 83,
     "EXTENSION_ABOVE_1_25_LATEST": 56,
     "TP1_WITHIN_60M": 23,
@@ -40,11 +40,11 @@
   },
   "obstacle_stats": {
     "ZONE_NEVER_TOUCHED": {
-      "count": 153,
-      "share": 0.3714,
-      "tp3_count": 153,
-      "tp1_within_30m": 153,
-      "avg_best_favorable_r": 0.9
+      "count": 152,
+      "share": 0.3689,
+      "tp3_count": 152,
+      "tp1_within_30m": 152,
+      "avg_best_favorable_r": 0.8842
     },
     "LIKELY_TIMING_WINDOW_MISSED": {
       "count": 77,
@@ -61,11 +61,11 @@
       "avg_best_favorable_r": 3.8688
     },
     "VOLUME_5M_BELOW_0_50_LATEST": {
-      "count": 26,
-      "share": 0.0631,
-      "tp3_count": 18,
-      "tp1_within_30m": 18,
-      "avg_best_favorable_r": 2.9871
+      "count": 27,
+      "share": 0.0655,
+      "tp3_count": 19,
+      "tp1_within_30m": 19,
+      "avg_best_favorable_r": 2.9552
     },
     "STRUCTURE_5M_NEUTRAL_LATEST": {
       "count": 64,
@@ -845,35 +845,6 @@
       "outcome": "TP3_REACHED"
     },
     {
-      "episode_id": "WUSDT:SHORT:1792350999",
-      "symbol": "WUSDT",
-      "direction": "SHORT",
-      "score": 85,
-      "primary_obstacle": "ZONE_NEVER_TOUCHED",
-      "diagnostic_flags": [
-        "ZONE_NEVER_TOUCHED",
-        "TP1_WITHIN_30M"
-      ],
-      "shadow_pre_entry_profile": false,
-      "zone_touched": false,
-      "structure_5m": "SHORT",
-      "structure_15m": "SHORT",
-      "structure_1h": "SHORT",
-      "volume_ratio_5m": 0.728,
-      "volume_ratio_15m": 0.359,
-      "extension_atr_5m": 0.641,
-      "risk_percent": 0.4,
-      "room_r": 1.59,
-      "market_regime": "BEAR",
-      "best_favorable_r": 3.3122,
-      "best_favorable_percent": 2.0854,
-      "worst_adverse_percent": 0.0,
-      "tp1_minutes": 7.18,
-      "tp2_reached": true,
-      "tp3_reached": true,
-      "outcome": "TP3_REACHED"
-    },
-    {
       "episode_id": "DNAUSDT:SHORT:1792417213",
       "symbol": "DNAUSDT",
       "direction": "SHORT",
@@ -1244,6 +1215,35 @@
       "best_favorable_percent": 1.0549,
       "worst_adverse_percent": 1.7405,
       "tp1_minutes": 89.88,
+      "tp2_reached": true,
+      "tp3_reached": true,
+      "outcome": "SL_FIRST_THEN_TP3_RECOVERY"
+    },
+    {
+      "episode_id": "METISUSDT:SHORT:1792548786",
+      "symbol": "METISUSDT",
+      "direction": "SHORT",
+      "score": 75,
+      "primary_obstacle": "SCORE_BELOW_76_LATEST",
+      "diagnostic_flags": [
+        "SCORE_BELOW_76_LATEST",
+        "STRUCTURE_5M_OPPOSITE_LATEST"
+      ],
+      "shadow_pre_entry_profile": false,
+      "zone_touched": true,
+      "structure_5m": "LONG",
+      "structure_15m": "SHORT",
+      "structure_1h": "SHORT",
+      "volume_ratio_5m": 2.555,
+      "volume_ratio_15m": 0.445,
+      "extension_atr_5m": 0.596,
+      "risk_percent": 0.482,
+      "room_r": 2.64,
+      "market_regime": "BULL",
+      "best_favorable_r": 2.7281,
+      "best_favorable_percent": 1.5722,
+      "worst_adverse_percent": 0.8984,
+      "tp1_minutes": 137.38,
       "tp2_reached": true,
       "tp3_reached": true,
       "outcome": "SL_FIRST_THEN_TP3_RECOVERY"
