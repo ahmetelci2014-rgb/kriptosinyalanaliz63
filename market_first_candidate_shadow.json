@@ -25197,24 +25197,24 @@
       "expected_move_percent": 1.265,
       "technical_target_r": 2.221,
       "opened_at": 1792615580,
-      "last_checked_at": 1792619495,
-      "last_bar_ts": 1792619400,
-      "last_price": 0.2291,
-      "status": "OPEN",
+      "last_checked_at": 1792620240,
+      "last_bar_ts": 1792620240,
+      "last_price": 0.2288,
+      "status": "CLOSED",
       "first_result": "TP1_FIRST",
-      "final_result": null,
+      "final_result": "SL_AFTER_TP1",
       "max_target_hit": 1,
       "tp1_hit_at": 1792618500,
       "tp2_hit_at": 0,
       "tp3_hit_at": 0,
-      "sl_hit_at": 0,
-      "closed_at": 0,
-      "exit_price": null,
+      "sl_hit_at": 1792620240,
+      "closed_at": 1792620240,
+      "exit_price": 0.2278944257,
       "best_favorable_percent": 0.3017,
-      "worst_adverse_percent": 0.1353,
+      "worst_adverse_percent": 0.5724,
       "best_favorable_r": 0.7543,
-      "worst_adverse_r": 0.3383,
-      "hold_minutes": 65.25
+      "worst_adverse_r": 1.431,
+      "hold_minutes": 77.67
     },
     "GRASSUSDT:LONG:1792615893": {
       "trade_id": "GRASSUSDT:LONG:1792615893",
@@ -25261,27 +25261,73 @@
       "best_favorable_r": 0.457,
       "worst_adverse_r": 1.0693,
       "hold_minutes": 12.45
+    },
+    "PONSUSDT:LONG:1792620036": {
+      "trade_id": "PONSUSDT:LONG:1792620036",
+      "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
+      "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
+      "source": "SELECTIVE_PRE_SIGNAL_TELEGRAM",
+      "symbol": "PONSUSDT",
+      "direction": "LONG",
+      "market_label": "YUKARI",
+      "market_regime": "BULL",
+      "score": 92,
+      "rejection_reason": "BACKGROUND_MULTI_BLOCK:EXPECTED_MOVE_BELOW_2P+CVD_IMPULSE_OPPOSITE",
+      "blockers": [
+        "EXPECTED_MOVE_BELOW_2P",
+        "CVD_IMPULSE_OPPOSITE"
+      ],
+      "zone_low": 0.2912801951,
+      "zone_high": 0.2918633386,
+      "entry": 0.29157176685,
+      "sl": 0.2895764286,
+      "tp1": 0.2934676786,
+      "tp2": 0.2945794643,
+      "tp3": 0.2962471429,
+      "technical_target": 0.2975,
+      "risk_abs": 0.00199533825,
+      "risk_percent": 0.6843,
+      "expected_move_percent": 1.953,
+      "technical_target_r": 2.563,
+      "opened_at": 1792620036,
+      "last_checked_at": 1792620240,
+      "last_bar_ts": 1792620240,
+      "last_price": 0.2918,
+      "status": "CLOSED",
+      "first_result": "SL_FIRST",
+      "final_result": "SL_FIRST",
+      "max_target_hit": 0,
+      "tp1_hit_at": 0,
+      "tp2_hit_at": 0,
+      "tp3_hit_at": 0,
+      "sl_hit_at": 1792620240,
+      "closed_at": 1792620240,
+      "exit_price": 0.2895764286,
+      "best_favorable_percent": 0.0,
+      "worst_adverse_percent": 0.7448,
+      "best_favorable_r": 0.0,
+      "worst_adverse_r": 1.0884,
+      "hold_minutes": 3.4
     }
   },
   "summary": {
     "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
     "mode": "TELEGRAM_BACKGROUND_CANDIDATE_SHADOW_ONLY_NO_LIVE_EFFECT",
-    "total": 547,
-    "open": 1,
-    "closed": 546,
-    "decided_tp1_vs_sl": 547,
+    "total": 548,
+    "open": 0,
+    "closed": 548,
+    "decided_tp1_vs_sl": 548,
     "tp1_first": 370,
-    "sl_first": 177,
-    "tp1_first_rate": 0.6764,
+    "sl_first": 178,
+    "tp1_first_rate": 0.6752,
     "tp1_reached": 370,
     "tp2_reached": 288,
     "tp3_reached": 207,
     "final_results": {
-      "SL_FIRST": 177,
+      "SL_FIRST": 178,
       "TP3": 207,
-      "SL_AFTER_TP1": 81,
-      "SL_AFTER_TP2": 81,
-      "OPEN": 1
+      "SL_AFTER_TP1": 82,
+      "SL_AFTER_TP2": 81
     },
     "by_blocker": {
       "RISK_DEAD_ZONE_0_46_0_70": {
@@ -25305,14 +25351,14 @@
         "avg_mae_percent": 0.5168
       },
       "EXPECTED_MOVE_BELOW_2P": {
-        "samples": 70,
-        "decided": 70,
+        "samples": 71,
+        "decided": 71,
         "tp1_first": 43,
-        "sl_first": 27,
-        "tp1_first_rate": 0.6143,
+        "sl_first": 28,
+        "tp1_first_rate": 0.6056,
         "tp3_reached": 21,
-        "avg_mfe_percent": 0.7589,
-        "avg_mae_percent": 0.451
+        "avg_mfe_percent": 0.7482,
+        "avg_mae_percent": 0.4613
       },
       "BOOK_PRESSURE_OPPOSITE": {
         "samples": 32,
@@ -25335,14 +25381,14 @@
         "avg_mae_percent": 0.5453
       },
       "CVD_IMPULSE_OPPOSITE": {
-        "samples": 138,
-        "decided": 138,
+        "samples": 139,
+        "decided": 139,
         "tp1_first": 92,
-        "sl_first": 46,
-        "tp1_first_rate": 0.6667,
+        "sl_first": 47,
+        "tp1_first_rate": 0.6619,
         "tp3_reached": 52,
-        "avg_mfe_percent": 0.7529,
-        "avg_mae_percent": 0.5378
+        "avg_mfe_percent": 0.7475,
+        "avg_mae_percent": 0.5393
       },
       "NO_FRESH_MICRO_DERIVATIVES_WEAK": {
         "samples": 8,
@@ -25367,15 +25413,15 @@
     },
     "post_fix_cohort": {
       "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
-      "total": 344,
-      "decided": 344,
+      "total": 345,
+      "decided": 345,
       "tp1_first": 234,
-      "sl_first": 110,
-      "tp1_first_rate": 0.6802,
+      "sl_first": 111,
+      "tp1_first_rate": 0.6783,
       "tp3_reached": 135
     },
     "legacy_unverified_count": 203,
     "note": "Only post_fix_cohort is eligible for new accuracy comparisons. Historical candidate observations may have timing limitations. These are shadow outcomes, not executable trades or realised PnL."
   },
-  "updated_at": 1792619611
+  "updated_at": 1792620433
 }
