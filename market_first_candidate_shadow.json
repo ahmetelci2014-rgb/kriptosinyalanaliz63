@@ -25446,13 +25446,60 @@
       "best_favorable_r": 1.4281,
       "worst_adverse_r": 1.6157,
       "hold_minutes": 45.7
+    },
+    "METISUSDT:SHORT:1792657768": {
+      "trade_id": "METISUSDT:SHORT:1792657768",
+      "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
+      "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
+      "source": "SELECTIVE_PRE_SIGNAL_TELEGRAM",
+      "symbol": "METISUSDT",
+      "direction": "SHORT",
+      "market_label": "AŞAĞI",
+      "market_regime": "BEAR",
+      "score": 94,
+      "rejection_reason": "BACKGROUND_MULTI_BLOCK:RISK_DEAD_ZONE_0_46_0_70+CVD_IMPULSE_OPPOSITE",
+      "blockers": [
+        "RISK_DEAD_ZONE_0_46_0_70",
+        "CVD_IMPULSE_OPPOSITE"
+      ],
+      "zone_low": 3.9401585081,
+      "zone_high": 3.9480467133,
+      "entry": 3.9441026107,
+      "sl": 3.96615,
+      "tp1": 3.9291375,
+      "tp2": 3.9185625,
+      "tp3": 3.9027,
+      "technical_target": 3.888,
+      "risk_abs": 0.0220473893,
+      "risk_percent": 0.559,
+      "expected_move_percent": 1.445,
+      "technical_target_r": 2.695,
+      "opened_at": 1792657768,
+      "last_checked_at": 1792658061,
+      "last_bar_ts": 1792657980,
+      "last_price": 3.942,
+      "status": "OPEN",
+      "first_result": null,
+      "final_result": null,
+      "max_target_hit": 0,
+      "tp1_hit_at": 0,
+      "tp2_hit_at": 0,
+      "tp3_hit_at": 0,
+      "sl_hit_at": 0,
+      "closed_at": 0,
+      "exit_price": null,
+      "best_favorable_percent": 0.0533,
+      "worst_adverse_percent": 0.0988,
+      "best_favorable_r": 0.0954,
+      "worst_adverse_r": 0.1768,
+      "hold_minutes": 4.88
     }
   },
   "summary": {
     "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
     "mode": "TELEGRAM_BACKGROUND_CANDIDATE_SHADOW_ONLY_NO_LIVE_EFFECT",
-    "total": 551,
-    "open": 0,
+    "total": 552,
+    "open": 1,
     "closed": 551,
     "decided_tp1_vs_sl": 551,
     "tp1_first": 372,
@@ -25465,18 +25512,19 @@
       "SL_FIRST": 179,
       "TP3": 207,
       "SL_AFTER_TP1": 82,
-      "SL_AFTER_TP2": 83
+      "SL_AFTER_TP2": 83,
+      "OPEN": 1
     },
     "by_blocker": {
       "RISK_DEAD_ZONE_0_46_0_70": {
-        "samples": 290,
+        "samples": 291,
         "decided": 290,
         "tp1_first": 192,
         "sl_first": 98,
         "tp1_first_rate": 0.6621,
         "tp3_reached": 98,
-        "avg_mfe_percent": 0.7698,
-        "avg_mae_percent": 0.532
+        "avg_mfe_percent": 0.7674,
+        "avg_mae_percent": 0.5306
       },
       "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": {
         "samples": 235,
@@ -25519,14 +25567,14 @@
         "avg_mae_percent": 0.5448
       },
       "CVD_IMPULSE_OPPOSITE": {
-        "samples": 139,
+        "samples": 140,
         "decided": 139,
         "tp1_first": 92,
         "sl_first": 47,
         "tp1_first_rate": 0.6619,
         "tp3_reached": 52,
-        "avg_mfe_percent": 0.7475,
-        "avg_mae_percent": 0.5393
+        "avg_mfe_percent": 0.7425,
+        "avg_mae_percent": 0.5362
       },
       "NO_FRESH_MICRO_DERIVATIVES_WEAK": {
         "samples": 8,
@@ -25551,7 +25599,7 @@
     },
     "post_fix_cohort": {
       "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
-      "total": 348,
+      "total": 349,
       "decided": 348,
       "tp1_first": 236,
       "sl_first": 112,
@@ -25561,5 +25609,5 @@
     "legacy_unverified_count": 203,
     "note": "Only post_fix_cohort is eligible for new accuracy comparisons. Historical candidate observations may have timing limitations. These are shadow outcomes, not executable trades or realised PnL."
   },
-  "updated_at": 1792657373
+  "updated_at": 1792658187
 }
