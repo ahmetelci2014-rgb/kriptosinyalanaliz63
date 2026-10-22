@@ -1,65 +1,66 @@
 {
   "version": "MARKET_FIRST_OBSERVABILITY_V1_2026_09_08",
-  "generated_at": 1792710602,
+  "generated_at": 1792711439,
   "source_ledger_version": "MARKET_FIRST_OPPORTUNITY_LEDGER_V1_2026_09_05",
-  "market_regime": "BEAR",
+  "market_regime": "BEAR_STRONG",
   "deep_scan_count": 128,
   "funnel": {
-    "clean_preparations": 976,
-    "resolved": 930,
-    "zone_touched": 779,
-    "entry_condition_met": 499,
-    "entry_promoted": 497,
+    "clean_preparations": 975,
+    "resolved": 934,
+    "zone_touched": 776,
+    "entry_condition_met": 495,
+    "entry_promoted": 492,
     "entry_signal_sent": 0,
-    "tp1_before_entry_signal": 902
+    "tp1_before_entry_signal": 899
   },
   "conversion_rates": {
-    "prep_to_zone": 0.7982,
-    "zone_to_entry_condition": 0.6406,
-    "entry_condition_to_promotion": 0.996,
+    "prep_to_zone": 0.7959,
+    "zone_to_entry_condition": 0.6379,
+    "entry_condition_to_promotion": 0.9939,
     "promotion_to_real_signal": 0.0,
     "entry_condition_to_real_signal": 0.0,
     "prep_to_real_signal": 0.0,
-    "tp1_before_signal_share": 0.9242
+    "tp1_before_signal_share": 0.9221
   },
   "promotion_block_reasons": {
+    "NO_ACCELERATION": 1,
     "LOW_SCORE": 1,
     "ENTRY_PLAN_DIRECTION_CONFLICT": 1
   },
   "promoted_but_unsent_reasons": {
-    "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED": 497
+    "PROMOTED_BUT_FINAL_SEND_NOT_CONFIRMED": 492
   },
   "runner_rejection_counts_latest_run": {
-    "LOW_SCORE": 55,
-    "NO_ACCELERATION": 53,
-    "STALE_EXTENSION": 2,
-    "STRUCTURE_DATA": 2,
-    "LATE_SKIP": 1
+    "NO_ACCELERATION": 80,
+    "LOW_SCORE": 24,
+    "STALE_EXTENSION": 12,
+    "MARKET_OPPOSED": 8,
+    "STRUCTURE_DATA": 2
   },
   "opportunity_summary_clean_snapshot": {
-    "total": 976,
-    "open": 46,
-    "resolved": 930,
+    "total": 975,
+    "open": 41,
+    "resolved": 934,
     "telegram_prep_sent": 0,
-    "zone_touched": 779,
-    "entry_condition_met": 499,
-    "entry_promoted": 497,
+    "zone_touched": 776,
+    "entry_condition_met": 495,
+    "entry_promoted": 492,
     "entry_guard_blocked": 1,
     "entry_stale_micro_blocked": 1,
     "entry_signal_sent": 0,
-    "tp1_reached": 902,
-    "tp2_reached": 822,
-    "tp3_reached": 672,
-    "sl_first": 212,
-    "tp1_first": 754,
-    "tp1_before_entry_signal": 902,
+    "tp1_reached": 899,
+    "tp2_reached": 817,
+    "tp3_reached": 669,
+    "sl_first": 211,
+    "tp1_first": 751,
+    "tp1_before_entry_signal": 899,
     "stop_then_recovery": 142,
     "note": "Clean stats exclude preparation alerts that existed before this ledger started tracking. ENTRY condition, live promotion, guard block and actual Telegram send are counted separately."
   },
   "diagnosis": {
-    "largest_promotion_blocker": "LOW_SCORE",
+    "largest_promotion_blocker": "NO_ACCELERATION",
     "largest_promotion_blocker_count": 1,
-    "condition_to_signal_gap": 499,
-    "promotion_to_signal_gap": 497
+    "condition_to_signal_gap": 495,
+    "promotion_to_signal_gap": 492
   }
 }
