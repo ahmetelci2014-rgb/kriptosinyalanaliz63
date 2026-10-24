@@ -1,40 +1,42 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1792820773,
+  "generated_at": 1792821598,
   "status": "FINAL_ADMISSION_GAP",
   "survival": {
     "mode": "NOT_IN_LIVE_PATH",
     "reason": "V6_BALANCED_CORE_CURRENT_LIVE_TOPOLOGY"
   },
   "funnel_truth": {
-    "internal_promoted": 527,
+    "internal_promoted": 531,
     "real_signal_sent": 0,
-    "promoted_unsent": 527,
+    "promoted_unsent": 531,
     "real_telegram_send_failures": 0,
     "new_real_telegram_send_failures": 0,
-    "internal_final_admission_gap": 527,
+    "internal_final_admission_gap": 531,
     "promotion_is_send_attempt": false
   },
   "latest_gate_layers": {
     "profit_quality": {
-      "accepted": 2,
+      "accepted": 4,
       "run_counts": {
-        "VOLUME_ABOVE_2_00_LATE": 3,
-        "EXPECTED_MOVE_BELOW_2P": 3,
-        "RISK_DEAD_ZONE_0_46_0_70": 3,
-        "OK": 2,
-        "ACCEPTED": 2
+        "VOLUME_ABOVE_2_00_LATE": 1,
+        "OK": 4,
+        "ACCEPTED": 4,
+        "RISK_DEAD_ZONE_0_46_0_70": 6,
+        "EXPECTED_MOVE_BELOW_2P": 3
       },
       "blocks": {
-        "VOLUME_ABOVE_2_00_LATE": 3,
-        "EXPECTED_MOVE_BELOW_2P": 3,
-        "RISK_DEAD_ZONE_0_46_0_70": 3
+        "VOLUME_ABOVE_2_00_LATE": 1,
+        "RISK_DEAD_ZONE_0_46_0_70": 6,
+        "EXPECTED_MOVE_BELOW_2P": 3
       }
     },
     "final_execution": {
-      "accepted": 0,
+      "accepted": 2,
       "run_counts": {
-        "UPSTREAM_REJECTED": 9,
+        "UPSTREAM_REJECTED": 11,
+        "OK": 2,
+        "ACCEPTED": 2,
         "TAKER_CVD_OPPOSITE": 1,
         "CVD_IMPULSE_OPPOSITE": 1
       },
@@ -51,8 +53,8 @@
   },
   "top_latest_blocker": {
     "layer": "profit_quality",
-    "reason": "VOLUME_ABOVE_2_00_LATE",
-    "count": 3
+    "reason": "RISK_DEAD_ZONE_0_46_0_70",
+    "count": 6
   },
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
