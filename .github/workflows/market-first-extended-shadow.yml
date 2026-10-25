@@ -1,0 +1,68 @@
+name: Market First - Extended Background Shadow
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "33 */4 * * *"
+  push:
+    branches: [main]
+    paths:
+      - market_first_extended_shadow.py
+      - .github/workflows/market-first-extended-shadow.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: market-first-extended-background-shadow
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Refresh current candidate ledger
+        run: |
+          git pull --ff-only origin main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install public exchange client
+        run: python -m pip install --disable-pip-version-check ccxt==4.5.68
+
+      - name: Run deterministic safety checks
+        run: python market_first_extended_shadow.py --self-test
+
+      - name: Observe background candidates only
+        run: python market_first_extended_shadow.py
+
+      - name: Save independent shadow ledger
+        run: |
+          set -e
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add market_first_extended_shadow.json
+
+          if git diff --cached --quiet; then
+            echo "No new extended shadow observations."
+            exit 0
+          fi
+
+          git commit -m "Update extended background candidate shadow"
+          for attempt in 1 2 3 4; do
+            if git pull --rebase --autostash origin main && git push origin HEAD:main; then
+              exit 0
+            fi
+            git rebase --abort || true
+            sleep 12
+          done
+          exit 1
