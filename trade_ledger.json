@@ -210634,11 +210634,17 @@
             "candle_time": 1792892040,
             "close_price": 0.12827,
             "directional_r_from_reference": 0.6873
+          },
+          "120": {
+            "target_at": 1792895746,
+            "candle_time": 1792895640,
+            "close_price": 0.12799,
+            "directional_r_from_reference": 0.9661
           }
         },
         "max_favorable_r": 1.3347,
         "max_adverse_r": 0.8267,
-        "last_checked_at": 1792895292,
+        "last_checked_at": 1792896094,
         "completed_at": 0,
         "diagnosis": {
           "status": "PROVISIONAL",
@@ -210660,7 +210666,7 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 0.12791
+        "last_price": 0.12813
       }
     },
     "LITUSDT_LONG_MARKET_FIRST_V7_1792888361": {
@@ -210680,12 +210686,12 @@
       "tp1_hit": true,
       "tp2_hit": true,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "TP2_SONRASI_BE",
+      "r_result": 0.5,
+      "exit_price": 3.2477,
+      "closed_at": 1792895652,
+      "closed_day": "2026-10-25",
       "events": [
         {
           "time": 1792888361,
@@ -210701,6 +210707,11 @@
           "time": 1792894035,
           "event": "TP2",
           "price": 3.285852
+        },
+        {
+          "time": 1792895652,
+          "event": "BE",
+          "price": 3.2477
         }
       ],
       "bot_version": "MAIN_MTF_ENTRY_QUALITY_SHADOW_V1_2026_09_22",
@@ -210730,13 +210741,93 @@
       "worst_adverse_r": 0.2156,
       "best_favorable_price": 3.2959,
       "worst_adverse_price": 3.243,
-      "last_market_price": 3.268,
+      "last_market_price": 3.248,
       "tp1_hit_at": 1792891200,
       "entry_type": "MARKET_FIRST_V7",
-      "last_tracking_at": 1792895100
+      "last_tracking_at": 1792895580,
+      "duration_minutes": 121,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "YON DOGRU, DEVAM GUCU ZAYIFLADI",
+        "confidence": "YUKSEK",
+        "factors": [
+          "Islem hedef gordukten sonra kalan kisim giristen kapandi."
+        ],
+        "duration_minutes": 121,
+        "best_favorable_r": 2.2109,
+        "worst_adverse_r": 0.2156,
+        "provisional": false,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "result_diagnostics": {
+        "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
+        "shadow_only": true,
+        "status": "TRACKING",
+        "final_result": "TP2_SONRASI_BE",
+        "started_at": 1792895652,
+        "measurement_start_at": 1792895700,
+        "reference_price": 3.2477,
+        "reference_label": "BE_EXIT",
+        "watched_levels": {
+          "TP3": 3.302202857143
+        },
+        "reached_levels": {},
+        "checkpoints": {},
+        "max_favorable_r": 0.5917,
+        "max_adverse_r": 0.1927,
+        "last_checked_at": 1792896094,
+        "completed_at": 0,
+        "diagnosis": {
+          "status": "PROVISIONAL",
+          "code": "BE_NOTR_KARISIK",
+          "likely_cause": "BE_AYARI_ICIN_DAHA_COK_VERI",
+          "confidence": "LOW",
+          "summary": "BE icin net erken/koruyucu sonuc yok; daha fazla ornek gerekli.",
+          "evidence": {
+            "max_favorable_r_after_close": 0.5917,
+            "max_adverse_r_after_close": 0.1927,
+            "risk_percent": 0.6713,
+            "tp1_progress_at_send_percent": null,
+            "entry_distance_at_send_percent": 0.06466114481017307,
+            "reached_tp1_after_close": false,
+            "reached_tp2_after_close": false,
+            "reached_tp3_after_close": false,
+            "tp1_minutes_after_close": null,
+            "tp2_minutes_after_close": null,
+            "tp3_minutes_after_close": null
+          }
+        },
+        "last_price": 3.2558
+      },
+      "post_result_shadow": {
+        "version": "POST_RESULT_SHADOW_V1_2026_08_10",
+        "shadow_only": true,
+        "status": "TRACKING",
+        "final_result": "TP2_SONRASI_BE",
+        "started_at": 1792895652,
+        "measurement_start_at": 1792895700,
+        "reference_label": "BE_ENTRY",
+        "reference_price": 3.2477,
+        "timeframe": "1m",
+        "checkpoints": {},
+        "watched_levels": {
+          "TP2": 3.285852,
+          "TP3": 3.302202857143
+        },
+        "reached_levels": {},
+        "max_favorable_percent": 0.2586,
+        "max_adverse_percent": 0.1293,
+        "max_favorable_r": 0.3853,
+        "max_adverse_r": 0.1927,
+        "best_price": 3.2561,
+        "worst_price": 3.2435,
+        "last_checked_at": 1792895948,
+        "completed_at": 0,
+        "last_price": 3.2554
+      }
     }
   },
-  "last_update": 1792895294,
+  "last_update": 1792896096,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -210747,12 +210838,12 @@
   },
   "result_diagnostics_summary": {
     "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
-    "tracked_total": 290,
+    "tracked_total": 291,
     "completed_total": 289,
     "diagnosis_counts": {
       "BE_SONRASI_TP3": 33,
       "BE_KORUMASI_DOGRU": 18,
-      "BE_NOTR_KARISIK": 43,
+      "BE_NOTR_KARISIK": 44,
       "SL_SONRASI_TERS_YON_DEVAMI": 11,
       "SL_SONRASI_TOPARLANMA": 131,
       "BE_SONRASI_YENIDEN_HEDEF": 7,
@@ -210762,7 +210853,7 @@
     "likely_cause_counts": {
       "BE_KORUMASI_ERKEN_OLABILIR": 40,
       "SERMAYE_KORUMASI_ISABETLI": 18,
-      "BE_AYARI_ICIN_DAHA_COK_VERI": 43,
+      "BE_AYARI_ICIN_DAHA_COK_VERI": 44,
       "YON_VEYA_SETUP_GECERSIZLESMESI": 11,
       "ERKEN_GIRIS_OLASILIGI": 31,
       "GIRIS_STOP_ZAMANLAMASI": 44,
@@ -210772,7 +210863,7 @@
     "sl_recovery_total": 165,
     "be_maybe_early_total": 40,
     "be_protection_correct_total": 18,
-    "updated_at": 1792891009
+    "updated_at": 1792895781
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
