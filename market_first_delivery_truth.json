@@ -1,42 +1,44 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1792980449,
+  "generated_at": 1792981252,
   "status": "FINAL_ADMISSION_GAP",
   "survival": {
     "mode": "NOT_IN_LIVE_PATH",
     "reason": "V6_BALANCED_CORE_CURRENT_LIVE_TOPOLOGY"
   },
   "funnel_truth": {
-    "internal_promoted": 596,
+    "internal_promoted": 601,
     "real_signal_sent": 0,
-    "promoted_unsent": 596,
+    "promoted_unsent": 601,
     "real_telegram_send_failures": 0,
     "new_real_telegram_send_failures": 0,
-    "internal_final_admission_gap": 596,
+    "internal_final_admission_gap": 601,
     "promotion_is_send_attempt": false
   },
   "latest_gate_layers": {
     "profit_quality": {
-      "accepted": 1,
+      "accepted": 3,
       "run_counts": {
         "RISK_DEAD_ZONE_0_46_0_70": 2,
-        "EXPECTED_MOVE_BELOW_2P": 3,
+        "EXPECTED_MOVE_BELOW_2P": 1,
+        "OK": 3,
+        "ACCEPTED": 3
+      },
+      "blocks": {
+        "RISK_DEAD_ZONE_0_46_0_70": 2,
+        "EXPECTED_MOVE_BELOW_2P": 1
+      }
+    },
+    "final_execution": {
+      "accepted": 1,
+      "run_counts": {
+        "UPSTREAM_REJECTED": 7,
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 2,
         "OK": 1,
         "ACCEPTED": 1
       },
       "blocks": {
-        "RISK_DEAD_ZONE_0_46_0_70": 2,
-        "EXPECTED_MOVE_BELOW_2P": 3
-      }
-    },
-    "final_execution": {
-      "accepted": 0,
-      "run_counts": {
-        "UPSTREAM_REJECTED": 7,
-        "TAKER_CVD_OPPOSITE": 1
-      },
-      "blocks": {
-        "TAKER_CVD_OPPOSITE": 1
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 2
       }
     },
     "capital_survival": {
@@ -47,8 +49,8 @@
   },
   "top_latest_blocker": {
     "layer": "profit_quality",
-    "reason": "EXPECTED_MOVE_BELOW_2P",
-    "count": 3
+    "reason": "RISK_DEAD_ZONE_0_46_0_70",
+    "count": 2
   },
   "interpretation": {
     "promoted_unsent": "Internal ENTRY promotion that did not become a confirmed real Telegram signal. It must not be interpreted as a Telegram transport failure.",
