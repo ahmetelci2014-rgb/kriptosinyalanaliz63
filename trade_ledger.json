@@ -211009,7 +211009,7 @@
       },
       "tp3_post_follow": {
         "version": "TP3_POST_FOLLOW_V1_2026_08_08",
-        "status": "TRACKING",
+        "status": "COMPLETED",
         "started_at": 1792979182,
         "tp3_price": 0.122123928571,
         "timeframe": "1m",
@@ -211037,14 +211037,22 @@
             "directional_return_percent": 0.56,
             "max_favorable_percent": 0.8712,
             "max_adverse_percent": 1.0777
+          },
+          "120": {
+            "target_at": 1792986382,
+            "candle_time": 1792986300,
+            "close_price": 0.1218,
+            "directional_return_percent": 0.2652,
+            "max_favorable_percent": 0.8712,
+            "max_adverse_percent": 1.2005
           }
         },
         "max_favorable_percent": 0.8712,
         "max_adverse_percent": 1.2005,
         "best_price": 0.12106,
         "worst_price": 0.12359,
-        "last_checked_at": 1792986058,
-        "completed_at": 0,
+        "last_checked_at": 1792986556,
+        "completed_at": 1792986556,
         "shadow_only": true
       },
       "post_result_shadow": {
@@ -211084,6 +211092,15 @@
             "max_favorable_percent": 0.8712,
             "max_adverse_percent": 1.0777,
             "directional_r_from_reference": 0.6115
+          },
+          "120": {
+            "target_at": 1792986382,
+            "candle_time": 1792986300,
+            "close_price": 0.1218,
+            "directional_return_percent": 0.2652,
+            "max_favorable_percent": 0.8712,
+            "max_adverse_percent": 1.2005,
+            "directional_r_from_reference": 0.2896
           }
         },
         "watched_levels": {},
@@ -211094,9 +211111,9 @@
         "max_adverse_r": 1.3108,
         "best_price": 0.12106,
         "worst_price": 0.12359,
-        "last_checked_at": 1792986052,
+        "last_checked_at": 1792986849,
         "completed_at": 0,
-        "last_price": 0.12208
+        "last_price": 0.12154
       }
     },
     "WLDUSDT_SHORT_MARKET_FIRST_V7_1792975243": {
@@ -211115,13 +211132,13 @@
       "opened_day": "2026-10-26",
       "tp1_hit": true,
       "tp2_hit": true,
-      "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "tp3_hit": true,
+      "status": "CLOSED",
+      "final_result": "TP3",
+      "r_result": 1.75,
+      "exit_price": 0.437534285714,
+      "closed_at": 1792986856,
+      "closed_day": "2026-10-26",
       "events": [
         {
           "time": 1792975243,
@@ -211137,6 +211154,11 @@
           "time": 1792985758,
           "event": "TP2",
           "price": 0.440824
+        },
+        {
+          "time": 1792986856,
+          "event": "TP3",
+          "price": 0.437534285714
         }
       ],
       "bot_version": "MAIN_MTF_ENTRY_QUALITY_SHADOW_V1_2026_09_22",
@@ -211160,19 +211182,48 @@
       "rr_tp3": 2.5,
       "sent_price": 0.4475,
       "entry_distance_at_send_percent": 0.22296544035674493,
-      "best_favorable_percent": 1.7168,
+      "best_favorable_percent": 3.01,
       "worst_adverse_percent": 0.1115,
-      "best_favorable_r": 1.7555,
+      "best_favorable_r": 3.0778,
       "worst_adverse_r": 0.114,
-      "best_favorable_price": 0.4408,
+      "best_favorable_price": 0.435,
       "worst_adverse_price": 0.449,
-      "last_market_price": 0.4426,
+      "last_market_price": 0.4371,
       "tp1_hit_at": 1792978680,
       "entry_type": "MARKET_FIRST_V7",
-      "last_tracking_at": 1792986000
+      "last_tracking_at": 1792986600,
+      "duration_minutes": 193,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "KURULUM BASARILI",
+        "confidence": "YUKSEK",
+        "factors": [
+          "Sinyal maksimum hedef TP3'e ulasti."
+        ],
+        "duration_minutes": 193,
+        "best_favorable_r": 3.0778,
+        "worst_adverse_r": 0.114,
+        "provisional": false,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "tp3_post_follow": {
+        "version": "TP3_POST_FOLLOW_V1_2026_08_08",
+        "status": "TRACKING",
+        "started_at": 1792986856,
+        "tp3_price": 0.437534285714,
+        "timeframe": "1m",
+        "checkpoints": {},
+        "max_favorable_percent": 0.0,
+        "max_adverse_percent": 0.0,
+        "best_price": 0.437534285714,
+        "worst_price": 0.437534285714,
+        "last_checked_at": 0,
+        "completed_at": 0,
+        "shadow_only": true
+      }
     }
   },
-  "last_update": 1792986058,
+  "last_update": 1792986856,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
