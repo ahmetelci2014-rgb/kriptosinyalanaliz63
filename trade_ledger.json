@@ -211405,34 +211405,36 @@
         "primary": "KURULUM DEVAM ETMEDI",
         "confidence": "ORTA",
         "factors": [
-          "Islem yeterli lehe ivme olusturmadan stop oldu."
+          "Islem yeterli lehe ivme olusturmadan stop oldu.",
+          "Stop sonrasi 240 dakika icinde TP1'e donus olmadi."
         ],
         "duration_minutes": 36,
         "best_favorable_r": 0.2055,
         "worst_adverse_r": 1.0687,
-        "provisional": true,
+        "provisional": false,
         "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
       },
       "stop_root_cause": {
         "version": "STOP_ROOT_CAUSE_V1",
-        "primary": "TAKIP_SURUYOR",
-        "label": "Takip sürüyor",
-        "preliminary": "KURULUM_DEVAM_ETMEDI",
-        "preliminary_label": "Kurulum devam etmedi",
+        "primary": "KURULUM_DEVAM_ETMEDI",
+        "label": "Kurulum devam etmedi",
+        "preliminary": null,
+        "preliminary_label": null,
         "secondary": [],
-        "confidence": "DUSUK",
-        "provisional": true,
+        "confidence": "ORTA",
+        "provisional": false,
         "factors": [
-          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+          "Stop sonrası 240 dakika içinde TP1'e dönüş olmadı.",
+          "İşlem yeterli lehe ivme üretmeden stop oldu."
         ],
         "metrics": {
           "duration_minutes": 36,
           "mfe_r": 0.2055,
           "mae_r": 1.0687,
           "risk_percent": 0.7588,
-          "return_minutes": null
+          "return_minutes": 241.0
         },
-        "updated_at": 1793061486
+        "updated_at": 1793075960
       },
       "result_diagnostics": {
         "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
@@ -211506,6 +211508,12 @@
           }
         },
         "last_price": 0.3141
+      },
+      "post_stop_follow": {
+        "returned_level": null,
+        "age_minutes": 241,
+        "status": "NO_TP1_RETURN",
+        "updated_at": 1793075960
       }
     },
     "RIVERUSDT_LONG_MARKET_FIRST_V7_1793059575": {
@@ -211612,7 +211620,7 @@
       "result_diagnostics": {
         "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
         "shadow_only": true,
-        "status": "TRACKING",
+        "status": "COMPLETED",
         "final_result": "SL",
         "started_at": 1793062277,
         "measurement_start_at": 1793062320,
@@ -211648,14 +211656,20 @@
             "candle_time": 1793069400,
             "close_price": 1.011,
             "directional_r_from_reference": -0.4081
+          },
+          "240": {
+            "target_at": 1793076677,
+            "candle_time": 1793076600,
+            "close_price": 1.011,
+            "directional_r_from_reference": -0.4081
           }
         },
         "max_favorable_r": 0.2721,
         "max_adverse_r": 0.9522,
-        "last_checked_at": 1793075898,
-        "completed_at": 0,
+        "last_checked_at": 1793076703,
+        "completed_at": 1793076703,
         "diagnosis": {
-          "status": "PROVISIONAL",
+          "status": "FINAL",
           "code": "SL_KARISIK_SONUC",
           "likely_cause": "KESIN_NEDEN_YOK",
           "confidence": "LOW",
@@ -211674,11 +211688,11 @@
             "tp3_minutes_after_close": null
           }
         },
-        "last_price": 1.013
+        "last_price": 1.011
       }
     }
   },
-  "last_update": 1793075900,
+  "last_update": 1793076705,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -211690,7 +211704,7 @@
   "result_diagnostics_summary": {
     "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
     "tracked_total": 293,
-    "completed_total": 292,
+    "completed_total": 293,
     "diagnosis_counts": {
       "BE_SONRASI_TP3": 33,
       "BE_KORUMASI_DOGRU": 18,
@@ -211714,7 +211728,7 @@
     "sl_recovery_total": 166,
     "be_maybe_early_total": 40,
     "be_protection_correct_total": 18,
-    "updated_at": 1793075900
+    "updated_at": 1793076705
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
