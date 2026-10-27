@@ -1,6 +1,6 @@
 {
   "version": "MARKET_FIRST_DELIVERY_TRUTH_V1_2026_09_16",
-  "generated_at": 1793090320,
+  "generated_at": 1793091124,
   "status": "FINAL_ADMISSION_GAP",
   "survival": {
     "mode": "NOT_IN_LIVE_PATH",
@@ -19,19 +19,24 @@
     "profit_quality": {
       "accepted": 1,
       "run_counts": {
+        "VOLUME_ABOVE_2_00_LATE": 1,
         "OK": 1,
-        "ACCEPTED": 1
+        "ACCEPTED": 1,
+        "SCORE_BELOW_88": 1
       },
-      "blocks": {}
+      "blocks": {
+        "VOLUME_ABOVE_2_00_LATE": 1,
+        "SCORE_BELOW_88": 1
+      }
     },
     "final_execution": {
       "accepted": 0,
       "run_counts": {
-        "UPSTREAM_REJECTED": 1,
-        "TAKER_CVD_OPPOSITE": 1
+        "UPSTREAM_REJECTED": 3,
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 1
       },
       "blocks": {
-        "TAKER_CVD_OPPOSITE": 1
+        "DIRECTION_CONFIRMATIONS_BELOW_3": 1
       }
     },
     "capital_survival": {
@@ -41,8 +46,8 @@
     }
   },
   "top_latest_blocker": {
-    "layer": "final_execution",
-    "reason": "TAKER_CVD_OPPOSITE",
+    "layer": "profit_quality",
+    "reason": "VOLUME_ABOVE_2_00_LATE",
     "count": 1
   },
   "interpretation": {
