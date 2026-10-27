@@ -33408,9 +33408,9 @@
       "expected_move_percent": 1.381,
       "technical_target_r": 3.13,
       "opened_at": 1793083595,
-      "last_checked_at": 1793116847,
-      "last_bar_ts": 1793116740,
-      "last_price": 0.07606,
+      "last_checked_at": 1793117672,
+      "last_bar_ts": 1793117580,
+      "last_price": 0.07608,
       "status": "OPEN",
       "first_result": "TP1_FIRST",
       "final_result": null,
@@ -33425,7 +33425,7 @@
       "worst_adverse_percent": 0.3821,
       "best_favorable_r": 1.9569,
       "worst_adverse_r": 0.9494,
-      "hold_minutes": 554.2
+      "hold_minutes": 567.95
     },
     "KAITOUSDT:LONG:1793084388": {
       "trade_id": "KAITOUSDT:LONG:1793084388",
@@ -33707,13 +33707,60 @@
       "best_favorable_r": 0.6664,
       "worst_adverse_r": 1.2758,
       "hold_minutes": 71.13
+    },
+    "ETHFIUSDT:LONG:1793117421": {
+      "trade_id": "ETHFIUSDT:LONG:1793117421",
+      "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
+      "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
+      "source": "SELECTIVE_PRE_SIGNAL_TELEGRAM",
+      "symbol": "ETHFIUSDT",
+      "direction": "LONG",
+      "market_label": "YUKARI",
+      "market_regime": "BULL",
+      "score": 96,
+      "rejection_reason": "BACKGROUND_MULTI_BLOCK:RISK_DEAD_ZONE_0_46_0_70+DIRECTION_CONFIRMATIONS_ABOVE_3_LATE",
+      "blockers": [
+        "RISK_DEAD_ZONE_0_46_0_70",
+        "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE"
+      ],
+      "zone_low": 0.659320946,
+      "zone_high": 0.6606409079,
+      "entry": 0.65998092695,
+      "sl": 0.6557864286,
+      "tp1": 0.6636851786,
+      "tp2": 0.6659419643,
+      "tp3": 0.6693271429,
+      "technical_target": 0.6719,
+      "risk_abs": 0.00419449835,
+      "risk_percent": 0.6355,
+      "expected_move_percent": 1.757,
+      "technical_target_r": 2.57,
+      "opened_at": 1793117421,
+      "last_checked_at": 1793117673,
+      "last_bar_ts": 1793117580,
+      "last_price": 0.6639,
+      "status": "OPEN",
+      "first_result": null,
+      "final_result": null,
+      "max_target_hit": 0,
+      "tp1_hit_at": 0,
+      "tp2_hit_at": 0,
+      "tp3_hit_at": 0,
+      "sl_hit_at": 0,
+      "closed_at": 0,
+      "exit_price": null,
+      "best_favorable_percent": 0.5938,
+      "worst_adverse_percent": 0.0729,
+      "best_favorable_r": 0.9343,
+      "worst_adverse_r": 0.1147,
+      "hold_minutes": 4.2
     }
   },
   "summary": {
     "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
     "mode": "TELEGRAM_BACKGROUND_CANDIDATE_SHADOW_ONLY_NO_LIVE_EFFECT",
-    "total": 728,
-    "open": 1,
+    "total": 729,
+    "open": 2,
     "closed": 727,
     "decided_tp1_vs_sl": 728,
     "tp1_first": 512,
@@ -33727,28 +33774,28 @@
       "TP3": 294,
       "SL_AFTER_TP1": 102,
       "SL_AFTER_TP2": 115,
-      "OPEN": 1
+      "OPEN": 2
     },
     "by_blocker": {
       "RISK_DEAD_ZONE_0_46_0_70": {
-        "samples": 377,
+        "samples": 378,
         "decided": 377,
         "tp1_first": 258,
         "sl_first": 119,
         "tp1_first_rate": 0.6844,
         "tp3_reached": 137,
-        "avg_mfe_percent": 0.7953,
-        "avg_mae_percent": 0.5068
+        "avg_mfe_percent": 0.7947,
+        "avg_mae_percent": 0.5056
       },
       "DIRECTION_CONFIRMATIONS_ABOVE_3_LATE": {
-        "samples": 316,
+        "samples": 317,
         "decided": 316,
         "tp1_first": 233,
         "sl_first": 83,
         "tp1_first_rate": 0.7373,
         "tp3_reached": 140,
-        "avg_mfe_percent": 0.8611,
-        "avg_mae_percent": 0.4751
+        "avg_mfe_percent": 0.8603,
+        "avg_mae_percent": 0.4739
       },
       "EXPECTED_MOVE_BELOW_2P": {
         "samples": 115,
@@ -33813,7 +33860,7 @@
     },
     "post_fix_cohort": {
       "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
-      "total": 525,
+      "total": 526,
       "decided": 525,
       "tp1_first": 376,
       "sl_first": 149,
@@ -33823,5 +33870,5 @@
     "legacy_unverified_count": 203,
     "note": "Only post_fix_cohort is eligible for new accuracy comparisons. Historical candidate observations may have timing limitations. These are shadow outcomes, not executable trades or realised PnL."
   },
-  "updated_at": 1793116971
+  "updated_at": 1793117781
 }
