@@ -33408,9 +33408,9 @@
       "expected_move_percent": 1.381,
       "technical_target_r": 3.13,
       "opened_at": 1793083595,
-      "last_checked_at": 1793104584,
-      "last_bar_ts": 1793104500,
-      "last_price": 0.07614,
+      "last_checked_at": 1793105420,
+      "last_bar_ts": 1793105340,
+      "last_price": 0.07628,
       "status": "OPEN",
       "first_result": "TP1_FIRST",
       "final_result": null,
@@ -33422,10 +33422,10 @@
       "closed_at": 0,
       "exit_price": null,
       "best_favorable_percent": 0.7877,
-      "worst_adverse_percent": 0.1981,
+      "worst_adverse_percent": 0.2638,
       "best_favorable_r": 1.9569,
-      "worst_adverse_r": 0.4922,
-      "hold_minutes": 349.82
+      "worst_adverse_r": 0.6555,
+      "hold_minutes": 363.75
     },
     "KAITOUSDT:LONG:1793084388": {
       "trade_id": "KAITOUSDT:LONG:1793084388",
@@ -33613,13 +33613,60 @@
       "best_favorable_r": 0.4814,
       "worst_adverse_r": 1.4628,
       "hold_minutes": 13.22
+    },
+    "UMAUSDT:SHORT:1793105141": {
+      "trade_id": "UMAUSDT:SHORT:1793105141",
+      "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
+      "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
+      "source": "SELECTIVE_PRE_SIGNAL_TELEGRAM",
+      "symbol": "UMAUSDT",
+      "direction": "SHORT",
+      "market_label": "AŞAĞI",
+      "market_regime": "BEAR",
+      "score": 94,
+      "rejection_reason": "BACKGROUND_MULTI_BLOCK:VOLUME_ABOVE_2_00_LATE+CVD_IMPULSE_OPPOSITE",
+      "blockers": [
+        "VOLUME_ABOVE_2_00_LATE",
+        "CVD_IMPULSE_OPPOSITE"
+      ],
+      "zone_low": 0.3482958129,
+      "zone_high": 0.3489931019,
+      "entry": 0.3486444574,
+      "sl": 0.3500390352,
+      "tp1": 0.347598524,
+      "tp2": 0.3469012351,
+      "tp3": 0.3458553017,
+      "technical_target": 0.3436,
+      "risk_abs": 0.0013945778,
+      "risk_percent": 0.4,
+      "expected_move_percent": 1.293,
+      "technical_target_r": 2.321,
+      "opened_at": 1793105141,
+      "last_checked_at": 1793105421,
+      "last_bar_ts": 1793105340,
+      "last_price": 0.3483,
+      "status": "OPEN",
+      "first_result": null,
+      "final_result": null,
+      "max_target_hit": 0,
+      "tp1_hit_at": 0,
+      "tp2_hit_at": 0,
+      "tp3_hit_at": 0,
+      "sl_hit_at": 0,
+      "closed_at": 0,
+      "exit_price": null,
+      "best_favorable_percent": 0.2422,
+      "worst_adverse_percent": 0.0,
+      "best_favorable_r": 0.6055,
+      "worst_adverse_r": 0.0,
+      "hold_minutes": 4.67
     }
   },
   "summary": {
     "version": "MARKET_FIRST_CANDIDATE_SHADOW_V1_2026_09_29",
     "mode": "TELEGRAM_BACKGROUND_CANDIDATE_SHADOW_ONLY_NO_LIVE_EFFECT",
-    "total": 726,
-    "open": 1,
+    "total": 727,
+    "open": 2,
     "closed": 725,
     "decided_tp1_vs_sl": 726,
     "tp1_first": 511,
@@ -33633,7 +33680,7 @@
       "TP3": 294,
       "SL_AFTER_TP1": 102,
       "SL_AFTER_TP2": 114,
-      "OPEN": 1
+      "OPEN": 2
     },
     "by_blocker": {
       "RISK_DEAD_ZONE_0_46_0_70": {
@@ -33677,24 +33724,24 @@
         "avg_mae_percent": 0.4922
       },
       "VOLUME_ABOVE_2_00_LATE": {
-        "samples": 101,
+        "samples": 102,
         "decided": 101,
         "tp1_first": 82,
         "sl_first": 19,
         "tp1_first_rate": 0.8119,
         "tp3_reached": 51,
-        "avg_mfe_percent": 0.7533,
-        "avg_mae_percent": 0.4847
+        "avg_mfe_percent": 0.7483,
+        "avg_mae_percent": 0.4799
       },
       "CVD_IMPULSE_OPPOSITE": {
-        "samples": 184,
+        "samples": 185,
         "decided": 184,
         "tp1_first": 123,
         "sl_first": 61,
         "tp1_first_rate": 0.6685,
         "tp3_reached": 68,
-        "avg_mfe_percent": 0.7407,
-        "avg_mae_percent": 0.5204
+        "avg_mfe_percent": 0.738,
+        "avg_mae_percent": 0.5179
       },
       "NO_FRESH_MICRO_DERIVATIVES_WEAK": {
         "samples": 8,
@@ -33719,7 +33766,7 @@
     },
     "post_fix_cohort": {
       "tracking_policy": "POST_ALERT_CLOSED_1M_V2",
-      "total": 523,
+      "total": 524,
       "decided": 523,
       "tp1_first": 375,
       "sl_first": 148,
@@ -33729,5 +33776,5 @@
     "legacy_unverified_count": 203,
     "note": "Only post_fix_cohort is eligible for new accuracy comparisons. Historical candidate observations may have timing limitations. These are shadow outcomes, not executable trades or realised PnL."
   },
-  "updated_at": 1793104717
+  "updated_at": 1793105557
 }
