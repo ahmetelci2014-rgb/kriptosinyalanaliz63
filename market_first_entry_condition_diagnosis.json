@@ -1,6 +1,6 @@
 {
   "version": "MARKET_FIRST_ENTRY_CONDITION_DIAGNOSIS_V1_2026_09_08",
-  "generated_at": 1793370815,
+  "generated_at": 1793371657,
   "source_ledger_version": "MARKET_FIRST_OPPORTUNITY_LEDGER_V1_2026_09_05",
   "definition": "Clean resolved preparations that reached TP1+ without a Telegram trade and never recorded ENTRY condition. Latest-plan flags are diagnostic snapshots, not guaranteed co-temporal blocker proofs.",
   "reference_thresholds_observational_only": {
@@ -13,29 +13,29 @@
   },
   "summary": {
     "before_entry_condition_missed": 625,
-    "tp3_missed": 556,
+    "tp3_missed": 555,
     "tp1_within_30m": 569,
-    "tp1_within_60m": 589,
+    "tp1_within_60m": 590,
     "shadow_pre_entry_profile_count": 166,
     "shadow_pre_entry_profile_share": 0.2656
   },
   "primary_obstacles": {
     "ZONE_NEVER_TOUCHED": 332,
-    "STRUCTURE_5M_NEUTRAL_LATEST": 90,
+    "STRUCTURE_5M_NEUTRAL_LATEST": 91,
     "LIKELY_TIMING_WINDOW_MISSED": 80,
     "STRUCTURE_5M_OPPOSITE_LATEST": 69,
-    "VOLUME_5M_BELOW_0_50_LATEST": 43,
+    "VOLUME_5M_BELOW_0_50_LATEST": 42,
     "SCORE_BELOW_76_LATEST": 10,
     "EXTENSION_ABOVE_1_25_LATEST": 1
   },
   "diagnostic_flags": {
     "TP1_WITHIN_30M": 569,
     "ZONE_NEVER_TOUCHED": 332,
-    "VOLUME_5M_BELOW_0_50_LATEST": 143,
-    "STRUCTURE_5M_NEUTRAL_LATEST": 121,
+    "VOLUME_5M_BELOW_0_50_LATEST": 142,
+    "STRUCTURE_5M_NEUTRAL_LATEST": 122,
     "STRUCTURE_5M_OPPOSITE_LATEST": 87,
     "EXTENSION_ABOVE_1_25_LATEST": 45,
-    "TP1_WITHIN_60M": 20,
+    "TP1_WITHIN_60M": 21,
     "SCORE_BELOW_76_LATEST": 13
   },
   "obstacle_stats": {
@@ -47,11 +47,11 @@
       "avg_best_favorable_r": 1.0828
     },
     "STRUCTURE_5M_NEUTRAL_LATEST": {
-      "count": 90,
-      "share": 0.144,
+      "count": 91,
+      "share": 0.1456,
       "tp3_count": 65,
       "tp1_within_30m": 74,
-      "avg_best_favorable_r": 2.7704
+      "avg_best_favorable_r": 2.7916
     },
     "LIKELY_TIMING_WINDOW_MISSED": {
       "count": 80,
@@ -68,11 +68,11 @@
       "avg_best_favorable_r": 4.7662
     },
     "VOLUME_5M_BELOW_0_50_LATEST": {
-      "count": 43,
-      "share": 0.0688,
-      "tp3_count": 42,
+      "count": 42,
+      "share": 0.0672,
+      "tp3_count": 41,
       "tp1_within_30m": 37,
-      "avg_best_favorable_r": 2.0693
+      "avg_best_favorable_r": 2.0928
     },
     "SCORE_BELOW_76_LATEST": {
       "count": 10,
@@ -1560,6 +1560,35 @@
       "outcome": "TP3_REACHED"
     },
     {
+      "episode_id": "USELESSUSDT:SHORT:1793349656",
+      "symbol": "USELESSUSDT",
+      "direction": "SHORT",
+      "score": 88,
+      "primary_obstacle": "STRUCTURE_5M_NEUTRAL_LATEST",
+      "diagnostic_flags": [
+        "STRUCTURE_5M_NEUTRAL_LATEST",
+        "TP1_WITHIN_60M"
+      ],
+      "shadow_pre_entry_profile": true,
+      "zone_touched": true,
+      "structure_5m": "NEUTRAL",
+      "structure_15m": "SHORT",
+      "structure_1h": "SHORT",
+      "volume_ratio_5m": 5.109,
+      "volume_ratio_15m": 0.82,
+      "extension_atr_5m": 0.233,
+      "risk_percent": 1.018,
+      "room_r": 11.25,
+      "market_regime": "BEAR",
+      "best_favorable_r": 4.7025,
+      "best_favorable_percent": 1.2443,
+      "worst_adverse_percent": 4.5324,
+      "tp1_minutes": 55.05,
+      "tp2_reached": true,
+      "tp3_reached": false,
+      "outcome": "SL_FIRST_THEN_TP2_RECOVERY"
+    },
+    {
       "episode_id": "0GUSDT:SHORT:1793266675",
       "symbol": "0GUSDT",
       "direction": "SHORT",
@@ -2342,34 +2371,6 @@
       "best_favorable_percent": 3.3764,
       "worst_adverse_percent": 7.1121,
       "tp1_minutes": 3.3,
-      "tp2_reached": true,
-      "tp3_reached": true,
-      "outcome": "TP3_REACHED"
-    },
-    {
-      "episode_id": "VIRTUALUSDT:SHORT:1793304038",
-      "symbol": "VIRTUALUSDT",
-      "direction": "SHORT",
-      "score": 87,
-      "primary_obstacle": "LIKELY_TIMING_WINDOW_MISSED",
-      "diagnostic_flags": [
-        "TP1_WITHIN_30M"
-      ],
-      "shadow_pre_entry_profile": true,
-      "zone_touched": true,
-      "structure_5m": "SHORT",
-      "structure_15m": "SHORT",
-      "structure_1h": "SHORT",
-      "volume_ratio_5m": 0.838,
-      "volume_ratio_15m": 0.291,
-      "extension_atr_5m": 0.948,
-      "risk_percent": 0.4,
-      "room_r": 4.22,
-      "market_regime": "CHOP",
-      "best_favorable_r": 2.5969,
-      "best_favorable_percent": 1.6776,
-      "worst_adverse_percent": 0.148,
-      "tp1_minutes": 4.23,
       "tp2_reached": true,
       "tp3_reached": true,
       "outcome": "TP3_REACHED"
