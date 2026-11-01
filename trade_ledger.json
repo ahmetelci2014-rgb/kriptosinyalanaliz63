@@ -213475,10 +213475,10 @@
       "worst_adverse_r": 0.0575,
       "best_favorable_price": 0.0437,
       "worst_adverse_price": 0.0441,
-      "last_market_price": 0.04384,
+      "last_market_price": 0.04383,
       "tp1_hit_at": 1793492520,
       "entry_type": "MARKET_FIRST_V7",
-      "last_tracking_at": 1793494740
+      "last_tracking_at": 1793495520
     },
     "BERAUSDT_SHORT_MARKET_FIRST_V7_1793492168": {
       "trade_id": "BERAUSDT_SHORT_MARKET_FIRST_V7_1793492168",
@@ -213497,17 +213497,22 @@
       "tp1_hit": false,
       "tp2_hit": false,
       "tp3_hit": false,
-      "status": "OPEN",
-      "final_result": null,
-      "r_result": null,
-      "exit_price": null,
-      "closed_at": null,
-      "closed_day": null,
+      "status": "CLOSED",
+      "final_result": "SL",
+      "r_result": -1.0,
+      "exit_price": 0.1386,
+      "closed_at": 1793495238,
+      "closed_day": "2026-11-01",
       "events": [
         {
           "time": 1793492168,
           "event": "OPENED",
           "price": 0.1377
+        },
+        {
+          "time": 1793495238,
+          "event": "SL",
+          "price": 0.1386
         }
       ],
       "bot_version": "MAIN_MTF_ENTRY_QUALITY_SHADOW_V1_2026_09_22",
@@ -213532,18 +213537,95 @@
       "sent_price": 0.1378,
       "entry_distance_at_send_percent": 0.07262164124910439,
       "best_favorable_percent": 0.0,
-      "worst_adverse_percent": 0.4357,
+      "worst_adverse_percent": 0.6536,
       "best_favorable_r": 0.0,
-      "worst_adverse_r": 0.8239,
+      "worst_adverse_r": 1.2358,
       "best_favorable_price": 0.1377,
-      "worst_adverse_price": 0.1383,
-      "last_market_price": 0.1383,
+      "worst_adverse_price": 0.1386,
+      "last_market_price": 0.1386,
       "tp1_hit_at": 0,
       "entry_type": "MARKET_FIRST_V7",
-      "last_tracking_at": 1793494740
+      "last_tracking_at": 1793495040,
+      "duration_minutes": 51,
+      "diagnosis": {
+        "version": "TECH_DIAGNOSIS_V1",
+        "primary": "KURULUM DEVAM ETMEDI",
+        "confidence": "ORTA",
+        "factors": [
+          "Islem yeterli lehe ivme olusturmadan stop oldu."
+        ],
+        "duration_minutes": 51,
+        "best_favorable_r": 0.0,
+        "worst_adverse_r": 1.2358,
+        "provisional": true,
+        "note": "Bu teshis kesin piyasa sebebi degil; kayitli teknik verilere dayali olasilik temelli degerlendirmedir."
+      },
+      "stop_root_cause": {
+        "version": "STOP_ROOT_CAUSE_V1",
+        "primary": "TAKIP_SURUYOR",
+        "label": "Takip sürüyor",
+        "preliminary": "KURULUM_DEVAM_ETMEDI",
+        "preliminary_label": "Kurulum devam etmedi",
+        "secondary": [],
+        "confidence": "DUSUK",
+        "provisional": true,
+        "factors": [
+          "Stop sonrası 240 dakikalık takip henüz tamamlanmadı."
+        ],
+        "metrics": {
+          "duration_minutes": 51,
+          "mfe_r": 0.0,
+          "mae_r": 1.2358,
+          "risk_percent": 0.5289,
+          "return_minutes": null
+        },
+        "updated_at": 1793495238
+      },
+      "result_diagnostics": {
+        "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
+        "shadow_only": true,
+        "status": "TRACKING",
+        "final_result": "SL",
+        "started_at": 1793495238,
+        "measurement_start_at": 1793495280,
+        "reference_price": 0.1386,
+        "reference_label": "SL_EXIT",
+        "watched_levels": {
+          "TP1": 0.136971714286,
+          "TP2": 0.1364255,
+          "TP3": 0.135879285714
+        },
+        "reached_levels": {},
+        "checkpoints": {},
+        "max_favorable_r": 0.4119,
+        "max_adverse_r": 0.1373,
+        "last_checked_at": 1793495703,
+        "completed_at": 0,
+        "diagnosis": {
+          "status": "PROVISIONAL",
+          "code": "SL_KARISIK_SONUC",
+          "likely_cause": "KESIN_NEDEN_YOK",
+          "confidence": "LOW",
+          "summary": "Stop sonrasi fiyat yolu tek bir nedene isaret etmiyor.",
+          "evidence": {
+            "max_favorable_r_after_close": 0.4119,
+            "max_adverse_r_after_close": 0.1373,
+            "risk_percent": 0.5289,
+            "tp1_progress_at_send_percent": null,
+            "entry_distance_at_send_percent": 0.07262164124910439,
+            "reached_tp1_after_close": false,
+            "reached_tp2_after_close": false,
+            "reached_tp3_after_close": false,
+            "tp1_minutes_after_close": null,
+            "tp2_minutes_after_close": null,
+            "tp3_minutes_after_close": null
+          }
+        },
+        "last_price": 0.1385
+      }
     }
   },
-  "last_update": 1793494743,
+  "last_update": 1793495705,
   "profit_mode_v2_last_enriched_at": 1787845934,
   "profit_mode_v2_cost_model": {
     "version": "TAKER_PLUS_SLIPPAGE_RESERVE_V1",
@@ -213554,7 +213636,7 @@
   },
   "result_diagnostics_summary": {
     "version": "RESULT_DIAGNOSTICS_V1_2026_08_24",
-    "tracked_total": 297,
+    "tracked_total": 298,
     "completed_total": 297,
     "diagnosis_counts": {
       "BE_SONRASI_TP3": 33,
@@ -213564,7 +213646,7 @@
       "SL_SONRASI_TOPARLANMA": 133,
       "BE_SONRASI_YENIDEN_HEDEF": 7,
       "SL_SONRASI_GUCLU_TOPARLANMA": 34,
-      "SL_KARISIK_SONUC": 14
+      "SL_KARISIK_SONUC": 15
     },
     "likely_cause_counts": {
       "BE_KORUMASI_ERKEN_OLABILIR": 40,
@@ -213573,13 +213655,13 @@
       "YON_VEYA_SETUP_GECERSIZLESMESI": 11,
       "ERKEN_GIRIS_OLASILIGI": 31,
       "GIRIS_STOP_ZAMANLAMASI": 45,
-      "KESIN_NEDEN_YOK": 14,
+      "KESIN_NEDEN_YOK": 15,
       "DAR_STOP_OLASILIGI": 91
     },
     "sl_recovery_total": 167,
     "be_maybe_early_total": 40,
     "be_protection_correct_total": 20,
-    "updated_at": 1793423380
+    "updated_at": 1793495396
   },
   "continuation_shadow_summary": {
     "version": "POSITION_CONTINUATION_SHADOW_V1_2026_08_24",
